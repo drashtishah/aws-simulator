@@ -1,0 +1,247 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aws-simulator.local/schemas/manifest.json",
+  "title": "Simulation Manifest",
+  "description": "Defines an AWS incident simulation package for the play skill.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "difficulty",
+    "category",
+    "services",
+    "tags",
+    "estimated_minutes",
+    "exam_topics",
+    "company",
+    "team",
+    "resolution"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9]{3}-[a-z0-9-]+$",
+      "description": "Unique sim ID. Format: 3-digit number + kebab-case slug. Example: 001-s3-bucket-breach"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 100,
+      "description": "Human-readable title. Should include the fictional company name."
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "description": "1=Starter, 2=Associate, 3=Professional, 4=Expert"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "security",
+        "reliability",
+        "performance",
+        "cost",
+        "operations",
+        "networking",
+        "data",
+        "migration"
+      ],
+      "description": "Primary incident category."
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "AWS service slugs involved. Must match service column in catalog.csv."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Searchable tags for the scenario. Use kebab-case."
+    },
+    "estimated_minutes": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 120,
+      "description": "Estimated time to complete the simulation in minutes."
+    },
+    "prerequisites": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Sim IDs that should be completed before this one."
+    },
+    "exam_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Exam topic references. Format: CertCode:DomainOrTopic. Example: SAA-C03:Domain1:SecureAccess"
+    },
+    "company": {
+      "type": "object",
+      "required": ["name", "industry", "size"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Fictional but realistic company name."
+        },
+        "industry": {
+          "type": "string",
+          "description": "Industry vertical (fintech, healthtech, e-commerce, media, logistics, etc.)."
+        },
+        "size": {
+          "type": "string",
+          "description": "Brief company size description. Example: Series B startup, 45 engineers"
+        }
+      },
+      "additionalProperties": false
+    },
+    "team": {
+      "type": "object",
+      "required": ["narrator", "agents"],
+      "properties": {
+        "narrator": {
+          "type": "object",
+          "required": ["personality", "story_beats", "hints", "max_hints_before_nudge"],
+          "properties": {
+            "personality": {
+              "type": "string",
+              "description": "Narrator persona. Sets tone for the simulation. Example: On-call SRE team lead. Terse, 3am energy."
+            },
+            "story_beats": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["trigger"],
+                "properties": {
+                  "trigger": {
+                    "type": "string",
+                    "description": "Event that fires this beat. Values: start, elapsed_minutes:N, fix_validated, hint_requested:N, wrong_diagnosis."
+                  },
+                  "section": {
+                    "type": "string",
+                    "description": "Section of story.md to read. Used for start and fix_validated triggers."
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Inline message for time-based or event-based beats."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "minItems": 2,
+              "description": "Narrative beats triggered during the simulation."
+            },
+            "hints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 2,
+              "description": "Progressive hints from least to most specific."
+            },
+            "max_hints_before_nudge": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "Number of hints before narrator gives a strong nudge toward the answer."
+            }
+          },
+          "additionalProperties": false
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "service", "artifacts", "capabilities"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Agent identifier. Convention: service-name-console. Example: s3-console"
+              },
+              "service": {
+                "type": "string",
+                "description": "AWS service slug this agent represents."
+              },
+              "artifacts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Relative paths to artifact files this agent can serve."
+              },
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Simulated API actions this agent supports. Use snake_case AWS action names."
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 2,
+          "description": "Service agents the player can query. Minimum 2 agents per sim."
+        }
+      },
+      "additionalProperties": false
+    },
+    "resolution": {
+      "type": "object",
+      "required": ["root_cause", "fix_criteria", "learning_objectives"],
+      "properties": {
+        "root_cause": {
+          "type": "string",
+          "description": "One-sentence root cause summary."
+        },
+        "fix_criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "required"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z_]+$",
+                "description": "Machine-readable criterion ID."
+              },
+              "description": {
+                "type": "string",
+                "description": "Human-readable description of what the player must do or identify."
+              },
+              "required": {
+                "type": "boolean",
+                "description": "Whether this criterion is required for successful resolution."
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "description": "Criteria for evaluating the player's resolution."
+        },
+        "learning_objectives": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "description": "Key takeaways the player should learn from this simulation."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
