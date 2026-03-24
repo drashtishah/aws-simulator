@@ -1,0 +1,53 @@
+                              +------------------+
+                              |    Internet      |
+                              | (Farmers, IoT)   |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | ALB              |
+                              | cropsync-prod-lb |
+                              +--------+---------+
+                                       |
+                         +-------------+-------------+
+                         |                           |
+                +--------v---------+        +--------v---------+
+                | EC2 Instance     |        | EC2 Instance     |
+                | cropsync-api-01  |        | cropsync-api-02  |
+                | (t3.medium)      |        | (t3.medium)      |
+                | Status: healthy  |        | Status: healthy  |
+                +--------+---------+        +--------+---------+
+                         |                           |
+                         +-------------+-------------+
+                                       |
+                              +--------v---------+
+                              | RDS MySQL 8.0    |
+                              | cropsync-prod-db |
+                              | db.t3.medium     |
+                              | 20GB gp3         |
+                              | [STORAGE FULL]   | <-- PROBLEM
+                              +--------+---------+
+                              |                  |
+                              | Storage Breakdown|
+                              | Data:    14.8 GB |
+                              | BinLogs:  3.2 GB |
+                              | SlowLog:  1.8 GB |
+                              | System:   0.2 GB |
+                              | Free:     0.0 GB |
+                              +------------------+
+
+  VPC: vpc-0abcdef123456789 (10.0.0.0/16)
+    - Public Subnet:  10.0.1.0/24 (us-east-1a) -- ALB, API instances
+    - Private Subnet: 10.0.2.0/24 (us-east-1a) -- RDS
+
+  RDS Configuration:
+    - Engine: MySQL 8.0.35
+    - Instance: db.t3.medium (2 vCPU, 4GB RAM)
+    - Storage: 20GB gp3 (no auto-scaling)
+    - Multi-AZ: No (single AZ for cost savings)
+    - Backups: Automated, 7-day retention
+    - Binary Logging: Enabled (for point-in-time recovery)
+
+  IoT Data Pipeline:
+    - 4,700 farms -> IoT sensors -> API -> RDS
+    - ~280,000 data points per day
+    - sensor_readings table growing ~800MB/week

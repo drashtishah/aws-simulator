@@ -1,0 +1,19 @@
+2026-03-24T14:00:01.556Z ERROR [mysql-connector] Connection to cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com:3306 -- query execution failed
+  Query: INSERT INTO sensor_readings (farm_id, sensor_id, moisture_level, temperature, timestamp) VALUES (4201, 'SM-4201-07', 23.4, 78.2, '2026-03-24T13:59:00Z')
+  Error: 1114 (HY000): The table 'sensor_readings' is full
+
+2026-03-24T14:00:02.221Z ERROR [mysql-connector] Connection to cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com:3306 -- query execution failed
+  Query: UPDATE irrigation_schedules SET status='active', start_time='2026-03-24T15:00:00Z' WHERE farm_id=3847 AND zone_id='NW-3'
+  Error: 1114 (HY000): The table 'irrigation_schedules' is full
+
+2026-03-24T14:00:04.887Z INFO  [mysql-connector] Connection to cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com:3306 -- query executed successfully
+  Query: SELECT s.farm_id, s.moisture_level, s.temperature FROM sensor_readings s WHERE s.farm_id = 3847 ORDER BY s.timestamp DESC LIMIT 10
+  Rows returned: 10
+  Execution time: 18ms
+
+2026-03-24T14:01:12.334Z ERROR [mysql-connector] Connection to cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com:3306 -- query execution failed
+  Query: INSERT INTO audit_log (user_id, action, resource, timestamp) VALUES (892, 'schedule_update', 'farm:3847:zone:NW-3', '2026-03-24T14:01:12Z')
+  Error: 1114 (HY000): The table 'audit_log' is full
+
+2026-03-24T14:02:33.112Z ERROR [cropsync-api] Cannot create temporary table for query optimization -- disk space exhausted
+  Error: 1114 (HY000): The table '/tmp/#sql_abc_0' is full

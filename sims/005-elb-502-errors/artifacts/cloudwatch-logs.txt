@@ -1,0 +1,12 @@
+2026-03-24T14:42:00.102Z INFO  [urbanfleet-dispatch] Application started on port 3000 (PID 1847)
+2026-03-24T14:42:01.221Z INFO  [urbanfleet-dispatch] Database connection pool: 20 connections to urbanfleet-db.cluster-xyz789.us-east-1.rds.amazonaws.com
+2026-03-24T14:42:01.443Z INFO  [urbanfleet-dispatch] Health endpoint ready: GET /health on port 3000
+2026-03-24T14:42:02.112Z INFO  [urbanfleet-dispatch] Route optimization engine initialized: 6 metro areas loaded
+2026-03-24T14:42:05.334Z INFO  [urbanfleet-dispatch] Serving 847 active driver sessions
+2026-03-24T14:43:12.887Z WARN  [urbanfleet-dispatch] No inbound requests from ALB in last 60 seconds (expected ~200/sec at this time)
+2026-03-24T14:44:22.112Z WARN  [urbanfleet-dispatch] Active driver sessions dropping: 847 -> 412 (session timeouts, no reconnections)
+2026-03-24T14:45:33.441Z WARN  [urbanfleet-dispatch] Active driver sessions: 89. No new connections in 3 minutes.
+2026-03-24T14:46:44.667Z INFO  [urbanfleet-dispatch] Health check: OK (db: healthy, cache: healthy, routes: loaded, port 3000 responding)
+2026-03-24T14:48:02.334Z WARN  [urbanfleet-dispatch] Active driver sessions: 0. Application is healthy but receiving no traffic from ALB.
+2026-03-24T16:48:14.001Z INFO  [urbanfleet-dispatch] Health check: OK (db: healthy, cache: healthy, routes: loaded, port 3000 responding)
+2026-03-24T16:48:14.112Z INFO  [urbanfleet-dispatch] NOTE: Application is healthy on port 3000. No requests being forwarded by ALB. Check ALB target group health check configuration.

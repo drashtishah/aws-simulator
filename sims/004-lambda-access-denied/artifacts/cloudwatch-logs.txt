@@ -1,0 +1,20 @@
+2026-03-24T11:28:14.102Z INFO  [packetforge-threat-sync] Lambda function deployed: version $LATEST, deployment ref deploy-2026-03-24-v2.1.0
+2026-03-24T11:30:00.221Z INFO  [packetforge-threat-sync] Invocation started (RequestId: a1b2c3d4-1111-2222-3333-444455556666)
+2026-03-24T11:30:01.443Z INFO  [packetforge-threat-sync] Fetching threat data from 14 external feeds
+2026-03-24T11:30:12.887Z INFO  [packetforge-threat-sync] Retrieved 2,847 threat indicators from external feeds (11.7s)
+2026-03-24T11:30:13.112Z INFO  [packetforge-threat-sync] Processing batch 1/12: enriching 237 indicators
+2026-03-24T11:30:14.334Z INFO  [packetforge-threat-sync] Checking existing records in DynamoDB (dynamodb:GetItem)
+2026-03-24T11:30:14.891Z INFO  [packetforge-threat-sync] Found 142 existing records, 95 new indicators to insert
+2026-03-24T11:30:15.223Z ERROR [packetforge-threat-sync] AccessDeniedException: User: arn:aws:sts::672913845210:assumed-role/packetforge-threat-sync-role/packetforge-threat-sync is not authorized to perform: dynamodb:PutItem on resource: arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats
+2026-03-24T11:30:15.224Z ERROR [packetforge-threat-sync] Failed to write indicator threat_id=CVE-2026-1847 source=nvd-feed: AccessDeniedException
+2026-03-24T11:30:15.441Z ERROR [packetforge-threat-sync] AccessDeniedException: User: arn:aws:sts::672913845210:assumed-role/packetforge-threat-sync-role/packetforge-threat-sync is not authorized to perform: dynamodb:UpdateItem on resource: arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats
+2026-03-24T11:30:15.442Z ERROR [packetforge-threat-sync] Failed to update indicator threat_id=MITRE-T1059 source=mitre-attack: AccessDeniedException
+2026-03-24T11:30:16.001Z ERROR [packetforge-threat-sync] Batch 1/12 failed: 0/237 indicators written. All PutItem and UpdateItem calls denied.
+2026-03-24T11:30:16.112Z ERROR [packetforge-threat-sync] Aborting sync: execution role lacks required DynamoDB write permissions
+2026-03-24T11:30:16.334Z INFO  [packetforge-threat-sync] Invocation complete: FAILED (RequestId: a1b2c3d4-1111-2222-3333-444455556666, Duration: 16334ms, Memory: 287/512 MB)
+2026-03-24T11:35:00.102Z INFO  [packetforge-threat-sync] Invocation started (RequestId: b2c3d4e5-2222-3333-4444-555566667777)
+2026-03-24T11:35:12.221Z ERROR [packetforge-threat-sync] AccessDeniedException: dynamodb:PutItem denied (same error as previous invocation)
+2026-03-24T11:35:12.443Z ERROR [packetforge-threat-sync] Aborting sync: execution role lacks required DynamoDB write permissions
+2026-03-24T11:40:00.087Z INFO  [packetforge-threat-sync] Invocation started (RequestId: c3d4e5f6-3333-4444-5555-666677778888)
+2026-03-24T11:40:11.998Z ERROR [packetforge-threat-sync] AccessDeniedException: dynamodb:PutItem denied (same error as previous invocation)
+2026-03-24T11:40:12.101Z ERROR [packetforge-threat-sync] Aborting sync: execution role lacks required DynamoDB write permissions

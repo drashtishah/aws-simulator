@@ -1,0 +1,42 @@
+{
+  "Configuration": {
+    "FunctionName": "packetforge-threat-sync",
+    "FunctionArn": "arn:aws:lambda:us-east-1:672913845210:function:packetforge-threat-sync",
+    "Runtime": "python3.12",
+    "Role": "arn:aws:iam::672913845210:role/packetforge-threat-sync-role",
+    "Handler": "handler.lambda_handler",
+    "CodeSize": 4218947,
+    "Description": "Synchronizes threat intelligence data from external feeds to DynamoDB",
+    "Timeout": 300,
+    "MemorySize": 512,
+    "LastModified": "2026-03-24T11:28:14.000+0000",
+    "CodeSha256": "dGhyZWF0LXN5bmMtdjIuMS4wLXJlZmFjdG9yZWQ=",
+    "Version": "$LATEST",
+    "Environment": {
+      "Variables": {
+        "DYNAMODB_TABLE": "packetforge-threats",
+        "LOG_LEVEL": "INFO",
+        "FEED_TIMEOUT_SECONDS": "30"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "PackageType": "Zip",
+    "Architectures": [
+      "x86_64"
+    ],
+    "EphemeralStorage": {
+      "Size": 512
+    }
+  },
+  "Tags": {
+    "Application": "packetforge-threat-pipeline",
+    "Environment": "production",
+    "Team": "platform",
+    "LastDeployedBy": "ci-pipeline",
+    "DeploymentRef": "deploy-2026-03-24-v2.1.0"
+  }
+}

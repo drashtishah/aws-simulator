@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Id": "MeridianPatientDocsBucketPolicy",
+  "Statement": [
+    {
+      "Sid": "AllowECSTaskUpload",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::319284756103:role/meridian-ecs-task-role"
+      },
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::meridian-patient-documents/*"
+    },
+    {
+      "Sid": "AllowVendorReadAccess",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::meridian-patient-documents/*"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+                              +------------------+
+                              |    Internet      |
+                              |  (Students)      |
+                              +--------+---------+
+                                       |
+                                       | HTTPS (TCP 443)
+                                       |
+                              +--------v---------+
+                              | Internet Gateway |
+                              | igw-0f1e2d3c4b5a |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | Public Subnet    |
+                              | 10.0.1.0/24      |
+                              | us-east-1a       |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | Security Group   |
+                              | sg-0a1b2c3d4e5f  |
+                              | [MISSING 443]    |  <-- PROBLEM
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | EC2 Instance     |
+                              | brightpath-prod  |
+                              | -web-01          |
+                              | i-0abc123def456  |
+                              | t3.large         |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | Private Subnet   |
+                              | 10.0.2.0/24      |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | RDS MySQL        |
+                              | brightpath-db    |
+                              | (db.t3.medium)   |
+                              +------------------+
+
+  VPC: vpc-0123456789abcdef0 (10.0.0.0/16)
+    - Public Subnet:  10.0.1.0/24 (us-east-1a)
+    - Private Subnet: 10.0.2.0/24 (us-east-1a)
+
+  Security Group: sg-0a1b2c3d4e5f67890
+    Inbound Rules (CURRENT - BROKEN):
+      - TCP 22 from 10.0.0.0/16 (SSH from VPC only)
+      - TCP 3306 response traffic handled by statefulness
+    Inbound Rules (EXPECTED):
+      - TCP 22 from 10.0.0.0/16 (SSH from VPC only)
+      - TCP 443 from 0.0.0.0/0 (HTTPS from internet) <-- MISSING
+
+  Network ACL: acl-0fedcba987654321
+    - Allows TCP 443 inbound (not the issue)
+    - Allows ephemeral ports outbound (not the issue)

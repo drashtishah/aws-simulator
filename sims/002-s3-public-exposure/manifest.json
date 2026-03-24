@@ -1,0 +1,132 @@
+{
+  "id": "002-s3-public-exposure",
+  "title": "The Meridian Health Data Leak",
+  "difficulty": 2,
+  "category": "security",
+  "services": ["s3", "iam", "cloudtrail"],
+  "tags": ["bucket-policy", "public-access", "data-exposure", "hipaa", "forensics"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain1:SecureAccess",
+    "SAA-C03:Domain1:S3Security",
+    "SCS-C02:Domain5:DataProtection"
+  ],
+  "company": {
+    "name": "Meridian Health",
+    "industry": "healthtech",
+    "size": "Mid-market SaaS company, 80 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Senior security engineer. Calm but deadly serious. Keeps emphasizing HIPAA compliance and patient trust. Uses precise language.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Compliance team just confirmed: the exposed files include patient intake forms with names, dates of birth, and insurance IDs. This is a HIPAA breach. We have 60 days to notify affected patients."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The security researcher who found it has 40,000 followers. She has not published yet but says she will give us 24 hours before public disclosure. Legal is drafting a breach notification."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "CISO is on the bridge. She wants root cause, blast radius, and remediation in the next five minutes. We need to know exactly which files were accessed and by whom."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "That does not explain the public access. The IAM roles are scoped correctly -- the issue is in the resource-based policy on the bucket itself. Look at who the bucket policy grants access to."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The data is accessible without any AWS credentials. What kind of policy could allow unauthenticated access to an S3 bucket?",
+        "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based). Have you checked the bucket policy?",
+        "Look at the Principal field in the bucket policy. Who is granted access?",
+        "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions. That is your root cause."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "s3-console",
+        "service": "s3",
+        "artifacts": [
+          "artifacts/bucket-policy.json",
+          "artifacts/s3-access-logs.txt",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "describe_bucket",
+          "get_bucket_policy",
+          "list_objects",
+          "get_bucket_acl",
+          "get_public_access_block"
+        ]
+      },
+      {
+        "name": "iam-console",
+        "service": "iam",
+        "artifacts": [
+          "artifacts/iam-policy.json"
+        ],
+        "capabilities": [
+          "list_roles",
+          "get_role_policy",
+          "simulate_policy",
+          "list_attached_policies"
+        ]
+      },
+      {
+        "name": "cloudtrail-console",
+        "service": "cloudtrail",
+        "artifacts": [
+          "artifacts/cloudtrail-events.json"
+        ],
+        "capabilities": [
+          "lookup_events",
+          "get_trail_status",
+          "get_event_selectors"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "S3 bucket policy on meridian-patient-documents grants s3:GetObject to Principal: * -- the bucket containing patient intake forms is publicly readable over the internet, exposing protected health information (PHI).",
+    "fix_criteria": [
+      {
+        "id": "identify_public_policy",
+        "description": "Player identifies that the bucket policy allows public access via Principal: *",
+        "required": true
+      },
+      {
+        "id": "identify_when_changed",
+        "description": "Player uses CloudTrail to determine when the bucket policy was modified and by whom",
+        "required": false
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes restricting the Principal to specific IAM roles/accounts and enabling S3 Block Public Access",
+        "required": true
+      },
+      {
+        "id": "assess_blast_radius",
+        "description": "Player determines which files were accessed and the scope of the exposure using access logs",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Difference between S3 bucket policies (resource-based) and IAM policies (identity-based) for access control",
+      "Using CloudTrail to investigate who made API-level changes and when",
+      "S3 Block Public Access as an account-level and bucket-level guardrail against misconfigurations",
+      "Incident response workflow: detect, contain, investigate, remediate"
+    ]
+  }
+}

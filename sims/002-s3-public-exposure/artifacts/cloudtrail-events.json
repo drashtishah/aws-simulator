@@ -1,0 +1,49 @@
+{
+  "Events": [
+    {
+      "EventId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "EventName": "PutBucketPolicy",
+      "ReadOnly": "false",
+      "EventTime": "2026-03-20T11:07:33Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "meridian-deploy-svc",
+      "Resources": [
+        {
+          "ResourceType": "AWS::S3::Bucket",
+          "ResourceName": "meridian-patient-documents"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJQABLZS4A3QDU576R\",\"arn\":\"arn:aws:iam::319284756103:user/meridian-deploy-svc\",\"accountId\":\"319284756103\",\"userName\":\"meridian-deploy-svc\"},\"eventTime\":\"2026-03-20T11:07:33Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"PutBucketPolicy\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.3.91\",\"userAgent\":\"aws-cli/2.15.30 Python/3.11.8\",\"requestParameters\":{\"bucketName\":\"meridian-patient-documents\",\"bucketPolicy\":{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"AllowECSTaskUpload\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::319284756103:role/meridian-ecs-task-role\"},\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::meridian-patient-documents/*\"},{\"Sid\":\"AllowVendorReadAccess\",\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::meridian-patient-documents/*\"}]}},\"responseElements\":null,\"requestID\":\"7A1BFC2D03E4B741\",\"eventID\":\"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"319284756103\"}"
+    },
+    {
+      "EventId": "c3d4e5f6-a7b8-9012-cdef-234567890123",
+      "EventName": "GetObject",
+      "ReadOnly": "true",
+      "EventTime": "2026-03-21T14:22:08Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "ANONYMOUS_PRINCIPAL",
+      "Resources": [
+        {
+          "ResourceType": "AWS::S3::Object",
+          "ResourceName": "meridian-patient-documents/intake/2026/03/patient-form-20260319-4827.pdf"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AWSAccount\",\"principalId\":\"ANONYMOUS_PRINCIPAL\",\"accountId\":\"ANONYMOUS_PRINCIPAL\"},\"eventTime\":\"2026-03-21T14:22:08Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"GetObject\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"66.249.66.1\",\"userAgent\":\"Googlebot/2.1\",\"requestParameters\":{\"bucketName\":\"meridian-patient-documents\",\"key\":\"intake/2026/03/patient-form-20260319-4827.pdf\"},\"responseElements\":null,\"requestID\":\"8B2CFA1E03F5B842\",\"eventID\":\"c3d4e5f6-a7b8-9012-cdef-234567890123\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"319284756103\"}"
+    },
+    {
+      "EventId": "d4e5f6a7-b8c9-0123-defa-345678901234",
+      "EventName": "GetObject",
+      "ReadOnly": "true",
+      "EventTime": "2026-03-23T22:15:41Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "ANONYMOUS_PRINCIPAL",
+      "Resources": [
+        {
+          "ResourceType": "AWS::S3::Object",
+          "ResourceName": "meridian-patient-documents/intake/2026/03/patient-form-20260322-1093.pdf"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AWSAccount\",\"principalId\":\"ANONYMOUS_PRINCIPAL\",\"accountId\":\"ANONYMOUS_PRINCIPAL\"},\"eventTime\":\"2026-03-23T22:15:41Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"GetObject\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"198.51.100.73\",\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36\",\"requestParameters\":{\"bucketName\":\"meridian-patient-documents\",\"key\":\"intake/2026/03/patient-form-20260322-1093.pdf\"},\"responseElements\":null,\"requestID\":\"9C3DFB2F14G6C953\",\"eventID\":\"d4e5f6a7-b8c9-0123-defa-345678901234\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"319284756103\"}"
+    }
+  ]
+}

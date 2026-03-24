@@ -1,0 +1,57 @@
+{
+  "DBInstances": [
+    {
+      "DBInstanceIdentifier": "cropsync-prod-db",
+      "DBInstanceClass": "db.t3.medium",
+      "Engine": "mysql",
+      "EngineVersion": "8.0.35",
+      "DBInstanceStatus": "available",
+      "MasterUsername": "cropsync_admin",
+      "Endpoint": {
+        "Address": "cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com",
+        "Port": 3306,
+        "HostedZoneId": "Z2R2ITUGPM61AM"
+      },
+      "AllocatedStorage": 20,
+      "InstanceCreateTime": "2025-09-15T10:22:00Z",
+      "BackupRetentionPeriod": 7,
+      "DBSecurityGroups": [],
+      "VpcSecurityGroups": [
+        {
+          "VpcSecurityGroupId": "sg-0db1234567890abcd",
+          "Status": "active"
+        }
+      ],
+      "DBParameterGroups": [
+        {
+          "DBParameterGroupName": "cropsync-mysql80",
+          "ParameterApplyStatus": "in-sync"
+        }
+      ],
+      "AvailabilityZone": "us-east-1a",
+      "DBSubnetGroup": {
+        "DBSubnetGroupName": "cropsync-private-subnets",
+        "DBSubnetGroupDescription": "Private subnets for CropSync RDS",
+        "VpcId": "vpc-0abcdef123456789",
+        "SubnetGroupStatus": "Complete"
+      },
+      "MultiAZ": false,
+      "AutoMinorVersionUpgrade": true,
+      "PubliclyAccessible": false,
+      "StorageType": "gp3",
+      "StorageEncrypted": true,
+      "MaxAllocatedStorage": null,
+      "DeletionProtection": true,
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "cropsync-prod-db"
+        },
+        {
+          "Key": "Environment",
+          "Value": "production"
+        }
+      ]
+    }
+  ]
+}

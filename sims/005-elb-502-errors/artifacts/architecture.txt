@@ -1,0 +1,63 @@
+                              +------------------+
+                              |    Internet      |
+                              | (Drivers, Apps)  |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | ALB              |
+                              | urbanfleet-prod  |
+                              | Listener: 443    |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | Target Group     |
+                              | urbanfleet-      |
+                              | dispatch-tg      |
+                              | Port: 3000       |
+                              | Health Check:    |
+                              | Port 8080  <-----+-- PROBLEM (app listens on 3000)
+                              | Path: /health    |
+                              | 0/4 healthy      |
+                              +--------+---------+
+                                       |
+                     +-----------------+------------------+
+                     |                 |                  |
+            +--------v-------+ +------v--------+ +------v--------+
+            | EC2 Instance   | | EC2 Instance  | | EC2 Instance  |
+            | dispatch-01    | | dispatch-02   | | dispatch-03   |
+            | App: port 3000 | | App: port 3000| | App: port 3000|
+            | EC2 check: OK  | | EC2 check: OK | | EC2 check: OK |
+            | ALB check: FAIL| | ALB check:FAIL| | ALB check:FAIL|
+            +--------+-------+ +------+--------+ +------+--------+
+                     |                 |                  |
+                     +-----------------+------------------+
+                                       |
+                              +--------v---------+
+                              | Auto Scaling Grp |
+                              | urbanfleet-      |
+                              | dispatch-asg     |
+                              | Min: 2, Max: 8   |
+                              | Desired: 4       |
+                              | Health: ELB type |
+                              | [CHURN CYCLE]    |
+                              +--------+---------+
+                                       |
+                              +--------v---------+
+                              | RDS PostgreSQL   |
+                              | urbanfleet-db    |
+                              | (Multi-AZ)       |
+                              +------------------+
+
+  Health Check Configuration (BROKEN):
+    Protocol: HTTP
+    Port: 8080          <-- WRONG (should be 3000 or traffic-port)
+    Path: /health
+    Interval: 10 seconds
+    Healthy threshold: 3
+    Unhealthy threshold: 3
+    Timeout: 5 seconds
+
+  Application Configuration:
+    Listening port: 3000  <-- MISMATCH
+    Health endpoint: GET /health on port 3000
+    Nothing listens on port 8080

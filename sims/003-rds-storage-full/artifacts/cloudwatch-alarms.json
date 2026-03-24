@@ -1,0 +1,48 @@
+{
+  "MetricAlarms": [
+    {
+      "AlarmName": "cropsync-rds-cpu-high",
+      "AlarmDescription": "RDS CPU utilization above 80%",
+      "StateValue": "OK",
+      "MetricName": "CPUUtilization",
+      "Namespace": "AWS/RDS",
+      "Statistic": "Average",
+      "Dimensions": [
+        {
+          "Name": "DBInstanceIdentifier",
+          "Value": "cropsync-prod-db"
+        }
+      ],
+      "Period": 300,
+      "EvaluationPeriods": 3,
+      "Threshold": 80.0,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "ActionsEnabled": true,
+      "AlarmActions": [
+        "arn:aws:sns:us-east-1:587412963801:cropsync-ops-alerts"
+      ]
+    },
+    {
+      "AlarmName": "cropsync-rds-connections-high",
+      "AlarmDescription": "RDS connections above 150",
+      "StateValue": "OK",
+      "MetricName": "DatabaseConnections",
+      "Namespace": "AWS/RDS",
+      "Statistic": "Average",
+      "Dimensions": [
+        {
+          "Name": "DBInstanceIdentifier",
+          "Value": "cropsync-prod-db"
+        }
+      ],
+      "Period": 300,
+      "EvaluationPeriods": 2,
+      "Threshold": 150.0,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "ActionsEnabled": true,
+      "AlarmActions": [
+        "arn:aws:sns:us-east-1:587412963801:cropsync-ops-alerts"
+      ]
+    }
+  ]
+}

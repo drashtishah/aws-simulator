@@ -1,0 +1,140 @@
+{
+  "id": "004-lambda-access-denied",
+  "title": "PacketForge Lambda Lockout: The Missing Permission",
+  "difficulty": 2,
+  "category": "security",
+  "services": ["lambda", "iam", "dynamodb", "cloudwatch"],
+  "tags": ["iam-role", "lambda-execution-role", "access-denied", "dynamodb", "least-privilege"],
+  "estimated_minutes": 20,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain1:SecureAccess",
+    "SAA-C03:Domain1:IAMPolicies",
+    "DVA-C02:Domain3:LambdaPermissions"
+  ],
+  "company": {
+    "name": "PacketForge",
+    "industry": "cybersecurity",
+    "size": "Growth-stage startup, 35 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Senior platform engineer. Direct and technical. Frustrated because this was supposed to be a routine deployment. Keeps checking the customer dashboard for churn signals.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Product team confirms: the threat-feed sync has not run since the deployment. Enterprise customers on the Sentinel plan are seeing stale threat intelligence data. Three of them have SLAs that guarantee updates within 15 minutes."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Customer success just flagged that Ridgeline Financial -- our largest enterprise account, $480K ARR -- opened a P1 support ticket. Their security operations center is relying on our threat feeds for real-time blocking rules."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The Lambda function code is correct -- it worked fine in staging. The difference has to be in the execution environment, not the code. What permissions does the function have in production?"
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The Lambda function is invoking correctly and the DynamoDB table exists. The issue is not connectivity or code -- it is authorization. What does the execution role allow this function to do?"
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The error message says AccessDeniedException. What controls whether a Lambda function can access other AWS services?",
+        "Lambda functions use an IAM execution role to interact with other AWS services. Have you looked at the permissions attached to this function's role?",
+        "The execution role has DynamoDB permissions, but check the specific actions. Does it allow the operations the function is trying to perform?",
+        "The role allows dynamodb:GetItem and dynamodb:Query, but the function also needs dynamodb:PutItem and dynamodb:UpdateItem to write threat feed data. Those actions are missing from the policy."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "lambda-console",
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-config.json",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_function",
+          "get_function_configuration",
+          "list_event_source_mappings",
+          "get_policy"
+        ]
+      },
+      {
+        "name": "iam-console",
+        "service": "iam",
+        "artifacts": [
+          "artifacts/iam-execution-role.json",
+          "artifacts/iam-policy.json"
+        ],
+        "capabilities": [
+          "get_role",
+          "get_role_policy",
+          "list_attached_role_policies",
+          "simulate_principal_policy"
+        ]
+      },
+      {
+        "name": "dynamodb-console",
+        "service": "dynamodb",
+        "artifacts": [
+          "artifacts/dynamodb-table.json",
+          "artifacts/architecture.txt"
+        ],
+        "capabilities": [
+          "describe_table",
+          "list_tables",
+          "describe_endpoints"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events",
+          "filter_log_events"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The Lambda function packetforge-threat-sync's IAM execution role only grants dynamodb:GetItem and dynamodb:Query permissions. After a code refactor, the function now also requires dynamodb:PutItem and dynamodb:UpdateItem to write threat feed data to DynamoDB, but these actions were never added to the execution role policy.",
+    "fix_criteria": [
+      {
+        "id": "identify_missing_permissions",
+        "description": "Player identifies that the Lambda execution role is missing dynamodb:PutItem and dynamodb:UpdateItem permissions",
+        "required": true
+      },
+      {
+        "id": "connect_to_deployment",
+        "description": "Player connects the issue to the recent code deployment that added write operations not covered by the existing IAM policy",
+        "required": false
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes adding the missing DynamoDB write permissions to the execution role's IAM policy",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "Lambda functions use IAM execution roles to interact with other AWS services -- the role's policies define what the function can do",
+      "IAM policies follow the principle of least privilege -- only the explicitly allowed actions are permitted",
+      "When deploying code changes that interact with new AWS API actions, the execution role must be updated to match"
+    ]
+  }
+}

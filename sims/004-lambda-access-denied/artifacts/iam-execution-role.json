@@ -1,0 +1,38 @@
+{
+  "Role": {
+    "RoleName": "packetforge-threat-sync-role",
+    "RoleId": "AROA3XFRBF23LDVHFWQMP",
+    "Arn": "arn:aws:iam::672913845210:role/packetforge-threat-sync-role",
+    "Path": "/service-role/",
+    "CreateDate": "2025-11-02T09:14:22Z",
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    },
+    "MaxSessionDuration": 3600,
+    "Tags": [
+      {
+        "Key": "Application",
+        "Value": "packetforge-threat-pipeline"
+      },
+      {
+        "Key": "ManagedBy",
+        "Value": "terraform"
+      }
+    ],
+    "AttachedPolicies": [
+      {
+        "PolicyName": "packetforge-threat-sync-policy",
+        "PolicyArn": "arn:aws:iam::672913845210:policy/packetforge-threat-sync-policy"
+      }
+    ]
+  }
+}

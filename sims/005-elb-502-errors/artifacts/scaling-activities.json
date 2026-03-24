@@ -1,0 +1,64 @@
+{
+  "Activities": [
+    {
+      "ActivityId": "a1b2c3d4-0001",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Terminating EC2 instance: i-0a1b2c3d4e5f60010",
+      "Cause": "At 2026-03-24T14:50:22Z an instance was taken out of service in response to an ELB system health check failure.",
+      "StartTime": "2026-03-24T14:50:22Z",
+      "EndTime": "2026-03-24T14:51:04Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    },
+    {
+      "ActivityId": "a1b2c3d4-0002",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60003",
+      "Cause": "At 2026-03-24T14:51:05Z an instance was launched in response to an unhealthy instance needing to be replaced.",
+      "StartTime": "2026-03-24T14:51:05Z",
+      "EndTime": "2026-03-24T14:51:42Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    },
+    {
+      "ActivityId": "a1b2c3d4-0003",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Terminating EC2 instance: i-0a1b2c3d4e5f60011",
+      "Cause": "At 2026-03-24T14:52:18Z an instance was taken out of service in response to an ELB system health check failure.",
+      "StartTime": "2026-03-24T14:52:18Z",
+      "EndTime": "2026-03-24T14:53:01Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    },
+    {
+      "ActivityId": "a1b2c3d4-0004",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60004",
+      "Cause": "At 2026-03-24T14:53:02Z an instance was launched in response to an unhealthy instance needing to be replaced.",
+      "StartTime": "2026-03-24T14:53:02Z",
+      "EndTime": "2026-03-24T14:53:38Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    },
+    {
+      "ActivityId": "a1b2c3d4-0005",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Terminating EC2 instance: i-0a1b2c3d4e5f60003",
+      "Cause": "At 2026-03-24T14:54:44Z an instance was taken out of service in response to an ELB system health check failure.",
+      "StartTime": "2026-03-24T14:54:44Z",
+      "EndTime": "2026-03-24T14:55:21Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    },
+    {
+      "ActivityId": "a1b2c3d4-0006",
+      "AutoScalingGroupName": "urbanfleet-dispatch-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60005",
+      "Cause": "At 2026-03-24T14:55:22Z an instance was launched in response to an unhealthy instance needing to be replaced.",
+      "StartTime": "2026-03-24T14:55:22Z",
+      "EndTime": "2026-03-24T14:55:58Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful"
+    }
+  ]
+}

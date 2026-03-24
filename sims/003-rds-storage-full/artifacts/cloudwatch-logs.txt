@@ -1,0 +1,12 @@
+2026-03-24T13:30:14.221Z INFO  [cropsync-api] Health check: OK (db_read: healthy, db_write: healthy, api_latency: 42ms)
+2026-03-24T13:45:12.443Z INFO  [cropsync-api] Processed 1,247 sensor readings batch from IoT gateway
+2026-03-24T13:48:22.887Z WARN  [cropsync-api] Database write latency increasing: 42ms -> 340ms (8x normal)
+2026-03-24T13:52:07.112Z WARN  [cropsync-api] Database write latency: 1,204ms (28x normal)
+2026-03-24T13:58:44.334Z ERROR [cropsync-api] Database write failed: SQLSTATE[HY000]: General error: 1114 The table 'sensor_readings' is full
+2026-03-24T14:00:01.556Z ERROR [cropsync-api] Database write failed: SQLSTATE[HY000]: General error: 1114 The table 'irrigation_schedules' is full
+2026-03-24T14:00:02.221Z ERROR [cropsync-api] POST /api/v1/schedules returned 500: unable to save irrigation schedule
+2026-03-24T14:02:14.773Z ERROR [cropsync-api] 847 write operations failed in last 5 minutes. All INSERT/UPDATE queries returning error 1114.
+2026-03-24T14:02:15.001Z INFO  [cropsync-api] SELECT queries still executing normally. Read path is functional.
+2026-03-24T14:05:33.441Z INFO  [cropsync-api] Health check: DEGRADED (db_read: healthy, db_write: FAILED, api_latency: 12ms for reads)
+2026-03-24T14:12:18.667Z ERROR [cropsync-api] ALB health check failing -- write test returns error 1114
+2026-03-24T14:17:02.334Z INFO  [cropsync-alert] PagerDuty incident created: INC-20260324-1417 (HIGH severity) -- database write failures

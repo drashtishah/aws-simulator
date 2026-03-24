@@ -1,0 +1,10 @@
+2026-03-24T06:00:12.221Z INFO  [meridian-intake-service] Daily upload batch started: processing 11,847 intake forms from yesterday
+2026-03-24T06:00:14.891Z INFO  [meridian-intake-service] Uploading to s3://meridian-patient-documents/intake/2026/03/
+2026-03-24T06:12:33.443Z INFO  [meridian-intake-service] Batch upload complete: 11,847 forms uploaded (892MB total)
+2026-03-24T06:12:34.102Z INFO  [meridian-intake-service] Health check: OK (db: healthy, s3_write: healthy, queue_depth: 0)
+2026-03-24T06:22:01.334Z WARN  [meridian-security-alert] Responsible disclosure email received via security@meridian-health.com
+2026-03-24T06:22:01.887Z WARN  [meridian-security-alert] Report: patient documents accessible via direct S3 URL without authentication
+2026-03-24T06:22:02.109Z INFO  [meridian-security-alert] Incident created: INC-20260324-0622 (CRITICAL severity)
+2026-03-24T06:35:14.223Z WARN  [meridian-security-alert] Manual verification: GET request to S3 object URL from incognito browser returns 200 OK. Confirmed public access.
+2026-03-24T06:35:15.001Z INFO  [meridian-intake-service] Health check: OK (db: healthy, s3_write: healthy, queue_depth: 0)
+2026-03-24T06:40:22.887Z INFO  [meridian-intake-service] Health check: OK (db: healthy, s3_write: healthy, queue_depth: 0)

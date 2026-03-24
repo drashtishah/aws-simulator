@@ -1,0 +1,45 @@
+                                +------------------+
+                                |    Internet      |
+                                | (Patients, Bots) |
+                                +--------+---------+
+                                         |
+                                         | HTTPS
+                                         |
+                          +--------------+---------------+
+                          |                              |
+                 +--------v---------+           +--------v---------+
+                 | CloudFront       |           | S3 Bucket        |
+                 | meridian-portal  |           | meridian-patient  |
+                 +--------+---------+           | -documents       |
+                          |                     | [PUBLIC ACCESS]  | <-- PROBLEM
+                 +--------v---------+           +--------+---------+
+                 | ALB              |                    ^
+                 | meridian-prod-lb |                    |
+                 +--------+---------+                   | PutObject
+                          |                             | (intake forms)
+                 +--------v---------+                   |
+                 | ECS Fargate      +-------------------+
+                 | meridian-intake  |
+                 | -service         |
+                 +--------+---------+
+                          |
+                 +--------v---------+
+                 | RDS PostgreSQL   |
+                 | meridian-prod-db |
+                 | (Multi-AZ)       |
+                 +------------------+
+
+  IAM Role: meridian-ecs-task-role
+    -> Allows: s3:PutObject on meridian-patient-documents/*
+    -> Allows: rds-data:ExecuteStatement on meridian-prod-db
+
+  Bucket Policy: meridian-patient-documents
+    -> PROBLEM: Allows s3:GetObject to Principal: * (anyone on the internet)
+    -> INTENDED: Should only allow s3:GetObject to vendor account arn:aws:iam::887766554433:root
+
+  CloudTrail: meridian-prod-trail
+    -> Logging: management events (all regions)
+    -> S3 data events: enabled for meridian-patient-documents
+
+  Third-Party Vendor: MedRecords Integration (AWS Account 887766554433)
+    -> Needs: s3:GetObject on meridian-patient-documents/* for records sync

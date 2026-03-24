@@ -1,4 +1,45 @@
 {
   "version": 1,
-  "sims": []
+  "sims": [
+    {
+      "id": "001-ec2-unreachable",
+      "title": "The BrightPath Outage: Students Locked Out",
+      "difficulty": 1,
+      "category": "networking",
+      "services": ["ec2", "vpc", "cloudwatch"],
+      "estimated_minutes": 15
+    },
+    {
+      "id": "002-s3-public-exposure",
+      "title": "The Meridian Health Data Leak",
+      "difficulty": 2,
+      "category": "security",
+      "services": ["s3", "iam", "cloudtrail"],
+      "estimated_minutes": 25
+    },
+    {
+      "id": "003-rds-storage-full",
+      "title": "The CropSync Harvest Crisis: Database Full",
+      "difficulty": 1,
+      "category": "data",
+      "services": ["rds", "cloudwatch", "ec2"],
+      "estimated_minutes": 15
+    },
+    {
+      "id": "004-lambda-access-denied",
+      "title": "PacketForge Lambda Lockout: The Missing Permission",
+      "difficulty": 2,
+      "category": "security",
+      "services": ["lambda", "iam", "dynamodb", "cloudwatch"],
+      "estimated_minutes": 20
+    },
+    {
+      "id": "005-elb-502-errors",
+      "title": "UrbanFleet Rush Hour Meltdown: The 502 Storm",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+      "estimated_minutes": 25
+    }
+  ]
 }

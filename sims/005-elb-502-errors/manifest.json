@@ -1,0 +1,141 @@
+{
+  "id": "005-elb-502-errors",
+  "title": "UrbanFleet Rush Hour Meltdown: The 502 Storm",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+  "tags": ["health-check", "target-group", "502-errors", "auto-scaling", "deregistration"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "SOA-C02:Domain2:HighAvailability"
+  ],
+  "company": {
+    "name": "UrbanFleet",
+    "industry": "logistics",
+    "size": "Series B startup, 52 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Operations manager. Pragmatic and numbers-driven. Tracks the 502 error rate obsessively. Keeps relating everything back to delivery drivers and customers waiting for packages.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Error rate just spiked to 38%. Dispatch cannot assign new routes. We have 1,200 drivers on the road right now with no way to get updated delivery manifests. Packages are piling up at the distribution centers."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Our biggest client, Metro Market, just called. They have 400 grocery deliveries scheduled in the next two hours -- perishable goods, time-sensitive. If we cannot route their drivers, they will invoke the SLA penalty clause."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "Auto Scaling launched two new instances five minutes ago, but they are already being deregistered from the target group. The instances come up healthy at the OS level but the load balancer keeps pulling them out. Something is wrong with how we are checking health."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The instances themselves are fine -- they pass EC2 status checks and the application starts correctly. The problem is between the load balancer and the instances. Look at how the ALB determines whether a target is healthy."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The ALB is returning 502 errors, which means it cannot get a valid response from the backend instances. Why would healthy instances fail the load balancer's health check?",
+        "ALB health checks are configured in the target group. What path is the health check hitting, and what response does it expect?",
+        "Look at the health check configuration: the path, port, expected status code, and thresholds. Compare those settings to what the application actually serves.",
+        "The health check is configured for port 8080 but the application listens on port 3000. Every health check fails because nothing is listening on port 8080, so the ALB deregisters every instance as unhealthy."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "elb-console",
+        "service": "elb",
+        "artifacts": [
+          "artifacts/target-group-config.json",
+          "artifacts/target-health.json",
+          "artifacts/alb-access-logs.txt"
+        ],
+        "capabilities": [
+          "describe_load_balancers",
+          "describe_target_groups",
+          "describe_target_health",
+          "describe_listeners",
+          "describe_rules"
+        ]
+      },
+      {
+        "name": "autoscaling-console",
+        "service": "auto-scaling",
+        "artifacts": [
+          "artifacts/asg-config.json",
+          "artifacts/scaling-activities.json"
+        ],
+        "capabilities": [
+          "describe_auto_scaling_groups",
+          "describe_scaling_activities",
+          "describe_launch_templates",
+          "describe_policies"
+        ]
+      },
+      {
+        "name": "ec2-console",
+        "service": "ec2",
+        "artifacts": [
+          "artifacts/architecture.txt",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "describe_instances",
+          "describe_instance_status",
+          "describe_security_groups"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The ALB target group health check is configured to check port 8080, but the application listens on port 3000. A recent infrastructure change updated the health check port from 3000 to 8080 without updating the application. Every health check fails, causing the ALB to deregister all instances as unhealthy and return 502 errors to clients.",
+    "fix_criteria": [
+      {
+        "id": "identify_health_check_mismatch",
+        "description": "Player identifies that the ALB health check port (8080) does not match the application port (3000)",
+        "required": true
+      },
+      {
+        "id": "identify_deregistration",
+        "description": "Player understands that failed health checks cause the ALB to deregister instances, resulting in 502 errors",
+        "required": false
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes updating the target group health check to use port 3000 (or traffic-port) to match the application",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "ALB health checks determine which instances receive traffic -- misconfigured health checks cause healthy instances to be deregistered",
+      "502 Bad Gateway from an ALB means it has no healthy targets to forward the request to",
+      "Target group health check settings (port, path, thresholds) must match the actual application configuration"
+    ]
+  }
+}

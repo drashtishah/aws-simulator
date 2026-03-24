@@ -1,0 +1,35 @@
+{
+  "PolicyName": "packetforge-threat-sync-policy",
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowDynamoDBRead",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:GetItem",
+          "dynamodb:Query"
+        ],
+        "Resource": "arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats"
+      },
+      {
+        "Sid": "AllowDynamoDBBatchWrite",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:BatchWriteItem"
+        ],
+        "Resource": "arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats"
+      },
+      {
+        "Sid": "AllowCloudWatchLogs",
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": "arn:aws:logs:us-east-1:672913845210:log-group:/aws/lambda/packetforge-threat-sync:*"
+      }
+    ]
+  }
+}

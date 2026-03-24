@@ -1,0 +1,122 @@
+{
+  "id": "003-rds-storage-full",
+  "title": "The CropSync Harvest Crisis: Database Full",
+  "difficulty": 1,
+  "category": "data",
+  "services": ["rds", "cloudwatch", "ec2"],
+  "tags": ["rds-storage", "disk-full", "connection-timeout", "monitoring"],
+  "estimated_minutes": 15,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingDatabases",
+    "SOA-C02:Domain1:MonitoringLogging",
+    "CLF-C02:Domain3:CloudTechnologyServices"
+  ],
+  "company": {
+    "name": "CropSync",
+    "industry": "agritech",
+    "size": "Series A startup, 18 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "DevOps engineer who grew up on a farm. Practical, no-nonsense. Keeps relating the urgency to actual farmers who depend on the platform. Says things like 'we are losing daylight here.'",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Three more counties just reported the app is down. Farmers are calling our support line directly -- they say they cannot log irrigation schedules and the forecast shows rain in 6 hours. If they miss this window, crops dry out."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "CEO just got off the phone with our biggest customer, a 2,000-acre corn operation in Iowa. They are threatening to switch to a competitor if we cannot get this fixed before the rain window. We are losing daylight here."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The EC2 instances are healthy and the application code has not changed. The issue is at the database layer. Take a closer look at the RDS instance metrics."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The application is timing out on database writes. What could cause a database to reject write operations?",
+        "Check the RDS instance metrics in CloudWatch. Storage-related metrics can tell you a lot about database health.",
+        "The FreeStorageSpace metric is at zero. The RDS instance has run out of disk space, which causes all write operations to fail.",
+        "You need to increase the allocated storage for the RDS instance. RDS supports storage auto-scaling -- that would prevent this from happening again."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "rds-console",
+        "service": "rds",
+        "artifacts": [
+          "artifacts/rds-instance-status.json",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "describe_db_instances",
+          "describe_db_log_files",
+          "describe_events",
+          "describe_db_snapshots"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-alarms.json"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_metric_statistics",
+          "list_metrics"
+        ]
+      },
+      {
+        "name": "ec2-console",
+        "service": "ec2",
+        "artifacts": [
+          "artifacts/architecture.txt",
+          "artifacts/application-logs.txt"
+        ],
+        "capabilities": [
+          "describe_instances",
+          "describe_instance_status",
+          "describe_security_groups"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The RDS MySQL instance cropsync-prod-db (db.t3.medium, 20GB allocated storage) ran out of disk space. A runaway logging query and accumulated binary logs consumed all available storage, causing all INSERT and UPDATE operations to fail with 'The table is full' errors.",
+    "fix_criteria": [
+      {
+        "id": "identify_storage_full",
+        "description": "Player identifies that the RDS instance has zero free storage space",
+        "required": true
+      },
+      {
+        "id": "propose_storage_increase",
+        "description": "Player proposes increasing the allocated storage or enabling storage auto-scaling on the RDS instance",
+        "required": true
+      },
+      {
+        "id": "identify_root_cause_detail",
+        "description": "Player identifies that binary logs or accumulated data caused the storage to fill up",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "RDS instances have a fixed storage allocation that can be exhausted by data growth, logs, or temporary files",
+      "CloudWatch FreeStorageSpace metric is critical for monitoring RDS health and should always have an alarm",
+      "RDS storage auto-scaling can automatically increase storage when free space drops below a threshold"
+    ]
+  }
+}
