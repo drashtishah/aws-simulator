@@ -185,6 +185,11 @@ git add sims/index.md
 feat: add sim {id} -- {short title}
 ```
 
+24. Push to remote:
+```
+git push
+```
+
 ---
 
 ## Rules
