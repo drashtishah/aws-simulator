@@ -23,7 +23,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| ec2 | Amazon EC2 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| ec2 | Amazon EC2 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
 | auto-scaling | AWS Auto Scaling | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | elastic-beanstalk | AWS Elastic Beanstalk | 2 | 2 | SAA-C03; DVA-C02 | Not started |
 | batch | AWS Batch | 4 | 3 | SAA-C03; SAP-C02 | Not started |
@@ -61,7 +61,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| vpc | Amazon VPC | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| vpc | Amazon VPC | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (0) |
 | cloudfront | Amazon CloudFront | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | elb | Elastic Load Balancing | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | route53 | Amazon Route 53 | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
@@ -114,7 +114,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (0) |
 | cloudformation | AWS CloudFormation | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | cloudtrail | AWS CloudTrail | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | systems-manager | AWS Systems Manager | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |

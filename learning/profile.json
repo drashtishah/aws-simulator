@@ -1,11 +1,27 @@
 {
   "current_level": 1,
-  "completed_sims": [],
+  "completed_sims": ["001-ec2-unreachable"],
   "unlocked_levels": [1],
-  "service_exposure": {},
-  "question_patterns": {},
-  "weaknesses": [],
+  "service_exposure": {
+    "ec2": 1,
+    "vpc": 1,
+    "cloudwatch": 1
+  },
+  "question_patterns": {
+    "first_action_frequency": {
+      "logs": 0,
+      "permissions": 0,
+      "architecture": 1,
+      "metrics": 0,
+      "recent_changes": 0,
+      "immediate_fix": 0
+    },
+    "avg_questions_before_fix": 3,
+    "audit_trail_check_rate": 0.0,
+    "multi_service_investigation_rate": 0.0
+  },
+  "weaknesses": ["vpc", "cloudwatch"],
   "strengths": [],
-  "total_sessions": 0,
-  "last_session": null
+  "total_sessions": 1,
+  "last_session": "2026-03-24"
 }
