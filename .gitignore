@@ -1,5 +1,6 @@
 # Session artifacts (transient)
 .sessions/
+.agent/
 
 # Obsidian config
 .obsidian/
@@ -9,5 +10,5 @@
 .claude/settings.local.json
 .claude/commands/
 
-# Transient sim session state
+# Transient sim session state (not the learning profile/journal)
 learning/sessions/
