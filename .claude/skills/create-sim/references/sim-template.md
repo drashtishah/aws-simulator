@@ -19,7 +19,9 @@ sims/001-s3-bucket-breach/
   story.md             -- Narrative for the Narrator agent (opening, resolution)
   resolution.md        -- Root cause explanation, AWS docs, learning objectives
   artifacts/
-    architecture.txt   -- REQUIRED: ASCII infrastructure diagram
+    context.txt              -- REQUIRED: briefing card for sim opening
+    architecture-hint.txt    -- REQUIRED: clean ASCII diagram (late hint)
+    architecture-resolution.txt -- REQUIRED: marked ASCII diagram (debrief)
     bucket-policy.json -- S3 bucket policy in native AWS format
     iam-policy.json    -- IAM policy document in native AWS format
     cloudtrail-events.json -- CloudTrail event records
@@ -329,9 +331,83 @@ CloudTrail logs every S3 management API call (PutBucketPolicy, DeleteBucketPolic
 
 Every artifact must be in its native AWS format. No markdown wrappers. The play skill serves these files directly to the player when they query a service agent.
 
-### artifacts/architecture.txt (REQUIRED for every sim)
+### artifacts/context.txt (REQUIRED for every sim)
 
-ASCII diagram of the infrastructure. Shows the components involved in the incident and their relationships.
+Plain-text briefing card shown at sim start. Provides orientation without architecture details.
+
+```
+Company: NovaPay (Series B startup, 45 engineers)
+Industry: Fintech / payment processing
+Users: 2,300 small merchants across the eastern seaboard, $4.2M daily transaction volume
+AWS Services: Amazon S3, AWS IAM, AWS CloudTrail
+Your role: Incident Commander, 3:14 AM Tuesday
+Situation: External security researcher reported that transaction report files are downloadable by anyone with the URL
+```
+
+> [!tip] Context Card Rules
+> - One line per field, six fields total
+> - Users line includes concrete numbers
+> - Situation is factual, not dramatic -- states what happened, not how to feel
+> - AWS Services uses official names
+> - No markers, no hints about the root cause
+
+### artifacts/architecture-hint.txt (REQUIRED for every sim)
+
+ASCII diagram of the infrastructure. Same detail as the resolution version but with NO problem markers. Shown as a late hint when the player is stuck.
+
+```
+                                    +------------------+
+                                    |   Internet       |
+                                    +--------+---------+
+                                             |
+                                    +--------v---------+
+                                    | CloudFront       |
+                                    | (d1a2b3c4.cf.net)|
+                                    +--------+---------+
+                                             |
+                               +-------------+-------------+
+                               |                           |
+                      +--------v---------+       +---------v--------+
+                      | ALB              |       | S3 Bucket        |
+                      | novapay-prod-alb |       | novapay-txn-rpts |
+                      +--------+---------+       +------------------+
+                               |                   ^
+                      +--------v---------+         | PutObject
+                      | ECS Cluster      |         | (daily reports)
+                      | novapay-prod     |         |
+                      | +--------------+ |         |
+                      | | txn-service  +-----------+
+                      | +--------------+ |
+                      +--------+---------+
+                               |
+                      +--------v---------+
+                      | RDS PostgreSQL   |
+                      | novapay-prod-db  |
+                      | (Multi-AZ)       |
+                      +------------------+
+
+  IAM Role: novapay-ecs-task-role
+    -> Allows: s3:PutObject on novapay-txn-rpts/*
+    -> Allows: rds-data:ExecuteStatement
+
+  Bucket Policy: novapay-txn-rpts
+    -> Allows: s3:GetObject (see policy document for details)
+
+  CloudTrail: novapay-prod-trail
+    -> Logging: management events (all regions)
+    -> S3 data events: enabled for novapay-txn-rpts
+```
+
+> [!tip] Architecture Hint Rules
+> - Use ASCII box-drawing characters (`+`, `-`, `|`, `>`, `v`, `^`)
+> - Label every component with its actual resource name
+> - Do NOT include problem markers -- no `[PUBLIC ACCESS]`, `[DELETED]`, `[WRONG REGION]` etc.
+> - Include IAM roles and permissions as annotations (these are factual)
+> - Show data flow direction with arrows
+
+### artifacts/architecture-resolution.txt (REQUIRED for every sim)
+
+Same diagram as architecture-hint.txt but with problem areas marked. Shown only during the resolution debrief.
 
 ```
                                     +------------------+
@@ -376,12 +452,10 @@ ASCII diagram of the infrastructure. Shows the components involved in the incide
     -> S3 data events: enabled for novapay-txn-rpts
 ```
 
-> [!tip] Architecture Diagram Rules
-> - Use ASCII box-drawing characters (`+`, `-`, `|`, `>`, `v`, `^`)
-> - Label every component with its actual resource name
-> - Mark the problem area clearly (e.g., `[PUBLIC ACCESS]`)
-> - Include IAM roles and their permissions as annotations below the diagram
-> - Show data flow direction with arrows
+> [!tip] Architecture Resolution Rules
+> - Identical to architecture-hint.txt plus problem markers
+> - Mark the problem area clearly with `[ALL CAPS DESCRIPTION]` (e.g., `[PUBLIC ACCESS]`)
+> - May include problem annotation lines below the diagram
 
 ### artifacts/bucket-policy.json
 

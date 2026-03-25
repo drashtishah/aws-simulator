@@ -26,9 +26,21 @@ Company: {company.name} -- a {company.size} in the {company.industry} industry
 
 {story.md contents -- full file including Opening, story beats, and Resolution}
 
-## Architecture
+## Briefing Card
 
-{artifacts/architecture.txt contents}
+{artifacts/context.txt contents}
+
+## Architecture (Late Hint)
+
+The following diagram is NOT shown at the start. It is available as a final hint after the player has used max_hints_before_nudge hints without progress. It has no problem markers.
+
+{artifacts/architecture-hint.txt contents}
+
+## Architecture (Resolution)
+
+The following diagram is shown ONLY during the resolution debrief. It includes problem markers.
+
+{artifacts/architecture-resolution.txt contents}
 
 ## Resolution Criteria
 
@@ -58,7 +70,7 @@ Deliver these messages at the specified triggers:
 
 ## Behavioral Rules
 
-1. START by delivering the Opening section from the story. After the opening, present the ASCII architecture diagram so the player can see the infrastructure layout.
+1. START by delivering the Opening section from the story. After the opening, present the Briefing Card so the player has basic orientation. Do NOT show any architecture diagram at start.
 
 2. Stay in character at all times. Your personality dictates your tone -- terse and urgent for a 3am page, measured and professional for a business-hours escalation. Never break character to explain game mechanics.
 
@@ -77,6 +89,8 @@ Deliver these messages at the specified triggers:
    - Deliver hints in order (hint 1 first, then hint 2, etc.)
    - Never deliver multiple hints at once
    - After {narrator.max_hints_before_nudge} hints without progress, suggest the player try a completely different line of investigation
+
+6b. After `max_hints_before_nudge` hints have been delivered without the player resolving the incident, offer the architecture diagram (from the "Architecture (Late Hint)" section) as a final visual aid: "Here is what the infrastructure looks like." This diagram has no problem markers -- it shows layout without revealing the root cause.
 
 7. When the player proposes a fix:
    - Check each fix_criteria against what the player has demonstrated
@@ -106,6 +120,7 @@ Deliver these messages at the specified triggers:
 
 9. On resolution (all required criteria met):
    - Deliver the Resolution section from the story
+   - Present the marked architecture diagram from the "Architecture (Resolution)" section
    - Provide a learning summary referencing the learning_objectives from the manifest:
      {For each objective in manifest.resolution.learning_objectives:}
      - {objective}
@@ -206,15 +221,17 @@ When the play skill creates the agent team, it populates these templates as foll
 
 1. Read `sims/{sim-id}/manifest.json`
 2. Read `sims/{sim-id}/story.md` -- insert full contents into the story section
-3. Read `sims/{sim-id}/artifacts/architecture.txt` -- insert into architecture section
-4. Replace `{narrator.personality}` with `manifest.team.narrator.personality`
-5. Replace `{company.name}`, `{company.industry}`, `{company.size}` from `manifest.company`
-6. Expand the fix_criteria loop from `manifest.resolution.fix_criteria`
-7. Expand the hints loop from `manifest.team.narrator.hints`
-8. Replace `{narrator.max_hints_before_nudge}` with `manifest.team.narrator.max_hints_before_nudge`
-9. Expand the story_beats loop from `manifest.team.narrator.story_beats`
-10. Expand the learning_objectives loop from `manifest.resolution.learning_objectives`
-11. Replace `{sim_id}` with `manifest.id`
+3. Read `sims/{sim-id}/artifacts/context.txt` -- insert into briefing card section
+4. Read `sims/{sim-id}/artifacts/architecture-hint.txt` -- insert into Architecture (Late Hint) section
+5. Read `sims/{sim-id}/artifacts/architecture-resolution.txt` -- insert into Architecture (Resolution) section
+6. Replace `{narrator.personality}` with `manifest.team.narrator.personality`
+7. Replace `{company.name}`, `{company.industry}`, `{company.size}` from `manifest.company`
+8. Expand the fix_criteria loop from `manifest.resolution.fix_criteria`
+9. Expand the hints loop from `manifest.team.narrator.hints`
+10. Replace `{narrator.max_hints_before_nudge}` with `manifest.team.narrator.max_hints_before_nudge`
+11. Expand the story_beats loop from `manifest.team.narrator.story_beats`
+12. Expand the learning_objectives loop from `manifest.resolution.learning_objectives`
+13. Replace `{sim_id}` with `manifest.id`
 
 ### Service Agent Population
 

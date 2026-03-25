@@ -83,7 +83,9 @@ Read the selected sim's files:
 
 - `sims/{id}/manifest.json` -- full manifest
 - `sims/{id}/story.md` -- narrative
-- `sims/{id}/artifacts/architecture.txt` -- ASCII diagram
+- `sims/{id}/artifacts/context.txt` -- briefing card for opening
+- `sims/{id}/artifacts/architecture-hint.txt` -- clean architecture diagram (late hint)
+- `sims/{id}/artifacts/architecture-resolution.txt` -- marked architecture diagram (debrief)
 - All artifact files referenced in `manifest.team.agents[].artifacts`
 
 ### 6. Prepare Prompt Templates
@@ -101,7 +103,9 @@ Populate the Narrator prompt template from `references/agent-prompts.md`:
 - Insert `manifest.team.narrator.personality`
 - Insert `manifest.company` fields (name, industry, size)
 - Insert full contents of `story.md`
-- Insert full contents of `artifacts/architecture.txt`
+- Insert full contents of `artifacts/context.txt`
+- Insert full contents of `artifacts/architecture-hint.txt`
+- Insert full contents of `artifacts/architecture-resolution.txt`
 - Insert `manifest.resolution.fix_criteria` (with required/optional flags)
 - Insert `manifest.team.narrator.hints` (ordered list)
 - Insert `manifest.team.narrator.max_hints_before_nudge`
@@ -140,7 +144,7 @@ If the user chose to resume an in-progress session:
 Send a message to the Narrator to begin. The Narrator will:
 
 1. Deliver the Opening section from story.md
-2. Present the ASCII architecture diagram
+2. Present the briefing card from artifacts/context.txt
 3. Wait for the player to begin investigating
 
 ### 12. Player Investigation Loop
@@ -169,6 +173,14 @@ The Narrator manages story beats per the manifest triggers:
 - Action-based beats fire on specific player actions
 - The "fix_validated" beat fires when all required criteria are met
 
+### 14b. Architecture Diagram as Final Hint
+
+After the player has used `max_hints_before_nudge` hints without progress, the Narrator offers the architecture diagram as a final visual aid:
+
+"Here is what the infrastructure looks like."
+
+Then display the contents of `artifacts/architecture-hint.txt`. This is the last nudge before the Narrator begins giving direct guidance toward the answer. The diagram has NO problem markers -- it shows the infrastructure layout without revealing the root cause.
+
 ### 15. Fix Validation
 
 When the player proposes a fix, the Narrator checks it against `manifest.resolution.fix_criteria`:
@@ -185,7 +197,8 @@ When the player proposes a fix, the Narrator checks it against `manifest.resolut
 The Narrator:
 
 1. Delivers the Resolution section from story.md
-2. Provides a learning summary referencing the manifest's learning_objectives
+2. Presents the marked architecture diagram from artifacts/architecture-resolution.txt
+3. Provides a learning summary referencing the manifest's learning_objectives
 3. Updates session state to `"status": "resolved"`
 4. Signals: "SIMULATION COMPLETE. Generating coaching analysis."
 

@@ -105,10 +105,42 @@ For each approved scenario, execute steps 12-19:
 
 Every sim MUST include these artifacts at minimum:
 
-| File | Format | Purpose |
-|---|---|---|
-| `architecture.txt` | ASCII diagram | Infrastructure layout with problem area marked |
-| At least 2 service-specific artifacts | Native AWS format | Evidence for investigation |
+| File | Format | Purpose | When Shown |
+|---|---|---|---|
+| `context.txt` | Structured briefing card | Orientation at sim start | Opening |
+| `architecture-hint.txt` | ASCII diagram, clean | Late hint for stuck players | After hints exhausted |
+| `architecture-resolution.txt` | ASCII diagram, marked | Answer key with problem areas | Resolution debrief |
+| At least 2 service-specific artifacts | Native AWS format | Evidence for investigation | On query |
+
+**context.txt format:**
+
+A plain-text briefing card. No boxes, no arrows, no diagrams. One line per field.
+
+```
+Company: {name} ({size})
+Industry: {industry}
+Users: {concrete user description with numbers}
+AWS Services: {official service names, comma-separated}
+Your role: {role and time context}
+Situation: {one sentence, what brought you here}
+```
+
+Rules for context.txt:
+- Users line includes concrete numbers, not "many users"
+- Situation line is factual, not dramatic
+- AWS Services uses official names from catalog.csv
+- No markers, no hints about the root cause
+
+**architecture-hint.txt rules:**
+- Same level of detail as architecture-resolution.txt but with ALL problem markers removed
+- No `[PROBLEM]`, `[PUBLIC ACCESS]`, `[DELETED]`, `[WRONG REGION]`, or similar annotations
+- IAM roles, permissions, and data flow arrows are shown (these are factual, not hints)
+- Resource names match the company story
+
+**architecture-resolution.txt rules:**
+- Identical to architecture-hint.txt plus problem markers
+- Markers use the format `[ALL CAPS DESCRIPTION]` next to the affected resource
+- May include annotation lines below the diagram explaining the problem area
 
 Common artifact types (generate as needed based on services involved):
 
@@ -139,7 +171,10 @@ Artifact rules:
 - Verify `manifest.json` structure matches `assets/manifest-schema.json`
 - Confirm every artifact referenced in manifest `agents[].artifacts` exists
 - Confirm every service in `manifest.services` has a corresponding agent
-- Confirm `architecture.txt` exists
+- Confirm `context.txt` exists and follows the briefing card format (6 fields, one per line)
+- Confirm `architecture-hint.txt` exists and contains NO problem markers
+- Confirm `architecture-resolution.txt` exists and contains problem markers
+- Confirm `architecture.txt` does NOT exist (old format removed)
 - Confirm `story.md` and `resolution.md` have valid Obsidian frontmatter
 
 ### Phase 5: Register and Index
@@ -234,7 +269,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 4. AWS vocabulary throughout -- use official service names (Amazon S3, not "S3 storage"), official API action names (PutBucketPolicy, not "change bucket settings")
 5. Artifacts in native AWS formats -- never wrap AWS JSON/logs in markdown code blocks within artifact files
 6. Every sim requires at least 2 service agents plus the narrator
-7. `architecture.txt` is REQUIRED for every simulation package
+7. Three diagram files are REQUIRED for every sim: `context.txt`, `architecture-hint.txt`, `architecture-resolution.txt`
 8. Difficulty must match cert level: Level 1-2 for Associate services, Level 3-4 for Professional/Specialty services
 9. Company names must feel real -- match the industry, sound like a startup or enterprise that could exist
 10. Sim IDs are globally unique and sequential -- always check registry.json for the next available number
