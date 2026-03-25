@@ -1,8 +1,8 @@
 service,full_name,category,exam_priority,difficulty_level,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
 ec2,Amazon EC2,compute,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,1,2026-03-24,001-ec2-unreachable: identified missing port 443 inbound rule on security group; understood security group deny-by-default behavior
-lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
+lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,1,2026-03-25,006-wrong-region: identified function deployed to us-west-2 instead of us-east-1; understood regional nature of Lambda ARNs and CLI region resolution chain
 s3,Amazon S3,storage,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
+iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,006-wrong-region: queried aws configure list and sts get-caller-identity to trace CI/CD identity and region source
 vpc,Amazon VPC,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,1,2026-03-24,001-ec2-unreachable: did not query this service
 rds,Amazon RDS,database,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 dynamodb,Amazon DynamoDB,database,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
@@ -11,7 +11,7 @@ sqs,Amazon SQS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 sns,Amazon SNS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 elb,Elastic Load Balancing,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 auto-scaling,AWS Auto Scaling,compute,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,1,2026-03-24,001-ec2-unreachable: did not query this service
+cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,2,2026-03-25,001-ec2-unreachable: did not query this service; 006-wrong-region: did not query this service
 route53,Amazon Route 53,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 kms,AWS KMS,security,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 ebs,Amazon EBS,storage,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,

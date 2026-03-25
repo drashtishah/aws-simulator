@@ -1,27 +1,29 @@
 {
-  "current_level": 1,
-  "completed_sims": ["001-ec2-unreachable"],
-  "unlocked_levels": [1],
+  "current_level": 2,
+  "completed_sims": ["001-ec2-unreachable", "006-wrong-region"],
+  "unlocked_levels": [1, 2],
   "service_exposure": {
     "ec2": 1,
     "vpc": 1,
-    "cloudwatch": 1
+    "cloudwatch": 2,
+    "lambda": 1,
+    "iam": 1
   },
   "question_patterns": {
     "first_action_frequency": {
       "logs": 0,
       "permissions": 0,
-      "architecture": 1,
+      "architecture": 2,
       "metrics": 0,
       "recent_changes": 0,
       "immediate_fix": 0
     },
-    "avg_questions_before_fix": 3,
-    "audit_trail_check_rate": 0.0,
-    "multi_service_investigation_rate": 0.0
+    "avg_questions_before_fix": 4.5,
+    "audit_trail_check_rate": 0.5,
+    "multi_service_investigation_rate": 0.5
   },
-  "weaknesses": ["vpc", "cloudwatch"],
-  "strengths": [],
-  "total_sessions": 1,
-  "last_session": "2026-03-24"
+  "weaknesses": ["cloudwatch"],
+  "strengths": ["lambda"],
+  "total_sessions": 2,
+  "last_session": "2026-03-25"
 }

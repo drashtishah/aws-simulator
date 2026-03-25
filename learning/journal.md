@@ -26,3 +26,22 @@ Strong architectural instinct -- started by understanding the infrastructure lay
 ### Key takeaway
 
 Security groups are deny-by-default firewalls. If no inbound rule explicitly allows traffic on a port, that traffic is silently dropped.
+
+## A Function in the Wrong Room
+
+- **Date**: 2026-03-25
+- **Sim**: [[006-wrong-region]]
+- **Difficulty**: 1
+- **Category**: operations
+- **Services**: Lambda, CloudWatch, IAM
+- **Questions asked**: 6
+- **Hints used**: 0
+- **Criteria met**: 3 / 3
+
+### Coaching summary
+
+Solved with zero hints by methodically tracing the deployment path: checked Lambda in us-east-1 (not found), found it in us-west-2, then traced the cause to AWS_DEFAULT_REGION in the CI/CD pipeline. Good audit trail instinct -- asked who made the change and when. Needs to broaden investigation to include CloudWatch logs, which contained the full API Gateway error trace.
+
+### Key takeaway
+
+AWS resources are regional. When a resource "does not exist" but was successfully deployed, check which region the CLI is targeting. `aws configure list` shows the active region and its source in one command.

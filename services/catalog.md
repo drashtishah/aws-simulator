@@ -6,7 +6,7 @@ aliases:
 tags:
   - type/reference
   - domain/aws-simulator
-date: 2026-03-24
+date: 2026-03-25
 ---
 
 # AWS Services Catalog
@@ -78,7 +78,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| iam | AWS IAM | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| iam | AWS IAM | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (1) |
 | kms | AWS KMS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | security-groups | Security Groups | 2 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | nacls | Network ACLs | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
@@ -114,7 +114,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (0) |
+| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started (0) |
 | cloudformation | AWS CloudFormation | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | cloudtrail | AWS CloudTrail | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | systems-manager | AWS Systems Manager | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
@@ -183,7 +183,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| lambda | AWS Lambda | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| lambda | AWS Lambda | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
 | api-gateway | Amazon API Gateway | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | step-functions | AWS Step Functions | 2 | 3 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | appsync | AWS AppSync | 3 | 3 | SAA-C03; DVA-C02 | Not started |
