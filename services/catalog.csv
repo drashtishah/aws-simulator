@@ -2,7 +2,7 @@ service,full_name,category,exam_priority,difficulty_level,cert_relevance,knowled
 ec2,Amazon EC2,compute,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,001-ec2-unreachable: identified missing port 443 inbound rule on security group; understood security group deny-by-default behavior; 003-rds-storage-full: reviewed application logs on EC2 instances to confirm MySQL error 1114 across multiple tables
 lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,1,2026-03-25,006-wrong-region: identified function deployed to us-west-2 instead of us-east-1; understood regional nature of Lambda ARNs and CLI region resolution chain
 s3,Amazon S3,storage,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,006-wrong-region: queried aws configure list and sts get-caller-identity to trace CI/CD identity and region source
+iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,006-wrong-region: queried aws configure list and sts get-caller-identity to trace CI/CD identity and region source; 009-credential-chain: identified deactivated user raj.patel via access key metadata and offboarding tags; understood credential resolution chain priority order and env var override of instance profile
 vpc,Amazon VPC,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,1,2026-03-24,001-ec2-unreachable: did not query this service
 rds,Amazon RDS,database,1,2,SAA-C03;SAP-C02;DVA-C02,2,1,2026-03-25,003-rds-storage-full: identified zero FreeStorageSpace as root cause; investigated binlog and slow query log accumulation; understood AllocatedStorage vs MaxAllocatedStorage and parameter group configuration
 dynamodb,Amazon DynamoDB,database,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
@@ -20,7 +20,7 @@ elasticache,Amazon ElastiCache,database,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 api-gateway,Amazon API Gateway,serverless,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 cloudformation,AWS CloudFormation,management,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 cloudtrail,AWS CloudTrail,management,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-secrets-manager,AWS Secrets Manager,security,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
+secrets-manager,AWS Secrets Manager,security,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,009-credential-chain: queried CloudTrail events via this console; identified raj.patel as the authenticating principal across all failed API calls
 security-groups,Security Groups,security,2,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 nacls,Network ACLs,security,2,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
 waf,AWS WAF,security,2,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
@@ -79,7 +79,7 @@ amplify,AWS Amplify,developer-tools,4,2,DVA-C02,0,0,,
 codecommit,AWS CodeCommit,developer-tools,2,2,DVA-C02,0,0,,
 elastic-beanstalk,AWS Elastic Beanstalk,compute,2,2,SAA-C03;DVA-C02,0,0,,
 parameter-store,AWS Systems Manager Parameter Store,management,2,2,SAA-C03;DVA-C02;SCS-C02,0,0,,
-sts,AWS STS,security,2,2,SAA-C03;DVA-C02;SCS-C02,0,0,,
+sts,AWS STS,security,2,2,SAA-C03;DVA-C02;SCS-C02,0,1,2026-03-25,009-credential-chain: did not query STS console directly; did not run sts get-caller-identity independently
 firewall-manager,AWS Firewall Manager,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
 cloudhsm,AWS CloudHSM,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
 network-firewall,AWS Network Firewall,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,

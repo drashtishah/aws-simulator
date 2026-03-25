@@ -9,6 +9,7 @@ tags:
 date: 2026-03-25
 updated: 2026-03-25
 ---
+---
 
 # AWS Services Catalog
 
@@ -79,14 +80,14 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| iam | AWS IAM | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (1) |
+| iam | AWS IAM | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (3) |
 | kms | AWS KMS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | security-groups | Security Groups | 2 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | nacls | Network ACLs | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
 | waf | AWS WAF | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
 | cognito | Amazon Cognito | 2 | 2 | SAA-C03; DVA-C02; SCS-C02 | Not started |
-| secrets-manager | AWS Secrets Manager | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
-| sts | AWS STS | 2 | 2 | SAA-C03; DVA-C02; SCS-C02 | Not started |
+| secrets-manager | AWS Secrets Manager | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (1) |
+| sts | AWS STS | 2 | 2 | SAA-C03; DVA-C02; SCS-C02 | In progress (0) |
 | shield | AWS Shield | 3 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
 | guardduty | Amazon GuardDuty | 3 | 3 | SAA-C03; SAP-C02; SCS-C02 | Not started |
 | macie | Amazon Macie | 3 | 3 | SAA-C03; SAP-C02; SCS-C02 | Not started |

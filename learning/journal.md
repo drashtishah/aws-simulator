@@ -64,3 +64,22 @@ Metrics-first investigation -- went straight to CloudWatch and identified FreeSt
 ### Key takeaway
 
 When a database stops accepting writes but reads still work, storage exhaustion is the most likely cause. Always monitor FreeStorageSpace with a CloudWatch alarm, and enable RDS storage auto-scaling to prevent this class of outage entirely.
+
+## Someone Else's Keys
+
+- **Date**: 2026-03-25
+- **Sim**: [[009-credential-chain]]
+- **Difficulty**: 1
+- **Category**: security
+- **Services**: IAM, STS, Secrets Manager
+- **Questions asked**: 8
+- **Hints used**: 0
+- **Criteria met**: 4 / 4
+
+### Coaching summary
+
+Audit-trail-first investigation -- went straight to CloudTrail and identified raj.patel as the authenticating principal on all failed calls. Followed the thread to IAM, discovered the deactivated user and Inactive access key, then hypothesized environment variables as the override mechanism before being prompted. Confirmed via `aws configure list`. Zero hints used. Did not independently run `aws sts get-caller-identity` or ask about blast radius and monitoring gaps.
+
+### Key takeaway
+
+When you see AccessDenied on an EC2 instance, always check what identity the CLI is actually using with `aws sts get-caller-identity` and `aws configure list`. Environment variables take precedence over instance profiles in the AWS credential resolution chain, and stale credentials left by former engineers are a common source of silent authentication failures.

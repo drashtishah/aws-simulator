@@ -1,14 +1,16 @@
 {
   "current_level": 2,
-  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full"],
+  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full", "009-credential-chain"],
   "unlocked_levels": [1, 2],
   "service_exposure": {
     "ec2": 2,
     "vpc": 1,
     "cloudwatch": 3,
     "lambda": 1,
-    "iam": 1,
-    "rds": 1
+    "iam": 2,
+    "rds": 1,
+    "sts": 1,
+    "secrets-manager": 1
   },
   "question_patterns": {
     "first_action_frequency": {
@@ -16,15 +18,15 @@
       "permissions": 0,
       "architecture": 2,
       "metrics": 1,
-      "recent_changes": 0,
+      "recent_changes": 1,
       "immediate_fix": 0
     },
-    "avg_questions_before_fix": 4.67,
-    "audit_trail_check_rate": 0.5,
-    "multi_service_investigation_rate": 0.67
+    "avg_questions_before_fix": 5.5,
+    "audit_trail_check_rate": 0.63,
+    "multi_service_investigation_rate": 0.75
   },
-  "weaknesses": [],
+  "weaknesses": ["sts"],
   "strengths": ["lambda", "rds"],
-  "total_sessions": 3,
+  "total_sessions": 4,
   "last_session": "2026-03-25"
 }
