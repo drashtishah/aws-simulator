@@ -83,3 +83,22 @@ Audit-trail-first investigation -- went straight to CloudTrail and identified ra
 ### Key takeaway
 
 When you see AccessDenied on an EC2 instance, always check what identity the CLI is actually using with `aws sts get-caller-identity` and `aws configure list`. Environment variables take precedence over instance profiles in the AWS credential resolution chain, and stale credentials left by former engineers are a common source of silent authentication failures.
+
+## Nine Hundred Dollars for Nothing
+
+- **Date**: 2026-03-25
+- **Sim**: [[011-nat-gateway-cost]]
+- **Difficulty**: 1
+- **Category**: cost
+- **Services**: NAT Gateway, S3, VPC, CloudWatch
+- **Questions asked**: 8
+- **Hints used**: 0
+- **Criteria met**: 4 / 4
+
+### Coaching summary
+
+Architecture-first investigation -- started by understanding what a NAT Gateway is, how private subnets work, and how traffic flows to S3. Identified the empty VpcEndpoints array in the VPC console and proposed an S3 gateway endpoint as the fix. Zero hints used. Checked Cost Explorer to confirm billing data. Did not ask about monitoring gaps or blast radius, and needed coaching to connect the per-GB pricing to the actual daily charge.
+
+### Key takeaway
+
+When resources in a private subnet talk to AWS services like S3, check whether a VPC gateway endpoint exists. Gateway endpoints for S3 and DynamoDB are free and eliminate NAT Gateway data processing charges -- one of the most common sources of unexpected AWS bills.

@@ -37,7 +37,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| s3 | Amazon S3 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
+| s3 | Amazon S3 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (1) |
 | ebs | Amazon EBS | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | efs | Amazon EFS | 2 | 2 | SAA-C03; SAP-C02 | Not started |
 | backup | AWS Backup | 3 | 3 | SAA-C03; SAP-C02 | Not started |
@@ -63,12 +63,12 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| vpc | Amazon VPC | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (0) |
+| vpc | Amazon VPC | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
 | cloudfront | Amazon CloudFront | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | elb | Elastic Load Balancing | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | route53 | Amazon Route 53 | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | vpn | AWS Site-to-Site VPN | 2 | 2 | SAA-C03; SAP-C02 | Not started |
-| nat-gateway | NAT Gateway | 2 | 2 | SAA-C03; SAP-C02 | Not started |
+| nat-gateway | NAT Gateway | 2 | 2 | SAA-C03; SAP-C02 | In progress (2) |
 | direct-connect | AWS Direct Connect | 3 | 3 | SAA-C03; SAP-C02 | Not started |
 | transit-gateway | AWS Transit Gateway | 3 | 3 | SAA-C03; SAP-C02 | Not started |
 | global-accelerator | AWS Global Accelerator | 3 | 3 | SAA-C03; SAP-C02 | Not started |
@@ -116,7 +116,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
+| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (3) |
 | cloudformation | AWS CloudFormation | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | cloudtrail | AWS CloudTrail | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | systems-manager | AWS Systems Manager | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
