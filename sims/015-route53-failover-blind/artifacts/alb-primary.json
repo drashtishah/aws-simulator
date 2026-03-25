@@ -1,0 +1,127 @@
+{
+  "LoadBalancers": [
+    {
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:847362910293:loadbalancer/app/spellbook-prod-alb-east/1a2b3c4d5e6f7890",
+      "DNSName": "spellbook-prod-alb-east-1847362910.us-east-1.elb.amazonaws.com",
+      "CanonicalHostedZoneId": "Z35SXDOTRQ7X7K",
+      "CreatedTime": "2025-09-25T14:08:22Z",
+      "LoadBalancerName": "spellbook-prod-alb-east",
+      "Scheme": "internet-facing",
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "State": {
+        "Code": "active"
+      },
+      "Type": "application",
+      "AvailabilityZones": [
+        {
+          "ZoneName": "us-east-1a",
+          "SubnetId": "subnet-0a1b2c3d4e5f6789a"
+        },
+        {
+          "ZoneName": "us-east-1b",
+          "SubnetId": "subnet-0a1b2c3d4e5f6789b"
+        },
+        {
+          "ZoneName": "us-east-1c",
+          "SubnetId": "subnet-0a1b2c3d4e5f6789c"
+        }
+      ],
+      "SecurityGroups": ["sg-0a1b2c3d4e5f67890"],
+      "IpAddressType": "ipv4"
+    }
+  ],
+  "Listeners": [
+    {
+      "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:847362910293:listener/app/spellbook-prod-alb-east/1a2b3c4d5e6f7890/a1b2c3d4e5f67890",
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:847362910293:loadbalancer/app/spellbook-prod-alb-east/1a2b3c4d5e6f7890",
+      "Port": 443,
+      "Protocol": "HTTPS",
+      "SslPolicy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+      "Certificates": [
+        {
+          "CertificateArn": "arn:aws:acm:us-east-1:847362910293:certificate/f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+        }
+      ],
+      "DefaultActions": [
+        {
+          "Type": "forward",
+          "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:847362910293:targetgroup/spellbook-east-tg/a1b2c3d4e5f67890"
+        }
+      ]
+    }
+  ],
+  "TargetGroups": [
+    {
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:847362910293:targetgroup/spellbook-east-tg/a1b2c3d4e5f67890",
+      "TargetGroupName": "spellbook-east-tg",
+      "Protocol": "HTTP",
+      "Port": 8080,
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "HealthCheckProtocol": "HTTP",
+      "HealthCheckPort": "8080",
+      "HealthCheckPath": "/healthz",
+      "HealthCheckIntervalSeconds": 15,
+      "HealthCheckTimeoutSeconds": 5,
+      "HealthyThresholdCount": 2,
+      "UnhealthyThresholdCount": 3,
+      "TargetType": "ip",
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:us-east-1:847362910293:loadbalancer/app/spellbook-prod-alb-east/1a2b3c4d5e6f7890"
+      ]
+    }
+  ],
+  "TargetHealth": [
+    {
+      "Target": {
+        "Id": "10.0.1.42",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1a"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "unhealthy",
+        "Reason": "Target.Timeout",
+        "Description": "Request timed out"
+      }
+    },
+    {
+      "Target": {
+        "Id": "10.0.2.87",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1b"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "draining",
+        "Reason": "Target.DeregistrationInProgress",
+        "Description": "Target deregistration is in progress"
+      }
+    },
+    {
+      "Target": {
+        "Id": "10.0.1.103",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1a"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "unhealthy",
+        "Reason": "Target.Timeout",
+        "Description": "Request timed out"
+      }
+    },
+    {
+      "Target": {
+        "Id": "10.0.3.21",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1c"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "unavailable",
+        "Reason": "Target.InvalidState",
+        "Description": "Target is in an Availability Zone that is not enabled for the load balancer"
+      }
+    }
+  ]
+}

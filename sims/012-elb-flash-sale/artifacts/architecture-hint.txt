@@ -1,0 +1,49 @@
+  VPC: vpc-0e7a3b5c9d1f24680 (10.0.0.0/16) -- us-east-1
+
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Public Subnet: 10.0.1.0/24 (us-east-1a, us-east-1b)                 |
+  |                                                                       |
+  |  +---------------------------+       +---------------------+          |
+  |  | ALB                       |       | Internet Gateway    |          |
+  |  | vellora-prod-alb          |       | igw-0c4d5e6f7a8b9   |          |
+  |  | internet-facing           |<------| (public traffic)    |          |
+  |  | vellora-prod-alb-1234.    |       |                     |          |
+  |  |   us-east-1.elb.          |       +---------------------+          |
+  |  |   amazonaws.com           |                                        |
+  |  +-------------+-------------+                                        |
+  |                |                                                       |
+  +-----------------------------------------------------------------------+
+                   |
+                   | routes to Target Group
+                   |
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Private Subnet: 10.0.2.0/24 (us-east-1a, us-east-1b)               |
+  |                                                                       |
+  |  +-- Auto Scaling Group: vellora-web-asg -------------------------+  |
+  |  |   Min: 2 | Max: 20 | Desired: 2                                |  |
+  |  |                                                                 |  |
+  |  |  +---------------------+       +---------------------+         |  |
+  |  |  | EC2: vellora-web-01 |       | EC2: vellora-web-02 |         |  |
+  |  |  | i-0f3a7c9e1b5d82001 |       | i-0f3a7c9e1b5d82002 |         |  |
+  |  |  | t3.large            |       | t3.large            |         |  |
+  |  |  | 10.0.2.11           |       | 10.0.2.12           |         |  |
+  |  |  +----------+----------+       +----------+----------+         |  |
+  |  |             |                              |                    |  |
+  |  +-------------+------------------------------+--------------------+  |
+  |                |                              |                       |
+  |  Target Group: vellora-web-tg (port 8080, HTTP)                      |
+  |                                                                       |
+  +-----------------------------------------------------------------------+
+                   |
+                   | database connections
+                   |
+  +-----------------------------------------------------------------------+
+  |  RDS: vellora-prod-db                                                 |
+  |  db.r5.large | PostgreSQL 15.4 | Multi-AZ                            |
+  |  vellora-prod-db.c9a8b7d6e5f4.us-east-1.rds.amazonaws.com            |
+  +-----------------------------------------------------------------------+
+
+  CloudWatch --> Auto Scaling Group (scaling policies)
+  Alarm: vellora-cpu-high (CPUUtilization > 70%, 2 eval periods of 60s)

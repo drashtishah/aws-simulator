@@ -1,0 +1,43 @@
+                                    +------------------+
+                                    |    Internet      |
+                                    +--------+---------+
+                                             |
+                                    +--------v---------+
+                                    | Route 53         |
+                                    | docs.spellbook   |
+                                    | .dev             |
+                                    | (failover        |
+                                    |  routing)        |
+                                    +--------+---------+
+                                             |
+                           +-----------------+-----------------+
+                           |  PRIMARY                          |  SECONDARY
+                           |                                   |
+                  +--------v---------+                +--------v---------+
+                  | ALB us-east-1    |                | ALB eu-west-1    |
+                  | spellbook-prod-  |                | spellbook-prod-  |
+                  | alb-east         |                | alb-west         |
+                  +--------+---------+                +--------+---------+
+                           |                                   |
+                  +--------v---------+                +--------v---------+
+                  | ECS Cluster      |                | ECS Cluster      |
+                  | spellbook-east   |                | spellbook-west   |
+                  | (4 tasks)        |                | (4 tasks)        |
+                  +--------+---------+                +--------+---------+
+                           |                                   |
+                  +--------v---------+                +--------v---------+
+                  | DocumentDB       |                | DocumentDB       |
+                  | spellbook-prod   |                | (global cluster  |
+                  | (primary)        |                |  replica)        |
+                  +------------------+                +------------------+
+
+  Route 53 Health Check: hc-spellbook-prod-primary
+    -> Associated with primary failover record
+
+  ALB Listeners:
+    -> us-east-1: HTTPS 443
+    -> eu-west-1: HTTPS 443
+
+  ECS Service: spellbook-docs-service
+    -> Container port: 8080
+    -> ALB target group port: 443 -> 8080

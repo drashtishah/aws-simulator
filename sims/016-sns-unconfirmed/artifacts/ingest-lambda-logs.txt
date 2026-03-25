@@ -1,0 +1,40 @@
+2026-03-26T10:02:14.001Z  START RequestId: aa1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d Version: $LATEST
+2026-03-26T10:02:14.045Z  INFO  Processing batch of 12 records from Kinesis shard shardId-000000000001
+2026-03-26T10:02:14.312Z  ERROR ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded. Consider increasing your provisioning level with the UpdateTable API.
+2026-03-26T10:02:14.313Z  ERROR Failed to write batch to DynamoDB table clarabridge-dashboards. 12 records failed.
+2026-03-26T10:02:14.314Z  END RequestId: aa1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+2026-03-26T10:02:14.314Z  REPORT RequestId: aa1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d  Duration: 313.42 ms  Billed Duration: 314 ms  Memory Size: 256 MB  Max Memory Used: 89 MB
+
+2026-03-26T10:02:18.112Z  START RequestId: bb2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e Version: $LATEST
+2026-03-26T10:02:18.145Z  INFO  Processing batch of 15 records from Kinesis shard shardId-000000000002
+2026-03-26T10:02:18.398Z  ERROR ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded.
+2026-03-26T10:02:18.399Z  ERROR Failed to write batch to DynamoDB table clarabridge-dashboards. 15 records failed.
+2026-03-26T10:02:18.400Z  END RequestId: bb2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e
+2026-03-26T10:02:18.400Z  REPORT RequestId: bb2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e  Duration: 288.76 ms  Billed Duration: 289 ms  Memory Size: 256 MB  Max Memory Used: 91 MB
+
+2026-03-26T10:02:22.203Z  START RequestId: cc3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f Version: $LATEST
+2026-03-26T10:02:22.237Z  INFO  Processing batch of 10 records from Kinesis shard shardId-000000000000
+2026-03-26T10:02:22.501Z  ERROR ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded.
+2026-03-26T10:02:22.502Z  ERROR Failed to write batch to DynamoDB table clarabridge-dashboards. 10 records failed.
+2026-03-26T10:02:22.503Z  END RequestId: cc3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f
+2026-03-26T10:02:22.503Z  REPORT RequestId: cc3d4e5f-6a7b-8c9d-0e1f-2a3b4c5d6e7f  Duration: 300.11 ms  Billed Duration: 301 ms  Memory Size: 256 MB  Max Memory Used: 88 MB
+
+2026-03-26T10:07:01.445Z  START RequestId: dd4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f8a Version: $LATEST
+2026-03-26T10:07:01.478Z  INFO  Processing batch of 14 records from Kinesis shard shardId-000000000001
+2026-03-26T10:07:01.722Z  ERROR ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded.
+2026-03-26T10:07:01.723Z  ERROR Failed to write batch to DynamoDB table clarabridge-dashboards. 14 records failed.
+2026-03-26T10:07:01.724Z  END RequestId: dd4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f8a
+2026-03-26T10:07:01.724Z  REPORT RequestId: dd4e5f6a-7b8c-9d0e-1f2a-3b4c5d6e7f8a  Duration: 279.55 ms  Billed Duration: 280 ms  Memory Size: 256 MB  Max Memory Used: 90 MB
+
+2026-03-26T10:07:05.556Z  START RequestId: ee5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b Version: $LATEST
+2026-03-26T10:07:05.589Z  INFO  Processing batch of 11 records from Kinesis shard shardId-000000000002
+2026-03-26T10:07:05.845Z  ERROR ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded.
+2026-03-26T10:07:05.846Z  ERROR Failed to write batch to DynamoDB table clarabridge-dashboards. 11 records failed.
+2026-03-26T10:07:05.847Z  END RequestId: ee5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b
+2026-03-26T10:07:05.847Z  REPORT RequestId: ee5f6a7b-8c9d-0e1f-2a3b-4c5d6e7f8a9b  Duration: 291.33 ms  Billed Duration: 292 ms  Memory Size: 256 MB  Max Memory Used: 87 MB
+
+2026-03-26T09:57:02.112Z  START RequestId: ff6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c Version: $LATEST
+2026-03-26T09:57:02.145Z  INFO  Processing batch of 13 records from Kinesis shard shardId-000000000000
+2026-03-26T09:57:02.201Z  INFO  Successfully wrote 13 records to DynamoDB table clarabridge-dashboards
+2026-03-26T09:57:02.202Z  END RequestId: ff6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c
+2026-03-26T09:57:02.202Z  REPORT RequestId: ff6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c  Duration: 90.12 ms  Billed Duration: 91 ms  Memory Size: 256 MB  Max Memory Used: 85 MB

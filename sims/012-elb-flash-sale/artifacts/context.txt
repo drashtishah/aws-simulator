@@ -1,0 +1,6 @@
+Company: Vellora (Series A startup, 22 engineers)
+Industry: Fashion e-commerce / direct-to-consumer
+Users: 180,000 registered customers, $1.8M monthly GMV, midnight flash sale for 500 limited-edition items
+AWS Services: Elastic Load Balancing, AWS Auto Scaling, Amazon CloudWatch
+Your role: On-call engineer, 12:01 AM Wednesday
+Situation: Flash sale traffic overwhelmed the site within 60 seconds of launch; checkout pages timing out, customers unable to purchase

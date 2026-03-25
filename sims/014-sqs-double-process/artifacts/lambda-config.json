@@ -1,0 +1,59 @@
+{
+  "Configuration": {
+    "FunctionName": "canopy-process-order",
+    "FunctionArn": "arn:aws:lambda:us-east-1:123456789012:function:canopy-process-order",
+    "Runtime": "nodejs18.x",
+    "Role": "arn:aws:iam::123456789012:role/canopy-process-order-role",
+    "Handler": "index.handler",
+    "CodeSize": 4218934,
+    "Description": "Processes orders from the canopy-order-queue: inventory check, payment, delivery slot, confirmation",
+    "Timeout": 90,
+    "MemorySize": 512,
+    "LastModified": "2026-03-20T14:22:18.000+0000",
+    "Version": "$LATEST",
+    "TracingConfig": {
+      "Mode": "PassThrough"
+    },
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "PackageType": "Zip",
+    "Architectures": ["x86_64"],
+    "EphemeralStorage": {
+      "Size": 512
+    },
+    "Environment": {
+      "Variables": {
+        "ORDERS_TABLE": "canopy-orders",
+        "STRIPE_SECRET_KEY_PARAM": "/canopy/prod/stripe-secret-key",
+        "DELIVERY_SERVICE_URL": "https://internal.canopygoods.com/delivery-api",
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "EventSourceMappings": [
+    {
+      "UUID": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "EventSourceArn": "arn:aws:sqs:us-east-1:123456789012:canopy-order-queue",
+      "FunctionArn": "arn:aws:lambda:us-east-1:123456789012:function:canopy-process-order",
+      "LastModified": "2025-07-31T18:00:00.000+0000",
+      "State": "Enabled",
+      "BatchSize": 1,
+      "MaximumBatchingWindowInSeconds": 0,
+      "FunctionResponseTypes": []
+    }
+  ],
+  "UpdateHistory": [
+    {
+      "date": "2025-07-31",
+      "change": "Initial deployment. Memory: 256 MB, Timeout: 90s"
+    },
+    {
+      "date": "2026-03-20",
+      "change": "Memory increased from 256 MB to 512 MB (investigating slow processing reports)"
+    }
+  ],
+  "ResponseMetadata": {
+    "RequestId": "d4e5f6a7-b8c9-0123-defa-234567890123",
+    "HTTPStatusCode": 200
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "TargetGroups": [
+    {
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/ridgewell-web-tg/abcdef1234567890",
+      "TargetGroupName": "ridgewell-web-tg",
+      "Protocol": "HTTP",
+      "Port": 8080,
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "HealthCheckProtocol": "HTTP",
+      "HealthCheckPort": "traffic-port",
+      "HealthCheckEnabled": true,
+      "HealthCheckIntervalSeconds": 30,
+      "HealthCheckTimeoutSeconds": 5,
+      "HealthyThresholdCount": 5,
+      "UnhealthyThresholdCount": 2,
+      "HealthCheckPath": "/health",
+      "Matcher": {
+        "HttpCode": "200"
+      },
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/ridgewell-prod-alb/1234567890abcdef"
+      ],
+      "TargetType": "instance",
+      "ProtocolVersion": "HTTP1",
+      "IpAddressType": "ipv4"
+    }
+  ],
+  "TargetGroupAttributes": [
+    {
+      "Key": "deregistration_delay.timeout_seconds",
+      "Value": "30"
+    },
+    {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+    },
+    {
+      "Key": "load_balancing.algorithm.type",
+      "Value": "round_robin"
+    },
+    {
+      "Key": "slow_start.duration_seconds",
+      "Value": "0"
+    },
+    {
+      "Key": "load_balancing.cross_zone.enabled",
+      "Value": "use_load_balancer_configuration"
+    }
+  ]
+}

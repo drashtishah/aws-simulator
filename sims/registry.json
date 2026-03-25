@@ -88,6 +88,54 @@
       "category": "cost",
       "services": ["nat-gateway", "s3", "vpc", "cloudwatch"],
       "estimated_minutes": 15
+    },
+    {
+      "id": "012-elb-flash-sale",
+      "title": "The Sale That Started Too Fast",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": ["elb", "auto-scaling", "cloudwatch"],
+      "created": "2026-03-25"
+    },
+    {
+      "id": "013-elb-target-drain",
+      "title": "The Targets That Disappeared",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+      "created": "2026-03-25"
+    },
+    {
+      "id": "014-sqs-double-process",
+      "title": "The Queue Nobody Watched",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": ["sqs", "lambda", "cloudwatch"],
+      "created": "2026-03-25"
+    },
+    {
+      "id": "015-route53-failover-blind",
+      "title": "Sixteen Seconds of Nothing",
+      "difficulty": 2,
+      "category": "networking",
+      "services": ["route53", "elb", "cloudwatch"],
+      "created": "2026-03-25"
+    },
+    {
+      "id": "016-sns-unconfirmed",
+      "title": "A Notification for No One",
+      "difficulty": 2,
+      "category": "operations",
+      "services": ["sns", "cloudwatch", "lambda"],
+      "created": "2026-03-25"
+    },
+    {
+      "id": "017-elasticache-eviction",
+      "title": "The Cache That Forgot Everything",
+      "difficulty": 2,
+      "category": "performance",
+      "services": ["elasticache", "elb", "cloudwatch"],
+      "created": "2026-03-25"
     }
   ]
 }

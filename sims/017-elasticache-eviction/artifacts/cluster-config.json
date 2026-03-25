@@ -1,0 +1,65 @@
+{
+  "CacheClusters": [
+    {
+      "CacheClusterId": "trellis-redis-prod",
+      "ClientDownloadLandingPage": "https://console.aws.amazon.com/elasticache/home#client-download:",
+      "CacheNodeType": "cache.r6g.large",
+      "Engine": "redis",
+      "EngineVersion": "7.0.7",
+      "CacheClusterStatus": "available",
+      "NumCacheNodes": 1,
+      "PreferredAvailabilityZone": "us-east-1a",
+      "CacheClusterCreateTime": "2024-09-12T14:32:18.000Z",
+      "PreferredMaintenanceWindow": "sun:06:00-sun:07:00",
+      "CacheParameterGroup": {
+        "CacheParameterGroupName": "trellis-redis-params",
+        "ParameterApplyStatus": "in-sync",
+        "CacheNodeIdsToReboot": []
+      },
+      "CacheSubnetGroupName": "trellis-prod-cache-subnet",
+      "CacheNodes": [
+        {
+          "CacheNodeId": "0001",
+          "CacheNodeStatus": "available",
+          "CacheNodeCreateTime": "2024-09-12T14:32:18.000Z",
+          "Endpoint": {
+            "Address": "trellis-redis-prod.abc123.0001.use1.cache.amazonaws.com",
+            "Port": 6379
+          },
+          "ParameterGroupStatus": "in-sync",
+          "CustomerAvailabilityZone": "us-east-1a"
+        }
+      ],
+      "AutoMinorVersionUpgrade": true,
+      "SecurityGroups": [
+        {
+          "SecurityGroupId": "sg-0a1b2c3d4e5f67890",
+          "Status": "active"
+        }
+      ],
+      "ReplicationGroupId": null,
+      "SnapshotRetentionLimit": 0,
+      "SnapshotWindow": "05:00-06:00",
+      "AuthTokenEnabled": false,
+      "TransitEncryptionEnabled": false,
+      "AtRestEncryptionEnabled": true,
+      "ARN": "arn:aws:elasticache:us-east-1:123456789012:cluster:trellis-redis-prod",
+      "ReplicationGroupLogDeliveryEnabled": false,
+      "LogDeliveryConfigurations": [],
+      "Tags": [
+        {
+          "Key": "Environment",
+          "Value": "production"
+        },
+        {
+          "Key": "Team",
+          "Value": "platform"
+        },
+        {
+          "Key": "Application",
+          "Value": "trellis-health"
+        }
+      ]
+    }
+  ]
+}

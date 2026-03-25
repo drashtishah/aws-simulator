@@ -1,0 +1,49 @@
+{
+  "TargetHealthDescriptions": [
+    {
+      "Target": {
+        "Id": "10.0.1.42",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1a"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy"
+      },
+      "AnomalyDetection": {
+        "Result": "anomaly_detected",
+        "MitigationInEffect": "no"
+      }
+    },
+    {
+      "Target": {
+        "Id": "10.0.1.87",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1a"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy"
+      },
+      "AnomalyDetection": {
+        "Result": "anomaly_detected",
+        "MitigationInEffect": "no"
+      }
+    },
+    {
+      "Target": {
+        "Id": "10.0.2.15",
+        "Port": 8080,
+        "AvailabilityZone": "us-east-1b"
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy"
+      },
+      "AnomalyDetection": {
+        "Result": "anomaly_detected",
+        "MitigationInEffect": "no"
+      }
+    }
+  ]
+}

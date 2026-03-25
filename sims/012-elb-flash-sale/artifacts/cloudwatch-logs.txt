@@ -1,0 +1,50 @@
+2026-03-24T23:58:12.041Z [INFO] vellora-web-01 request_id=req-8a2f4c61 method=GET path=/api/products/drops/midnight status=200 duration_ms=142
+2026-03-24T23:58:14.223Z [INFO] vellora-web-02 request_id=req-8a2f4c62 method=GET path=/api/products/drops/midnight status=200 duration_ms=138
+2026-03-24T23:59:01.104Z [INFO] vellora-web-01 request_id=req-8a2f4c63 method=GET path=/ status=200 duration_ms=89
+2026-03-24T23:59:18.442Z [INFO] vellora-web-02 request_id=req-8a2f4c64 method=GET path=/api/countdown status=200 duration_ms=12
+2026-03-24T23:59:45.201Z [INFO] vellora-web-01 request_id=req-8a2f4c65 method=GET path=/api/countdown status=200 duration_ms=11
+2026-03-24T23:59:58.104Z [INFO] vellora-web-01 request_id=req-8a2f4c66 method=GET path=/api/countdown status=200 duration_ms=14
+2026-03-25T00:00:01.042Z [INFO] vellora-web-01 request_id=req-9b3f5d71 method=GET path=/api/products/drops/midnight status=200 duration_ms=156
+2026-03-25T00:00:02.118Z [INFO] vellora-web-02 request_id=req-9b3f5d72 method=GET path=/api/products/drops/midnight status=200 duration_ms=162
+2026-03-25T00:00:04.201Z [INFO] vellora-web-01 request_id=req-9b3f5d73 method=GET path=/api/products/drops/midnight status=200 duration_ms=248
+2026-03-25T00:00:08.441Z [WARN] vellora-web-01 request_id=req-9b3f5d74 method=GET path=/api/products/drops/midnight status=200 duration_ms=890 slow_request=true
+2026-03-25T00:00:12.102Z [WARN] vellora-web-02 request_id=req-9b3f5d75 method=POST path=/api/cart/add status=200 duration_ms=1240 slow_request=true
+2026-03-25T00:00:18.338Z [WARN] vellora-web-01 request_id=req-9b3f5d76 method=GET path=/api/products/drops/midnight status=200 duration_ms=3420 slow_request=true
+2026-03-25T00:00:22.104Z [ERROR] vellora-web-02 request_id=req-9b3f5d77 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:00:28.201Z [ERROR] vellora-web-01 request_id=req-9b3f5d78 method=POST path=/api/checkout/initiate status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:00:32.441Z [ERROR] vellora-web-02 request_id=req-9b3f5d79 method=GET path=/api/products/drops/midnight status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:00:38.118Z [ERROR] vellora-web-01 request_id=req-9b3f5d80 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:00:42.204Z [ERROR] vellora-web-02 request_id=req-9b3f5d81 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:00:45.102Z [ERROR] vellora-web-01 connection_error="connection refused: too many open connections" active_connections=1248
+2026-03-25T00:00:45.104Z [ERROR] vellora-web-02 connection_error="connection refused: too many open connections" active_connections=1186
+2026-03-25T00:00:48.201Z [ERROR] vellora-web-01 request_id=req-9b3f5d82 method=POST path=/api/checkout/initiate status=504 duration_ms=5000 error="upstream timeout" queue_depth=842
+2026-03-25T00:00:52.118Z [ERROR] vellora-web-02 request_id=req-9b3f5d83 method=GET path=/api/products/drops/midnight status=504 duration_ms=5000 error="upstream timeout" queue_depth=916
+2026-03-25T00:00:58.304Z [ERROR] vellora-web-01 health_check_failed=true path=/health reason="response time exceeded 5000ms threshold"
+2026-03-25T00:01:02.118Z [ERROR] vellora-web-01 request_id=req-9b3f5d84 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout" queue_depth=1204
+2026-03-25T00:01:02.441Z [ERROR] vellora-web-02 request_id=req-9b3f5d85 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout" queue_depth=1148
+2026-03-25T00:01:08.102Z [ERROR] vellora-web-01 connection_error="connection refused: too many open connections" active_connections=2048 max_connections=2048
+2026-03-25T00:01:08.104Z [ERROR] vellora-web-02 connection_error="connection refused: too many open connections" active_connections=2048 max_connections=2048
+2026-03-25T00:01:14.201Z [ERROR] vellora-web-01 request_id=req-9b3f5d86 method=POST path=/api/checkout/initiate status=504 duration_ms=5000 error="upstream timeout" queue_depth=1580
+2026-03-25T00:01:22.118Z [ERROR] vellora-web-02 request_id=req-9b3f5d87 method=GET path=/api/products/drops/midnight status=504 duration_ms=5000 error="upstream timeout" queue_depth=1642
+2026-03-25T00:01:28.304Z [ERROR] vellora-web-01 health_check_failed=true path=/health reason="connection refused"
+2026-03-25T00:01:28.308Z [ERROR] vellora-web-02 health_check_failed=true path=/health reason="connection refused"
+2026-03-25T00:01:42.118Z [ERROR] vellora-web-01 request_id=req-9b3f5d88 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:02:01.201Z [ERROR] vellora-web-02 request_id=req-9b3f5d89 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:02:18.104Z [ERROR] vellora-web-01 request_id=req-9b3f5d90 method=GET path=/api/products/drops/midnight status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:02:42.201Z [ERROR] vellora-web-02 request_id=req-9b3f5d91 method=POST path=/api/checkout/initiate status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:03:01.000Z [INFO] auto-scaling activity="Launching a new EC2 instance: i-0f3a7c9e1b5d82004" cause="alarm vellora-cpu-high triggered policy vellora-cpu-scale-out"
+2026-03-25T00:03:18.118Z [ERROR] vellora-web-01 request_id=req-9b3f5d92 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:04:02.201Z [ERROR] vellora-web-02 request_id=req-9b3f5d93 method=GET path=/api/products/drops/midnight status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:05:14.104Z [ERROR] vellora-web-01 request_id=req-9b3f5d94 method=POST path=/api/cart/add status=504 duration_ms=5000 error="upstream timeout"
+2026-03-25T00:06:22.118Z [WARN] vellora-web-01 request_id=req-9b3f5d95 method=GET path=/api/products/drops/midnight status=200 duration_ms=4200 slow_request=true
+2026-03-25T00:07:00.000Z [INFO] auto-scaling instance_id=i-0f3a7c9e1b5d82004 event="instance passed health check, entering InService"
+2026-03-25T00:07:14.201Z [INFO] vellora-web-04 request_id=req-9b3f5d96 method=GET path=/api/products/drops/midnight status=200 duration_ms=620
+2026-03-25T00:07:42.118Z [WARN] vellora-web-01 request_id=req-9b3f5d97 method=POST path=/api/cart/add status=200 duration_ms=1840 slow_request=true
+2026-03-25T00:08:02.000Z [INFO] auto-scaling activity="Launching a new EC2 instance: i-0f3a7c9e1b5d82005" cause="cooldown expired, alarm vellora-cpu-high still in ALARM state"
+2026-03-25T00:08:18.201Z [INFO] vellora-web-04 request_id=req-9b3f5d98 method=GET path=/api/products/drops/midnight status=200 duration_ms=380
+2026-03-25T00:09:01.104Z [INFO] vellora-web-01 request_id=req-9b3f5d99 method=GET path=/api/products/drops/midnight status=200 duration_ms=420
+2026-03-25T00:10:14.201Z [INFO] vellora-web-04 request_id=req-9b3f5da0 method=GET path=/api/products/drops/midnight status=200 duration_ms=180
+2026-03-25T00:12:00.000Z [INFO] auto-scaling instance_id=i-0f3a7c9e1b5d82005 event="instance passed health check, entering InService"
+2026-03-25T00:12:18.118Z [INFO] vellora-web-05 request_id=req-9b3f5da1 method=GET path=/api/products/drops/midnight status=200 duration_ms=148
+2026-03-25T00:13:01.201Z [INFO] vellora-web-01 request_id=req-9b3f5da2 method=GET path=/ status=200 duration_ms=92
+2026-03-25T00:15:00.104Z [INFO] vellora-web-04 request_id=req-9b3f5da3 method=GET path=/api/products/drops/midnight status=200 duration_ms=142

@@ -1,0 +1,67 @@
+{
+  "LoadBalancers": [
+    {
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/trellis-prod-alb/a1b2c3d4e5f67890",
+      "DNSName": "trellis-prod-alb-1234567890.us-east-1.elb.amazonaws.com",
+      "CanonicalHostedZoneId": "Z35SXDOTRQ7X7K",
+      "CreatedTime": "2024-08-15T10:22:34.000Z",
+      "LoadBalancerName": "trellis-prod-alb",
+      "Scheme": "internet-facing",
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "State": {
+        "Code": "active"
+      },
+      "Type": "application",
+      "AvailabilityZones": [
+        {
+          "ZoneName": "us-east-1a",
+          "SubnetId": "subnet-0a1b2c3d4e5f6789a"
+        },
+        {
+          "ZoneName": "us-east-1b",
+          "SubnetId": "subnet-0a1b2c3d4e5f6789b"
+        }
+      ],
+      "SecurityGroups": [
+        "sg-0b2c3d4e5f6789012"
+      ],
+      "IpAddressType": "ipv4"
+    }
+  ],
+  "TargetGroups": [
+    {
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/trellis-appointment-svc/b2c3d4e5f6789012",
+      "TargetGroupName": "trellis-appointment-svc",
+      "Protocol": "HTTP",
+      "Port": 8080,
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "HealthCheckProtocol": "HTTP",
+      "HealthCheckPort": "8080",
+      "HealthCheckEnabled": true,
+      "HealthCheckIntervalSeconds": 30,
+      "HealthCheckTimeoutSeconds": 10,
+      "HealthyThresholdCount": 3,
+      "UnhealthyThresholdCount": 3,
+      "HealthCheckPath": "/health",
+      "TargetType": "ip",
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/trellis-prod-alb/a1b2c3d4e5f67890"
+      ]
+    }
+  ],
+  "Listeners": [
+    {
+      "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/trellis-prod-alb/a1b2c3d4e5f67890/c3d4e5f678901234",
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/trellis-prod-alb/a1b2c3d4e5f67890",
+      "Port": 443,
+      "Protocol": "HTTPS",
+      "SslPolicy": "ELBSecurityPolicy-TLS13-1-2-2021-06",
+      "DefaultActions": [
+        {
+          "Type": "forward",
+          "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/trellis-appointment-svc/b2c3d4e5f6789012"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "MetricAlarms": [
+    {
+      "AlarmName": "clarabridge-ingest-error-rate",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:111222333444:alarm:clarabridge-ingest-error-rate",
+      "AlarmDescription": "Fires when the ingest processor Lambda error rate exceeds 5 percent over a 5-minute period",
+      "ActionsEnabled": true,
+      "OKActions": [],
+      "AlarmActions": [
+        "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts"
+      ],
+      "InsufficientDataActions": [],
+      "MetricName": "Errors",
+      "Namespace": "AWS/Lambda",
+      "Statistic": "Average",
+      "Dimensions": [
+        {
+          "Name": "FunctionName",
+          "Value": "clarabridge-ingest-processor"
+        }
+      ],
+      "Period": 300,
+      "EvaluationPeriods": 1,
+      "DatapointsToAlarm": 1,
+      "Threshold": 5.0,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "TreatMissingData": "notBreaching",
+      "StateValue": "ALARM",
+      "StateReason": "Threshold Crossed: 1 out of the last 1 datapoints [23.4 (26/03/26 10:02:00)] was greater than the threshold (5.0).",
+      "StateReasonData": {
+        "version": "1.0",
+        "queryDate": "2026-03-26T10:07:12.000Z",
+        "startDate": "2026-03-26T10:02:00.000Z",
+        "statistic": "Average",
+        "period": 300,
+        "recentDatapoints": [23.4],
+        "threshold": 5.0,
+        "evaluatedDatapoints": [
+          {
+            "timestamp": "2026-03-26T10:02:00.000Z",
+            "sampleCount": 847.0,
+            "value": 23.4
+          }
+        ]
+      },
+      "StateUpdatedTimestamp": "2026-03-26T10:07:12Z",
+      "StateTransitionedTimestamp": "2026-03-26T10:07:12Z"
+    }
+  ]
+}

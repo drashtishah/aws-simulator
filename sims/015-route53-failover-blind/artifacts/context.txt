@@ -1,0 +1,6 @@
+Company: Spellbook (Series B, 28 engineers)
+Industry: Developer tools / API documentation hosting
+Users: 2.1 million monthly active developers, 400 SaaS company customers
+AWS Services: Amazon Route 53, Elastic Load Balancing, Amazon CloudWatch
+Your role: SRE on-call, 2:14 PM Tuesday
+Situation: docs.spellbook.dev unreachable for customers; multi-region failover did not activate

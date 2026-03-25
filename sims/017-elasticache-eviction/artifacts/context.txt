@@ -1,0 +1,6 @@
+Company: Trellis Health (Series C, 42 engineers)
+Industry: Healthtech / telehealth appointment platform
+Users: 520,000 registered patients, 8,400 appointments/day, provider offices in 12 states
+AWS Services: Amazon ElastiCache, Elastic Load Balancing, Amazon CloudWatch
+Your role: Platform reliability engineer, 9:30 AM Thursday
+Situation: Appointment booking pages loading slowly; booking success rate dropped from 99.2% to 61%; provider offices reporting missing availability slots

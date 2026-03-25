@@ -1,0 +1,41 @@
+                         Trellis Health -- Production Architecture
+
+    +-----------+
+    |  Internet |
+    |  (patients,|
+    |  providers)|
+    +-----+-----+
+          |
+          v
+  +-------+--------+
+  |  ALB            |
+  |  trellis-prod-  |
+  |  alb            |
+  |  (port 443)     |
+  +-------+--------+
+          |
+          v
+  +-------+--------+
+  |  ECS Cluster    |
+  |  trellis-prod   |
+  |                 |
+  |  appointment-   |
+  |  service        |
+  |  (3 tasks)      |
+  +--+----------+--+
+     |          |
+     |          |          Cache-aside pattern:
+     |          |          1. App checks Redis first
+     |          |          2. On HIT: return cached data
+     |          |          3. On MISS: query DB, write to cache, return
+     v          v
++----+----+  +--+------------+
+| ElastiCache| | RDS PostgreSQL|
+| Redis      | | trellis-     |
+| trellis-   | | prod-db      |
+| redis-prod | | (db.r6g.xl)  |
+| (single    | |              |
+|  node,     | | Connection   |
+|  cache.r6g.| | pool: 200    |
+|  large)    | |              |
++------------+ +--------------+

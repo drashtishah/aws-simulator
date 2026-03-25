@@ -1,0 +1,43 @@
+Canopy Goods -- Order Processing Architecture
+=============================================
+
+  [Mobile App / Web]
+         |
+         v
+  +-------------+
+  | API Gateway  |
+  +-------------+
+         |
+         v
+  +-------------------+
+  | canopy-api         |
+  | (Lambda)           |
+  | Validates order,   |
+  | sends to queue     |
+  +-------------------+
+         |
+         v
+  +---------------------------+
+  | canopy-order-queue         |
+  | (SQS Standard Queue)      |
+  | VisibilityTimeout: 30s    |
+  | MessageRetentionPeriod: 4d|
+  +---------------------------+
+         |
+         v
+  +----------------------------+
+  | canopy-process-order        |
+  | (Lambda)                    |
+  | Timeout: 90s                |
+  | Memory: 512 MB              |
+  | BatchSize: 1                |
+  +----------------------------+
+         |
+         +----------+----------+-----------------+
+         |          |          |                 |
+         v          v          v                 v
+  +-----------+ +--------+ +----------------+ +--------+
+  | Stripe API | | DynamoDB| | Delivery Slot  | | SES    |
+  | (payment)  | | (orders | | Service        | | (email)|
+  |            | |  table) | | (internal API) | |        |
+  +-----------+ +--------+ +----------------+ +--------+

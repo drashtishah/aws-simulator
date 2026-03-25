@@ -1,0 +1,58 @@
+  Data Ingestion Pipeline
+  =======================
+
+  Data Sources (14M events/day)
+       |
+       v
+  +----------------------------+
+  | Kinesis Data Stream        |
+  | clarabridge-ingest-stream  |
+  +-------------+--------------+
+                |
+                v
+  +----------------------------+
+  | Lambda Function            |
+  | clarabridge-ingest-        |
+  | processor                  |
+  | Runtime: python3.12        |
+  +-------------+--------------+
+                |
+                v
+  +----------------------------+
+  | DynamoDB Table             |
+  | clarabridge-dashboards     |
+  | On-demand capacity         |
+  +----------------------------+
+
+
+  Alerting Pipeline
+  =================
+
+  +----------------------------+
+  | CloudWatch Alarm           |
+  | clarabridge-ingest-error-  |
+  | rate                       |
+  | Threshold: ErrorRate > 5%  |
+  | State: ALARM (since 10:07) |
+  +-------------+--------------+
+                |
+                | AlarmAction: sns:Publish
+                v
+  +----------------------------+
+  | SNS Topic                  |
+  | clarabridge-ops-alerts     |
+  | Messages Published: 1      |
+  | Notifications Delivered: 0 |
+  +-------------+--------------+
+                |
+       +--------+--------+
+       |        |        |
+       v        v        v
+  +--------+ +--------+ +--------+
+  | Email  | | Lambda | | SMS    |
+  | ops-   | | clara- | | +1-512 |
+  | team@  | | bridge-| | -555-  |
+  | clara- | | slack- | | 0147   |
+  | bridge | | noti-  | |        |
+  | .io    | | fier   | |        |
+  +--------+ +--------+ +--------+

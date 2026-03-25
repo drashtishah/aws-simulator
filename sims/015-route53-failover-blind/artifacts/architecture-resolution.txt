@@ -1,0 +1,56 @@
+                                    +------------------+
+                                    |    Internet      |
+                                    +--------+---------+
+                                             |
+                                    +--------v---------+
+                                    | Route 53         |
+                                    | docs.spellbook   |
+                                    | .dev             |
+                                    | (failover        |
+                                    |  routing)        |
+                                    | [EVALUATE TARGET |
+                                    |  HEALTH: FALSE]  |
+                                    +--------+---------+
+                                             |
+                           +-----------------+-----------------+
+                           |  PRIMARY                          |  SECONDARY
+                           |                                   |
+                  +--------v---------+                +--------v---------+
+                  | ALB us-east-1    |                | ALB eu-west-1    |
+                  | spellbook-prod-  |                | spellbook-prod-  |
+                  | alb-east         |                | alb-west         |
+                  | [UNREACHABLE -   |                | (healthy)        |
+                  |  AZ ISSUE]       |                |                  |
+                  | [LISTENERS:      |                +--------+---------+
+                  |  PORT 443 ONLY]  |                         |
+                  +--------+---------+                +--------v---------+
+                           |                          | ECS Cluster      |
+                  +--------v---------+                | spellbook-west   |
+                  | ECS Cluster      |                | (4 tasks)        |
+                  | spellbook-east   |                +--------+---------+
+                  | (0 healthy       |                         |
+                  |  tasks)          |                +--------v---------+
+                  +--------+---------+                | DocumentDB       |
+                           |                          | (global cluster  |
+                  +--------v---------+                |  replica)        |
+                  | DocumentDB       |                +------------------+
+                  | spellbook-prod   |
+                  | (primary)        |
+                  +------------------+
+
+  Route 53 Health Check: hc-spellbook-prod-primary
+    -> [HEALTH CHECK: PORT 80, PATH /]
+    -> Protocol: HTTP (should be HTTPS)
+    -> Port: 80 (ALB listens on 443)
+    -> Path: / (returns 301 redirect, not 200)
+    -> Status: UNHEALTHY since 2026-03-04
+    -> PROBLEM: Health check has never passed; misconfigured from creation
+
+  Primary Failover Record:
+    -> [EVALUATE TARGET HEALTH: FALSE]
+    -> Route 53 never checks health status for routing decisions
+    -> Failover cannot trigger regardless of health check state
+
+  CloudWatch Alarm: spellbook-route53-health-check
+    -> State: ALARM since 2026-03-04
+    -> Actions: NONE (no SNS topic configured)

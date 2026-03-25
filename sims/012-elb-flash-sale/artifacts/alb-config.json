@@ -1,0 +1,101 @@
+{
+  "LoadBalancers": [
+    {
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:loadbalancer/app/vellora-prod-alb/a1b2c3d4e5f60789",
+      "DNSName": "vellora-prod-alb-1234567890.us-east-1.elb.amazonaws.com",
+      "CanonicalHostedZoneId": "Z35SXDOTRQ7X7K",
+      "CreatedTime": "2025-09-14T10:23:41.000Z",
+      "LoadBalancerName": "vellora-prod-alb",
+      "Scheme": "internet-facing",
+      "VpcId": "vpc-0e7a3b5c9d1f24680",
+      "State": {
+        "Code": "active"
+      },
+      "Type": "application",
+      "AvailabilityZones": [
+        {
+          "ZoneName": "us-east-1a",
+          "SubnetId": "subnet-0a1b2c3d4e5f67801",
+          "LoadBalancerAddresses": []
+        },
+        {
+          "ZoneName": "us-east-1b",
+          "SubnetId": "subnet-0a1b2c3d4e5f67802",
+          "LoadBalancerAddresses": []
+        }
+      ],
+      "SecurityGroups": [
+        "sg-0a1b2c3d4e5f67890"
+      ],
+      "IpAddressType": "ipv4",
+      "CustomerOwnedIpv4Pool": ""
+    }
+  ],
+  "Listeners": [
+    {
+      "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:listener/app/vellora-prod-alb/a1b2c3d4e5f60789/b2c3d4e5f6a70891",
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:loadbalancer/app/vellora-prod-alb/a1b2c3d4e5f60789",
+      "Port": 443,
+      "Protocol": "HTTPS",
+      "Certificates": [
+        {
+          "CertificateArn": "arn:aws:acm:us-east-1:891234567890:certificate/c3d4e5f6-a7b8-9012-c3d4-e5f6a7b89012"
+        }
+      ],
+      "DefaultActions": [
+        {
+          "Type": "forward",
+          "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:targetgroup/vellora-web-tg/9e8d7c6b5a4f3210",
+          "ForwardConfig": {
+            "TargetGroups": [
+              {
+                "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:targetgroup/vellora-web-tg/9e8d7c6b5a4f3210",
+                "Weight": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "ListenerArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:listener/app/vellora-prod-alb/a1b2c3d4e5f60789/d4e5f6a7b8c90123",
+      "LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:loadbalancer/app/vellora-prod-alb/a1b2c3d4e5f60789",
+      "Port": 80,
+      "Protocol": "HTTP",
+      "DefaultActions": [
+        {
+          "Type": "redirect",
+          "RedirectConfig": {
+            "Protocol": "HTTPS",
+            "Port": "443",
+            "StatusCode": "HTTP_301"
+          }
+        }
+      ]
+    }
+  ],
+  "TargetGroups": [
+    {
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:891234567890:targetgroup/vellora-web-tg/9e8d7c6b5a4f3210",
+      "TargetGroupName": "vellora-web-tg",
+      "Protocol": "HTTP",
+      "Port": 8080,
+      "VpcId": "vpc-0e7a3b5c9d1f24680",
+      "HealthCheckProtocol": "HTTP",
+      "HealthCheckPort": "8080",
+      "HealthCheckEnabled": true,
+      "HealthCheckIntervalSeconds": 30,
+      "HealthCheckTimeoutSeconds": 5,
+      "HealthyThresholdCount": 3,
+      "UnhealthyThresholdCount": 2,
+      "HealthCheckPath": "/health",
+      "Matcher": {
+        "HttpCode": "200"
+      },
+      "TargetType": "instance",
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:us-east-1:891234567890:loadbalancer/app/vellora-prod-alb/a1b2c3d4e5f60789"
+      ]
+    }
+  ]
+}

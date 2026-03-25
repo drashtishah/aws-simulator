@@ -1,0 +1,80 @@
+2026-03-26T06:12:14.221Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 43ms customer_id=cust_2847 routes=14
+2026-03-26T06:12:14.334Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 38ms customer_id=cust_1192 routes=8
+2026-03-26T06:12:15.102Z ridgewell-web/i-0a1b2c3d4e5f6002 INFO  [RequestHandler] GET /api/v2/shipments/pending 200 22ms customer_id=cust_3401 count=67
+2026-03-26T06:12:15.887Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 51ms customer_id=cust_0884 routes=23
+2026-03-26T06:13:44.112Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [HealthCheck] GET /health 200 2ms
+2026-03-26T06:13:44.118Z ridgewell-web/i-0a1b2c3d4e5f6002 INFO  [HealthCheck] GET /health 200 1ms
+2026-03-26T06:13:44.201Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [HealthCheck] GET /health 200 2ms
+2026-03-26T06:13:44.208Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [HealthCheck] GET /health 200 1ms
+2026-03-26T06:14:58.773Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 47ms customer_id=cust_2103 routes=11
+2026-03-26T06:15:01.002Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [Lifecycle] Received SIGTERM. Beginning graceful shutdown.
+2026-03-26T06:15:01.004Z ridgewell-web/i-0a1b2c3d4e5f6002 INFO  [Lifecycle] Received SIGTERM. Beginning graceful shutdown.
+2026-03-26T06:15:01.102Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [Lifecycle] Draining connections. 3 in-flight requests.
+2026-03-26T06:15:01.108Z ridgewell-web/i-0a1b2c3d4e5f6002 INFO  [Lifecycle] Draining connections. 5 in-flight requests.
+2026-03-26T06:15:03.441Z ridgewell-web/i-0a1b2c3d4e5f6001 INFO  [Lifecycle] All in-flight requests completed. Shutting down.
+2026-03-26T06:15:04.112Z ridgewell-web/i-0a1b2c3d4e5f6002 INFO  [Lifecycle] All in-flight requests completed. Shutting down.
+2026-03-26T06:15:12.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [Startup] Application starting. Version: 2.14.1
+2026-03-26T06:15:12.003Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [Startup] Application starting. Version: 2.14.1
+2026-03-26T06:15:14.447Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [Startup] Connecting to database: ridgewell-prod-cluster.cluster-abc123.us-east-1.rds.amazonaws.com
+2026-03-26T06:15:14.891Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [Startup] Database connection established. Pool size: 20
+2026-03-26T06:15:15.002Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [Startup] Connecting to database: ridgewell-prod-cluster.cluster-abc123.us-east-1.rds.amazonaws.com
+2026-03-26T06:15:15.334Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [Startup] Database connection established. Pool size: 20
+2026-03-26T06:15:18.221Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [Startup] Loading route optimization models into memory...
+2026-03-26T06:15:18.224Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [Startup] Loading route optimization models into memory...
+2026-03-26T06:15:32.101Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [Startup] Models loaded. Warming up inference cache...
+2026-03-26T06:15:32.108Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [Startup] Models loaded. Warming up inference cache...
+2026-03-26T06:15:44.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [HealthCheck] GET /health 200 3ms  (check 1 of 5)
+2026-03-26T06:15:44.004Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [HealthCheck] GET /health 200 4ms  (check 1 of 5)
+2026-03-26T06:15:48.112Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 44ms customer_id=cust_1847 routes=9
+2026-03-26T06:15:52.003Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [RequestHandler] GET /api/v2/shipments/pending 200 19ms customer_id=cust_0291 count=42
+2026-03-26T06:16:14.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [HealthCheck] GET /health 200 2ms  (check 2 of 5)
+2026-03-26T06:16:14.003Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [HealthCheck] GET /health 200 2ms  (check 2 of 5)
+2026-03-26T06:16:44.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [HealthCheck] GET /health 200 2ms  (check 3 of 5)
+2026-03-26T06:16:44.004Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [HealthCheck] GET /health 200 3ms  (check 3 of 5)
+2026-03-26T06:16:45.001Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [Lifecycle] Received SIGTERM. Beginning graceful shutdown.
+2026-03-26T06:16:45.003Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [Lifecycle] Received SIGTERM. Beginning graceful shutdown.
+2026-03-26T06:16:45.112Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [Lifecycle] Draining connections. 7 in-flight requests.
+2026-03-26T06:16:45.118Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [Lifecycle] Draining connections. 4 in-flight requests.
+2026-03-26T06:16:48.334Z ridgewell-web/i-0a1b2c3d4e5f6005 INFO  [Lifecycle] All in-flight requests completed. Shutting down.
+2026-03-26T06:16:49.112Z ridgewell-web/i-0a1b2c3d4e5f6006 INFO  [Lifecycle] All in-flight requests completed. Shutting down.
+2026-03-26T06:17:02.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [Startup] Application starting. Version: 2.14.1
+2026-03-26T06:17:02.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [Startup] Application starting. Version: 2.14.1
+2026-03-26T06:17:14.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [HealthCheck] GET /health 200 2ms  (check 4 of 5)
+2026-03-26T06:17:14.004Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [HealthCheck] GET /health 200 2ms  (check 4 of 5)
+2026-03-26T06:17:16.221Z ALB/ridgewell-prod-alb WARN  [TargetGroup] All targets in ridgewell-web-tg are unhealthy. Fail-open active. Routing to all registered targets.
+2026-03-26T06:17:16.334Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.1.47:8080 - Connection refused
+2026-03-26T06:17:16.447Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.2.63:8080 - Connection refused
+2026-03-26T06:17:16.891Z ALB/ridgewell-prod-alb ERROR [HTTP] 503 Service Unavailable - target 10.0.1.88:8080 - Target not registered
+2026-03-26T06:17:17.112Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.1.47:8080 - Connection refused
+2026-03-26T06:17:17.334Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.2.63:8080 - Connection refused
+2026-03-26T06:17:17.556Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.2.102:8080 - Connection refused
+2026-03-26T06:17:18.002Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.1.47:8080 - Request to unhealthy target
+2026-03-26T06:17:18.223Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.2.63:8080 - Request to unhealthy target
+2026-03-26T06:17:19.001Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.1.88:8080 - Connection refused
+2026-03-26T06:17:19.445Z ALB/ridgewell-prod-alb ERROR [HTTP] 502 Bad Gateway - target 10.0.2.102:8080 - Connection refused
+2026-03-26T06:17:22.112Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [Startup] Connecting to database: ridgewell-prod-cluster.cluster-abc123.us-east-1.rds.amazonaws.com
+2026-03-26T06:17:22.887Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [Startup] Database connection established. Pool size: 20
+2026-03-26T06:17:23.001Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [Startup] Connecting to database: ridgewell-prod-cluster.cluster-abc123.us-east-1.rds.amazonaws.com
+2026-03-26T06:17:23.445Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [Startup] Database connection established. Pool size: 20
+2026-03-26T06:17:34.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [Startup] Loading route optimization models into memory...
+2026-03-26T06:17:34.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [Startup] Loading route optimization models into memory...
+2026-03-26T06:17:44.001Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [HealthCheck] GET /health 200 2ms  (check 5 of 5)
+2026-03-26T06:17:44.004Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [HealthCheck] GET /health 200 2ms  (check 5 of 5)
+2026-03-26T06:17:44.112Z ALB/ridgewell-prod-alb INFO  [TargetGroup] Target i-0a1b2c3d4e5f6003 is now healthy in ridgewell-web-tg
+2026-03-26T06:17:44.118Z ALB/ridgewell-prod-alb INFO  [TargetGroup] Target i-0a1b2c3d4e5f6004 is now healthy in ridgewell-web-tg
+2026-03-26T06:17:44.221Z ALB/ridgewell-prod-alb INFO  [TargetGroup] HealthyHostCount restored to 2. Exiting fail-open mode.
+2026-03-26T06:17:48.112Z ridgewell-web/i-0a1b2c3d4e5f6003 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 67ms customer_id=cust_2847 routes=14
+2026-03-26T06:17:49.334Z ridgewell-web/i-0a1b2c3d4e5f6004 INFO  [RequestHandler] GET /api/v2/shipments/pending 200 23ms customer_id=cust_1192 count=55
+2026-03-26T06:17:52.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [Startup] Models loaded. Warming up inference cache...
+2026-03-26T06:17:52.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [Startup] Models loaded. Warming up inference cache...
+2026-03-26T06:18:04.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [HealthCheck] GET /health 200 4ms  (check 1 of 5)
+2026-03-26T06:18:04.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [HealthCheck] GET /health 200 3ms  (check 1 of 5)
+2026-03-26T06:19:34.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [HealthCheck] GET /health 200 2ms  (check 4 of 5)
+2026-03-26T06:19:34.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [HealthCheck] GET /health 200 2ms  (check 4 of 5)
+2026-03-26T06:20:04.001Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [HealthCheck] GET /health 200 2ms  (check 5 of 5)
+2026-03-26T06:20:04.003Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [HealthCheck] GET /health 200 2ms  (check 5 of 5)
+2026-03-26T06:20:04.112Z ALB/ridgewell-prod-alb INFO  [TargetGroup] Target i-0a1b2c3d4e5f6007 is now healthy in ridgewell-web-tg
+2026-03-26T06:20:04.118Z ALB/ridgewell-prod-alb INFO  [TargetGroup] Target i-0a1b2c3d4e5f6008 is now healthy in ridgewell-web-tg
+2026-03-26T06:20:04.221Z ALB/ridgewell-prod-alb INFO  [TargetGroup] HealthyHostCount: 4. All targets healthy.
+2026-03-26T06:20:12.334Z ridgewell-web/i-0a1b2c3d4e5f6007 INFO  [RequestHandler] POST /api/v2/routes/optimize 200 52ms customer_id=cust_0884 routes=19
+2026-03-26T06:20:14.112Z ridgewell-web/i-0a1b2c3d4e5f6008 INFO  [RequestHandler] GET /api/v2/shipments/pending 200 18ms customer_id=cust_3401 count=38

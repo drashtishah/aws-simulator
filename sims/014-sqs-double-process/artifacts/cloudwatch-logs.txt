@@ -1,0 +1,170 @@
+2026-03-26T06:31:14.223Z	req-a1b2c3d4	START RequestId: req-a1b2c3d4
+2026-03-26T06:31:14.225Z	req-a1b2c3d4	INFO	Processing order ORD-7838, 4 items
+2026-03-26T06:31:14.890Z	req-a1b2c3d4	INFO	Inventory check passed for 4 items (0.6s)
+2026-03-26T06:31:16.102Z	req-a1b2c3d4	INFO	Stripe charge succeeded: ch_3P8xK2... amount=$34.20 for order ORD-7838
+2026-03-26T06:31:17.445Z	req-a1b2c3d4	INFO	Delivery slot reserved: slot-28a for order ORD-7838
+2026-03-26T06:31:18.012Z	req-a1b2c3d4	INFO	Confirmation email sent to customer
+2026-03-26T06:31:18.014Z	req-a1b2c3d4	INFO	Order ORD-7838 processed successfully in 3.8s
+2026-03-26T06:31:18.015Z	req-a1b2c3d4	END RequestId: req-a1b2c3d4
+2026-03-26T06:31:18.015Z	req-a1b2c3d4	REPORT RequestId: req-a1b2c3d4	Duration: 3791.42 ms	Billed Duration: 3792 ms	Memory Size: 512 MB	Max Memory Used: 128 MB
+
+2026-03-26T06:34:02.110Z	req-e5f6a7b8	START RequestId: req-e5f6a7b8
+2026-03-26T06:34:02.112Z	req-e5f6a7b8	INFO	Processing order ORD-7842, 3 items
+2026-03-26T06:34:02.654Z	req-e5f6a7b8	INFO	Inventory check passed for 3 items (0.5s)
+2026-03-26T06:34:03.890Z	req-e5f6a7b8	INFO	Stripe charge succeeded: ch_3P8xM1... amount=$22.85 for order ORD-7842
+2026-03-26T06:34:04.567Z	req-e5f6a7b8	INFO	Delivery slot reserved: slot-29b for order ORD-7842
+2026-03-26T06:34:05.234Z	req-e5f6a7b8	INFO	Confirmation email sent to customer
+2026-03-26T06:34:05.236Z	req-e5f6a7b8	INFO	Order ORD-7842 processed successfully in 3.1s
+2026-03-26T06:34:05.237Z	req-e5f6a7b8	END RequestId: req-e5f6a7b8
+2026-03-26T06:34:05.237Z	req-e5f6a7b8	REPORT RequestId: req-e5f6a7b8	Duration: 3126.78 ms	Billed Duration: 3127 ms	Memory Size: 512 MB	Max Memory Used: 124 MB
+
+2026-03-26T06:48:33.401Z	req-c9d0e1f2	START RequestId: req-c9d0e1f2
+2026-03-26T06:48:33.403Z	req-c9d0e1f2	INFO	Processing order ORD-7901, 24 items
+2026-03-26T06:48:34.112Z	req-c9d0e1f2	INFO	Inventory check: item 1/24 organic-avocados (checking stock...)
+2026-03-26T06:48:36.445Z	req-c9d0e1f2	INFO	Inventory check: item 2/24 oat-milk-64oz (checking stock...)
+2026-03-26T06:48:38.891Z	req-c9d0e1f2	INFO	Inventory check: item 3/24 sourdough-loaf (checking stock...)
+2026-03-26T06:48:41.223Z	req-c9d0e1f2	INFO	...
+2026-03-26T06:49:22.567Z	req-c9d0e1f2	INFO	Inventory check passed for 24 items (49.2s)
+2026-03-26T06:49:32.890Z	req-c9d0e1f2	INFO	Stripe charge succeeded: ch_3P8xR7... amount=$67.40 for order ORD-7901
+2026-03-26T06:49:38.123Z	req-c9d0e1f2	INFO	Delivery slot reserved: slot-31d for order ORD-7901
+2026-03-26T06:49:39.445Z	req-c9d0e1f2	INFO	Confirmation email sent to customer
+2026-03-26T06:49:39.447Z	req-c9d0e1f2	INFO	Order ORD-7901 processed successfully in 66.0s
+2026-03-26T06:49:39.448Z	req-c9d0e1f2	END RequestId: req-c9d0e1f2
+2026-03-26T06:49:39.448Z	req-c9d0e1f2	REPORT RequestId: req-c9d0e1f2	Duration: 66044.12 ms	Billed Duration: 66045 ms	Memory Size: 512 MB	Max Memory Used: 198 MB
+
+2026-03-26T06:49:03.712Z	req-d1e2f3a4	START RequestId: req-d1e2f3a4
+2026-03-26T06:49:03.714Z	req-d1e2f3a4	INFO	Processing order ORD-7901, 24 items
+2026-03-26T06:49:04.334Z	req-d1e2f3a4	INFO	Inventory check: item 1/24 organic-avocados (checking stock...)
+2026-03-26T06:49:06.778Z	req-d1e2f3a4	INFO	Inventory check: item 2/24 oat-milk-64oz (checking stock...)
+2026-03-26T06:49:09.112Z	req-d1e2f3a4	INFO	...
+2026-03-26T06:49:51.890Z	req-d1e2f3a4	INFO	Inventory check passed for 24 items (48.2s)
+2026-03-26T06:50:01.234Z	req-d1e2f3a4	INFO	Stripe charge succeeded: ch_3P8xR9... amount=$67.40 for order ORD-7901
+2026-03-26T06:50:06.567Z	req-d1e2f3a4	INFO	Delivery slot reserved: slot-32e for order ORD-7901
+2026-03-26T06:50:07.890Z	req-d1e2f3a4	INFO	Confirmation email sent to customer
+2026-03-26T06:50:07.892Z	req-d1e2f3a4	INFO	Order ORD-7901 processed successfully in 64.2s
+2026-03-26T06:50:07.893Z	req-d1e2f3a4	END RequestId: req-d1e2f3a4
+2026-03-26T06:50:07.893Z	req-d1e2f3a4	REPORT RequestId: req-d1e2f3a4	Duration: 64180.45 ms	Billed Duration: 64181 ms	Memory Size: 512 MB	Max Memory Used: 201 MB
+
+2026-03-26T07:02:18.556Z	req-e3f4a5b6	START RequestId: req-e3f4a5b6
+2026-03-26T07:02:18.558Z	req-e3f4a5b6	INFO	Processing order ORD-7923, 6 items
+2026-03-26T07:02:19.112Z	req-e3f4a5b6	INFO	Inventory check passed for 6 items (0.6s)
+2026-03-26T07:02:20.445Z	req-e3f4a5b6	INFO	Stripe charge succeeded: ch_3P8xT2... amount=$41.10 for order ORD-7923
+2026-03-26T07:02:21.234Z	req-e3f4a5b6	INFO	Delivery slot reserved: slot-33f for order ORD-7923
+2026-03-26T07:02:21.890Z	req-e3f4a5b6	INFO	Confirmation email sent to customer
+2026-03-26T07:02:21.892Z	req-e3f4a5b6	INFO	Order ORD-7923 processed successfully in 3.3s
+2026-03-26T07:02:21.893Z	req-e3f4a5b6	END RequestId: req-e3f4a5b6
+2026-03-26T07:02:21.893Z	req-e3f4a5b6	REPORT RequestId: req-e3f4a5b6	Duration: 3336.54 ms	Billed Duration: 3337 ms	Memory Size: 512 MB	Max Memory Used: 126 MB
+
+2026-03-26T07:15:44.201Z	req-f5a6b7c8	START RequestId: req-f5a6b7c8
+2026-03-26T07:15:44.203Z	req-f5a6b7c8	INFO	Processing order ORD-7945, 28 items
+2026-03-26T07:15:44.890Z	req-f5a6b7c8	INFO	Inventory check: item 1/28 organic-avocados (checking stock...)
+2026-03-26T07:15:47.112Z	req-f5a6b7c8	INFO	Inventory check: item 2/28 free-range-eggs (checking stock...)
+2026-03-26T07:15:49.445Z	req-f5a6b7c8	INFO	...
+2026-03-26T07:16:38.234Z	req-f5a6b7c8	INFO	Inventory check passed for 28 items (54.0s)
+2026-03-26T07:16:49.567Z	req-f5a6b7c8	INFO	Stripe charge succeeded: ch_3P8xV4... amount=$89.25 for order ORD-7945
+2026-03-26T07:16:55.890Z	req-f5a6b7c8	INFO	Delivery slot reserved: slot-35h for order ORD-7945
+2026-03-26T07:16:57.112Z	req-f5a6b7c8	INFO	Confirmation email sent to customer
+2026-03-26T07:16:57.114Z	req-f5a6b7c8	INFO	Order ORD-7945 processed successfully in 72.9s
+2026-03-26T07:16:57.115Z	req-f5a6b7c8	END RequestId: req-f5a6b7c8
+2026-03-26T07:16:57.115Z	req-f5a6b7c8	REPORT RequestId: req-f5a6b7c8	Duration: 72912.34 ms	Billed Duration: 72913 ms	Memory Size: 512 MB	Max Memory Used: 215 MB
+
+2026-03-26T07:16:14.890Z	req-a7b8c9d0	START RequestId: req-a7b8c9d0
+2026-03-26T07:16:14.892Z	req-a7b8c9d0	INFO	Processing order ORD-7945, 28 items
+2026-03-26T07:16:15.556Z	req-a7b8c9d0	INFO	Inventory check: item 1/28 organic-avocados (checking stock...)
+2026-03-26T07:16:17.890Z	req-a7b8c9d0	INFO	Inventory check: item 2/28 free-range-eggs (checking stock...)
+2026-03-26T07:16:20.112Z	req-a7b8c9d0	INFO	...
+2026-03-26T07:17:06.445Z	req-a7b8c9d0	INFO	Inventory check passed for 28 items (51.6s)
+2026-03-26T07:17:17.234Z	req-a7b8c9d0	INFO	Stripe charge succeeded: ch_3P8xV6... amount=$89.25 for order ORD-7945
+2026-03-26T07:17:22.567Z	req-a7b8c9d0	INFO	Delivery slot reserved: slot-36i for order ORD-7945
+2026-03-26T07:17:23.890Z	req-a7b8c9d0	INFO	Confirmation email sent to customer
+2026-03-26T07:17:23.892Z	req-a7b8c9d0	INFO	Order ORD-7945 processed successfully in 69.0s
+2026-03-26T07:17:23.893Z	req-a7b8c9d0	END RequestId: req-a7b8c9d0
+2026-03-26T07:17:23.893Z	req-a7b8c9d0	REPORT RequestId: req-a7b8c9d0	Duration: 69002.89 ms	Billed Duration: 69003 ms	Memory Size: 512 MB	Max Memory Used: 210 MB
+
+2026-03-26T07:22:01.334Z	req-b9c0d1e2	START RequestId: req-b9c0d1e2
+2026-03-26T07:22:01.336Z	req-b9c0d1e2	INFO	Processing order ORD-7952, 31 items
+2026-03-26T07:22:02.001Z	req-b9c0d1e2	INFO	Inventory check: item 1/31 oat-milk-64oz (checking stock...)
+2026-03-26T07:22:04.334Z	req-b9c0d1e2	INFO	...
+2026-03-26T07:22:58.112Z	req-b9c0d1e2	INFO	Inventory check passed for 31 items (56.1s)
+2026-03-26T07:23:09.890Z	req-b9c0d1e2	INFO	Stripe charge succeeded: ch_3P8xW1... amount=$112.60 for order ORD-7952
+2026-03-26T07:23:16.223Z	req-b9c0d1e2	INFO	Delivery slot reserved: slot-37j for order ORD-7952
+2026-03-26T07:23:17.556Z	req-b9c0d1e2	INFO	Confirmation email sent to customer
+2026-03-26T07:23:17.558Z	req-b9c0d1e2	INFO	Order ORD-7952 processed successfully in 76.2s
+2026-03-26T07:23:17.559Z	req-b9c0d1e2	END RequestId: req-b9c0d1e2
+2026-03-26T07:23:17.559Z	req-b9c0d1e2	REPORT RequestId: req-b9c0d1e2	Duration: 76224.67 ms	Billed Duration: 76225 ms	Memory Size: 512 MB	Max Memory Used: 224 MB
+
+2026-03-26T07:22:31.667Z	req-c1d2e3f4	START RequestId: req-c1d2e3f4
+2026-03-26T07:22:31.669Z	req-c1d2e3f4	INFO	Processing order ORD-7952, 31 items
+2026-03-26T07:22:32.334Z	req-c1d2e3f4	INFO	Inventory check: item 1/31 oat-milk-64oz (checking stock...)
+2026-03-26T07:22:34.667Z	req-c1d2e3f4	INFO	...
+2026-03-26T07:23:28.445Z	req-c1d2e3f4	INFO	Inventory check passed for 31 items (56.8s)
+2026-03-26T07:23:40.112Z	req-c1d2e3f4	INFO	Stripe charge succeeded: ch_3P8xW3... amount=$112.60 for order ORD-7952
+2026-03-26T07:23:46.445Z	req-c1d2e3f4	INFO	Delivery slot reserved: slot-38k for order ORD-7952
+2026-03-26T07:23:47.778Z	req-c1d2e3f4	INFO	Confirmation email sent to customer
+2026-03-26T07:23:47.780Z	req-c1d2e3f4	INFO	Order ORD-7952 processed successfully in 76.1s
+2026-03-26T07:23:47.781Z	req-c1d2e3f4	END RequestId: req-c1d2e3f4
+2026-03-26T07:23:47.781Z	req-c1d2e3f4	REPORT RequestId: req-c1d2e3f4	Duration: 76113.45 ms	Billed Duration: 76114 ms	Memory Size: 512 MB	Max Memory Used: 218 MB
+
+2026-03-26T07:35:12.001Z	req-d3e4f5a6	START RequestId: req-d3e4f5a6
+2026-03-26T07:35:12.003Z	req-d3e4f5a6	INFO	Processing order ORD-7968, 2 items
+2026-03-26T07:35:12.445Z	req-d3e4f5a6	INFO	Inventory check passed for 2 items (0.4s)
+2026-03-26T07:35:13.667Z	req-d3e4f5a6	INFO	Stripe charge succeeded: ch_3P8xY8... amount=$11.90 for order ORD-7968
+2026-03-26T07:35:14.223Z	req-d3e4f5a6	INFO	Delivery slot reserved: slot-39l for order ORD-7968
+2026-03-26T07:35:14.890Z	req-d3e4f5a6	INFO	Confirmation email sent to customer
+2026-03-26T07:35:14.892Z	req-d3e4f5a6	INFO	Order ORD-7968 processed successfully in 2.9s
+2026-03-26T07:35:14.893Z	req-d3e4f5a6	END RequestId: req-d3e4f5a6
+2026-03-26T07:35:14.893Z	req-d3e4f5a6	REPORT RequestId: req-d3e4f5a6	Duration: 2891.23 ms	Billed Duration: 2892 ms	Memory Size: 512 MB	Max Memory Used: 118 MB
+
+2026-03-26T07:42:08.334Z	req-e5f6a7b8	START RequestId: req-e5f6a7b8
+2026-03-26T07:42:08.336Z	req-e5f6a7b8	INFO	Processing order ORD-7981, 22 items
+2026-03-26T07:42:09.001Z	req-e5f6a7b8	INFO	Inventory check: item 1/22 organic-avocados (checking stock...)
+2026-03-26T07:42:11.334Z	req-e5f6a7b8	INFO	Inventory check: item 2/22 oat-milk-64oz (checking stock...)
+2026-03-26T07:42:13.667Z	req-e5f6a7b8	INFO	...
+2026-03-26T07:42:51.890Z	req-e5f6a7b8	INFO	Inventory check passed for 22 items (42.9s)
+2026-03-26T07:43:01.223Z	req-e5f6a7b8	INFO	Stripe charge succeeded: ch_3P8xZ2... amount=$74.85 for order ORD-7981
+2026-03-26T07:43:06.556Z	req-e5f6a7b8	INFO	Delivery slot reserved: slot-40m for order ORD-7981
+2026-03-26T07:43:07.890Z	req-e5f6a7b8	INFO	Confirmation email sent to customer
+2026-03-26T07:43:07.892Z	req-e5f6a7b8	INFO	Order ORD-7981 processed successfully in 59.6s
+2026-03-26T07:43:07.893Z	req-e5f6a7b8	END RequestId: req-e5f6a7b8
+2026-03-26T07:43:07.893Z	req-e5f6a7b8	REPORT RequestId: req-e5f6a7b8	Duration: 59556.78 ms	Billed Duration: 59557 ms	Memory Size: 512 MB	Max Memory Used: 192 MB
+
+2026-03-26T07:42:38.667Z	req-f7a8b9c0	START RequestId: req-f7a8b9c0
+2026-03-26T07:42:38.669Z	req-f7a8b9c0	INFO	Processing order ORD-7981, 22 items
+2026-03-26T07:42:39.334Z	req-f7a8b9c0	INFO	Inventory check: item 1/22 organic-avocados (checking stock...)
+2026-03-26T07:42:41.667Z	req-f7a8b9c0	INFO	Inventory check: item 2/22 oat-milk-64oz (checking stock...)
+2026-03-26T07:42:44.001Z	req-f7a8b9c0	INFO	...
+2026-03-26T07:43:22.223Z	req-f7a8b9c0	INFO	Inventory check passed for 22 items (43.6s)
+2026-03-26T07:43:32.556Z	req-f7a8b9c0	INFO	Stripe charge succeeded: ch_3P8xZ4... amount=$74.85 for order ORD-7981
+2026-03-26T07:43:38.890Z	req-f7a8b9c0	INFO	Delivery slot reserved: slot-41n for order ORD-7981
+2026-03-26T07:43:40.112Z	req-f7a8b9c0	INFO	Confirmation email sent to customer
+2026-03-26T07:43:40.114Z	req-f7a8b9c0	INFO	Order ORD-7981 processed successfully in 61.4s
+2026-03-26T07:43:40.115Z	req-f7a8b9c0	END RequestId: req-f7a8b9c0
+2026-03-26T07:43:40.115Z	req-f7a8b9c0	REPORT RequestId: req-f7a8b9c0	Duration: 61447.23 ms	Billed Duration: 61448 ms	Memory Size: 512 MB	Max Memory Used: 196 MB
+
+2026-03-26T08:01:45.112Z	req-a9b0c1d2	START RequestId: req-a9b0c1d2
+2026-03-26T08:01:45.114Z	req-a9b0c1d2	INFO	Processing order ORD-8012, 26 items
+2026-03-26T08:01:45.778Z	req-a9b0c1d2	INFO	Inventory check: item 1/26 organic-avocados (checking stock...)
+2026-03-26T08:01:48.112Z	req-a9b0c1d2	INFO	WARN: organic-avocados stock is -3 (negative inventory detected)
+2026-03-26T08:01:48.114Z	req-a9b0c1d2	INFO	Inventory check: item 2/26 oat-milk-64oz (checking stock...)
+2026-03-26T08:01:50.445Z	req-a9b0c1d2	INFO	WARN: oat-milk-64oz stock is -7 (negative inventory detected)
+2026-03-26T08:01:50.447Z	req-a9b0c1d2	INFO	...
+2026-03-26T08:02:42.890Z	req-a9b0c1d2	INFO	Inventory check passed for 26 items (57.1s) -- 2 items with negative stock warnings
+2026-03-26T08:02:54.223Z	req-a9b0c1d2	INFO	Stripe charge succeeded: ch_3P8yA1... amount=$96.30 for order ORD-8012
+2026-03-26T08:03:00.556Z	req-a9b0c1d2	INFO	Delivery slot reserved: slot-44q for order ORD-8012
+2026-03-26T08:03:01.890Z	req-a9b0c1d2	INFO	Confirmation email sent to customer
+2026-03-26T08:03:01.892Z	req-a9b0c1d2	INFO	Order ORD-8012 processed successfully in 76.8s
+2026-03-26T08:03:01.893Z	req-a9b0c1d2	END RequestId: req-a9b0c1d2
+2026-03-26T08:03:01.893Z	req-a9b0c1d2	REPORT RequestId: req-a9b0c1d2	Duration: 76778.34 ms	Billed Duration: 76779 ms	Memory Size: 512 MB	Max Memory Used: 221 MB
+
+2026-03-26T08:02:15.445Z	req-b1c2d3e4	START RequestId: req-b1c2d3e4
+2026-03-26T08:02:15.447Z	req-b1c2d3e4	INFO	Processing order ORD-8012, 26 items
+2026-03-26T08:02:16.112Z	req-b1c2d3e4	INFO	Inventory check: item 1/26 organic-avocados (checking stock...)
+2026-03-26T08:02:18.445Z	req-b1c2d3e4	INFO	WARN: organic-avocados stock is -4 (negative inventory detected)
+2026-03-26T08:02:18.447Z	req-b1c2d3e4	INFO	...
+2026-03-26T08:03:10.890Z	req-b1c2d3e4	INFO	Inventory check passed for 26 items (55.4s) -- 2 items with negative stock warnings
+2026-03-26T08:03:22.223Z	req-b1c2d3e4	INFO	Stripe charge succeeded: ch_3P8yA3... amount=$96.30 for order ORD-8012
+2026-03-26T08:03:28.556Z	req-b1c2d3e4	INFO	Delivery slot reserved: slot-45r for order ORD-8012
+2026-03-26T08:03:29.890Z	req-b1c2d3e4	INFO	Confirmation email sent to customer
+2026-03-26T08:03:29.892Z	req-b1c2d3e4	INFO	Order ORD-8012 processed successfully in 74.4s
+2026-03-26T08:03:29.893Z	req-b1c2d3e4	END RequestId: req-b1c2d3e4
+2026-03-26T08:03:29.893Z	req-b1c2d3e4	REPORT RequestId: req-b1c2d3e4	Duration: 74445.67 ms	Billed Duration: 74446 ms	Memory Size: 512 MB	Max Memory Used: 217 MB

@@ -1,0 +1,48 @@
+  Region: us-east-1
+
+  Internet
+     |
+  +--+--------------------------------------------------+
+  |  ALB: ridgewell-prod-alb                             |
+  |  DNS: ridgewell-prod-1234567890.us-east-1.elb.aws    |
+  |  Scheme: internet-facing                             |
+  |  Listeners: HTTPS:443 -> ridgewell-web-tg            |
+  +--+--------------------------------------------------+
+     |
+     |  Target Group: ridgewell-web-tg
+     |  Protocol: HTTP:8080
+     |  Health check: GET /health, interval 30s, healthy threshold 5
+     |  Deregistration delay: 30s
+     |
+  +--+--------------------------------------------------+
+  |  Auto Scaling Group: ridgewell-web-asg               |
+  |  Min: 4  Max: 8  Desired: 4                          |
+  |  AZs: us-east-1a, us-east-1b                         |
+  |                                                      |
+  |  us-east-1a                  us-east-1b              |
+  |  +---------------------+    +---------------------+  |
+  |  | i-0a1b2c3d4e5f6001  |    | i-0a1b2c3d4e5f6002  |  |
+  |  | c5.xlarge           |    | c5.xlarge           |  |
+  |  | subnet-0aaa1111     |    | subnet-0bbb2222     |  |
+  |  +---------------------+    +---------------------+  |
+  |  +---------------------+    +---------------------+  |
+  |  | i-0a1b2c3d4e5f6005  |    | i-0a1b2c3d4e5f6006  |  |
+  |  | c5.xlarge           |    | c5.xlarge           |  |
+  |  | subnet-0aaa1111     |    | subnet-0bbb2222     |  |
+  |  +---------------------+    +---------------------+  |
+  |                                                      |
+  +--+--------------------------------------------------+
+     |
+  +--+--------------------------------------------------+
+  |  CodeDeploy: ridgewell-web-deploy                    |
+  |  Deployment group: ridgewell-web-dg                  |
+  |  Deployment config: 50% at a time                    |
+  |  Connected to ASG: ridgewell-web-asg                 |
+  +-----------------------------------------------------+
+     |
+  +--+--------------------------------------------------+
+  |  RDS Aurora: ridgewell-prod-cluster                  |
+  |  Engine: Aurora PostgreSQL 15.4                      |
+  |  Writer: ridgewell-prod-instance-1 (us-east-1a)     |
+  |  Reader: ridgewell-prod-instance-2 (us-east-1b)     |
+  +-----------------------------------------------------+

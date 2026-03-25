@@ -1,0 +1,6 @@
+Company: Canopy Goods (Seed-stage startup, 11 engineers)
+Industry: Grocery delivery
+Users: 12,000 active customers in Austin TX, 2,800 orders/day, $340K monthly GMV
+AWS Services: Amazon SQS, AWS Lambda, Amazon CloudWatch
+Your role: Backend engineer, 8:15 AM Wednesday
+Situation: Customers reporting duplicate charges for grocery orders; eleven reports in the last 30 minutes

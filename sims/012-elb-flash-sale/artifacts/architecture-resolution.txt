@@ -1,0 +1,69 @@
+  VPC: vpc-0e7a3b5c9d1f24680 (10.0.0.0/16) -- us-east-1
+
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Public Subnet: 10.0.1.0/24 (us-east-1a, us-east-1b)                 |
+  |                                                                       |
+  |  +---------------------------+       +---------------------+          |
+  |  | ALB                       |       | Internet Gateway    |          |
+  |  | vellora-prod-alb          |       | igw-0c4d5e6f7a8b9   |          |
+  |  | internet-facing           |<------| (public traffic)    |          |
+  |  | [NOT PRE-WARMED]          |       |                     |          |
+  |  | Could not scale from      |       +---------------------+          |
+  |  | ~200 req/s to 2,400 req/s |                                        |
+  |  | in 45 seconds             |                                        |
+  |  +-------------+-------------+                                        |
+  |                |                                                       |
+  +-----------------------------------------------------------------------+
+                   |
+                   | routes to Target Group
+                   |
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Private Subnet: 10.0.2.0/24 (us-east-1a, us-east-1b)               |
+  |                                                                       |
+  |  +-- Auto Scaling Group: vellora-web-asg -------------------------+  |
+  |  |   Min: 2 | Max: 20 | Desired: 2                                |  |
+  |  |   [CPU-ONLY POLICY, 300s COOLDOWN]                              |  |
+  |  |   No ALBRequestCountPerTarget policy                            |  |
+  |  |   First new instance not healthy until 00:07 (7 min delay)      |  |
+  |  |                                                                 |  |
+  |  |  +---------------------+       +---------------------+         |  |
+  |  |  | EC2: vellora-web-01 |       | EC2: vellora-web-02 |         |  |
+  |  |  | i-0f3a7c9e1b5d82001 |       | i-0f3a7c9e1b5d82002 |         |  |
+  |  |  | t3.large            |       | t3.large            |         |  |
+  |  |  | [OVERWHELMED]       |       | [OVERWHELMED]       |         |  |
+  |  |  | CPU: 98%            |       | CPU: 98%            |         |  |
+  |  |  | Response: 28s+      |       | Response: 28s+      |         |  |
+  |  |  +----------+----------+       +----------+----------+         |  |
+  |  |             |                              |                    |  |
+  |  +-------------+------------------------------+--------------------+  |
+  |                |                              |                       |
+  |  Target Group: vellora-web-tg (port 8080, HTTP)                      |
+  |                                                                       |
+  +-----------------------------------------------------------------------+
+                   |
+                   | database connections
+                   |
+  +-----------------------------------------------------------------------+
+  |  RDS: vellora-prod-db                                                 |
+  |  db.r5.large | PostgreSQL 15.4 | Multi-AZ                            |
+  +-----------------------------------------------------------------------+
+
+  PROBLEM 1: ALB NOT PRE-WARMED
+  =============================
+  ALB scales internal capacity gradually (~2x over 5 min).
+  10x spike in 45 seconds exceeded ALB capacity.
+  Result: 503 errors, RejectedConnectionCount spike.
+  Fix: Contact AWS Support to pre-warm ALB, or use LCU reservation.
+
+  PROBLEM 2: AUTO SCALING TOO SLOW
+  =================================
+  Policy: CPUUtilization > 70% (simple scaling, 300s cooldown)
+  Timeline:
+    00:00 - Sale starts, traffic spikes to 2,400 req/s
+    00:02 - CPU alarm triggers (2x 60s eval periods)
+    00:03 - First instance launched
+    00:07 - First instance passes health check
+    00:08 - Cooldown expires, second instance launched
+  Fix: Add ALBRequestCountPerTarget policy, reduce cooldown to 60s.

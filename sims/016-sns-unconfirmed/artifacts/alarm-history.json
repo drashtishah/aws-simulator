@@ -1,0 +1,84 @@
+{
+  "AlarmHistoryItems": [
+    {
+      "AlarmName": "clarabridge-ingest-error-rate",
+      "AlarmType": "MetricAlarm",
+      "Timestamp": "2026-03-26T10:07:12Z",
+      "HistoryItemType": "StateUpdate",
+      "HistorySummary": "Alarm updated from OK to ALARM",
+      "HistoryData": {
+        "version": "1.0",
+        "type": "StateUpdate",
+        "oldState": {
+          "stateValue": "OK",
+          "stateReason": "Threshold Crossed: 1 out of the last 1 datapoints [1.2 (26/03/26 09:57:00)] was not greater than the threshold (5.0)."
+        },
+        "newState": {
+          "stateValue": "ALARM",
+          "stateReason": "Threshold Crossed: 1 out of the last 1 datapoints [23.4 (26/03/26 10:02:00)] was greater than the threshold (5.0).",
+          "stateReasonData": {
+            "version": "1.0",
+            "queryDate": "2026-03-26T10:07:12.000Z",
+            "startDate": "2026-03-26T10:02:00.000Z",
+            "period": 300,
+            "recentDatapoints": [23.4],
+            "threshold": 5.0
+          }
+        }
+      }
+    },
+    {
+      "AlarmName": "clarabridge-ingest-error-rate",
+      "AlarmType": "MetricAlarm",
+      "Timestamp": "2026-03-26T10:07:14Z",
+      "HistoryItemType": "Action",
+      "HistorySummary": "Successfully executed action arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+      "HistoryData": {
+        "version": "1.0",
+        "type": "Action",
+        "actionState": "Succeeded",
+        "notificationResource": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+        "stateValue": "ALARM",
+        "publishTimestamp": "2026-03-26T10:07:14Z",
+        "snsMessageId": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+      }
+    },
+    {
+      "AlarmName": "clarabridge-ingest-error-rate",
+      "AlarmType": "MetricAlarm",
+      "Timestamp": "2026-03-19T16:12:00Z",
+      "HistoryItemType": "StateUpdate",
+      "HistorySummary": "Alarm updated from ALARM to OK",
+      "HistoryData": {
+        "version": "1.0",
+        "type": "StateUpdate",
+        "oldState": {
+          "stateValue": "ALARM",
+          "stateReason": "Threshold Crossed: 1 out of the last 1 datapoints [8.7 (19/03/26 15:57:00)] was greater than the threshold (5.0)."
+        },
+        "newState": {
+          "stateValue": "OK",
+          "stateReason": "Threshold Crossed: 1 out of the last 1 datapoints [2.1 (19/03/26 16:07:00)] was not greater than the threshold (5.0)."
+        }
+      }
+    },
+    {
+      "AlarmName": "clarabridge-ingest-error-rate",
+      "AlarmType": "MetricAlarm",
+      "Timestamp": "2026-03-19T15:32:00Z",
+      "HistoryItemType": "StateUpdate",
+      "HistorySummary": "Alarm updated from OK to ALARM",
+      "HistoryData": {
+        "version": "1.0",
+        "type": "StateUpdate",
+        "oldState": {
+          "stateValue": "OK"
+        },
+        "newState": {
+          "stateValue": "ALARM",
+          "stateReason": "Threshold Crossed: 1 out of the last 1 datapoints [8.7 (19/03/26 15:27:00)] was greater than the threshold (5.0)."
+        }
+      }
+    }
+  ]
+}

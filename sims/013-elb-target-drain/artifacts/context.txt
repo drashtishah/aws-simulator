@@ -1,0 +1,6 @@
+Company: Ridgewell (Growth-stage, 38 engineers)
+Industry: Logistics SaaS / route optimization
+Users: 340 enterprise customers, $6.2M ARR, peak usage 6-10am when dispatchers plan routes
+AWS Services: Elastic Load Balancing, AWS Auto Scaling, Amazon EC2, Amazon CloudWatch
+Your role: On-call engineer, 6:18 AM Wednesday
+Situation: Rolling deployment triggered 502 errors across the platform during peak dispatcher hours

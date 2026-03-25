@@ -1,0 +1,73 @@
+{
+  "HostedZone": {
+    "Id": "/hostedzone/Z0847362NXKP9DSPELLBK",
+    "Name": "spellbook.dev.",
+    "CallerReference": "2025-09-25T14:02:33Z",
+    "Config": {
+      "Comment": "Spellbook production hosted zone",
+      "PrivateZone": false
+    },
+    "ResourceRecordSetCount": 12
+  },
+  "ResourceRecordSets": [
+    {
+      "Name": "spellbook.dev.",
+      "Type": "NS",
+      "TTL": 172800,
+      "ResourceRecords": [
+        { "Value": "ns-1042.awsdns-02.org." },
+        { "Value": "ns-1821.awsdns-35.co.uk." },
+        { "Value": "ns-482.awsdns-60.com." },
+        { "Value": "ns-734.awsdns-27.net." }
+      ]
+    },
+    {
+      "Name": "spellbook.dev.",
+      "Type": "SOA",
+      "TTL": 900,
+      "ResourceRecords": [
+        { "Value": "ns-1042.awsdns-02.org. awsdns-hostmaster.amazon.com. 1 7200 900 1209600 86400" }
+      ]
+    },
+    {
+      "Name": "docs.spellbook.dev.",
+      "Type": "A",
+      "SetIdentifier": "primary",
+      "Failover": "PRIMARY",
+      "AliasTarget": {
+        "HostedZoneId": "Z35SXDOTRQ7X7K",
+        "DNSName": "spellbook-prod-alb-east-1847362910.us-east-1.elb.amazonaws.com.",
+        "EvaluateTargetHealth": false
+      },
+      "HealthCheckId": "a1b2c3d4-5678-90ab-cdef-111111111111"
+    },
+    {
+      "Name": "docs.spellbook.dev.",
+      "Type": "A",
+      "SetIdentifier": "secondary",
+      "Failover": "SECONDARY",
+      "AliasTarget": {
+        "HostedZoneId": "Z32O12XQLNTSW2",
+        "DNSName": "spellbook-prod-alb-west-0293847561.eu-west-1.elb.amazonaws.com.",
+        "EvaluateTargetHealth": false
+      }
+    },
+    {
+      "Name": "api.spellbook.dev.",
+      "Type": "A",
+      "AliasTarget": {
+        "HostedZoneId": "Z35SXDOTRQ7X7K",
+        "DNSName": "spellbook-api-alb-1293847560.us-east-1.elb.amazonaws.com.",
+        "EvaluateTargetHealth": true
+      }
+    },
+    {
+      "Name": "status.spellbook.dev.",
+      "Type": "CNAME",
+      "TTL": 300,
+      "ResourceRecords": [
+        { "Value": "spellbook.statuspage.io." }
+      ]
+    }
+  ]
+}

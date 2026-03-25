@@ -1,0 +1,69 @@
+--- Application logs: appointment-service (trellis-prod ECS cluster) ---
+--- Log group: /ecs/trellis-prod/appointment-service ---
+--- Filtered: 2026-03-27 06:00 to 09:30 UTC ---
+
+2026-03-27T06:12:04.182Z INFO  [appointment-service] Cache HIT for availability:dr-chen:2026-03-27 (3ms)
+2026-03-27T06:12:04.210Z INFO  [appointment-service] Cache HIT for session:patient-88214 (2ms)
+2026-03-27T06:12:08.441Z INFO  [appointment-service] Cache HIT for availability:dr-patel:2026-03-27 (2ms)
+2026-03-27T06:12:12.892Z INFO  [appointment-service] Cache MISS for availability:dr-wong:2026-03-28, querying database (fallback)
+2026-03-27T06:12:12.898Z INFO  [appointment-service] Database query completed in 6ms for availability lookup
+2026-03-27T06:12:12.901Z INFO  [appointment-service] Cache SET for availability:dr-wong:2026-03-28 (1ms)
+
+--- [normal cache hit/miss pattern continues, ~97% hit rate] ---
+
+2026-03-27T07:15:22.104Z INFO  [appointment-service] Deploy event: version 4.12.0 -> 4.13.0 (lab-result-caching feature enabled)
+2026-03-27T07:15:22.108Z INFO  [appointment-service] Initializing lab result cache layer (new feature: TRELLIS-2847)
+2026-03-27T07:15:24.312Z INFO  [appointment-service] Lab result cache warming: loading 12,400 recent results into Redis
+2026-03-27T07:15:38.891Z INFO  [appointment-service] Lab result cache warming complete. Keys written: 12,400. Memory consumed: ~380 MB.
+
+--- [cache continues operating normally for ~12 minutes after deploy] ---
+
+2026-03-27T07:28:14.201Z INFO  [appointment-service] Cache HIT for availability:dr-chen:2026-03-27 (2ms)
+2026-03-27T07:28:14.418Z DEBUG [appointment-service] Cache SET failed for availability:dr-martinez:2026-03-27: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T07:28:14.420Z INFO  [appointment-service] Cache HIT for session:patient-41029 (2ms)
+2026-03-27T07:28:18.102Z DEBUG [appointment-service] Cache SET failed for lab-result:patient-71204:cbc: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T07:28:22.841Z DEBUG [appointment-service] Cache SET failed for availability:dr-patel:2026-03-28: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T07:28:22.843Z INFO  [appointment-service] Cache MISS for availability:dr-patel:2026-03-28, querying database (fallback)
+2026-03-27T07:28:22.851Z INFO  [appointment-service] Database query completed in 8ms for availability lookup
+
+--- [OOM errors increasing, existing cached data still serving reads but no new writes] ---
+
+2026-03-27T07:45:01.204Z DEBUG [appointment-service] Cache SET failed for availability:dr-chen:2026-03-27: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T07:45:01.206Z INFO  [appointment-service] Cache MISS for availability:dr-chen:2026-03-27, querying database (fallback)
+2026-03-27T07:45:01.492Z INFO  [appointment-service] Database query completed in 286ms for availability lookup
+2026-03-27T07:45:02.104Z DEBUG [appointment-service] Cache SET failed for session:patient-22104: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T07:45:04.218Z INFO  [appointment-service] Cache MISS for availability:dr-wong:2026-03-27, querying database (fallback)
+2026-03-27T07:45:04.810Z INFO  [appointment-service] Database query completed in 592ms for availability lookup
+2026-03-27T07:45:08.102Z DEBUG [appointment-service] Cache SET failed for slots:2026-03-27:clinic-portland-01: OOM command not allowed when used memory > 'maxmemory'
+
+--- [TTL-expired keys cannot be replaced. Cache hit rate collapsing.] ---
+
+2026-03-27T08:15:42.104Z INFO  [appointment-service] Cache MISS for availability:dr-patel:2026-03-27, querying database (fallback)
+2026-03-27T08:15:42.918Z INFO  [appointment-service] Database query completed in 814ms for availability lookup
+2026-03-27T08:15:42.920Z DEBUG [appointment-service] Cache SET failed for availability:dr-patel:2026-03-27: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T08:15:44.201Z INFO  [appointment-service] Cache MISS for availability:dr-chen:2026-03-28, querying database (fallback)
+2026-03-27T08:15:45.012Z INFO  [appointment-service] Database query completed in 811ms for availability lookup
+2026-03-27T08:15:48.104Z WARN  [appointment-service] Connection pool exhausted, waiting for available connection...
+2026-03-27T08:15:49.892Z INFO  [appointment-service] Database query completed in 1788ms for availability lookup (includes pool wait)
+
+--- [database connection pool saturating, response times climbing] ---
+
+2026-03-27T09:00:12.104Z INFO  [appointment-service] Cache MISS for availability:dr-martinez:2026-03-27, querying database (fallback)
+2026-03-27T09:00:12.108Z WARN  [appointment-service] Connection pool exhausted, waiting for available connection...
+2026-03-27T09:00:18.412Z INFO  [appointment-service] Database query completed in 6304ms for availability lookup (includes pool wait)
+2026-03-27T09:00:18.414Z DEBUG [appointment-service] Cache SET failed for availability:dr-martinez:2026-03-27: OOM command not allowed when used memory > 'maxmemory'
+2026-03-27T09:00:22.108Z INFO  [appointment-service] Cache MISS for slots:2026-03-27:clinic-austin-03, querying database (fallback)
+2026-03-27T09:00:22.110Z WARN  [appointment-service] Connection pool exhausted, waiting for available connection...
+2026-03-27T09:00:28.918Z INFO  [appointment-service] Database query completed in 6808ms for slot computation (includes pool wait)
+2026-03-27T09:00:31.204Z ERROR [appointment-service] Request timeout: GET /api/v1/availability/dr-wong/2026-03-27 exceeded 10s threshold
+2026-03-27T09:00:34.102Z ERROR [appointment-service] Request timeout: GET /api/v1/slots/clinic-portland-01/2026-03-27 exceeded 10s threshold
+
+--- [9:23 AM -- first provider office complaint arrives] ---
+
+2026-03-27T09:23:04.102Z INFO  [appointment-service] Cache MISS for availability:dr-chen:2026-03-27, querying database (fallback)
+2026-03-27T09:23:04.104Z WARN  [appointment-service] Connection pool exhausted, waiting for available connection...
+2026-03-27T09:23:12.418Z INFO  [appointment-service] Database query completed in 8314ms for availability lookup (includes pool wait)
+2026-03-27T09:23:14.201Z ERROR [appointment-service] Request timeout: POST /api/v1/appointments exceeded 10s threshold
+2026-03-27T09:23:14.204Z ERROR [appointment-service] Appointment booking failed for patient-88214: request timeout
+
+--- [9:30 AM -- investigation begins] ---

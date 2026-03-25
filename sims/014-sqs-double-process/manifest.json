@@ -1,0 +1,134 @@
+{
+  "id": "014-sqs-double-process",
+  "title": "The Queue Nobody Watched",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": ["sqs", "lambda", "cloudwatch"],
+  "tags": [
+    "visibility-timeout",
+    "duplicate-processing",
+    "dead-letter-queue",
+    "idempotency",
+    "sqs-lambda"
+  ],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "DVA-C02:Domain1:DevelopmentWithAWS"
+  ],
+  "company": {
+    "name": "Canopy Goods",
+    "industry": "grocery delivery",
+    "size": "Seed-stage startup, 11 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Co-founder and only backend engineer awake at this hour. Matter-of-fact. Mentions customer refund requests between technical details. Knows the codebase intimately but missed this configuration.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Eight more duplicate charge reports came in while we were looking at this. Stripe shows two successful charges for each of those orders. The refund queue in the support tool is growing."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The inventory system shows negative stock for organic avocados and oat milk. That should not be possible. Three delivery drivers were assigned the same order."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "We have processed $4,200 in duplicate charges today. Support has handled eleven refund requests. Two customers posted about it on the Austin subreddit."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The Lambda function code is correct for a single execution. The problem is that the same message is being processed more than once. Look at the queue configuration."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "How long does the Lambda function take to process a large order?",
+        "What happens to an SQS message if the consumer does not delete it within the visibility timeout?",
+        "Compare the SQS visibility timeout with the Lambda function timeout. What do you notice?",
+        "The visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. For large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it.",
+        "Fix: set visibility timeout to at least 6x the Lambda timeout (540 seconds recommended by AWS), configure a dead-letter queue, and add idempotency checks using the order ID."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "sqs",
+        "artifacts": [
+          "artifacts/queue-config.json",
+          "artifacts/queue-metrics.json"
+        ],
+        "capabilities": [
+          "get_queue_attributes",
+          "list_queues",
+          "get_queue_url",
+          "list_dead_letter_source_queues"
+        ]
+      },
+      {
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-config.json",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_function_configuration",
+          "get_function",
+          "list_event_source_mappings",
+          "get_event_source_mapping"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The SQS queue visibility timeout (30 seconds) was shorter than the Lambda function's execution time for large orders (60-90 seconds), causing SQS to redeliver messages while the original invocation was still processing them -- resulting in duplicate payment charges, duplicate delivery slot reservations, and negative inventory counts.",
+    "fix_criteria": [
+      {
+        "id": "identify_timeout_mismatch",
+        "description": "Player identifies that the SQS visibility timeout (30s) is shorter than the Lambda processing time for large orders (60-90s)",
+        "required": true
+      },
+      {
+        "id": "identify_duplicate_processing",
+        "description": "Player connects the timeout mismatch to the duplicate charges and inventory issues",
+        "required": true
+      },
+      {
+        "id": "propose_timeout_fix",
+        "description": "Player proposes increasing visibility timeout to at least 6x the Lambda timeout",
+        "required": false
+      },
+      {
+        "id": "propose_dlq",
+        "description": "Player proposes configuring a dead-letter queue for messages that fail processing",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "SQS visibility timeout must be at least 6x the consumer's processing time (AWS recommendation) to prevent duplicate delivery",
+      "Dead-letter queues capture messages that fail processing after maxReceiveCount attempts, preventing infinite retry loops",
+      "Idempotency in message consumers: use a unique identifier (order ID) to detect and skip duplicate processing"
+    ]
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "id": "013-elb-target-drain",
+  "title": "The Targets That Disappeared",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+  "tags": ["connection-draining", "deployment", "health-checks", "rolling-update", "deregistration-delay"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "DVA-C02:Domain3:Deployment"
+  ],
+  "company": {
+    "name": "Ridgewell",
+    "industry": "logistics / SaaS",
+    "size": "Growth-stage, 38 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Platform engineer who triggered the deployment. Methodical, slightly defensive. Mentions customer impact in terms of dispatch delays and missed delivery windows.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Fourteen customers have opened support tickets in the last four minutes. Route optimization requests are timing out. Dispatchers are switching to manual planning."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The deployment finished. All four new instances are running. But the error rate is still elevated. Some dispatchers are reporting stale route data."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The VP of Customer Success wants a root cause by noon. Three enterprise customers mentioned it in their Slack channels. One used the word 'unreliable.'"
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The application code deployed correctly. The issue is in how the deployment interacted with the load balancer and health checks."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "When did the errors start relative to the deployment?",
+        "How long does it take a new instance to pass the ALB health check?",
+        "Compare the deregistration delay with the time it takes a new target to become healthy. Is there a gap?",
+        "The deregistration delay is 30 seconds but health checks need 150 seconds (interval 30s x threshold 5). Old targets drain out long before new ones are ready.",
+        "Fix: increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, and reduce deployment batch size to 25%."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "elb",
+        "artifacts": [
+          "artifacts/alb-config.json",
+          "artifacts/target-group-config.json",
+          "artifacts/target-health-timeline.json",
+          "artifacts/metrics.csv"
+        ],
+        "capabilities": [
+          "describe_load_balancers",
+          "describe_target_groups",
+          "describe_target_health",
+          "describe_target_group_attributes"
+        ]
+      },
+      {
+        "service": "auto-scaling",
+        "artifacts": [
+          "artifacts/asg-config.json",
+          "artifacts/scaling-activities.json"
+        ],
+        "capabilities": [
+          "describe_auto_scaling_groups",
+          "describe_scaling_activities",
+          "describe_launch_template"
+        ]
+      },
+      {
+        "service": "ec2",
+        "artifacts": [
+          "artifacts/instance-status.json"
+        ],
+        "capabilities": [
+          "describe_instances",
+          "describe_instance_status",
+          "get_console_output"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "Rolling deployment deregistered instances with a 30-second drain delay while replacement instances required 150 seconds to pass health checks (30s interval x 5 healthy threshold), creating a window where HealthyHostCount dropped to zero and the ALB routed traffic to unhealthy targets in fail-open mode.",
+    "fix_criteria": [
+      {
+        "id": "identify_drain_gap",
+        "description": "Player identifies the mismatch between deregistration delay (30s) and health check time to healthy (150s)",
+        "required": true
+      },
+      {
+        "id": "identify_zero_healthy",
+        "description": "Player identifies that HealthyHostCount dropped to zero during the deployment, triggering ALB fail-open behavior",
+        "required": true
+      },
+      {
+        "id": "propose_drain_increase",
+        "description": "Player proposes increasing deregistration delay to at least 300 seconds",
+        "required": false
+      },
+      {
+        "id": "propose_deployment_changes",
+        "description": "Player proposes reducing batch size, deploying off-peak, or reducing healthy threshold",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Connection draining: deregistration delay must exceed the time new targets need to pass health checks during rolling deployments",
+      "ALB fail-open behavior: when all targets are unhealthy, ALB routes to all targets rather than returning 503, producing 502 errors from unready backends",
+      "Deployment safety: batch size, timing, and health check configuration interact to determine deployment risk"
+    ]
+  }
+}

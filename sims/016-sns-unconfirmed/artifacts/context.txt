@@ -1,0 +1,6 @@
+Company: Clarabridge Analytics (Bootstrapped profitable, 34 engineers)
+Industry: Analytics / business intelligence dashboards
+Users: 890 business customers, $4.8M ARR, 14 million events/day ingested
+AWS Services: Amazon SNS, Amazon CloudWatch, AWS Lambda
+Your role: Ops engineer, 10:52 AM Wednesday
+Situation: Customer reported stale dashboard data on Twitter; team was not notified of a Lambda error alarm that fired 45 minutes ago

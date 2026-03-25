@@ -1,0 +1,20 @@
+{
+  "Attributes": {
+    "QueueArn": "arn:aws:sqs:us-east-1:123456789012:canopy-order-queue",
+    "ApproximateNumberOfMessages": "14",
+    "ApproximateNumberOfMessagesNotVisible": "6",
+    "ApproximateNumberOfMessagesDelayed": "0",
+    "CreatedTimestamp": "1722441600",
+    "LastModifiedTimestamp": "1722441600",
+    "VisibilityTimeout": "30",
+    "MaximumMessageSize": "262144",
+    "MessageRetentionPeriod": "345600",
+    "DelaySeconds": "0",
+    "ReceiveMessageWaitTimeSeconds": "0",
+    "SqsManagedSseEnabled": "true"
+  },
+  "ResponseMetadata": {
+    "RequestId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "HTTPStatusCode": 200
+  }
+}

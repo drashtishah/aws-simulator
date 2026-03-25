@@ -1,0 +1,129 @@
+{
+  "id": "015-route53-failover-blind",
+  "title": "Sixteen Seconds of Nothing",
+  "difficulty": 2,
+  "category": "networking",
+  "services": ["route53", "elb", "cloudwatch"],
+  "tags": ["dns-failover", "health-check", "multi-region", "route53-routing", "disaster-recovery"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Spellbook",
+    "industry": "developer tools / documentation",
+    "size": "Series B, 28 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "SRE who built the multi-region setup six months ago. Quiet guilt. States the customer impact in developer-hours lost. Mentions the health check alarm that was in ALARM state for three weeks.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "StatusPage shows 412 reports in the last five minutes. Three API doc customers have opened P1 tickets. Their developers cannot access reference documentation during a shipping sprint."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The eu-west-1 stack is healthy. I can reach it directly via the regional ALB DNS name. The failover just never happened."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "Forty minutes of downtime now. We pay for a multi-region setup that did nothing when we needed it. The health check has been in ALARM state since March 4th. Nobody looked."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The primary region's ALB is genuinely down. The question is why traffic did not fail over to the secondary. Look at how Route 53 decides when to switch."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "Is the Route 53 failover actually configured to use the health check?",
+        "What state is the Route 53 health check in? Has it been healthy recently?",
+        "Check the health check configuration. What port and path is it monitoring?",
+        "The health check targets port 80 and path '/' but the ALB listens on port 443 and '/' returns a 301 redirect. The health check has been UNHEALTHY for weeks. And EvaluateTargetHealth is false on the record set.",
+        "Fix: update health check to port 443 with HTTPS, change path to '/healthz', enable EvaluateTargetHealth on the failover record set, and set up a CloudWatch alarm that pages on health check state changes."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "route53",
+        "artifacts": [
+          "artifacts/hosted-zone.json",
+          "artifacts/health-check-config.json",
+          "artifacts/health-check-status.json"
+        ],
+        "capabilities": [
+          "list_hosted_zones",
+          "list_resource_record_sets",
+          "get_health_check",
+          "get_health_check_status",
+          "list_health_checks"
+        ]
+      },
+      {
+        "service": "elb",
+        "artifacts": [
+          "artifacts/alb-primary.json",
+          "artifacts/alb-secondary.json"
+        ],
+        "capabilities": [
+          "describe_load_balancers",
+          "describe_target_groups",
+          "describe_target_health"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/alarms.json"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "describe_alarm_history"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "Route 53 failover record set had EvaluateTargetHealth set to false, and the associated health check was misconfigured to check port 80 (HTTP) and path '/' instead of port 443 (HTTPS) and the application health endpoint -- the health check had been in UNHEALTHY state for three weeks without triggering failover because it was not wired to the routing decision.",
+    "fix_criteria": [
+      {
+        "id": "identify_health_check_misconfigured",
+        "description": "Player identifies that the health check uses wrong port (80 vs 443) and wrong path (/ returns 301)",
+        "required": true
+      },
+      {
+        "id": "identify_evaluate_target_health",
+        "description": "Player identifies that EvaluateTargetHealth is false on the failover record set, so Route 53 never acts on the health check",
+        "required": true
+      },
+      {
+        "id": "propose_health_check_fix",
+        "description": "Player proposes fixing the health check (port 443, HTTPS, correct path) and enabling EvaluateTargetHealth",
+        "required": false
+      },
+      {
+        "id": "propose_monitoring",
+        "description": "Player proposes monitoring health check state changes with CloudWatch alarms that page the on-call team",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Route 53 health checks must match the actual listener configuration (port, protocol, path) of the target resource",
+      "EvaluateTargetHealth on failover record sets must be enabled for Route 53 to use health check results in routing decisions",
+      "Health check monitoring: CloudWatch alarms on HealthCheckStatus should page the team, not sit in ALARM state unnoticed"
+    ]
+  }
+}

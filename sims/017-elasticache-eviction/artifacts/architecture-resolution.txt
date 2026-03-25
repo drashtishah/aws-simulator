@@ -1,0 +1,59 @@
+                         Trellis Health -- Resolution Diagram
+
+    +-----------+
+    |  Internet |
+    |  (patients,|
+    |  providers)|
+    +-----+-----+
+          |
+          v
+  +-------+--------+
+  |  ALB            |
+  |  trellis-prod-  |
+  |  alb            |
+  |  TargetResponse |
+  |  Time: 8.2s     |
+  +-------+--------+
+          |
+          v
+  +-------+--------+
+  |  ECS Cluster    |
+  |  trellis-prod   |
+  |                 |
+  |  appointment-   |
+  |  service        |
+  |  (3 tasks)      |
+  +--+----------+--+
+     |          |
+     |          |  [ALL READS FALLING THROUGH TO DB]
+     |          |  Cache writes fail with OOM.
+     |          |  App catches error at DEBUG level.
+     |          |  Every request goes to PostgreSQL.
+     |          |
+     v          v
++----+------+  +--+--------------+
+| ElastiCache| | RDS PostgreSQL   |
+| Redis      | | trellis-prod-db  |
+| trellis-   | |                  |
+| redis-prod | | [CONNECTION POOL |
+|            | |  SATURATED]      |
+| [MEMORY:   | | 200/200 conns    |
+|  100%,     | | CPU: 89%         |
+|  NOEVICTION]| | Query latency:  |
+|            | |  800ms (was 5ms) |
+| [OOM ON    | |                  |
+|  WRITES]   | |                  |
+| used: 12.89G| |                 |
+| max: 13.07G | |                 |
+| evicted: 0 | |                  |
++------------+ +------------------+
+
+Root cause: maxmemory-policy = noeviction
+  -> Redis rejects writes when memory is full
+  -> Application silently falls through to database
+  -> Database connection pool saturates under full load
+  -> ALB TargetResponseTime climbs to 8.2 seconds
+
+Fix: CONFIG SET maxmemory-policy allkeys-lru
+     + CloudWatch alarms on BytesUsedForCache, CacheMisses
+     + Scale node or enable cluster mode

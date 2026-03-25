@@ -1,0 +1,70 @@
+{
+  "HealthCheckObservations": [
+    {
+      "Region": "us-east-1",
+      "IPAddress": "15.177.2.133",
+      "StatusReport": {
+        "Status": "Failure: HTTP Status Code 301",
+        "CheckedTime": "2026-03-25T14:14:02Z"
+      }
+    },
+    {
+      "Region": "us-west-1",
+      "IPAddress": "15.177.6.44",
+      "StatusReport": {
+        "Status": "Failure: HTTP Status Code 301",
+        "CheckedTime": "2026-03-25T14:14:08Z"
+      }
+    },
+    {
+      "Region": "us-west-2",
+      "IPAddress": "15.177.10.21",
+      "StatusReport": {
+        "Status": "Failure: HTTP Status Code 301",
+        "CheckedTime": "2026-03-25T14:14:05Z"
+      }
+    },
+    {
+      "Region": "eu-west-1",
+      "IPAddress": "15.177.18.78",
+      "StatusReport": {
+        "Status": "Failure: Connection timed out",
+        "CheckedTime": "2026-03-25T14:14:11Z"
+      }
+    },
+    {
+      "Region": "ap-southeast-1",
+      "IPAddress": "15.177.22.55",
+      "StatusReport": {
+        "Status": "Failure: Connection timed out",
+        "CheckedTime": "2026-03-25T14:14:09Z"
+      }
+    },
+    {
+      "Region": "ap-southeast-2",
+      "IPAddress": "15.177.26.92",
+      "StatusReport": {
+        "Status": "Failure: Connection timed out",
+        "CheckedTime": "2026-03-25T14:14:14Z"
+      }
+    },
+    {
+      "Region": "ap-northeast-1",
+      "IPAddress": "15.177.30.17",
+      "StatusReport": {
+        "Status": "Failure: Connection timed out",
+        "CheckedTime": "2026-03-25T14:14:07Z"
+      }
+    },
+    {
+      "Region": "sa-east-1",
+      "IPAddress": "15.177.34.63",
+      "StatusReport": {
+        "Status": "Failure: Connection timed out",
+        "CheckedTime": "2026-03-25T14:14:12Z"
+      }
+    }
+  ],
+  "HealthCheckId": "a1b2c3d4-5678-90ab-cdef-111111111111",
+  "OverallStatus": "UNHEALTHY"
+}

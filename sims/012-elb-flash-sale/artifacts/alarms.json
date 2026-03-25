@@ -1,0 +1,35 @@
+{
+  "MetricAlarms": [
+    {
+      "AlarmName": "vellora-cpu-high",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:891234567890:alarm:vellora-cpu-high",
+      "AlarmDescription": "Scale out when CPU exceeds 70% for 2 consecutive periods",
+      "ActionsEnabled": true,
+      "OKActions": [],
+      "AlarmActions": [
+        "arn:aws:autoscaling:us-east-1:891234567890:scalingPolicy:b2c3d4e5-f6a7-8901-b2c3-d4e5f6a78901:autoScalingGroupName/vellora-web-asg:policyName/vellora-cpu-scale-out"
+      ],
+      "InsufficientDataActions": [],
+      "MetricName": "CPUUtilization",
+      "Namespace": "AWS/EC2",
+      "Statistic": "Average",
+      "Dimensions": [
+        {
+          "Name": "AutoScalingGroupName",
+          "Value": "vellora-web-asg"
+        }
+      ],
+      "Period": 60,
+      "EvaluationPeriods": 2,
+      "DatapointsToAlarm": 2,
+      "Threshold": 70.0,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "TreatMissingData": "missing",
+      "StateValue": "ALARM",
+      "StateReason": "Threshold Crossed: 2 out of the last 2 datapoints [98.4 (25/03/26 00:01:00), 97.2 (25/03/26 00:00:00)] were greater than the threshold (70.0).",
+      "StateReasonData": "{\"version\":\"1.0\",\"queryDate\":\"2026-03-25T00:02:12.000Z\",\"startDate\":\"2026-03-25T00:00:00.000Z\",\"statistic\":\"Average\",\"period\":60,\"recentDatapoints\":[97.2,98.4],\"threshold\":70.0}",
+      "StateUpdatedTimestamp": "2026-03-25T00:02:12.000Z"
+    }
+  ],
+  "Note": "No alarms exist for RequestCount, TargetResponseTime, HTTPCode_ELB_5XX_Count, RejectedConnectionCount, or ALBRequestCountPerTarget. The only scaling-related alarm is based on CPUUtilization."
+}

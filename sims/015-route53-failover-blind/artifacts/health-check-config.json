@@ -1,0 +1,39 @@
+{
+  "HealthCheck": {
+    "Id": "a1b2c3d4-5678-90ab-cdef-111111111111",
+    "CallerReference": "2025-09-25T14:18:42Z",
+    "HealthCheckConfig": {
+      "IPAddress": null,
+      "Port": 80,
+      "Type": "HTTP",
+      "ResourcePath": "/",
+      "FullyQualifiedDomainName": "spellbook-prod-alb-east-1847362910.us-east-1.elb.amazonaws.com",
+      "RequestInterval": 30,
+      "FailureThreshold": 3,
+      "MeasureLatency": false,
+      "Inverted": false,
+      "Disabled": false,
+      "EnableSNI": false
+    },
+    "HealthCheckVersion": 1,
+    "CloudWatchAlarmConfiguration": {
+      "EvaluationPeriods": 1,
+      "AlarmIdentifier": {
+        "Region": "us-east-1",
+        "Name": "spellbook-route53-health-check"
+      },
+      "ComparisonOperator": "LessThanThreshold",
+      "Period": 60,
+      "MetricName": "HealthCheckStatus",
+      "Namespace": "AWS/Route53",
+      "Statistic": "Minimum",
+      "Threshold": 1.0,
+      "Dimensions": [
+        {
+          "Name": "HealthCheckId",
+          "Value": "a1b2c3d4-5678-90ab-cdef-111111111111"
+        }
+      ]
+    }
+  }
+}

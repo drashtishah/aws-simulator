@@ -1,0 +1,48 @@
+{
+  "Attributes": {
+    "TopicArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+    "Owner": "111222333444",
+    "DisplayName": "Clarabridge Ops Alerts",
+    "SubscriptionsConfirmed": 2,
+    "SubscriptionsPending": 1,
+    "SubscriptionsDeleted": 1,
+    "Policy": {
+      "Version": "2012-10-17",
+      "Id": "ClarabridgeOpsAlertsPolicy",
+      "Statement": [
+        {
+          "Sid": "AllowCloudWatchAlarms",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "cloudwatch.amazonaws.com"
+          },
+          "Action": "SNS:Publish",
+          "Resource": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+          "Condition": {
+            "ArnLike": {
+              "aws:SourceArn": "arn:aws:cloudwatch:us-east-1:111222333444:alarm:*"
+            }
+          }
+        }
+      ]
+    },
+    "EffectiveDeliveryPolicy": {
+      "http": {
+        "defaultHealthyRetryPolicy": {
+          "minDelayTarget": 20,
+          "maxDelayTarget": 20,
+          "numRetries": 3,
+          "numMaxDelayRetries": 0,
+          "numNoDelayRetries": 0,
+          "numMinDelayRetries": 0,
+          "backoffFunction": "linear"
+        },
+        "disableSubscriptionOverrides": false
+      }
+    },
+    "DeliveryStatusLoggingEnabled": "true",
+    "NumberOfMessagesPublished": "47",
+    "CreatedTimestamp": "2025-11-12T08:30:00Z",
+    "LastModifiedTimestamp": "2026-03-05T09:14:22Z"
+  }
+}

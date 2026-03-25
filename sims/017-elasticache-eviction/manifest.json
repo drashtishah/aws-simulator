@@ -1,0 +1,139 @@
+{
+  "id": "017-elasticache-eviction",
+  "title": "The Cache That Forgot Everything",
+  "difficulty": 2,
+  "category": "performance",
+  "services": [
+    "elasticache",
+    "elb",
+    "cloudwatch"
+  ],
+  "tags": [
+    "redis-eviction",
+    "cache-miss",
+    "noeviction-policy",
+    "database-fallback",
+    "memory-exhaustion"
+  ],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "DVA-C02:Domain4:TroubleshootingAndOptimization"
+  ],
+  "company": {
+    "name": "Trellis Health",
+    "industry": "healthtech / telehealth",
+    "size": "Series C, 42 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Platform reliability engineer. Calm, clinical. Measures impact in patient appointments affected and provider schedule accuracy. Notes the deploy red herring without leading.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Appointment booking success rate dropped from 99.2% to 61%. Patients are retrying, which adds more load. Three provider offices called support about missing availability slots."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The product team is certain it is the deploy from two hours ago. They want to roll back. The deploy added lab result caching. But the symptoms started gradually, not all at once."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "Database CPU is at 89%. Connection pool is at capacity. If we do not resolve this soon, the database will become the next failure point."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The deploy is a red herring. The code changes are correct. Look at what is happening between the application and the cache layer."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The application is slower than usual. Where does it normally get its data from?",
+        "What is the current state of the Redis cache? Is it serving requests normally?",
+        "Check the ElastiCache memory metrics. How much memory is in use versus available?",
+        "Redis memory is at 100%. The maxmemory-policy is set to 'noeviction'. When memory is full with noeviction, Redis returns OOM errors on write commands. The application falls through to the database for every read.",
+        "Fix: change maxmemory-policy to 'allkeys-lru' to allow Redis to evict least-recently-used keys. Then add CloudWatch alarms on BytesUsedForCache and Evictions metrics. Consider scaling to a larger node or enabling cluster mode."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "elasticache",
+        "artifacts": [
+          "artifacts/cluster-config.json",
+          "artifacts/redis-info.txt",
+          "artifacts/parameter-group.json"
+        ],
+        "capabilities": [
+          "describe_cache_clusters",
+          "describe_cache_parameters",
+          "describe_replication_groups",
+          "list_tags_for_resource"
+        ]
+      },
+      {
+        "service": "elb",
+        "artifacts": [
+          "artifacts/alb-config.json",
+          "artifacts/target-health.json"
+        ],
+        "capabilities": [
+          "describe_load_balancers",
+          "describe_target_groups",
+          "describe_target_health"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events",
+          "list_metrics"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The ElastiCache Redis node reached maximum memory (13.07 GB) with maxmemory-policy set to 'noeviction', causing Redis to return OOM errors on all write commands -- the application silently fell through to direct database queries for every request, saturating the RDS connection pool and increasing ALB TargetResponseTime to 8 seconds.",
+    "fix_criteria": [
+      {
+        "id": "identify_redis_memory_full",
+        "description": "Player identifies that Redis memory is at 100% capacity and write commands are failing with OOM errors",
+        "required": true
+      },
+      {
+        "id": "identify_noeviction_policy",
+        "description": "Player identifies that maxmemory-policy is set to 'noeviction', preventing Redis from freeing memory by evicting old keys",
+        "required": true
+      },
+      {
+        "id": "propose_eviction_policy",
+        "description": "Player proposes changing maxmemory-policy to 'allkeys-lru' or similar eviction strategy",
+        "required": false
+      },
+      {
+        "id": "propose_monitoring",
+        "description": "Player proposes adding CloudWatch alarms on BytesUsedForCache, Evictions, and CacheMisses metrics",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Redis eviction policies: 'noeviction' rejects writes when memory is full; 'allkeys-lru' evicts least-recently-used keys to make room for new writes",
+      "Cache-aside pattern failure modes: when the cache layer fails, applications must handle the fallback gracefully and log cache failures at an appropriate level",
+      "ElastiCache monitoring: BytesUsedForCache, CurrItems, Evictions, CacheMisses, and EngineCPUUtilization are critical metrics for early detection"
+    ]
+  }
+}

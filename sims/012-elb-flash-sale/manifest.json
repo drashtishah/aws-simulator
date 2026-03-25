@@ -1,0 +1,142 @@
+{
+  "id": "012-elb-flash-sale",
+  "title": "The Sale That Started Too Fast",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": [
+    "elb",
+    "auto-scaling",
+    "cloudwatch"
+  ],
+  "tags": [
+    "elb-pre-warming",
+    "auto-scaling-cooldown",
+    "traffic-spike",
+    "flash-sale",
+    "alb-scaling"
+  ],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Vellora",
+    "industry": "e-commerce",
+    "size": "Series A startup, 22 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Backend lead, awake because the sale was her idea. Quiet, self-blaming. States facts about customer drop-off between technical observations.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The checkout error rate is at 68%. Social media mentions are turning negative. The collaboration partner's marketing team is asking what happened."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Traffic is dropping now. Not because we fixed it. Because people gave up. The sale items are still in stock. Nobody could add them to cart."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The CEO forwarded a tweet thread. Thirty-eight tweets about the site being down during the drop. The collaboration partner wants a call in the morning."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "That is not what the metrics show. Look at the load balancer and scaling activity, not the application code."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "What does the ALB metrics dashboard show around midnight?",
+        "How quickly can an ALB scale its own capacity without intervention?",
+        "Check the Auto Scaling group configuration. What triggers a scale-out, and how long is the cooldown?",
+        "The ALB needed to be pre-warmed before the sale. AWS Support can scale the load balancer in advance. Also, the scaling policy uses only CPU -- RequestCountPerTarget would react faster to traffic spikes.",
+        "Two fixes: contact AWS Support to pre-warm the ALB (or use LCU reservation), and add a target tracking policy on ALBRequestCountPerTarget with a shorter cooldown."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "elb",
+        "artifacts": [
+          "artifacts/alb-config.json",
+          "artifacts/target-group-health.json",
+          "artifacts/metrics.csv"
+        ],
+        "capabilities": [
+          "describe_load_balancers",
+          "describe_target_groups",
+          "describe_target_health",
+          "describe_listeners",
+          "describe_rules"
+        ]
+      },
+      {
+        "service": "auto-scaling",
+        "artifacts": [
+          "artifacts/asg-config.json",
+          "artifacts/scaling-activities.json"
+        ],
+        "capabilities": [
+          "describe_auto_scaling_groups",
+          "describe_scaling_activities",
+          "describe_policies",
+          "describe_launch_template"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/alarms.json",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events",
+          "list_metrics"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The Application Load Balancer was not pre-warmed before a predictable 10x traffic spike, and the Auto Scaling group used only CPUUtilization with a 300-second cooldown -- too slow to respond to a request-count-driven surge that saturated the existing two instances in under 60 seconds.",
+    "fix_criteria": [
+      {
+        "id": "identify_alb_not_prewarm",
+        "description": "Player identifies that the ALB was not pre-warmed and could not scale fast enough for the sudden 10x traffic increase",
+        "required": true
+      },
+      {
+        "id": "identify_scaling_policy_slow",
+        "description": "Player identifies that the Auto Scaling policy uses only CPUUtilization with a 300-second cooldown, missing the traffic spike",
+        "required": true
+      },
+      {
+        "id": "propose_prewarm_or_lcu",
+        "description": "Player proposes contacting AWS Support to pre-warm the ALB or configuring LCU reservation for future events",
+        "required": false
+      },
+      {
+        "id": "propose_request_count_policy",
+        "description": "Player proposes adding ALBRequestCountPerTarget as a scaling metric with reduced cooldown",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "ALB scaling behavior: gradual scale-up handles ~2x in 5 minutes, but sudden 10x spikes require pre-warming via AWS Support or LCU reservation",
+      "Auto Scaling policy design: CPU-based metrics miss request-driven spikes; ALBRequestCountPerTarget reacts to traffic changes directly",
+      "Cooldown periods: 300-second cooldown prevents rapid scale-out during sustained traffic surges; shorter cooldowns (60-120s) are appropriate for spiky workloads"
+    ]
+  }
+}

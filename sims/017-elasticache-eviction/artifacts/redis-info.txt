@@ -1,0 +1,60 @@
+# Server
+redis_version:7.0.7
+redis_mode:standalone
+os:Amazon ElastiCache
+tcp_port:6379
+uptime_in_seconds:16329600
+uptime_in_days:189
+
+# Clients
+connected_clients:24
+blocked_clients:0
+tracking_clients:0
+maxclients:65000
+
+# Memory
+used_memory:13841203200
+used_memory_human:12.89G
+used_memory_rss:14102937600
+used_memory_rss_human:13.14G
+used_memory_peak:13843501056
+used_memory_peak_human:12.89G
+used_memory_peak_perc:99.98%
+used_memory_overhead:1048576000
+used_memory_dataset:12792627200
+used_memory_dataset_perc:92.42%
+maxmemory:14037262336
+maxmemory_human:13.07G
+maxmemory_policy:noeviction
+mem_fragmentation_ratio:1.02
+mem_allocator:jemalloc-5.2.1
+
+# Stats
+total_connections_received:482910
+total_commands_processed:891204832
+instantaneous_ops_per_sec:4218
+total_net_input_bytes:98234567890
+total_net_output_bytes:312456789012
+rejected_connections:0
+expired_keys:2340891
+evicted_keys:0
+keyspace_hits:412893021
+keyspace_misses:89412038
+keyspace_hit_rate:82.20%
+
+# Keyspace
+db0:keys=4218934,expires=3102841,avg_ttl=287432100
+
+# Recent command stats (last 60 seconds, sampled at 09:30 UTC)
+# Note: SET/HSET commands returning OOM errors
+instantaneous_ops_per_sec:4218
+instantaneous_input_kbps:2841.23
+instantaneous_output_kbps:892.41
+commands_processed_per_sec:
+  GET:3892
+  SET:0
+  HSET:0
+  HGET:284
+  DEL:12
+  TTL:30
+  ERRORS_OOM:326

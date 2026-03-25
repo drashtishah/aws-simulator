@@ -1,0 +1,211 @@
+{
+  "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/ridgewell-web-tg/abcdef1234567890",
+  "Snapshots": [
+    {
+      "Timestamp": "2026-03-26T06:14:00Z",
+      "Description": "Pre-deployment. All targets healthy.",
+      "HealthyHostCount": 4,
+      "UnHealthyHostCount": 0,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6001", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6002", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6005", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6006", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:15:10Z",
+      "Description": "Batch 1 started. Two old instances draining, two new instances launching.",
+      "HealthyHostCount": 2,
+      "UnHealthyHostCount": 0,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6001", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "draining", "Reason": "Target.DeregistrationInProgress", "Description": "Target deregistration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6002", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "draining", "Reason": "Target.DeregistrationInProgress", "Description": "Target deregistration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6005", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6006", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:15:40Z",
+      "Description": "Batch 1 old instances finished draining (30s delay). Two healthy targets remain. New instances still in initial state.",
+      "HealthyHostCount": 2,
+      "UnHealthyHostCount": 0,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 1 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 1 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6005", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6006", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:16:50Z",
+      "Description": "Batch 2 started. Remaining two old instances draining. Batch 1 new instances still in initial state (check 3 of 5).",
+      "HealthyHostCount": 0,
+      "UnHealthyHostCount": 0,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6005", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "draining", "Reason": "Target.DeregistrationInProgress", "Description": "Target deregistration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6006", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "draining", "Reason": "Target.DeregistrationInProgress", "Description": "Target deregistration is in progress" }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:17:20Z",
+      "Description": "Batch 2 old instances finished draining. Zero healthy targets. ALB fail-open active.",
+      "HealthyHostCount": 0,
+      "UnHealthyHostCount": 4,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6007", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6008", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress" }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:19:10Z",
+      "Description": "Batch 1 new instances pass final health check. Two healthy targets restored.",
+      "HealthyHostCount": 2,
+      "UnHealthyHostCount": 2,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6007", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6008", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress. Health check 3 of 5 passed." }
+        }
+      ]
+    },
+    {
+      "Timestamp": "2026-03-26T06:21:40Z",
+      "Description": "All targets healthy. Deployment complete.",
+      "HealthyHostCount": 4,
+      "UnHealthyHostCount": 0,
+      "TargetHealthDescriptions": [
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6003", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6004", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6007", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        },
+        {
+          "Target": { "Id": "i-0a1b2c3d4e5f6008", "Port": 8080 },
+          "HealthCheckPort": "8080",
+          "TargetHealth": { "State": "healthy" }
+        }
+      ]
+    }
+  ]
+}

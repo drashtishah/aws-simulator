@@ -19,3 +19,9 @@ tags:
 | 009 | [[009-credential-chain/story\|Someone Else's Keys]] | 1 - Foundational | Security | iam, sts, secrets-manager | 15 min |
 | 010 | [[010-cloudformation-stuck/story\|The Stack That Wouldn't Move]] | 2 - Associate | Operations | cloudformation, iam, cloudwatch | 25 min |
 | 011 | [[011-nat-gateway-cost/story\|Nine Hundred Dollars for Nothing]] | 1 - Foundational | Cost | nat-gateway, s3, vpc, cloudwatch | 15 min |
+| 012 | [[012-elb-flash-sale/story\|The Sale That Started Too Fast]] | 2 - Associate | Reliability | elb, auto-scaling, cloudwatch | 25 min |
+| 013 | [[013-elb-target-drain/story\|The Targets That Disappeared]] | 2 - Associate | Reliability | elb, auto-scaling, ec2, cloudwatch | 25 min |
+| 014 | [[014-sqs-double-process/story\|The Queue Nobody Watched]] | 2 - Associate | Reliability | sqs, lambda, cloudwatch | 25 min |
+| 015 | [[015-route53-failover-blind/story\|Sixteen Seconds of Nothing]] | 2 - Associate | Networking | route53, elb, cloudwatch | 25 min |
+| 016 | [[016-sns-unconfirmed/story\|A Notification for No One]] | 2 - Associate | Operations | sns, cloudwatch, lambda | 25 min |
+| 017 | [[017-elasticache-eviction/story\|The Cache That Forgot Everything]] | 2 - Associate | Performance | elasticache, elb, cloudwatch | 25 min |

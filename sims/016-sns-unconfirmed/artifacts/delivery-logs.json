@@ -1,0 +1,52 @@
+{
+  "DeliveryLogs": [
+    {
+      "Timestamp": "2026-03-26T10:07:14Z",
+      "TopicArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+      "MessageId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "Subscription": "ops-team@clarabridge.io (email)",
+      "SubscriptionArn": "PendingConfirmation",
+      "Status": "NOT_ATTEMPTED",
+      "StatusReason": "Subscription is in PendingConfirmation state. Delivery skipped.",
+      "DwellTimeMs": 0
+    },
+    {
+      "Timestamp": "2026-03-26T10:07:14Z",
+      "TopicArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+      "MessageId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "Subscription": "arn:aws:lambda:us-east-1:111222333444:function:clarabridge-slack-notifier",
+      "SubscriptionArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts:a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "Status": "FAILURE",
+      "StatusReason": "Lambda function invoked successfully. Function returned error: {\"errorMessage\": \"Slack webhook POST returned HTTP 403 Forbidden\", \"errorType\": \"SlackWebhookError\"}",
+      "HttpStatusCode": 200,
+      "LambdaStatusCode": 200,
+      "FunctionError": "Unhandled",
+      "DwellTimeMs": 1243,
+      "AttemptNumber": 1,
+      "TotalRetryAttempts": 3,
+      "FinalStatus": "FAILURE"
+    },
+    {
+      "Timestamp": "2026-03-26T10:07:15Z",
+      "TopicArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts",
+      "MessageId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "Subscription": "+15125550147 (sms)",
+      "SubscriptionArn": "arn:aws:sns:us-east-1:111222333444:clarabridge-ops-alerts:b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "Status": "FAILURE",
+      "StatusReason": "SMS delivery failed. Account monthly SMS spending limit ($1.00) has been reached. Message not sent. Spending this month: $1.00. Limit: $1.00.",
+      "DwellTimeMs": 0
+    },
+    {
+      "Summary": {
+        "Timestamp": "2026-03-26T10:07:15Z",
+        "MessageId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+        "TotalSubscriptions": 3,
+        "DeliveryAttempted": 2,
+        "DeliverySucceeded": 0,
+        "DeliveryFailed": 2,
+        "DeliverySkipped": 1,
+        "SkipReason": "1 subscription in PendingConfirmation state"
+      }
+    }
+  ]
+}

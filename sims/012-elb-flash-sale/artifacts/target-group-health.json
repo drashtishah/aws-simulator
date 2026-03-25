@@ -1,0 +1,52 @@
+{
+  "TargetHealthDescriptions": [
+    {
+      "Target": {
+        "Id": "i-0f3a7c9e1b5d82001",
+        "Port": 8080
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy",
+        "Description": "Health check passed"
+      },
+      "Note": "At 2026-03-25T00:01:00Z, TargetResponseTime exceeded 28 seconds. Health check began failing at 00:01:30Z due to timeout. Target marked unhealthy at 00:02:00Z. Recovered at 00:08:00Z after traffic subsided."
+    },
+    {
+      "Target": {
+        "Id": "i-0f3a7c9e1b5d82002",
+        "Port": 8080
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy",
+        "Description": "Health check passed"
+      },
+      "Note": "At 2026-03-25T00:01:00Z, TargetResponseTime exceeded 30 seconds. Health check began failing at 00:01:30Z due to timeout. Target marked unhealthy at 00:02:00Z. Recovered at 00:08:30Z after traffic subsided."
+    },
+    {
+      "Target": {
+        "Id": "i-0f3a7c9e1b5d82004",
+        "Port": 8080
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy",
+        "Description": "Health check passed"
+      },
+      "Note": "Launched by Auto Scaling at 2026-03-25T00:03:00Z. Entered InService at 00:07:00Z after passing 3 consecutive health checks."
+    },
+    {
+      "Target": {
+        "Id": "i-0f3a7c9e1b5d82005",
+        "Port": 8080
+      },
+      "HealthCheckPort": "8080",
+      "TargetHealth": {
+        "State": "healthy",
+        "Description": "Health check passed"
+      },
+      "Note": "Launched by Auto Scaling at 2026-03-25T00:08:00Z. Entered InService at 00:12:00Z after passing 3 consecutive health checks."
+    }
+  ]
+}

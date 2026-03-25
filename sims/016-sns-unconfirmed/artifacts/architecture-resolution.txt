@@ -1,0 +1,77 @@
+  Data Ingestion Pipeline
+  =======================
+
+  Data Sources (14M events/day)
+       |
+       v
+  +----------------------------+
+  | Kinesis Data Stream        |
+  | clarabridge-ingest-stream  |
+  +-------------+--------------+
+                |
+                v
+  +----------------------------+
+  | Lambda Function            |
+  | clarabridge-ingest-        |
+  | processor                  |
+  | Runtime: python3.12        |
+  | [THROWING ERRORS -         |
+  |  DynamoDB throttling]      |
+  +-------------+--------------+
+                |
+                v
+  +----------------------------+
+  | DynamoDB Table             |
+  | clarabridge-dashboards     |
+  | On-demand capacity         |
+  | [THROTTLING - symptom,     |
+  |  not the focus]            |
+  +----------------------------+
+
+
+  Alerting Pipeline  [ALL PATHS BROKEN]
+  =====================================
+
+  +----------------------------+
+  | CloudWatch Alarm           |
+  | clarabridge-ingest-error-  |
+  | rate                       |
+  | Threshold: ErrorRate > 5%  |
+  | State: ALARM (since 10:07) |
+  | [FIRED CORRECTLY]          |
+  +-------------+--------------+
+                |
+                | AlarmAction: sns:Publish [SUCCEEDED]
+                v
+  +----------------------------+
+  | SNS Topic                  |
+  | clarabridge-ops-alerts     |
+  | Messages Published: 1      |
+  | Notifications Delivered: 0 |
+  | Notifications Failed: 3    |
+  | [ZERO DELIVERY]            |
+  +-------------+--------------+
+                |
+       +--------+--------+
+       |        |        |
+       v        v        v
+  +--------+ +--------+ +--------+
+  | Email  | | Lambda | | SMS    |
+  | ops-   | | clara- | | +1-512 |
+  | team@  | | bridge-| | -555-  |
+  | clara- | | slack- | | 0147   |
+  | bridge | | noti-  | |        |
+  | .io    | | fier   | |        |
+  |        | |        | |        |
+  | [PEND- | | [403   | | [SMS   |
+  |  ING   | |  FOR-  | |  SPEND |
+  |  CON-  | |  BID-  | |  LIMIT |
+  |  FIRM- | |  DEN - | |  $1.00 |
+  |  ATION | |  ROTA- | |  EX-   |
+  |  since | |  TED   | |  HAUS- |
+  |  Mar 5]| |  HOOK] | |  TED]  |
+  +--------+ +--------+ +--------+
+
+  Three independent failure modes.
+  The alarm fired. The topic received the message.
+  The last mile failed in three different ways.

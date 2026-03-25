@@ -1,0 +1,139 @@
+{
+  "id": "016-sns-unconfirmed",
+  "title": "A Notification for No One",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["sns", "cloudwatch", "lambda"],
+  "tags": [
+    "sns-subscription",
+    "alerting",
+    "pending-confirmation",
+    "observability",
+    "notification-pipeline"
+  ],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "DVA-C02:Domain4:TroubleshootingAndOptimization"
+  ],
+  "company": {
+    "name": "Clarabridge Analytics",
+    "industry": "analytics / business intelligence",
+    "size": "Bootstrapped profitable, 34 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Ops lead who set up the alerting migration three weeks ago. Methodical, embarrassed. Speaks about the customer impact in terms of stale data and lost trust.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The alarm has been in ALARM state for 47 minutes. It fired correctly. The SNS topic received the message. But nobody on the team knew until the tweet."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "I found the confirmation email in the ops inbox. It was in the spam folder. Three weeks old. The subject line said 'AWS Notification - Subscription Confirmation.'"
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "Six customers have reported stale dashboards. The data pipeline has been failing for almost an hour. One customer mentioned us in a LinkedIn post about 'vendor reliability.'"
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The DynamoDB throttling is a real issue, but this simulation is about why nobody was notified. The alarm fired. The question is what happened after that."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The CloudWatch alarm fired correctly. What did it send the notification to?",
+        "Check the SNS topic subscriptions. What is the status of each one?",
+        "There are three subscriptions. One is PendingConfirmation. What about the other two -- are they actually delivering?",
+        "All three paths are broken: email is PendingConfirmation, the Slack Lambda is getting 403 (rotated webhook), and SMS hit the $1.00 default spending limit.",
+        "Fix: confirm the email subscription, update the Slack webhook URL in the Lambda environment variables, increase the SNS SMS spending limit, and add a subscription filter that sends to a confirmed backup channel."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "sns",
+        "artifacts": [
+          "artifacts/topic-config.json",
+          "artifacts/subscriptions.json",
+          "artifacts/delivery-logs.json"
+        ],
+        "capabilities": [
+          "get_topic_attributes",
+          "list_subscriptions_by_topic",
+          "get_subscription_attributes",
+          "list_topics",
+          "get_sms_attributes"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/alarms.json",
+          "artifacts/metrics.csv",
+          "artifacts/alarm-history.json"
+        ],
+        "capabilities": [
+          "describe_alarms",
+          "describe_alarm_history",
+          "get_metric_data",
+          "list_metrics"
+        ]
+      },
+      {
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/slack-lambda-config.json",
+          "artifacts/slack-lambda-logs.txt",
+          "artifacts/ingest-lambda-logs.txt"
+        ],
+        "capabilities": [
+          "get_function_configuration",
+          "list_functions",
+          "get_function",
+          "list_event_source_mappings"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "All three SNS notification paths were broken: the email subscription was PendingConfirmation for three weeks (confirmation email went to spam), the Slack webhook Lambda was receiving 403 Forbidden (webhook URL rotated), and SMS delivery silently failed due to the $1.00 default account spending limit -- so when the CloudWatch alarm fired, zero humans were notified.",
+    "fix_criteria": [
+      {
+        "id": "identify_email_pending",
+        "description": "Player identifies that the email subscription is in PendingConfirmation status",
+        "required": true
+      },
+      {
+        "id": "identify_all_paths_broken",
+        "description": "Player identifies that all three notification paths (email, Slack Lambda, SMS) are broken",
+        "required": true
+      },
+      {
+        "id": "propose_confirm_and_fix",
+        "description": "Player proposes confirming the email subscription and fixing the other delivery paths",
+        "required": false
+      },
+      {
+        "id": "propose_monitoring_notifications",
+        "description": "Player proposes monitoring the notification pipeline itself (delivery failures, subscription health)",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "SNS email subscriptions require confirmation -- PendingConfirmation subscriptions silently drop messages",
+      "SNS SMS delivery has a default account spending limit of $1.00/month that silently drops messages when exceeded",
+      "Notification pipelines need monitoring: SNS delivery metrics (NumberOfNotificationsFailed) should trigger a separate alert path"
+    ]
+  }
+}

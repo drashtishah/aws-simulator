@@ -1,0 +1,60 @@
+Canopy Goods -- Order Processing Architecture (Annotated)
+==========================================================
+
+  [Mobile App / Web]
+         |
+         v
+  +-------------+
+  | API Gateway  |
+  +-------------+
+         |
+         v
+  +-------------------+
+  | canopy-api         |
+  | (Lambda)           |
+  | Validates order,   |
+  | sends to queue     |
+  +-------------------+
+         |
+         v
+  +----------------------------------+
+  | canopy-order-queue                |
+  | (SQS Standard Queue)             |
+  | [VISIBILITY TIMEOUT: 30s]  <---- | Shorter than consumer processing time
+  | [NO DLQ CONFIGURED]        <---- | Failed messages retry forever
+  | MessageRetentionPeriod: 4d       |
+  +----------------------------------+
+         |
+         | Message becomes visible again after 30s
+         | if Lambda has not finished processing
+         |
+         v
+  +-----------------------------------+
+  | canopy-process-order               |
+  | (Lambda)                           |
+  | [TIMEOUT: 90s]              <---- | 3x longer than visibility timeout
+  | Memory: 512 MB                     |
+  | BatchSize: 1                       |
+  | [NO IDEMPOTENCY CHECK]     <---- | No duplicate detection logic
+  | Small orders: ~8s (OK)            |
+  | Large orders: 60-90s (PROBLEM)    |
+  +-----------------------------------+
+         |
+         +----------+----------+-----------------+
+         |          |          |                 |
+         v          v          v                 v
+  +-----------+ +--------+ +----------------+ +--------+
+  | Stripe API | | DynamoDB| | Delivery Slot  | | SES    |
+  | (payment)  | | (orders | | Service        | | (email)|
+  | CHARGED    | |  table) | | RESERVED       | |        |
+  | TWICE      | | DOUBLE  | | TWICE          | |        |
+  +-----------+ | WRITE   | +----------------+ +--------+
+                +--------+
+
+  FAILURE MODE:
+  1. Large order (20+ items) arrives in queue
+  2. Lambda invocation #1 begins processing (takes 60-90s)
+  3. At 30s mark, SQS visibility timeout expires
+  4. Message becomes visible again
+  5. Lambda invocation #2 picks up the same message
+  6. Both invocations complete: double charge, double inventory decrement

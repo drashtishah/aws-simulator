@@ -1,0 +1,28 @@
+{
+  "Activities": [
+    {
+      "ActivityId": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67001",
+      "AutoScalingGroupName": "vellora-web-asg",
+      "Description": "Launching a new EC2 instance: i-0f3a7c9e1b5d82004",
+      "Cause": "At 2026-03-25T00:02:12Z an alarm vellora-cpu-high transitioned to ALARM state. At 2026-03-25T00:03:01Z a monitor alarm triggered policy vellora-cpu-scale-out changing the desired capacity from 2 to 3.",
+      "StartTime": "2026-03-25T00:03:01.000Z",
+      "EndTime": "2026-03-25T00:07:14.000Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful",
+      "Progress": 100,
+      "Details": "{\"Subnet ID\":\"subnet-0b2c3d4e5f678901a\",\"Availability Zone\":\"us-east-1a\"}"
+    },
+    {
+      "ActivityId": "a1b2c3d4-e5f6-7890-a1b2-c3d4e5f67002",
+      "AutoScalingGroupName": "vellora-web-asg",
+      "Description": "Launching a new EC2 instance: i-0f3a7c9e1b5d82005",
+      "Cause": "At 2026-03-25T00:08:01Z an alarm vellora-cpu-high was still in ALARM state. At 2026-03-25T00:08:02Z a monitor alarm triggered policy vellora-cpu-scale-out changing the desired capacity from 3 to 4. Cooldown period of 300 seconds had elapsed since previous scaling activity.",
+      "StartTime": "2026-03-25T00:08:02.000Z",
+      "EndTime": "2026-03-25T00:12:18.000Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful",
+      "Progress": 100,
+      "Details": "{\"Subnet ID\":\"subnet-0b2c3d4e5f678901b\",\"Availability Zone\":\"us-east-1b\"}"
+    }
+  ]
+}
