@@ -1,0 +1,6 @@
+Company: Pollen Systems (Series A startup, 17 engineers)
+Industry: document management
+Users: Paralegals at small law firms who upload case files, contracts, and scanned depositions; the upload feature is the core product used daily
+AWS Services: Amazon S3, Amazon CloudFront, Amazon API Gateway
+Your role: Engineer on the team; it is 2:15 PM on a Thursday, investigating a broken upload feature
+Situation: Browser-based file uploads via presigned URLs fail silently, while the same presigned URLs work correctly from curl, Postman, and Python scripts.

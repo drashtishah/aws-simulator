@@ -67,7 +67,7 @@
         "artifacts": [
           "artifacts/stack-events.json",
           "artifacts/stack-description.json",
-          "artifacts/architecture.txt"
+          "artifacts/architecture-hint.txt"
         ],
         "capabilities": [
           "describe_stacks",

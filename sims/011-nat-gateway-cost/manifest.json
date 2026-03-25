@@ -55,7 +55,7 @@
         "service": "vpc",
         "covers": ["nat-gateway", "vpc"],
         "artifacts": [
-          "artifacts/architecture.txt",
+          "artifacts/architecture-hint.txt",
           "artifacts/vpc-config.json",
           "artifacts/route-table.json",
           "artifacts/vpc-flow-logs.txt"

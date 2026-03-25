@@ -74,7 +74,7 @@
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/cloudwatch-logs.txt",
-          "artifacts/architecture.txt"
+          "artifacts/architecture-hint.txt"
         ],
         "capabilities": [
           "get_metric_data",

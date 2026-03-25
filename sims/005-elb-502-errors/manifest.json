@@ -89,7 +89,7 @@
         "name": "ec2-console",
         "service": "ec2",
         "artifacts": [
-          "artifacts/architecture.txt",
+          "artifacts/architecture-hint.txt",
           "artifacts/cloudwatch-logs.txt"
         ],
         "capabilities": [

@@ -17,7 +17,6 @@
                     +----------------+----------------+
                     |                                 |
          CREDENTIAL SOURCE 1              CREDENTIAL SOURCE 2
-         (ACTIVE - WRONG)                 (IGNORED - CORRECT)
                     |                                 |
          +----------v----------+           +----------v----------+
          |  Environment Vars   |           |  Instance Profile   |
@@ -31,12 +30,11 @@
          |  Owner: raj.patel   |           |  - s3:PutObject     |
          |  Status: INACTIVE   |           |  - secretsmanager:  |
          |                     |           |    GetSecretValue   |
-         |  [PROBLEM]          |           |  - lambda:Update    |
-         +---------------------+           |    FunctionCode     |
+         +---------------------+           |  - lambda:Update    |
+                                           |    FunctionCode     |
                                            +---------------------+
 
                     Priority 2 (env vars)           Priority 6 (instance profile)
-                    WINS over instance profile       NEVER REACHED
 
                                      |
                     +----------------+----------------+
@@ -49,12 +47,11 @@
            +---------------+  +--------------+  +----------------+
 
                     ALL CALLS RETURN AccessDenied
-                    (credentials belong to deactivated user raj.patel)
 
   AWS Credential Resolution Chain (in order):
     1. CLI parameters         -- not set
-    2. Environment variables  -- SET (raj.patel's inactive keys) <-- STOPS HERE
+    2. Environment variables  -- SET
     3. CLI credentials file   -- not checked
     4. CLI config file        -- not checked
     5. Container credentials  -- not applicable
-    6. Instance profile       -- not checked (would work if reached)
+    6. Instance profile       -- not checked

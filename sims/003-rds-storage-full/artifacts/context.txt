@@ -1,0 +1,6 @@
+Company: CropSync (Series A startup, 18 engineers)
+Industry: agritech
+Users: 4,700 farms across 12 states; 1,200 concurrent users during peak hours; 280,000 IoT data points per day
+AWS Services: Amazon RDS, Amazon CloudWatch, Amazon EC2
+Your role: On-call engineer responding at 2:17 PM on a Thursday in late September during peak harvest season
+Situation: The CropSync API is returning 500 errors on every write operation while read queries continue to work normally.

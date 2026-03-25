@@ -72,7 +72,7 @@
         "service": "cloudfront",
         "artifacts": [
           "artifacts/cloudfront-config.json",
-          "artifacts/architecture.txt"
+          "artifacts/architecture-hint.txt"
         ],
         "capabilities": [
           "get_distribution",

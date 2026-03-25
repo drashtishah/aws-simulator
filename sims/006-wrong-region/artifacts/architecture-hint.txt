@@ -1,0 +1,59 @@
+                          +-------------------+
+                          |   Client Browser  |
+                          +--------+----------+
+                                   |
+                                   | POST /bookings
+                                   |
+                    +--------------v---------------+
+                    |        API Gateway           |
+                    |   calendine-booking-api      |
+                    |   Region: us-east-1          |
+                    |                              |
+                    |   Integration ARN:           |
+                    |   arn:aws:lambda:us-east-1:  |
+                    |   491783620174:function:     |
+                    |   calendine-booking-api      |
+                    +--------------+---------------+
+                                   |
+                                   | Invokes Lambda ARN
+                                   | in us-east-1
+                                   |
+                    +--------------v---------------+
+                    |   Lambda (us-east-1)         |
+                    |   calendine-booking-api      |
+                    |                              |
+                    |   DOES NOT EXIST             |
+                    |   ResourceNotFoundException  |
+                    +------------------------------+
+
+
+    Meanwhile, 2,500 miles away...
+
+                    +------------------------------+
+                    |   Lambda (us-west-2)         |
+                    |   calendine-booking-api      |
+                    |                              |
+                    |   EXISTS, healthy, idle       |
+                    |   Deployed at 14:12:08 UTC   |
+                    |   0 invocations              |
+                    +------------------------------+
+
+
+    CI/CD Pipeline Environment:
+    +------------------------------------------+
+    |  GitHub Actions                          |
+    |                                          |
+    |  env:                                    |
+    |    AWS_ACCESS_KEY_ID: ****3K7A           |
+    |    AWS_SECRET_ACCESS_KEY: ****mN9v       |
+    |    AWS_DEFAULT_REGION: us-west-2         |
+    |                                          |
+    |  step: deploy                            |
+    |    run: aws lambda update-function-code  |
+    |         --function-name                  |
+    |         calendine-booking-api            |
+    |         --s3-bucket calendine-deploy     |
+    |         --s3-key booking-api/latest.zip  |
+    |                                          |
+    |    (no --region flag, uses env var)      |
+    +------------------------------------------+

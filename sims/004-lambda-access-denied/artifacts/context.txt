@@ -1,0 +1,6 @@
+Company: PacketForge (Growth-stage startup, 35 engineers)
+Industry: cybersecurity
+Users: 220 enterprise customers; Sentinel plan customers pay $180K/year for 15-minute update freshness on threat indicators
+AWS Services: AWS Lambda, AWS IAM, Amazon DynamoDB, Amazon CloudWatch
+Your role: Platform engineer responding at 11:32 AM on a Tuesday after a deployment pipeline pushed a new Lambda function version
+Situation: The threat-feed synchronization Lambda function is failing every invocation with AccessDeniedException after a successful deployment.

@@ -1,0 +1,52 @@
+                              +------------------+
+                              |    Browser       |
+                              |  app.pollen.io   |
+                              +----+--------+----+
+                                   |        |
+                      1. Request   |        |  3. PUT file
+                      presigned    |        |  (presigned URL)
+                      URL          |        |
+                                   |        |
+                      +------------v--+  +--v-----------------+
+                      | API Gateway   |  | CloudFront         |
+                      | api.pollen.io |  | d-EDFDVBD6EXAMPLE  |
+                      | (REST API)    |  |                    |
+                      +------------+--+  +----------+---------+
+                                   |                |
+                      2. Generate  |                |
+                      presigned    |                |
+                      URL via      |                |
+                      Lambda       |                |
+                                   |                |
+                      +------------v--+             |
+                      | Lambda         |             |
+                      | pollen-upload- |             |
+                      | url-generator  |             |
+                      | (Node.js 18)  |             |
+                      +---------------+             |
+                                                    |
+                                           +--------v---------+
+                                           | S3 Bucket        |
+                                           | pollen-docs-prod |
+                                           |                  |
+                                           +------------------+
+
+  Flow:
+    1. Browser calls API Gateway to get a presigned PUT URL
+    2. Lambda generates presigned URL for S3 and returns it
+    3. Browser uses presigned URL to PUT file directly to S3 via CloudFront
+    4. S3 receives PUT -- but browser sends OPTIONS preflight first
+
+  Why curl/Postman work:
+    - They skip step 4 entirely. No preflight. No CORS check.
+    - The PUT goes through. S3 accepts it. The presigned URL is valid.
+
+  CloudFront Distribution: d-EDFDVBD6EXAMPLE
+    Origin: pollen-docs-prod.s3.us-east-1.amazonaws.com
+    Cache Policy: CachingOptimized (ID: 658327ea-f89d-4fab-a63d-7e88639e58f6)
+    Origin Request Policy: None (default -- does not forward Origin header)
+
+  API Gateway: api.pollen.io
+    Stage: prod
+    Endpoint: POST /uploads/presign
+    Integration: Lambda (pollen-upload-url-generator)

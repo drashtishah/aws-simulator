@@ -1,0 +1,6 @@
+Company: BrightPath Education (Seed-stage startup, 12 engineers)
+Industry: edtech
+Users: 8,200 students across 14 universities; 3,400 students have midterm papers due by 8:00 AM tomorrow
+AWS Services: Amazon EC2, Amazon VPC, Amazon CloudWatch
+Your role: On-call engineer responding at 9:47 PM on a Wednesday, the night before midterm submissions are due
+Situation: The BrightPath learning platform health check is failing and students report the site will not load, timing out with no error page.

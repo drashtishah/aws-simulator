@@ -1,0 +1,6 @@
+Company: Tidepool Goods (Series A startup, 18 engineers)
+Industry: e-commerce
+Users: Online buyers of handmade ceramics, linen clothing, and pantry items; customer service has 6 open chats with buyers whose orders will not go through
+AWS Services: Amazon DynamoDB, Amazon CloudWatch, AWS Lambda
+Your role: Engineer on the team; it is Tuesday morning, the order processing pipeline stopped at 10:15 AM
+Situation: The order processing Lambda began returning ProvisionedThroughputExceededException after a new product search Lambda was deployed at 9:58 AM.

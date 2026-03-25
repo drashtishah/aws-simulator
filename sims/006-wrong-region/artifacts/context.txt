@@ -1,0 +1,6 @@
+Company: Calendine (Seed-stage startup, 8 engineers)
+Industry: scheduling software
+Users: Independent consultants whose clients see a blank page when the booking endpoint is down; demo for a potential enterprise customer at 14:45 UTC
+AWS Services: AWS Lambda, Amazon CloudWatch, AWS IAM
+Your role: Engineer on the team; it is a weekday afternoon, deploy finished at 14:12 UTC, demo is at 14:45 UTC
+Situation: After a successful CI/CD deployment, the API Gateway returns "Internal server error" with ResourceNotFoundException for the Lambda function.

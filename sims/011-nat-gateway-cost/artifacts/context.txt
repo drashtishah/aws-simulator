@@ -1,0 +1,6 @@
+Company: Fieldspar Analytics (Series A startup, 14 engineers)
+Industry: sensor-data-analytics
+Users: 12,000 sensors across 42 manufacturing plants, each reporting every 30 seconds; the finance lead found a $907/day NAT Gateway charge
+AWS Services: NAT Gateway, Amazon S3, Amazon VPC, Amazon CloudWatch
+Your role: Engineer asked to investigate NAT Gateway costs; the pipeline has been running since January
+Situation: The finance lead discovered $907 per day in NAT Gateway data processing charges, totaling approximately $27,135 over three months, for a pipeline that writes 500 GB daily to an S3 bucket in the same region.

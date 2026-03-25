@@ -61,7 +61,7 @@
         "service": "dynamodb",
         "artifacts": [
           "artifacts/table-description.json",
-          "artifacts/architecture.txt"
+          "artifacts/architecture-hint.txt"
         ],
         "capabilities": [
           "describe_table",

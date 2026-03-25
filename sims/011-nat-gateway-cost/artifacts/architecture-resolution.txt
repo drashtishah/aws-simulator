@@ -1,0 +1,61 @@
+  VPC: vpc-0a1b2c3d4e5f67890 (10.0.0.0/16) -- us-east-1
+
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Public Subnet: 10.0.1.0/24 (us-east-1a)                             |
+  |                                                                       |
+  |  +---------------------+       +---------------------+               |
+  |  | NAT Gateway         |       | Internet Gateway    |               |
+  |  | nat-0a1b2c3d4e5f678 |       | igw-0f1e2d3c4b5a    |               |
+  |  | 10.0.1.50           |       |                     |               |
+  |  +----------+----------+       +----------+----------+               |
+  |             |                              |                          |
+  +-----------------------------------------------------------------------+
+                |                              |
+                | ALL traffic (incl S3)        | to internet
+                | $0.045/GB  <-- PROBLEM       |
+                |                              |
+  +-----------------------------------------------------------------------+
+  |                                                                       |
+  |  Private Subnet: 10.0.2.0/24 (us-east-1a)                            |
+  |                                                                       |
+  |  +-------------------+  +-------------------+  +-------------------+  |
+  |  | EC2: pipeline-01  |  | EC2: pipeline-02  |  | EC2: pipeline-03  |  |
+  |  | i-0abc123def45601  |  | i-0abc123def45602  |  | i-0abc123def45603  |  |
+  |  | c5.2xlarge        |  | c5.2xlarge        |  | c5.2xlarge        |  |
+  |  +-------------------+  +-------------------+  +-------------------+  |
+  |          |                       |                       |            |
+  |          +------------- --------+------------- ---------+            |
+  |                         |                                             |
+  |               ~500 GB/day to S3                                       |
+  |                                                                       |
+  +-----------------------------------------------------------------------+
+
+  CURRENT PATH (expensive):
+  ========================
+  EC2 instances --> NAT Gateway --> Internet Gateway --> Amazon S3
+                    $0.045/GB
+                    500 GB/day = $22.50/hr = $907.20/day
+
+  CORRECT PATH (free):
+  ====================
+  EC2 instances --> S3 VPC Gateway Endpoint --> Amazon S3
+                    $0.00/GB
+                    (endpoint does not exist yet)
+
+  +----------------------------+          +----------------------------+
+  | S3 Bucket                  |          | S3 VPC Gateway Endpoint    |
+  | fieldspar-sensor-lake-prod |          | (MISSING -- needs to be    |
+  | us-east-1                  |          |  created)                  |
+  | ~45 TB total               |          | vpce-????????????????      |
+  +----------------------------+          +----------------------------+
+
+  Route Table: rtb-0d4e5f6a7b8c9d0e1 (private subnet)
+  CURRENT:
+    10.0.0.0/16  --> local
+    0.0.0.0/0    --> nat-0a1b2c3d4e5f67890
+
+  AFTER FIX:
+    10.0.0.0/16  --> local
+    pl-63a5400a  --> vpce-xxxxxxxxxxxxxxxxx   <-- S3 prefix list route
+    0.0.0.0/0    --> nat-0a1b2c3d4e5f67890

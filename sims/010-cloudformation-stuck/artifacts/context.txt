@@ -1,0 +1,6 @@
+Company: Threadline (Series B, 38 engineers)
+Industry: project-management-saas
+Users: About 1,200 teams, mostly mid-size agencies and consultancies; enterprise customers are being overcharged by a billing bug since Tuesday
+AWS Services: AWS CloudFormation, AWS IAM, Amazon CloudWatch
+Your role: Engineer asked to investigate the stuck stack; it is a weekday, the stack has been in UPDATE_ROLLBACK_FAILED for three days since Monday
+Situation: The CloudFormation production stack entered UPDATE_ROLLBACK_FAILED after a routine stack update on Monday, blocking all deployments with four pull requests queued.

@@ -1,0 +1,6 @@
+Company: Meridian Health (Mid-market SaaS company, 80 engineers)
+Industry: healthtech
+Users: 340 medical practices across the midwest; roughly 12,000 patients fill out intake forms daily
+AWS Services: Amazon S3, AWS IAM, AWS CloudTrail
+Your role: Security team member responding at 6:22 AM on a Monday after a responsible disclosure email from a security researcher
+Situation: A security researcher reported that patient documents in an S3 bucket are publicly accessible via direct URLs with no authentication required.

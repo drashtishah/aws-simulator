@@ -1,0 +1,50 @@
+    CI/CD Pipeline (CodePipeline)
+    ================================
+    Source: GitHub (main branch)
+         |
+         v
+    Build: CodeBuild
+         |
+         v
+    Deploy: CloudFormation UpdateStack
+         |
+         v
+    +--------------------------------------------+
+    | CloudFormation Stack: threadline-prod-stack |
+    | Status: UPDATE_ROLLBACK_FAILED             |
+    +--------------------------------------------+
+    |                                            |
+    |  +------------------+  +----------------+  |
+    |  | EC2 Auto Scaling |  | Lambda Funcs   |  |
+    |  | Group            |  | (3 functions)  |  |
+    |  | 2x t3.medium     |  | - webhook      |  |
+    |  | [RUNNING]        |  | - processor    |  |
+    |  |                  |  | - notifier     |  |
+    |  +------------------+  | [RUNNING]      |  |
+    |                        +----------------+  |
+    |                                            |
+    |  +------------------+  +----------------+  |
+    |  | SQS Queue        |  | IAM Roles      |  |
+    |  | threadline-tasks |  | - LambdaExec   |  |
+    |  | [RUNNING]        |  | - EC2Profile   |  |
+    |  +------------------+  | [RUNNING]      |  |
+    |                        +----------------+  |
+    |                                            |
+    |  +--------------------------------------+  |
+    |  | RDS PostgreSQL                       |  |
+    |  | threadline-prod-db                   |  |
+    |  | db.r5.large                          |  |
+    |  | Logical ID: ProdDatabase             |  |
+    |  +--------------------------------------+  |
+    |                                            |
+    +--------------------------------------------+
+
+    Stack Event Sequence:
+    =====================
+    1. Mon 9:12 AM  UPDATE_IN_PROGRESS
+    2. Mon 9:13 AM  Lambda update begins
+    3. Mon 9:13 AM  Validation fails, rollback initiated
+    4. Mon 9:13 AM  UPDATE_ROLLBACK_IN_PROGRESS
+    5. Mon 9:14 AM  Rollback tries to restore ProdDatabase
+    6. Mon 9:14 AM  ProdDatabase not found
+    7. Mon 9:14 AM  UPDATE_ROLLBACK_FAILED     <-- STUCK HERE

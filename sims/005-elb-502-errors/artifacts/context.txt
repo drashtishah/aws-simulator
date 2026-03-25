@@ -1,0 +1,6 @@
+Company: UrbanFleet (Series B startup, 52 engineers)
+Industry: logistics
+Users: 45 retail and grocery partners across six metro areas; 1,200 delivery drivers; 8,400 active deliveries simultaneously on a typical Friday afternoon
+AWS Services: Elastic Load Balancing, Amazon EC2 Auto Scaling, Amazon EC2, Amazon CloudWatch
+Your role: Infrastructure team member responding at 4:48 PM on a Friday during peak delivery hour
+Situation: The dispatch dashboard and customer-facing APIs are returning 502 errors, and the ALB target group shows zero healthy instances despite all EC2 instances passing OS-level status checks.

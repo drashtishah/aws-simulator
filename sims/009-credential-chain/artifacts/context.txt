@@ -1,0 +1,6 @@
+Company: Fenwick Systems (Series A startup, 10 engineers)
+Industry: b2b-saas
+Users: 18 paying customers using invoice reconciliation software for mid-size accounting firms
+AWS Services: AWS IAM, AWS STS, AWS Secrets Manager
+Your role: Engineer on the team; it is Wednesday morning, the deploy script has been failing since Tuesday
+Situation: The daily CI/CD deploy script started returning AccessDenied on every AWS API call after running without error for eleven months.

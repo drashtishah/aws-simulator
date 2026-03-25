@@ -1,0 +1,46 @@
+                         +------------------+
+                         |   Customers      |
+                         | (Web / Mobile)   |
+                         +--------+---------+
+                                  |
+                         +--------v---------+
+                         | API Gateway      |
+                         | tidepool-api     |
+                         +---+---------+----+
+                             |         |
+               /search       |         |    /orders
+               (GET)         |         |    (POST)
+                             |         |
+                +------------v--+  +---v--------------+
+                | Lambda        |  | Lambda            |
+                | tidepool-     |  | tidepool-         |
+                | product-search|  | order-writer      |
+                | (v14)         |  | (v9)              |
+                +------------+--+  +---+--------------+
+                             |         |
+                    Scan     |         |  PutItem /
+                    (full    |         |  Query
+                    table)   |         |
+                             |         |
+                         +---v---------v---+
+                         | DynamoDB Table   |
+                         | tidepool-products|
+                         |                  |
+                         | PK: productId    |
+                         | SK: variantId    |
+                         |                  |
+                         | Items: 4,012,387 |
+                         | RCU: 100 (prov.) |
+                         | WCU: 100 (prov.) |
+                         |                  |
+                         | GSI: (none)      |
+                         |                  |
+                         | Attributes:      |
+                         |  - productId     |
+                         |  - variantId     |
+                         |  - productName   |
+                         |  - category      |
+                         |  - price         |
+                         |  - makerName     |
+                         |  - createdAt     |
+                         +------------------+

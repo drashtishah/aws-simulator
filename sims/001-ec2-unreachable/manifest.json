@@ -70,7 +70,7 @@
         "name": "vpc-console",
         "service": "vpc",
         "artifacts": [
-          "artifacts/architecture.txt",
+          "artifacts/architecture-hint.txt",
           "artifacts/network-acl.json"
         ],
         "capabilities": [

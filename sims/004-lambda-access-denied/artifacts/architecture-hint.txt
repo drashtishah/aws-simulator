@@ -1,0 +1,62 @@
+    +------------------+       +------------------+
+    | External Threat  |       | External Threat  |
+    | Feed APIs (14)   |       | Feed APIs        |
+    +--------+---------+       +--------+---------+
+             |                          |
+             +-------------+------------+
+                           |
+                  +--------v---------+
+                  | EventBridge Rule |
+                  | every 5 minutes  |
+                  +--------+---------+
+                           |
+                  +--------v---------+
+                  | Lambda Function  |
+                  | packetforge-     |
+                  | threat-sync      |
+                  | (Python 3.12)    |
+                  +--------+---------+
+                           |
+                  +--------v---------+
+                  | IAM Execution    |
+                  | Role             |
+                  | packetforge-     |
+                  | threat-sync-role |
+                  +--------+---------+
+                           |
+                  +--------v---------+
+                  | DynamoDB Table   |
+                  | packetforge-     |
+                  | threats          |
+                  | (On-demand)      |
+                  +--------+---------+
+                           |
+                  +--------v---------+
+                  | Customer API     |
+                  | (ECS Fargate)    |
+                  | Reads from       |
+                  | DynamoDB         |
+                  +--------+---------+
+                           |
+                  +--------v---------+
+                  | Enterprise       |
+                  | Customers (220)  |
+                  | Sentinel Plan    |
+                  +------------------+
+
+  IAM Role: packetforge-threat-sync-role
+    Trust Policy: lambda.amazonaws.com
+    Attached Policy: packetforge-threat-sync-policy
+      -> Allows: dynamodb:GetItem, dynamodb:Query, dynamodb:BatchWriteItem
+      -> Allows: logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents
+
+  Lambda Configuration:
+    - Runtime: Python 3.12
+    - Memory: 512 MB
+    - Timeout: 300 seconds
+    - Trigger: EventBridge rule (rate: 5 minutes)
+
+  DynamoDB Table: packetforge-threats
+    - Partition Key: threat_id (S)
+    - Sort Key: source (S)
+    - Billing: On-demand (PAY_PER_REQUEST)

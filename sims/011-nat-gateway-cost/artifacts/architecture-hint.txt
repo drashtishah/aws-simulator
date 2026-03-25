@@ -13,7 +13,6 @@
   +-----------------------------------------------------------------------+
                 |                              |
                 | ALL traffic (incl S3)        | to internet
-                | $0.045/GB  <-- PROBLEM       |
                 |                              |
   +-----------------------------------------------------------------------+
   |                                                                       |
@@ -31,31 +30,14 @@
   |                                                                       |
   +-----------------------------------------------------------------------+
 
-  CURRENT PATH (expensive):
-  ========================
-  EC2 instances --> NAT Gateway --> Internet Gateway --> Amazon S3
-                    $0.045/GB
-                    500 GB/day = $22.50/hr = $907.20/day
-
-  CORRECT PATH (free):
-  ====================
-  EC2 instances --> S3 VPC Gateway Endpoint --> Amazon S3
-                    $0.00/GB
-                    (endpoint does not exist yet)
-
   +----------------------------+          +----------------------------+
   | S3 Bucket                  |          | S3 VPC Gateway Endpoint    |
-  | fieldspar-sensor-lake-prod |          | (MISSING -- needs to be    |
-  | us-east-1                  |          |  created)                  |
-  | ~45 TB total               |          | vpce-????????????????      |
+  | fieldspar-sensor-lake-prod |          |                            |
+  | us-east-1                  |          |                            |
+  | ~45 TB total               |          |                            |
   +----------------------------+          +----------------------------+
 
   Route Table: rtb-0d4e5f6a7b8c9d0e1 (private subnet)
   CURRENT:
     10.0.0.0/16  --> local
-    0.0.0.0/0    --> nat-0a1b2c3d4e5f67890
-
-  AFTER FIX:
-    10.0.0.0/16  --> local
-    pl-63a5400a  --> vpce-xxxxxxxxxxxxxxxxx   <-- S3 prefix list route
     0.0.0.0/0    --> nat-0a1b2c3d4e5f67890
