@@ -40,6 +40,54 @@
       "category": "reliability",
       "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
       "estimated_minutes": 25
+    },
+    {
+      "id": "006-wrong-region",
+      "title": "A Function in the Wrong Room",
+      "difficulty": 1,
+      "category": "operations",
+      "services": ["lambda", "cloudwatch", "iam"],
+      "estimated_minutes": 15
+    },
+    {
+      "id": "007-dynamodb-scan",
+      "title": "Four Million Records, One by One",
+      "difficulty": 2,
+      "category": "performance",
+      "services": ["dynamodb", "cloudwatch", "lambda"],
+      "estimated_minutes": 25
+    },
+    {
+      "id": "008-s3-cors-presigned",
+      "title": "The Upload That Worked Everywhere Else",
+      "difficulty": 2,
+      "category": "operations",
+      "services": ["s3", "cloudfront", "api-gateway"],
+      "estimated_minutes": 25
+    },
+    {
+      "id": "009-credential-chain",
+      "title": "Someone Else's Keys",
+      "difficulty": 1,
+      "category": "security",
+      "services": ["iam", "sts", "secrets-manager"],
+      "estimated_minutes": 15
+    },
+    {
+      "id": "010-cloudformation-stuck",
+      "title": "The Stack That Wouldn't Move",
+      "difficulty": 2,
+      "category": "operations",
+      "services": ["cloudformation", "iam", "cloudwatch"],
+      "estimated_minutes": 25
+    },
+    {
+      "id": "011-nat-gateway-cost",
+      "title": "Nine Hundred Dollars for Nothing",
+      "difficulty": 1,
+      "category": "cost",
+      "services": ["nat-gateway", "s3", "vpc", "cloudwatch"],
+      "estimated_minutes": 15
     }
   ]
 }

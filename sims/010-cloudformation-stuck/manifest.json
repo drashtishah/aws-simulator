@@ -1,0 +1,142 @@
+{
+  "id": "010-cloudformation-stuck",
+  "title": "The Stack That Wouldn't Move",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["cloudformation", "iam", "cloudwatch"],
+  "tags": [
+    "cloudformation",
+    "update-rollback-failed",
+    "manual-modification",
+    "stack-drift",
+    "deployment-pipeline"
+  ],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain3:Deployment",
+    "SAA-C03:Domain2:ResilientArchitectures"
+  ],
+  "company": {
+    "name": "Threadline",
+    "industry": "project-management-saas",
+    "size": "Series B, 38 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Dry. Notes the three-day gap between the deletion and anyone noticing. Mentions that four pull requests are waiting to deploy. Reports the stack status the way a doctor reads test results.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Four pull requests are queued behind this. One of them is a fix for a billing calculation bug that has been overcharging enterprise customers since Tuesday. The product manager has asked about it twice today."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Someone on the team mentions that the CI/CD role's permissions were tightened last month. They wonder if maybe the deploy role can't modify RDS resources anymore. The IAM policy is attached to the artifacts if you want to check."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The developer who deleted the database is on PTO this week. His Slack status says 'hiking in Patagonia.' He set it on Saturday morning."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "That does not match what the stack events are showing. The stack is not failing on permissions or configuration. CloudFormation is trying to act on a resource and cannot find it. Look at which specific resource is causing the rollback failure."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "Look at the stack events. Which resource failed during rollback?",
+        "Does that resource still exist? Check if it was modified outside CloudFormation.",
+        "CloudFormation tried to roll back to the previous state, but the resource it expected to find was gone.",
+        "aws cloudformation continue-update-rollback can skip resources that no longer exist.",
+        "Use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback."
+      ],
+      "max_hints_before_nudge": 4
+    },
+    "agents": [
+      {
+        "name": "cloudformation-console",
+        "service": "cloudformation",
+        "artifacts": [
+          "artifacts/stack-events.json",
+          "artifacts/stack-description.json",
+          "artifacts/architecture.txt"
+        ],
+        "capabilities": [
+          "describe_stacks",
+          "describe_stack_events",
+          "describe_stack_resources",
+          "detect_stack_drift",
+          "continue_update_rollback",
+          "list_stack_resources"
+        ]
+      },
+      {
+        "name": "iam-console",
+        "service": "iam",
+        "artifacts": [
+          "artifacts/cloudtrail-events.json"
+        ],
+        "capabilities": [
+          "get_role_policy",
+          "list_attached_role_policies",
+          "get_user",
+          "list_user_policies"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/cloudwatch-logs.txt",
+          "artifacts/cloudtrail-events.json"
+        ],
+        "capabilities": [
+          "get_log_events",
+          "describe_alarms",
+          "get_metric_data",
+          "filter_log_events"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "A CloudFormation-managed RDS instance (threadline-prod-db) was manually deleted from the AWS Console on Friday afternoon. When the next stack update ran on Monday, the update failed and CloudFormation attempted to roll back, but could not restore the deleted RDS instance, leaving the stack in UPDATE_ROLLBACK_FAILED.",
+    "fix_criteria": [
+      {
+        "id": "identify_deleted_resource",
+        "description": "Player identifies that the RDS instance threadline-prod-db was manually deleted outside of CloudFormation, causing the rollback failure.",
+        "required": true
+      },
+      {
+        "id": "continue_update_rollback",
+        "description": "Player uses aws cloudformation continue-update-rollback with --resources-to-skip to skip the deleted RDS instance and complete the rollback.",
+        "required": true
+      },
+      {
+        "id": "understand_manual_changes",
+        "description": "Player explains why manual changes to CloudFormation-managed resources break the stack's state model.",
+        "required": false
+      },
+      {
+        "id": "propose_prevention",
+        "description": "Player proposes drift detection, stack policies, or SCPs to prevent manual modification of CloudFormation-managed resources.",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "CloudFormation maintains its own state model of resources. Deleting a resource outside CloudFormation creates a mismatch between expected and actual state.",
+      "UPDATE_ROLLBACK_FAILED occurs when CloudFormation cannot roll back to the previous state, typically because a resource it needs to restore no longer exists.",
+      "ContinueUpdateRollback with --resources-to-skip allows CloudFormation to complete a stuck rollback by skipping resources that cannot be restored.",
+      "Drift detection identifies differences between the expected and actual configuration of stack resources.",
+      "Stack policies can protect critical resources from accidental updates or deletions through CloudFormation itself, but cannot prevent console-level manual changes."
+    ]
+  }
+}

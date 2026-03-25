@@ -1,0 +1,77 @@
+{
+  "Stacks": [
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "StackName": "threadline-prod-stack",
+      "Description": "Threadline production application stack - EC2, RDS, Lambda, SQS, IAM",
+      "Parameters": [
+        {
+          "ParameterKey": "Environment",
+          "ParameterValue": "production"
+        },
+        {
+          "ParameterKey": "DBInstanceClass",
+          "ParameterValue": "db.r5.large"
+        },
+        {
+          "ParameterKey": "LambdaRuntime",
+          "ParameterValue": "nodejs18.x"
+        },
+        {
+          "ParameterKey": "EC2InstanceType",
+          "ParameterValue": "t3.medium"
+        }
+      ],
+      "CreationTime": "2024-06-15T10:30:00.000Z",
+      "LastUpdatedTime": "2026-03-23T14:12:42.000Z",
+      "RollbackConfiguration": {
+        "RollbackTriggers": [],
+        "MonitoringTimeInMinutes": 0
+      },
+      "StackStatus": "UPDATE_ROLLBACK_FAILED",
+      "StackStatusReason": "The following resource(s) failed to update: [ProdDatabase].",
+      "DisableRollback": false,
+      "NotificationARNs": [],
+      "Capabilities": [
+        "CAPABILITY_IAM",
+        "CAPABILITY_NAMED_IAM"
+      ],
+      "Tags": [
+        {
+          "Key": "Application",
+          "Value": "threadline"
+        },
+        {
+          "Key": "Environment",
+          "Value": "production"
+        },
+        {
+          "Key": "ManagedBy",
+          "Value": "cloudformation"
+        },
+        {
+          "Key": "Team",
+          "Value": "platform"
+        }
+      ],
+      "EnableTerminationProtection": false,
+      "DriftInformation": {
+        "StackDriftStatus": "NOT_CHECKED",
+        "LastCheckTimestamp": null
+      },
+      "RoleARN": "arn:aws:iam::123456789012:role/threadline-deploy-role",
+      "Outputs": [
+        {
+          "OutputKey": "ApplicationURL",
+          "OutputValue": "https://app.threadline.io",
+          "Description": "Production application endpoint"
+        },
+        {
+          "OutputKey": "DatabaseEndpoint",
+          "OutputValue": "threadline-prod-db.c9akfj2mq1w7.us-east-1.rds.amazonaws.com",
+          "Description": "RDS PostgreSQL endpoint"
+        }
+      ]
+    }
+  ]
+}

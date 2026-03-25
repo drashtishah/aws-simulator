@@ -1,0 +1,8 @@
+$ aws configure list
+
+      Name                    Value             Type    Location
+      ----                    -----             ----    --------
+   profile                <not set>             None    None
+access_key     ****************N7EX              env    AWS_ACCESS_KEY_ID
+secret_key     ****************nFjD              env    AWS_SECRET_ACCESS_KEY
+    region                us-west-2      config-file    ~/.aws/config

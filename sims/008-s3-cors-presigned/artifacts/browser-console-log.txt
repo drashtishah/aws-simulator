@@ -1,0 +1,38 @@
+// Browser Developer Tools - Console Tab
+// Captured at 2024-09-12T16:22:03Z from app.pollen.io
+
+Access to XMLHttpRequest at 'https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQE...' from origin 'https://app.pollen.io' has been blocked by CORS policy: Response to preflight request doesn't pass access control check: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+
+PUT https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQE... net::ERR_FAILED
+
+Uncaught (in promise) AxiosError: Network Error
+    at XMLHttpRequest.handleError (xhr.js:195:14)
+    at XMLHttpRequest.dispatchEvent (event-target.js:174:11)
+
+// Browser Developer Tools - Network Tab
+// Filtered: XHR requests
+
+OPTIONS https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQE...
+  Status: 403 Forbidden
+  Request Headers:
+    Access-Control-Request-Method: PUT
+    Access-Control-Request-Headers: content-type
+    Origin: https://app.pollen.io
+    Sec-Fetch-Mode: cors
+    Sec-Fetch-Site: cross-site
+  Response Headers:
+    content-type: application/xml
+    x-amz-request-id: 7B2E4F3A1C9D8B6E
+    x-amz-id-2: vLfB7MZwsP0h...
+    server: AmazonS3
+    date: Thu, 12 Sep 2024 16:22:03 GMT
+    content-length: 0
+  Response: (no body)
+
+  NOTE: No Access-Control-Allow-Origin header in response.
+  NOTE: No Access-Control-Allow-Methods header in response.
+
+PUT https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQE...
+  Status: (failed)
+  Type: cors
+  NOTE: This request was never sent. The browser blocked it after the preflight failed.

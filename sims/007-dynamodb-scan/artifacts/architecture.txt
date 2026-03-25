@@ -1,0 +1,72 @@
+                         +------------------+
+                         |   Customers      |
+                         | (Web / Mobile)   |
+                         +--------+---------+
+                                  |
+                         +--------v---------+
+                         | API Gateway      |
+                         | tidepool-api     |
+                         +---+---------+----+
+                             |         |
+               /search       |         |    /orders
+               (GET)         |         |    (POST)
+                             |         |
+                +------------v--+  +---v--------------+
+                | Lambda        |  | Lambda            |
+                | tidepool-     |  | tidepool-         |
+                | product-search|  | order-writer      |
+                | (v14)         |  | (v9)              |
+                | [PROBLEM]     |  | [VICTIM]          |
+                +------------+--+  +---+--------------+
+                             |         |
+                    Scan     |         |  PutItem /
+                    (full    |         |  Query
+                    table)   |         |
+                             |         |
+                         +---v---------v---+
+                         | DynamoDB Table   |
+                         | tidepool-products|
+                         |                  |
+                         | PK: productId    |
+                         | SK: variantId    |
+                         |                  |
+                         | Items: 4,012,387 |
+                         | RCU: 100 (prov.) |
+                         | WCU: 100 (prov.) |
+                         |                  |
+                         | GSI: (none)      |  <-- MISSING
+                         |                  |
+                         | Attributes:      |
+                         |  - productId     |
+                         |  - variantId     |
+                         |  - productName   |
+                         |  - category      |  <-- search target, no index
+                         |  - price         |
+                         |  - makerName     |
+                         |  - createdAt     |
+                         +------------------+
+
+  THE PROBLEM:
+    tidepool-product-search (Lambda) performs:
+      dynamodb.scan({
+        TableName: "tidepool-products",
+        FilterExpression: "category = :cat"   <-- reads ALL 4M items, filters after
+      })
+
+    Should be:
+      dynamodb.query({
+        TableName: "tidepool-products",
+        IndexName: "category-index",          <-- GSI on category
+        KeyConditionExpression: "category = :cat"  <-- reads only matching items
+      })
+
+  IMPACT:
+    - Scan consumes all 100 provisioned RCUs within seconds
+    - tidepool-order-writer receives ProvisionedThroughputExceededException
+    - Orders stop processing; dead-letter queue fills up
+    - Search Lambda itself times out on throttled reads
+
+  RED HERRING:
+    - tidepool-order-writer Lambda timeout errors look like
+      a Lambda configuration problem (timeout too low)
+    - Actual cause: Lambda is waiting on throttled DynamoDB reads

@@ -1,0 +1,132 @@
+{
+  "id": "008-s3-cors-presigned",
+  "title": "The Upload That Worked Everywhere Else",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["s3", "cloudfront", "api-gateway"],
+  "tags": ["cors", "presigned-url", "cloudfront-cache", "origin-header", "browser-upload"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain1:Development",
+    "SAA-C03:Domain3:HighPerforming"
+  ],
+  "company": {
+    "name": "Pollen Systems",
+    "industry": "document management",
+    "size": "Series A startup, 17 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Patient. Has seen this before. Mentions that the developer checked IAM policies for two hours before looking at the browser console. States this without judgment.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:8",
+          "message": "The frontend developer just sent another message in Slack. She says the presigned URL is valid because she tested it with curl. She attached the curl output. She is now re-reading the IAM policy JSON for the third time."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "A backend engineer joined the thread. He says the API Gateway logs show the presigned URL was generated correctly. He also checked the S3 bucket policy. Everything looks fine from the server side. He asked if anyone has checked the browser console."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The IAM policy and presigned URL are both correct. The upload works from non-browser clients. The difference is in how the browser makes the request, not in the permissions."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The upload works outside the browser. What is different about browser HTTP requests?",
+        "Check the browser developer tools Network tab. Look at the request headers.",
+        "Browsers send preflight OPTIONS requests for cross-origin PUT requests.",
+        "The S3 bucket has no CORS configuration. Run `aws s3api get-bucket-cors`.",
+        "CloudFront is also stripping the Origin header. Check the cache behavior's origin request policy."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "s3-console",
+        "service": "s3",
+        "artifacts": [
+          "artifacts/s3-cors-config.json",
+          "artifacts/curl-output.txt",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_bucket_cors",
+          "put_bucket_cors",
+          "get_bucket_policy",
+          "list_objects_v2",
+          "head_object"
+        ]
+      },
+      {
+        "name": "cloudfront-console",
+        "service": "cloudfront",
+        "artifacts": [
+          "artifacts/cloudfront-config.json",
+          "artifacts/architecture.txt"
+        ],
+        "capabilities": [
+          "get_distribution",
+          "get_distribution_config",
+          "list_distributions",
+          "get_origin_request_policy",
+          "create_invalidation"
+        ]
+      },
+      {
+        "name": "apigateway-console",
+        "service": "api-gateway",
+        "artifacts": [
+          "artifacts/cloudwatch-logs.txt",
+          "artifacts/browser-console-log.txt"
+        ],
+        "capabilities": [
+          "get_rest_apis",
+          "get_stages",
+          "get_method",
+          "get_integration"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The S3 bucket pollen-docs-prod has no CORS configuration, causing browsers to block cross-origin PUT requests via presigned URLs. Additionally, the CloudFront distribution d-EDFDVBD6EXAMPLE is configured with a cache policy that does not forward the Origin, Access-Control-Request-Headers, or Access-Control-Request-Method headers to S3, so even after adding CORS config to S3, CloudFront would strip the headers needed for CORS negotiation.",
+    "fix_criteria": [
+      {
+        "id": "identify_missing_cors",
+        "description": "Player identifies that the S3 bucket has no CORS configuration, causing browser uploads to fail",
+        "required": true
+      },
+      {
+        "id": "identify_cloudfront_origin_header",
+        "description": "Player identifies that CloudFront is not forwarding the Origin header to S3",
+        "required": true
+      },
+      {
+        "id": "propose_cors_config",
+        "description": "Player proposes a correct CORS JSON configuration for the S3 bucket that allows PUT from the application origin",
+        "required": false
+      },
+      {
+        "id": "explain_browser_vs_curl",
+        "description": "Player explains why curl and Postman work but browsers do not -- browsers enforce the same-origin policy and send preflight OPTIONS requests",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "CORS is enforced by browsers, not servers -- non-browser clients like curl and Postman skip CORS entirely",
+      "S3 buckets require explicit CORS configuration to respond to cross-origin requests with the correct Access-Control headers",
+      "CloudFront must forward Origin, Access-Control-Request-Headers, and Access-Control-Request-Method headers for CORS to work end-to-end",
+      "Presigned URLs handle authentication and authorization but do not bypass CORS -- these are separate mechanisms"
+    ]
+  }
+}

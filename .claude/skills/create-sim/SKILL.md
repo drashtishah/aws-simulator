@@ -192,11 +192,45 @@ git push
 
 ---
 
+## Narrative Style
+
+The narrative voice for all story.md files follows the register of contemporary Japanese literary fiction -- specifically the quiet, observational tone of works like *Diary of a Void* (Emi Yagi).
+
+**Principles:**
+
+- Simple, short declarative sentences. No compound sentences where two simple ones will do.
+- Flat affect. The stress lives in what is left unsaid, not in exclamation marks or "the clock is ticking" urgency.
+- Mundane details sit right next to the crisis and are given equal weight. A deploy fails; the coffee is cold; the product manager sends a message.
+- No breathlessness. No dramatic narration. No "your heart races" or "time is running out."
+- Observations stacked like small facts. Let the weight accumulate on its own.
+- The narrator states what happened. The reader feels the tension.
+
+**Sim titles** should read like chapter headings, not incident reports. Quiet, understated, slightly literary. Examples: "A Function in the Wrong Room," "Four Million Records, One by One," "Someone Else's Keys."
+
+**Narrator personality** in manifests should match: a quiet observer who states facts, not a high-energy SRE barking updates. Story beats use the same flat register.
+
+**What to avoid:**
+- Exclamation marks
+- "The clock is ticking" / "time is running out" / "your heart races"
+- Breathless compound sentences strung together with dashes
+- Dramatic rhetorical questions
+- Any language that sounds like a thriller novel or a conference talk
+
+**Example opening (good):**
+
+> The terminal said `ResourceNotFoundException`. I read it twice. I had deployed the function twenty minutes ago. I watched it succeed. The green checkmark was still in the pipeline dashboard, small and certain.
+
+**Example opening (bad):**
+
+> It's 3 AM and your phone is BUZZING -- a PagerDuty alert screams across your nightstand! The API is down, customers are furious, and the clock is ticking. You need to figure out what went wrong before the VP joins the war room!
+
+---
+
 ## Rules
 
 1. No emojis in any output, files, or UI
 2. Obsidian formatting for all markdown: YAML frontmatter tags, wiki-links for internal references, callout syntax where appropriate
-3. Customer-obsessed narrative language -- stories are about impact on real users, not abstract technical problems
+3. Narrative language follows the style guide above -- quiet, observational, impact shown through concrete detail not dramatic language
 4. AWS vocabulary throughout -- use official service names (Amazon S3, not "S3 storage"), official API action names (PutBucketPolicy, not "change bucket settings")
 5. Artifacts in native AWS formats -- never wrap AWS JSON/logs in markdown code blocks within artifact files
 6. Every sim requires at least 2 service agents plus the narrator
@@ -205,6 +239,7 @@ git push
 9. Company names must feel real -- match the industry, sound like a startup or enterprise that could exist
 10. Sim IDs are globally unique and sequential -- always check registry.json for the next available number
 11. Never generate a sim for a topic that already exists in the registry unless the user explicitly asks for a variant
+12. Sim titles read like chapter headings -- quiet, understated, slightly literary
 
 ## Related
 

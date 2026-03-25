@@ -1,0 +1,133 @@
+{
+  "id": "009-credential-chain",
+  "title": "Someone Else's Keys",
+  "difficulty": 1,
+  "category": "security",
+  "services": ["iam", "sts", "secrets-manager"],
+  "tags": [
+    "credential-chain",
+    "environment-variables",
+    "instance-profile",
+    "access-keys",
+    "aws-cli",
+    "sts-get-caller-identity"
+  ],
+  "estimated_minutes": 15,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain2:Security",
+    "SAA-C03:Domain1:SecureArchitectures"
+  ],
+  "company": {
+    "name": "Fenwick Systems",
+    "industry": "b2b-saas",
+    "size": "Series A startup, 10 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Matter-of-fact. Notes that the keys were set eight months ago by someone who has since left the company. States this the way you might note the weather.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The deploy has been failing since Tuesday. Before that it worked for eleven months. Nobody changed the deploy script. The product manager asked if the release would go out today. You said you were looking into it."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "A teammate mentions that Raj set up the CI box originally. Raj left the company in November. His accounts were deactivated during offboarding. The CI machine has been running since then without issue, or so everyone assumed."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The instance profile is fine. The role has the correct permissions. The problem is that the CLI is not using the instance profile at all. Something else is taking precedence."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "Who does the pipeline think it is?",
+        "Run `aws sts get-caller-identity` on the CI machine.",
+        "Check if there are AWS credential environment variables set.",
+        "Environment variables take precedence over instance profiles in the credential chain."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "iam-console",
+        "service": "iam",
+        "artifacts": [
+          "artifacts/iam-user-details.json",
+          "artifacts/cli-configure-list.txt"
+        ],
+        "capabilities": [
+          "list_users",
+          "get_user",
+          "list_access_keys",
+          "get_access_key_last_used",
+          "list_attached_user_policies",
+          "list_instance_profiles"
+        ]
+      },
+      {
+        "name": "sts-console",
+        "service": "sts",
+        "artifacts": [
+          "artifacts/sts-caller-identity.json"
+        ],
+        "capabilities": [
+          "get_caller_identity",
+          "get_session_token",
+          "assume_role"
+        ]
+      },
+      {
+        "name": "cloudtrail-console",
+        "service": "secrets-manager",
+        "artifacts": [
+          "artifacts/cloudtrail-events.json"
+        ],
+        "capabilities": [
+          "lookup_events",
+          "get_trail_status",
+          "describe_trails"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The EC2 instance running the CI/CD pipeline has AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables set in /etc/environment. These were configured eight months ago by a former engineer (Raj Patel) for a different project. The access key belongs to IAM user 'raj.patel', whose account was deactivated during offboarding. Because environment variables take precedence over instance profiles in the AWS credential resolution chain, the CLI uses the deactivated credentials instead of the valid instance profile role, resulting in AccessDenied on every API call.",
+    "fix_criteria": [
+      {
+        "id": "identify_env_var_override",
+        "description": "Player identifies that AWS credential environment variables are overriding the EC2 instance profile",
+        "required": true
+      },
+      {
+        "id": "use_sts_get_caller_identity",
+        "description": "Player uses or references `aws sts get-caller-identity` to discover the CLI is authenticating as the wrong principal",
+        "required": true
+      },
+      {
+        "id": "propose_remove_env_vars",
+        "description": "Player proposes removing the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables from the CI machine",
+        "required": false
+      },
+      {
+        "id": "understand_credential_chain",
+        "description": "Player demonstrates understanding of the full AWS credential resolution chain order",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "The AWS CLI resolves credentials in a fixed order: CLI parameters, environment variables, CLI credentials file, CLI config file, container credentials, instance profile",
+      "Environment variables override instance profiles -- hardcoded credentials left on a machine can silently take precedence over IAM roles",
+      "`aws sts get-caller-identity` reveals which principal the CLI is actually authenticating as, regardless of what you expect",
+      "`aws configure list` shows the source of each credential component, making it easy to spot when env vars are active"
+    ]
+  }
+}

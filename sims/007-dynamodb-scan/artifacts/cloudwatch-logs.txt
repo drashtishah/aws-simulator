@@ -1,0 +1,43 @@
+2026-03-25T09:55:00.112Z INFO  [tidepool-order-writer] Order ord-88201 written to tidepool-products. ConsumedCapacity: 5 RCU. Duration: 42ms.
+2026-03-25T09:55:12.304Z INFO  [tidepool-order-writer] Order ord-88202 written to tidepool-products. ConsumedCapacity: 5 RCU. Duration: 38ms.
+2026-03-25T09:55:30.887Z INFO  [tidepool-order-writer] Order ord-88203 written to tidepool-products. ConsumedCapacity: 5 RCU. Duration: 45ms.
+2026-03-25T09:58:14.001Z INFO  [deploy-pipeline] Function tidepool-product-search updated to version v14. Deployed by jenna.ko@tidepool.io.
+2026-03-25T10:00:02.443Z INFO  [tidepool-product-search] START RequestId: a1b2c3d4-1111-2222-3333-aabbccddeeff
+2026-03-25T10:00:02.445Z INFO  [tidepool-product-search] Scanning tidepool-products with FilterExpression: category = ceramics
+2026-03-25T10:00:03.891Z INFO  [tidepool-product-search] Scan page 1 returned 1MB, 2,148 items scanned, 312 matched. Continuing pagination...
+2026-03-25T10:00:05.204Z INFO  [tidepool-product-search] Scan page 2 returned 1MB, 2,201 items scanned, 298 matched. Continuing pagination...
+2026-03-25T10:00:06.712Z INFO  [tidepool-product-search] Scan page 3 returned 1MB, 2,187 items scanned, 307 matched. Continuing pagination...
+2026-03-25T10:00:14.338Z INFO  [tidepool-order-writer] Order ord-88204 attempting write to tidepool-products...
+2026-03-25T10:00:14.892Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded. Consider increasing your provisioning level with the UpdateTable API. Table: tidepool-products
+2026-03-25T10:00:15.001Z WARN  [tidepool-order-writer] Retry 1/3 for order ord-88204...
+2026-03-25T10:00:16.112Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded. Table: tidepool-products
+2026-03-25T10:00:17.003Z WARN  [tidepool-order-writer] Retry 2/3 for order ord-88204...
+2026-03-25T10:00:18.445Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException: The level of configured provisioned throughput for the table was exceeded. Table: tidepool-products
+2026-03-25T10:00:19.002Z ERROR [tidepool-order-writer] All retries exhausted for order ord-88204. Sending to dead-letter queue: tidepool-orders-dlq.
+2026-03-25T10:00:22.104Z INFO  [tidepool-product-search] Scan page 8 returned 1MB, 2,054 items scanned, 276 matched. Continuing pagination...
+2026-03-25T10:00:28.776Z INFO  [tidepool-product-search] START RequestId: a1b2c3d4-4444-5555-6666-aabbccddeeff
+2026-03-25T10:00:28.778Z INFO  [tidepool-product-search] Scanning tidepool-products with FilterExpression: category = linen
+2026-03-25T10:00:31.002Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88205. Retrying...
+2026-03-25T10:00:35.114Z ERROR [tidepool-order-writer] All retries exhausted for order ord-88205. Sending to DLQ.
+2026-03-25T10:00:41.887Z ERROR [tidepool-product-search] Scan page 11 throttled. ProvisionedThroughputExceededException on tidepool-products. Boto3 auto-retry in progress...
+2026-03-25T10:00:48.223Z INFO  [tidepool-product-search] Scan page 11 succeeded after retry. 2,098 items scanned, 154 matched. Continuing pagination...
+2026-03-25T10:01:02.000Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88206. All retries exhausted. Sending to DLQ.
+2026-03-25T10:01:03.445Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88207. All retries exhausted. Sending to DLQ.
+2026-03-25T10:01:15.667Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88208. All retries exhausted. Sending to DLQ.
+2026-03-25T10:02:00.112Z INFO  [tidepool-product-search] START RequestId: a1b2c3d4-7777-8888-9999-aabbccddeeff
+2026-03-25T10:02:00.114Z INFO  [tidepool-product-search] Scanning tidepool-products with FilterExpression: category = pantry
+2026-03-25T10:02:14.998Z WARN  [tidepool-product-search] Scan progress: page 4 of estimated ~1,800 pages. Elapsed: 14.8s of 30s timeout.
+2026-03-25T10:02:30.001Z ERROR [tidepool-product-search] Task timed out after 30.00 seconds. RequestId: a1b2c3d4-7777-8888-9999-aabbccddeeff
+2026-03-25T10:02:30.002Z INFO  [tidepool-product-search] REPORT RequestId: a1b2c3d4-7777-8888-9999-aabbccddeeff Duration: 30000.00 ms Billed Duration: 30000 ms Memory Size: 256 MB Max Memory Used: 189 MB
+2026-03-25T10:03:11.334Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88212. All retries exhausted. Sending to DLQ.
+2026-03-25T10:03:12.001Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88213. All retries exhausted. Sending to DLQ.
+2026-03-25T10:03:12.445Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for order ord-88214. All retries exhausted. Sending to DLQ.
+2026-03-25T10:04:00.223Z ERROR [tidepool-product-search] Task timed out after 30.00 seconds. RequestId: b2c3d4e5-1111-2222-3333-ffeeddccbbaa
+2026-03-25T10:05:00.112Z WARN  [cloudwatch-alarm] ALARM: tidepool-products-ThrottledRequests exceeded threshold (>10 for 5 minutes). Current value: 214.
+2026-03-25T10:05:01.887Z ERROR [tidepool-order-writer] ProvisionedThroughputExceededException for orders ord-88220 through ord-88234. Batch failure. 15 messages sent to DLQ.
+2026-03-25T10:08:14.001Z ERROR [tidepool-order-writer] Task timed out after 30.00 seconds. RequestId: c3d4e5f6-aaaa-bbbb-cccc-112233445566
+2026-03-25T10:08:14.002Z INFO  [tidepool-order-writer] REPORT RequestId: c3d4e5f6-aaaa-bbbb-cccc-112233445566 Duration: 30000.00 ms Billed Duration: 30000 ms Memory Size: 128 MB Max Memory Used: 72 MB
+2026-03-25T10:10:00.445Z ERROR [tidepool-product-search] Task timed out after 30.00 seconds. RequestId: d4e5f6a7-dddd-eeee-ffff-aabbccddeeff
+2026-03-25T10:10:22.112Z WARN  [tidepool-order-writer] Dead-letter queue tidepool-orders-dlq depth: 287 messages. Oldest message age: 10 minutes.
+2026-03-25T10:15:00.334Z WARN  [tidepool-order-writer] Dead-letter queue tidepool-orders-dlq depth: 614 messages. Oldest message age: 15 minutes.
+2026-03-25T10:22:00.001Z INFO  [incident-channel] CloudWatch alarm notification posted to #tidepool-incidents: "tidepool-products table throttled requests exceed threshold."

@@ -1,0 +1,70 @@
+    CI/CD Pipeline (CodePipeline)
+    ================================
+    Source: GitHub (main branch)
+         |
+         v
+    Build: CodeBuild
+         |
+         v
+    Deploy: CloudFormation UpdateStack
+         |
+         v
+    +--------------------------------------------+
+    | CloudFormation Stack: threadline-prod-stack |
+    | Status: UPDATE_ROLLBACK_FAILED             |
+    +--------------------------------------------+
+    |                                            |
+    |  +------------------+  +----------------+  |
+    |  | EC2 Auto Scaling |  | Lambda Funcs   |  |
+    |  | Group            |  | (3 functions)  |  |
+    |  | 2x t3.medium     |  | - webhook      |  |
+    |  | [RUNNING]        |  | - processor    |  |
+    |  |                  |  | - notifier     |  |
+    |  +------------------+  | [RUNNING]      |  |
+    |                        +----------------+  |
+    |                                            |
+    |  +------------------+  +----------------+  |
+    |  | SQS Queue        |  | IAM Roles      |  |
+    |  | threadline-tasks |  | - LambdaExec   |  |
+    |  | [RUNNING]        |  | - EC2Profile   |  |
+    |  +------------------+  | [RUNNING]      |  |
+    |                        +----------------+  |
+    |                                            |
+    |  +--------------------------------------+  |
+    |  | RDS PostgreSQL                       |  |
+    |  | threadline-prod-db                   |  |
+    |  | db.r5.large                          |  |
+    |  | Logical ID: ProdDatabase             |  |
+    |  |                                      |  |
+    |  | [DELETED - MANUALLY REMOVED]         |  |  <-- PROBLEM
+    |  | Deleted via Console by IAM user      |  |
+    |  | mchen on Fri Mar 20 at 4:47 PM      |  |
+    |  |                                      |  |
+    |  | CloudFormation expects this resource |  |
+    |  | to exist. It does not.               |  |
+    |  +--------------------------------------+  |
+    |                                            |
+    +--------------------------------------------+
+
+    Stack Event Sequence:
+    =====================
+    1. Mon 9:12 AM  UPDATE_IN_PROGRESS
+    2. Mon 9:13 AM  Lambda update begins
+    3. Mon 9:13 AM  Validation fails, rollback initiated
+    4. Mon 9:13 AM  UPDATE_ROLLBACK_IN_PROGRESS
+    5. Mon 9:14 AM  Rollback tries to restore ProdDatabase
+    6. Mon 9:14 AM  ProdDatabase not found
+    7. Mon 9:14 AM  UPDATE_ROLLBACK_FAILED     <-- STUCK HERE
+
+    Red Herring:
+    ============
+    The CI/CD role (arn:aws:iam::123456789012:role/threadline-deploy-role)
+    had its permissions tightened last month. The policy looks restrictive.
+    But the role has all the permissions it needs. The issue is not IAM.
+    The issue is that the RDS instance does not exist.
+
+    Resolution:
+    ===========
+    aws cloudformation continue-update-rollback \
+      --stack-name threadline-prod-stack \
+      --resources-to-skip ProdDatabase

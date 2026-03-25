@@ -1,0 +1,60 @@
+{
+  "RouteTables": [
+    {
+      "RouteTableId": "rtb-0d4e5f6a7b8c9d0e1",
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "Associations": [
+        {
+          "RouteTableAssociationId": "rtbassoc-0a1b2c3d4e5f67890",
+          "SubnetId": "subnet-0b2c3d4e5f678901a",
+          "AssociationState": { "State": "associated" }
+        }
+      ],
+      "Routes": [
+        {
+          "DestinationCidrBlock": "10.0.0.0/16",
+          "GatewayId": "local",
+          "State": "active",
+          "Origin": "CreateRouteTable"
+        },
+        {
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "NatGatewayId": "nat-0a1b2c3d4e5f67890",
+          "State": "active",
+          "Origin": "CreateRoute"
+        }
+      ],
+      "Tags": [
+        { "Key": "Name", "Value": "fieldspar-prod-private-rt" }
+      ]
+    },
+    {
+      "RouteTableId": "rtb-0e5f6a7b8c9d0e1f2",
+      "VpcId": "vpc-0a1b2c3d4e5f67890",
+      "Associations": [
+        {
+          "RouteTableAssociationId": "rtbassoc-0b2c3d4e5f678901a",
+          "SubnetId": "subnet-0a1b2c3d4e5f67890",
+          "AssociationState": { "State": "associated" }
+        }
+      ],
+      "Routes": [
+        {
+          "DestinationCidrBlock": "10.0.0.0/16",
+          "GatewayId": "local",
+          "State": "active",
+          "Origin": "CreateRouteTable"
+        },
+        {
+          "DestinationCidrBlock": "0.0.0.0/0",
+          "GatewayId": "igw-0f1e2d3c4b5a",
+          "State": "active",
+          "Origin": "CreateRoute"
+        }
+      ],
+      "Tags": [
+        { "Key": "Name", "Value": "fieldspar-prod-public-rt" }
+      ]
+    }
+  ]
+}

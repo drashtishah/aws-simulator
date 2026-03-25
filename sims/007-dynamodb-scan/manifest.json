@@ -1,0 +1,136 @@
+{
+  "id": "007-dynamodb-scan",
+  "title": "Four Million Records, One by One",
+  "difficulty": 2,
+  "category": "performance",
+  "services": ["dynamodb", "cloudwatch", "lambda"],
+  "tags": ["dynamodb-scan", "query-vs-scan", "throttling", "provisioned-capacity", "gsi", "partition-key"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain1:DynamoDB",
+    "DVA-C02:Domain4:Troubleshooting",
+    "SAA-C03:Domain3:HighPerforming"
+  ],
+  "company": {
+    "name": "Tidepool Goods",
+    "industry": "e-commerce",
+    "size": "Series A startup, 18 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Quiet, methodical. Reports numbers -- consumed capacity, throttled requests, items scanned -- the way someone reads a weather report. The order backlog grows. They mention it.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The order processing Lambda has failed 312 times in the last five minutes. The dead-letter queue has 287 messages. Customer service has six open chats. Nobody is asking about the search feature."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "A senior engineer suggests the Lambda timeout might be set too low. It was raised from 15 seconds to 30 seconds last week and that fixed a similar-looking issue. The order backlog is at 1,400."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The order backlog is at 2,100. Someone in the incident channel asks if they should increase provisioned capacity on the table. Someone else asks if the search Lambda is still running."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The Lambda timeout is a symptom. The function is waiting on DynamoDB reads that never complete because the table is throttled. Something is consuming all the read capacity."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The order processing was fine until 10:00 AM. Something else started hitting the table around that time.",
+        "Check CloudWatch for ConsumedReadCapacityUnits. Something is reading far more than the order pipeline ever would.",
+        "The product-search Lambda was deployed at 9:58 AM. Look at how it reads from the table.",
+        "There is a difference between a DynamoDB Scan and a Query. One reads every item in the table. The other uses an index.",
+        "The search Lambda runs a Scan with a FilterExpression on the 'category' attribute. There is no GSI on category. Every invocation reads all four million items."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "dynamodb-console",
+        "service": "dynamodb",
+        "artifacts": [
+          "artifacts/table-description.json",
+          "artifacts/architecture.txt"
+        ],
+        "capabilities": [
+          "describe_table",
+          "query",
+          "scan",
+          "describe_time_to_live",
+          "list_global_secondary_indexes"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events",
+          "get_metric_statistics"
+        ]
+      },
+      {
+        "name": "lambda-console",
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-code-snippet.txt",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_function",
+          "get_function_configuration",
+          "list_event_source_mappings",
+          "get_policy"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "Lambda function uses DynamoDB Scan with a FilterExpression instead of Query with a proper partition key or GSI, consuming all provisioned RCUs on a 4-million-item table.",
+    "fix_criteria": [
+      {
+        "id": "identify_scan_vs_query",
+        "description": "Player identifies that the product-search Lambda is performing a full table Scan instead of a Query",
+        "required": true
+      },
+      {
+        "id": "propose_gsi",
+        "description": "Player proposes creating a Global Secondary Index on the search attribute (category) to enable Query operations",
+        "required": true
+      },
+      {
+        "id": "understand_provisioned_capacity",
+        "description": "Player explains that the Scan consumed all 100 provisioned RCUs, causing throttling for every other consumer of the table",
+        "required": false
+      },
+      {
+        "id": "identify_red_herring",
+        "description": "Player recognizes that the Lambda timeout errors are a symptom of DynamoDB throttling, not a root cause",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "DynamoDB Scan reads every item in the table and consumes RCUs proportional to total table size, regardless of FilterExpression",
+      "A FilterExpression does not reduce the read capacity consumed -- it only filters results after the data is read",
+      "DynamoDB Query uses partition key (and optionally sort key) to read only matching items, consuming far fewer RCUs",
+      "Global Secondary Indexes enable Query access patterns on non-key attributes",
+      "When provisioned RCUs are exhausted, all consumers of the table experience ProvisionedThroughputExceededException"
+    ]
+  }
+}

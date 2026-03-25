@@ -1,0 +1,66 @@
+## Function: tidepool-product-search (v14)
+## Runtime: Python 3.12
+## Handler: search.handler
+## Timeout: 30 seconds
+## Memory: 256 MB
+## Deployed: 2026-03-25T09:58:14Z
+## Deployed by: jenna.ko@tidepool.io via GitHub Actions
+
+import json
+import boto3
+from boto3.dynamodb.conditions import Attr
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('tidepool-products')
+
+def handler(event, context):
+    """
+    Search products by category.
+    Called from API Gateway GET /search?category=ceramics
+    """
+    params = event.get('queryStringParameters', {})
+    category = params.get('category', '')
+
+    if not category:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': 'category parameter is required'})
+        }
+
+    # Find all products in the given category
+    response = table.scan(
+        FilterExpression=Attr('category').eq(category),
+        ProjectionExpression='productId, variantId, productName, price, makerName'
+    )
+
+    items = response.get('Items', [])
+
+    # Handle pagination -- scan returns max 1MB per call
+    while 'LastEvaluatedKey' in response:
+        response = table.scan(
+            FilterExpression=Attr('category').eq(category),
+            ProjectionExpression='productId, variantId, productName, price, makerName',
+            ExclusiveStartKey=response['LastEvaluatedKey']
+        )
+        items.extend(response.get('Items', []))
+
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({
+            'count': len(items),
+            'products': items[:50]  # return first 50 results
+        })
+    }
+
+
+# NOTE: This code was tested against the staging table (tidepool-products-staging)
+# which contains 487 items. It completed in ~200ms.
+#
+# In production, tidepool-products contains 4,012,387 items.
+# A full scan with pagination reads every item across all pages,
+# consuming RCUs proportional to the TOTAL table size, not the
+# number of matching items.
+#
+# The FilterExpression does not reduce RCU consumption.
+# It filters AFTER the data is read from disk.

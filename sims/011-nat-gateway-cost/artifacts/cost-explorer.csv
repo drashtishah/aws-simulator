@@ -1,0 +1,50 @@
+Date,Service,UsageType,Description,Amount_USD
+2026-03-18,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-18,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-18,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-18,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (20155.4 GB-Mo rate applied to 503.89 GB),907.20
+2026-03-18,S3,TimedStorage-ByteHrs,S3 Standard storage (45.2 TB),34.96
+2026-03-18,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.20
+2026-03-18,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-17,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-17,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-17,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-17,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (19908.0 GB-Mo rate applied to 497.70 GB),897.30
+2026-03-17,S3,TimedStorage-ByteHrs,S3 Standard storage (44.7 TB),34.57
+2026-03-17,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.18
+2026-03-17,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-16,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-16,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-16,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-16,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (20304.0 GB-Mo rate applied to 507.60 GB),913.68
+2026-03-16,S3,TimedStorage-ByteHrs,S3 Standard storage (44.2 TB),34.19
+2026-03-16,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.22
+2026-03-16,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-15,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-15,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-15,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-15,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (19980.0 GB-Mo rate applied to 499.50 GB),901.08
+2026-03-15,S3,TimedStorage-ByteHrs,S3 Standard storage (43.7 TB),33.80
+2026-03-15,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.16
+2026-03-15,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-14,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-14,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-14,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-14,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (20088.0 GB-Mo rate applied to 502.20 GB),905.40
+2026-03-14,S3,TimedStorage-ByteHrs,S3 Standard storage (43.2 TB),33.42
+2026-03-14,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.19
+2026-03-14,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-13,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-13,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-13,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-13,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (20232.0 GB-Mo rate applied to 505.80 GB),911.16
+2026-03-13,S3,TimedStorage-ByteHrs,S3 Standard storage (42.7 TB),33.03
+2026-03-13,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.21
+2026-03-13,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00
+2026-03-12,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
+2026-03-12,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
+2026-03-12,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56
+2026-03-12,NAT Gateway,NatGateway-Bytes,NAT Gateway data processing (19836.0 GB-Mo rate applied to 495.90 GB),893.22
+2026-03-12,S3,TimedStorage-ByteHrs,S3 Standard storage (42.2 TB),32.64
+2026-03-12,S3,Requests-Tier1,S3 PUT/COPY/POST requests,4.14
+2026-03-12,CloudWatch,MetricMonitorUsage,CloudWatch metrics,3.00

@@ -1,0 +1,38 @@
+# Presigned URL upload test from terminal
+# Executed at 2024-09-12T14:25:00Z by Rina
+# This is the same presigned URL that fails in the browser.
+
+$ curl -v -X PUT \
+  "https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQEXAMPLEKEY%2F20240912%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240912T142400Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=a1b2c3d4e5f6..." \
+  -H "Content-Type: application/pdf" \
+  --data-binary @exhibit-47.pdf
+
+*   Trying 13.224.177.42:443...
+* Connected to d-EDFDVBD6EXAMPLE.cloudfront.net (13.224.177.42) port 443 (#0)
+* SSL connection using TLSv1.3 / TLS_AES_128_GCM_SHA256
+> PUT /uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQEXAMPLEKEY%2F20240912%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20240912T142400Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=a1b2c3d4e5f6... HTTP/1.1
+> Host: d-EDFDVBD6EXAMPLE.cloudfront.net
+> User-Agent: curl/8.4.0
+> Accept: */*
+> Content-Type: application/pdf
+> Content-Length: 245891
+>
+* upload completely sent off: 245891 bytes
+< HTTP/1.1 200 OK
+< x-amz-id-2: pQr7St8uV9wX0yZ...
+< x-amz-request-id: 3E7F2A9B1C4D8E6F
+< Date: Thu, 12 Sep 2024 14:25:02 GMT
+< ETag: "a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3"
+< Content-Length: 0
+< Server: AmazonS3
+< X-Cache: Miss from cloudfront
+< Via: 1.1 abc123.cloudfront.net (CloudFront)
+< X-Amz-Cf-Id: kL9mN0pQ1rS2tU3v...
+<
+* Connection #0 to host d-EDFDVBD6EXAMPLE.cloudfront.net left intact
+
+# Result: 200 OK. Upload succeeded.
+# Note: curl does NOT send an Origin header.
+# Note: curl does NOT send an OPTIONS preflight request.
+# Note: curl does NOT enforce the same-origin policy.
+# This is why it works. The browser does all three of these things.

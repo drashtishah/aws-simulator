@@ -1,0 +1,124 @@
+{
+  "Events": [
+    {
+      "EventId": "e1a2b3c4-d5e6-f7a8-b9c0-d1e2f3a4b5c6",
+      "EventName": "PutObject",
+      "EventTime": "2026-03-19T09:30:12Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "raj.patel",
+      "Resources": [
+        {
+          "ResourceType": "AWS::S3::Bucket",
+          "ResourceName": "fenwick-deploy-artifacts"
+        }
+      ],
+      "CloudTrailEvent": {
+        "errorCode": "AccessDenied",
+        "errorMessage": "Access Denied",
+        "sourceIPAddress": "44.230.15.77",
+        "userAgent": "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-1056-aws",
+        "userIdentity": {
+          "type": "IAMUser",
+          "principalId": "AIDAIOSFODNN7EXAMPLE",
+          "arn": "arn:aws:iam::123456789012:user/raj.patel",
+          "accountId": "123456789012",
+          "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+          "userName": "raj.patel"
+        },
+        "requestParameters": null,
+        "responseElements": null
+      }
+    },
+    {
+      "EventId": "f2b3c4d5-e6f7-a8b9-c0d1-e2f3a4b5c6d7",
+      "EventName": "GetSecretValue",
+      "EventTime": "2026-03-19T09:30:14Z",
+      "EventSource": "secretsmanager.amazonaws.com",
+      "Username": "raj.patel",
+      "Resources": [
+        {
+          "ResourceType": "AWS::SecretsManager::Secret",
+          "ResourceName": "arn:aws:secretsmanager:us-west-2:123456789012:secret:/prod/db-credentials-a1b2c3"
+        }
+      ],
+      "CloudTrailEvent": {
+        "errorCode": "AccessDeniedException",
+        "errorMessage": "User: arn:aws:iam::123456789012:user/raj.patel is not authorized to perform: secretsmanager:GetSecretValue on resource: /prod/db-credentials",
+        "sourceIPAddress": "44.230.15.77",
+        "userAgent": "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-1056-aws",
+        "userIdentity": {
+          "type": "IAMUser",
+          "principalId": "AIDAIOSFODNN7EXAMPLE",
+          "arn": "arn:aws:iam::123456789012:user/raj.patel",
+          "accountId": "123456789012",
+          "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+          "userName": "raj.patel"
+        },
+        "requestParameters": {
+          "secretId": "/prod/db-credentials"
+        },
+        "responseElements": null
+      }
+    },
+    {
+      "EventId": "a3c4d5e6-f7a8-b9c0-d1e2-f3a4b5c6d7e8",
+      "EventName": "UpdateFunctionCode",
+      "EventTime": "2026-03-19T09:30:16Z",
+      "EventSource": "lambda.amazonaws.com",
+      "Username": "raj.patel",
+      "Resources": [
+        {
+          "ResourceType": "AWS::Lambda::Function",
+          "ResourceName": "fenwick-invoice-processor"
+        }
+      ],
+      "CloudTrailEvent": {
+        "errorCode": "AccessDeniedException",
+        "errorMessage": "User: arn:aws:iam::123456789012:user/raj.patel is not authorized to perform: lambda:UpdateFunctionCode on resource: arn:aws:lambda:us-west-2:123456789012:function:fenwick-invoice-processor",
+        "sourceIPAddress": "44.230.15.77",
+        "userAgent": "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-1056-aws",
+        "userIdentity": {
+          "type": "IAMUser",
+          "principalId": "AIDAIOSFODNN7EXAMPLE",
+          "arn": "arn:aws:iam::123456789012:user/raj.patel",
+          "accountId": "123456789012",
+          "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+          "userName": "raj.patel"
+        },
+        "requestParameters": {
+          "functionName": "fenwick-invoice-processor"
+        },
+        "responseElements": null
+      }
+    },
+    {
+      "EventId": "b4d5e6f7-a8b9-c0d1-e2f3-a4b5c6d7e8f9",
+      "EventName": "PutObject",
+      "EventTime": "2026-03-18T16:00:08Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "raj.patel",
+      "Resources": [
+        {
+          "ResourceType": "AWS::S3::Bucket",
+          "ResourceName": "fenwick-deploy-artifacts"
+        }
+      ],
+      "CloudTrailEvent": {
+        "errorCode": "AccessDenied",
+        "errorMessage": "Access Denied",
+        "sourceIPAddress": "44.230.15.77",
+        "userAgent": "aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0-1056-aws",
+        "userIdentity": {
+          "type": "IAMUser",
+          "principalId": "AIDAIOSFODNN7EXAMPLE",
+          "arn": "arn:aws:iam::123456789012:user/raj.patel",
+          "accountId": "123456789012",
+          "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+          "userName": "raj.patel"
+        },
+        "requestParameters": null,
+        "responseElements": null
+      }
+    }
+  ]
+}

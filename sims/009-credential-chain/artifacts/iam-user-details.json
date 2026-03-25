@@ -1,0 +1,43 @@
+{
+  "User": {
+    "UserName": "raj.patel",
+    "UserId": "AIDAIOSFODNN7EXAMPLE",
+    "Arn": "arn:aws:iam::123456789012:user/raj.patel",
+    "Path": "/",
+    "CreateDate": "2024-11-15T09:22:18Z",
+    "PasswordLastUsed": "2025-11-07T14:33:41Z",
+    "Tags": [
+      {
+        "Key": "team",
+        "Value": "engineering"
+      },
+      {
+        "Key": "offboarded",
+        "Value": "2025-11-08"
+      }
+    ]
+  },
+  "LoginProfile": {
+    "UserName": "raj.patel",
+    "CreateDate": "2024-11-15T09:22:18Z",
+    "PasswordResetRequired": false,
+    "_note": "Console login is disabled -- password was deleted during offboarding"
+  },
+  "AccessKeyMetadata": [
+    {
+      "UserName": "raj.patel",
+      "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+      "Status": "Inactive",
+      "CreateDate": "2025-07-14T10:15:33Z"
+    }
+  ],
+  "AccessKeyLastUsed": {
+    "AccessKeyId": "AKIAIOSFODNN7EXAMPLE",
+    "LastUsedDate": "2026-03-19T09:30:00Z",
+    "ServiceName": "s3",
+    "Region": "us-west-2"
+  },
+  "AttachedPolicies": [],
+  "Groups": [],
+  "_summary": "IAM user raj.patel was deactivated on 2025-11-08. Console access removed. Access key AKIAIOSFODNN7EXAMPLE marked Inactive. No policies attached. The key was last used on 2026-03-19 from the CI machine, returning AccessDenied."
+}

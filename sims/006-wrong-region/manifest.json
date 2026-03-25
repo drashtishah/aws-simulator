@@ -1,0 +1,127 @@
+{
+  "id": "006-wrong-region",
+  "title": "A Function in the Wrong Room",
+  "difficulty": 1,
+  "category": "operations",
+  "services": ["lambda", "cloudwatch", "iam"],
+  "tags": ["wrong-region", "aws-cli", "environment-variables", "credential-configuration", "lambda-deployment"],
+  "estimated_minutes": 15,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain3:Deployment",
+    "DVA-C02:Domain4:Troubleshooting"
+  ],
+  "company": {
+    "name": "Calendine",
+    "industry": "scheduling software",
+    "size": "Seed-stage startup, 8 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Quiet observer. States facts and lets them accumulate. Mentions the demo in twenty minutes the same way they mention the error message. Does not raise their voice.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The sales engineer just messaged. The demo is in fifteen minutes. She asked if the endpoint is ready. You told her you are looking into it."
+        },
+        {
+          "trigger": "elapsed_minutes:8",
+          "message": "The pipeline ran clean. You checked twice. The function exists. But the API Gateway says it does not. These two facts sit next to each other and do not agree."
+        },
+        {
+          "trigger": "elapsed_minutes:12",
+          "message": "Someone on the team mentioned they changed the CI environment variables last week. Something about default credentials. It did not seem important at the time."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The function is not broken. It deployed successfully. The question is where it deployed to. The API Gateway is looking for it in a specific place."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The function exists. The API Gateway cannot find it. What could make a working function invisible to a service that should see it?",
+        "AWS resources are regional. A Lambda function in one region does not exist in another. Where is the API Gateway looking?",
+        "Check what region the CLI is configured to use. Run aws configure list and look at the region setting.",
+        "The CI/CD pipeline has AWS_DEFAULT_REGION set to us-west-2. The API Gateway is in us-east-1. The function was deployed to the wrong region.",
+        "Redeploy the function to us-east-1, or run: aws lambda get-function --function-name calendine-booking-api --region us-west-2 to confirm it is there, then deploy to us-east-1."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "lambda-console",
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-config.json",
+          "artifacts/cli-output.txt"
+        ],
+        "capabilities": [
+          "get_function",
+          "get_function_configuration",
+          "list_functions",
+          "get_policy"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/cloudwatch-logs.txt",
+          "artifacts/architecture.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_log_events",
+          "filter_log_events"
+        ]
+      },
+      {
+        "name": "iam-console",
+        "service": "iam",
+        "artifacts": [
+          "artifacts/cli-output.txt"
+        ],
+        "capabilities": [
+          "get_role",
+          "get_role_policy",
+          "list_attached_role_policies",
+          "get_caller_identity"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The CI/CD pipeline environment variable AWS_DEFAULT_REGION was set to us-west-2. The Lambda function calendine-booking-api was deployed to us-west-2, but the API Gateway integration in us-east-1 references the function ARN in us-east-1. The function does not exist in us-east-1, so every API call returns ResourceNotFoundException.",
+    "fix_criteria": [
+      {
+        "id": "identify_region_mismatch",
+        "description": "Player identifies that the Lambda function was deployed to us-west-2 while the API Gateway expects it in us-east-1",
+        "required": true
+      },
+      {
+        "id": "identify_env_var_cause",
+        "description": "Player identifies that AWS_DEFAULT_REGION in the CI/CD environment is the source of the wrong deployment region",
+        "required": false
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes redeploying the function to us-east-1 or updating the CI/CD pipeline region configuration",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "AWS resources are regional -- a Lambda function deployed in us-west-2 does not exist in us-east-1",
+      "The AWS CLI resolves region from (in order): --region flag, AWS_DEFAULT_REGION env var, AWS_REGION env var, config file -- understanding this chain is critical for debugging deployment issues",
+      "aws configure list shows the active region and its source, making it the first diagnostic command for region-related issues",
+      "API Gateway Lambda integrations reference a function ARN that includes the region -- the function must exist in that specific region"
+    ]
+  }
+}

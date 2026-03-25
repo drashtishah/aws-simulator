@@ -1,0 +1,43 @@
+{
+  "Configuration": {
+    "FunctionName": "calendine-booking-api",
+    "FunctionArn": "arn:aws:lambda:us-west-2:491783620174:function:calendine-booking-api",
+    "Runtime": "nodejs20.x",
+    "Role": "arn:aws:iam::491783620174:role/calendine-booking-api-role",
+    "Handler": "index.handler",
+    "CodeSize": 1843201,
+    "Description": "Handles booking creation and calendar sync for Calendine scheduling platform",
+    "Timeout": 30,
+    "MemorySize": 256,
+    "LastModified": "2026-03-25T14:12:11.000+0000",
+    "CodeSha256": "Y2FsZW5kaW5lLWJvb2tpbmctYXBpLXYxLjQuMg==",
+    "Version": "$LATEST",
+    "Environment": {
+      "Variables": {
+        "NODE_ENV": "production",
+        "DYNAMODB_TABLE": "calendine-bookings",
+        "LOG_LEVEL": "info",
+        "CALENDAR_SYNC_TIMEOUT": "10000"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "PackageType": "Zip",
+    "Architectures": [
+      "arm64"
+    ],
+    "EphemeralStorage": {
+      "Size": 512
+    }
+  },
+  "Tags": {
+    "Application": "calendine-booking-platform",
+    "Environment": "production",
+    "Team": "backend",
+    "LastDeployedBy": "github-actions",
+    "DeploymentRef": "deploy-2026-03-25-main-a4f7c21"
+  }
+}

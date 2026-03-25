@@ -1,0 +1,114 @@
+{
+  "StackEvents": [
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "ProdDatabase-UPDATE_ROLLBACK_FAILED-2026-03-23T14-14-22Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "ProdDatabase",
+      "PhysicalResourceId": "threadline-prod-db",
+      "ResourceType": "AWS::RDS::DBInstance",
+      "Timestamp": "2026-03-23T14:14:22.000Z",
+      "ResourceStatus": "UPDATE_ROLLBACK_FAILED",
+      "ResourceStatusReason": "DBInstance threadline-prod-db not found. Rollback requested by user."
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "threadline-prod-stack-UPDATE_ROLLBACK_FAILED-2026-03-23T14-14-23Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "threadline-prod-stack",
+      "PhysicalResourceId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "Timestamp": "2026-03-23T14:14:23.000Z",
+      "ResourceStatus": "UPDATE_ROLLBACK_FAILED",
+      "ResourceStatusReason": "The following resource(s) failed to update: [ProdDatabase]."
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "ProdDatabase-UPDATE_ROLLBACK_IN_PROGRESS-2026-03-23T14-13-48Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "ProdDatabase",
+      "PhysicalResourceId": "threadline-prod-db",
+      "ResourceType": "AWS::RDS::DBInstance",
+      "Timestamp": "2026-03-23T14:13:48.000Z",
+      "ResourceStatus": "UPDATE_ROLLBACK_IN_PROGRESS",
+      "ResourceStatusReason": "Resource update cancelled"
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "WebhookFunction-UPDATE_ROLLBACK_COMPLETE-2026-03-23T14-13-45Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "WebhookFunction",
+      "PhysicalResourceId": "threadline-prod-webhook",
+      "ResourceType": "AWS::Lambda::Function",
+      "Timestamp": "2026-03-23T14:13:45.000Z",
+      "ResourceStatus": "UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS",
+      "ResourceStatusReason": ""
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "threadline-prod-stack-UPDATE_ROLLBACK_IN_PROGRESS-2026-03-23T14-13-38Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "threadline-prod-stack",
+      "PhysicalResourceId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "Timestamp": "2026-03-23T14:13:38.000Z",
+      "ResourceStatus": "UPDATE_ROLLBACK_IN_PROGRESS",
+      "ResourceStatusReason": "The following resource(s) failed to create: [WebhookFunction]. Rollback requested by user."
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "WebhookFunction-UPDATE_FAILED-2026-03-23T14-13-35Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "WebhookFunction",
+      "PhysicalResourceId": "threadline-prod-webhook",
+      "ResourceType": "AWS::Lambda::Function",
+      "Timestamp": "2026-03-23T14:13:35.000Z",
+      "ResourceStatus": "UPDATE_FAILED",
+      "ResourceStatusReason": "Resource handler returned message: \"The runtime parameter of nodejs16.x is no longer supported for creating or updating AWS Lambda functions. We recommend you use a supported runtime while creating or updating functions.\" (RequestToken: 7c8d9e0f-1a2b-3c4d-5e6f-7a8b9c0d1e2f, HandlerErrorCode: InvalidRequest)"
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "WebhookFunction-UPDATE_IN_PROGRESS-2026-03-23T14-13-18Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "WebhookFunction",
+      "PhysicalResourceId": "threadline-prod-webhook",
+      "ResourceType": "AWS::Lambda::Function",
+      "Timestamp": "2026-03-23T14:13:18.000Z",
+      "ResourceStatus": "UPDATE_IN_PROGRESS",
+      "ResourceStatusReason": ""
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "ProcessorFunction-UPDATE_COMPLETE-2026-03-23T14-13-15Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "ProcessorFunction",
+      "PhysicalResourceId": "threadline-prod-processor",
+      "ResourceType": "AWS::Lambda::Function",
+      "Timestamp": "2026-03-23T14:13:15.000Z",
+      "ResourceStatus": "UPDATE_COMPLETE",
+      "ResourceStatusReason": ""
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "ProcessorFunction-UPDATE_IN_PROGRESS-2026-03-23T14-12-55Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "ProcessorFunction",
+      "PhysicalResourceId": "threadline-prod-processor",
+      "ResourceType": "AWS::Lambda::Function",
+      "Timestamp": "2026-03-23T14:12:55.000Z",
+      "ResourceStatus": "UPDATE_IN_PROGRESS",
+      "ResourceStatusReason": ""
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventId": "threadline-prod-stack-UPDATE_IN_PROGRESS-2026-03-23T14-12-42Z",
+      "StackName": "threadline-prod-stack",
+      "LogicalResourceId": "threadline-prod-stack",
+      "PhysicalResourceId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "Timestamp": "2026-03-23T14:12:42.000Z",
+      "ResourceStatus": "UPDATE_IN_PROGRESS",
+      "ResourceStatusReason": "User Initiated"
+    }
+  ]
+}

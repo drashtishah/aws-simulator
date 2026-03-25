@@ -1,0 +1,66 @@
+===============================================================================
+Threadline CI/CD Pipeline -- Deployment Logs
+Log Group: /aws/codepipeline/threadline-prod
+===============================================================================
+
+--- Deployment #247 -- Mon Mar 23, 2026 ---
+
+2026-03-23T14:10:02Z [INFO]  Pipeline execution started. Source: GitHub commit abc1234 (main)
+2026-03-23T14:10:02Z [INFO]  Commit message: "fix: update webhook timeout to 30s (#412)"
+2026-03-23T14:10:45Z [INFO]  Build stage completed. Artifacts uploaded to s3://threadline-deploy-artifacts/templates/prod-stack-v247.yaml
+2026-03-23T14:12:42Z [INFO]  Deploy stage started. Calling CloudFormation UpdateStack on threadline-prod-stack
+2026-03-23T14:12:42Z [INFO]  Stack update initiated. Role: arn:aws:iam::123456789012:role/threadline-deploy-role
+2026-03-23T14:13:15Z [INFO]  Resource update: ProcessorFunction -- UPDATE_COMPLETE
+2026-03-23T14:13:18Z [INFO]  Resource update: WebhookFunction -- UPDATE_IN_PROGRESS
+2026-03-23T14:13:35Z [ERROR] Resource update: WebhookFunction -- UPDATE_FAILED
+2026-03-23T14:13:35Z [ERROR] Reason: The runtime parameter of nodejs16.x is no longer supported for creating or updating AWS Lambda functions.
+2026-03-23T14:13:38Z [WARN]  Stack rollback initiated. Status: UPDATE_ROLLBACK_IN_PROGRESS
+2026-03-23T14:13:45Z [INFO]  Resource rollback: WebhookFunction -- UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS
+2026-03-23T14:13:48Z [INFO]  Resource rollback: ProdDatabase -- UPDATE_ROLLBACK_IN_PROGRESS
+2026-03-23T14:14:22Z [ERROR] Resource rollback: ProdDatabase -- UPDATE_ROLLBACK_FAILED
+2026-03-23T14:14:22Z [ERROR] Reason: DBInstance threadline-prod-db not found. Rollback requested by user.
+2026-03-23T14:14:23Z [ERROR] Stack status: UPDATE_ROLLBACK_FAILED
+2026-03-23T14:14:23Z [ERROR] Deployment #247 FAILED. Stack is in a non-recoverable state.
+2026-03-23T14:14:24Z [INFO]  Pipeline execution failed. Duration: 4m 22s
+
+--- Deployment #248 (manual retry) -- Tue Mar 24, 2026 ---
+
+2026-03-24T14:08:10Z [INFO]  Pipeline execution started. Manual trigger by user: jpark
+2026-03-24T14:08:15Z [ERROR] Deploy stage failed immediately.
+2026-03-24T14:08:15Z [ERROR] CloudFormation error: Stack [threadline-prod-stack] is in UPDATE_ROLLBACK_FAILED state and can not be updated.
+2026-03-24T14:08:15Z [INFO]  Pipeline execution failed. Duration: 5s
+
+--- Deployment #249 (manual retry) -- Tue Mar 24, 2026 ---
+
+2026-03-24T16:45:02Z [INFO]  Pipeline execution started. Manual trigger by user: jpark
+2026-03-24T16:45:07Z [ERROR] Deploy stage failed immediately.
+2026-03-24T16:45:07Z [ERROR] CloudFormation error: Stack [threadline-prod-stack] is in UPDATE_ROLLBACK_FAILED state and can not be updated.
+2026-03-24T16:45:07Z [INFO]  Pipeline execution failed. Duration: 5s
+
+--- Deployment #250 (manual retry) -- Wed Mar 25, 2026 ---
+
+2026-03-25T09:15:33Z [INFO]  Pipeline execution started. Manual trigger by user: jpark
+2026-03-25T09:15:38Z [ERROR] Deploy stage failed immediately.
+2026-03-25T09:15:38Z [ERROR] CloudFormation error: Stack [threadline-prod-stack] is in UPDATE_ROLLBACK_FAILED state and can not be updated.
+2026-03-25T09:15:38Z [INFO]  Pipeline execution failed. Duration: 5s
+
+===============================================================================
+Queued Pull Requests (blocked):
+  PR #413 -- "fix: correct billing calculation for enterprise tier" (merged Tue)
+  PR #414 -- "feat: add webhook retry logic" (merged Tue)
+  PR #415 -- "chore: upgrade dependencies" (merged Wed)
+  PR #416 -- "fix: handle null project names in search" (merged Wed)
+===============================================================================
+
+--- CI/CD Role Permissions Note ---
+The deploy role (threadline-deploy-role) permissions were updated on Feb 15, 2026.
+Current attached policies:
+  - AmazonRDSFullAccess (AWS managed)
+  - AWSLambda_FullAccess (AWS managed)
+  - AmazonEC2FullAccess (AWS managed)
+  - AmazonSQSFullAccess (AWS managed)
+  - threadline-cloudformation-policy (inline: cloudformation:*, iam:PassRole)
+
+The role has sufficient permissions for all stack operations.
+The deployment failure is NOT caused by IAM permissions.
+===============================================================================

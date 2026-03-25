@@ -1,0 +1,70 @@
+# API Gateway Execution Logs
+# REST API: pollen-api (a1b2c3d4e5)
+# Stage: prod
+# Endpoint: POST /uploads/presign
+# Time range: 2024-09-12T14:00:00Z to 2024-09-12T17:00:00Z
+
+2024-09-12T14:15:23Z REQUEST_ID=req-8a2f3b4c POST /uploads/presign
+  Integration: Lambda pollen-upload-url-generator
+  Request body: {"filename":"exhibit-47.pdf","contentType":"application/pdf","path":"case-files/johnson-v-parker"}
+  Lambda duration: 42ms
+  Response status: 200
+  Response body: {"uploadUrl":"https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=...","expiresIn":3600}
+
+2024-09-12T14:22:10Z REQUEST_ID=req-9c3e4d5f POST /uploads/presign
+  Integration: Lambda pollen-upload-url-generator
+  Request body: {"filename":"exhibit-47.pdf","contentType":"application/pdf","path":"case-files/johnson-v-parker"}
+  Lambda duration: 38ms
+  Response status: 200
+  Response body: {"uploadUrl":"https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=...","expiresIn":3600}
+
+2024-09-12T14:45:55Z REQUEST_ID=req-1a5b6c7d POST /uploads/presign
+  Integration: Lambda pollen-upload-url-generator
+  Request body: {"filename":"exhibit-47.pdf","contentType":"application/pdf","path":"case-files/johnson-v-parker"}
+  Lambda duration: 35ms
+  Response status: 200
+  Response body: {"uploadUrl":"https://d-EDFDVBD6EXAMPLE.cloudfront.net/uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=...","expiresIn":3600}
+
+# Note: All three presigned URL generations succeeded. The problem is not here.
+# Rina generated the URL three times, thinking the URL itself was the issue.
+
+# ---
+
+# S3 Access Logs (partial)
+# Bucket: pollen-docs-prod
+# Time range: 2024-09-12T14:00:00Z to 2024-09-12T17:00:00Z
+
+2024-09-12T14:25:02Z pollen-docs-prod [12/Sep/2024:14:25:02 +0000] 13.224.177.42 arn:aws:sts::123456789012:assumed-role/pollen-upload-role/session REST.PUT.OBJECT uploads/case-files/johnson-v-parker/exhibit-47.pdf "PUT /uploads/case-files/johnson-v-parker/exhibit-47.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&..." 200 - 245891 245891 42 31 "-" "curl/8.4.0" - a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3 SigV4 ECDHE-RSA-AES128-GCM-SHA256 QueryString pollen-docs-prod.s3.us-east-1.amazonaws.com TLSv1.3
+
+2024-09-12T14:30:15Z pollen-docs-prod [12/Sep/2024:14:30:15 +0000] 10.0.3.47 arn:aws:sts::123456789012:assumed-role/pollen-upload-role/session REST.PUT.OBJECT uploads/case-files/martinez-estate/filing-12.pdf "PUT /uploads/case-files/martinez-estate/filing-12.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&..." 200 - 189442 189442 38 27 "-" "python-requests/2.31.0" - c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9 SigV4 ECDHE-RSA-AES128-GCM-SHA256 QueryString pollen-docs-prod.s3.us-east-1.amazonaws.com TLSv1.3
+
+2024-09-12T15:10:33Z pollen-docs-prod [12/Sep/2024:15:10:33 +0000] 10.0.3.47 arn:aws:sts::123456789012:assumed-role/pollen-backend-role/session REST.PUT.OBJECT uploads/test/backend-test-upload.txt "PUT /uploads/test/backend-test-upload.txt HTTP/1.1" 200 - 1024 1024 12 8 "-" "aws-sdk-nodejs/3.450.0" - e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3 SigV4 ECDHE-RSA-AES128-GCM-SHA256 AuthHeader pollen-docs-prod.s3.us-east-1.amazonaws.com TLSv1.3
+
+# Note: All PUTs from non-browser clients (curl, python-requests, aws-sdk) succeed with 200.
+# Note: No PUT requests from browser clients appear in the logs -- because the browser
+#       never sends the PUT. It is blocked after the OPTIONS preflight fails.
+# Note: The S3 access logs do not show OPTIONS requests when CORS is not configured.
+
+# ---
+
+# IAM Policy (for reference -- this is NOT the problem)
+# Role: pollen-upload-role
+# Policy: pollen-presigned-url-policy
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowPresignedUploads",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::pollen-docs-prod/uploads/*"
+    }
+  ]
+}
+
+# This policy is correct. It allows PutObject on the uploads path.
+# Rina spent two hours verifying this. The policy was never the issue.

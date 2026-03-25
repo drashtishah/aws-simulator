@@ -1,0 +1,127 @@
+{
+  "id": "011-nat-gateway-cost",
+  "title": "Nine Hundred Dollars for Nothing",
+  "difficulty": 1,
+  "category": "cost",
+  "services": ["nat-gateway", "s3", "vpc", "cloudwatch"],
+  "tags": ["nat-gateway", "vpc-endpoint", "data-transfer-cost", "s3-gateway-endpoint", "cost-optimization"],
+  "estimated_minutes": 15,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain4:CostOptimized",
+    "SAP-C02:Domain4:CostControl"
+  ],
+  "company": {
+    "name": "Fieldspar Analytics",
+    "industry": "sensor-data-analytics",
+    "size": "Series A startup, 14 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Calm, precise with numbers. States dollar amounts and gigabyte counts the way a clerk reads receipts. The waste is enormous but the narrator does not dramatize it.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "The finance lead just sent another message. She has calculated the three-month total. It is $27,135. She typed it without commentary. Just the number."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Someone on the infrastructure team asked if the NAT Gateway was necessary at all. Nobody answered. The pipeline has been running since January. The S3 bucket is in the same region as the VPC."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "That does not match the billing data. The charge is specifically for NAT Gateway data processing, not data transfer out to the internet. The traffic stays within AWS. Look at where the S3-bound traffic is being routed."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "Look at the bill breakdown. Which service has the highest data transfer charges?",
+        "How does traffic from a private subnet reach Amazon S3?",
+        "There is a way to route S3 traffic that does not go through the NAT Gateway.",
+        "An S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network. It is free."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "agents": [
+      {
+        "name": "vpc-console",
+        "service": "vpc",
+        "covers": ["nat-gateway", "vpc"],
+        "artifacts": [
+          "artifacts/architecture.txt",
+          "artifacts/vpc-config.json",
+          "artifacts/route-table.json",
+          "artifacts/vpc-flow-logs.txt"
+        ],
+        "capabilities": [
+          "describe_vpcs",
+          "describe_subnets",
+          "describe_nat_gateways",
+          "describe_route_tables",
+          "describe_vpc_endpoints",
+          "describe_flow_logs"
+        ]
+      },
+      {
+        "name": "s3-console",
+        "service": "s3",
+        "artifacts": [],
+        "capabilities": [
+          "list_buckets",
+          "get_bucket_location",
+          "get_bucket_policy"
+        ]
+      },
+      {
+        "name": "cloudwatch-console",
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/cost-explorer.csv"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "get_cost_and_usage"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "All S3 traffic from EC2 instances in the private subnet (10.0.2.0/24) routes through the NAT Gateway (nat-0a1b2c3d4e5f67890) because no S3 VPC gateway endpoint exists. The NAT Gateway charges $0.045 per GB of data processed. With approximately 500 GB of S3 uploads daily, the data processing charge alone is roughly $907 per day. The pipeline has been running for three months, accumulating approximately $27,000 in unnecessary NAT Gateway charges.",
+    "fix_criteria": [
+      {
+        "id": "identify_nat_gateway_cost",
+        "description": "Player identifies that NAT Gateway data processing charges are the source of the excessive cost",
+        "required": true
+      },
+      {
+        "id": "identify_missing_endpoint",
+        "description": "Player identifies that no S3 VPC gateway endpoint exists, causing all S3 traffic to route through the NAT Gateway",
+        "required": true
+      },
+      {
+        "id": "propose_gateway_endpoint",
+        "description": "Player proposes creating an S3 VPC gateway endpoint and updating the route table",
+        "required": false
+      },
+      {
+        "id": "calculate_savings",
+        "description": "Player calculates the approximate cost savings from eliminating NAT Gateway data processing charges for S3 traffic",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "VPC gateway endpoints for S3 route traffic directly to S3 within the AWS network at no additional cost",
+      "NAT Gateway charges $0.045 per GB of data processed, which adds up quickly with high-volume data pipelines",
+      "Private subnets without gateway endpoints route all traffic through the NAT Gateway, including traffic to AWS services",
+      "Route tables for gateway endpoints use prefix lists (pl-xxxxxxxx) to direct S3-bound traffic to the endpoint instead of the NAT Gateway"
+    ]
+  }
+}
