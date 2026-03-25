@@ -1,29 +1,30 @@
 {
   "current_level": 2,
-  "completed_sims": ["001-ec2-unreachable", "006-wrong-region"],
+  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full"],
   "unlocked_levels": [1, 2],
   "service_exposure": {
-    "ec2": 1,
+    "ec2": 2,
     "vpc": 1,
-    "cloudwatch": 2,
+    "cloudwatch": 3,
     "lambda": 1,
-    "iam": 1
+    "iam": 1,
+    "rds": 1
   },
   "question_patterns": {
     "first_action_frequency": {
       "logs": 0,
       "permissions": 0,
       "architecture": 2,
-      "metrics": 0,
+      "metrics": 1,
       "recent_changes": 0,
       "immediate_fix": 0
     },
-    "avg_questions_before_fix": 4.5,
+    "avg_questions_before_fix": 4.67,
     "audit_trail_check_rate": 0.5,
-    "multi_service_investigation_rate": 0.5
+    "multi_service_investigation_rate": 0.67
   },
-  "weaknesses": ["cloudwatch"],
-  "strengths": ["lambda"],
-  "total_sessions": 2,
+  "weaknesses": [],
+  "strengths": ["lambda", "rds"],
+  "total_sessions": 3,
   "last_session": "2026-03-25"
 }

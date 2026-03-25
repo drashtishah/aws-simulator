@@ -45,3 +45,22 @@ Solved with zero hints by methodically tracing the deployment path: checked Lamb
 ### Key takeaway
 
 AWS resources are regional. When a resource "does not exist" but was successfully deployed, check which region the CLI is targeting. `aws configure list` shows the active region and its source in one command.
+
+## The CropSync Harvest Crisis: Database Full
+
+- **Date**: 2026-03-25
+- **Sim**: [[003-rds-storage-full]]
+- **Difficulty**: 1
+- **Category**: data
+- **Services**: RDS, CloudWatch, EC2
+- **Questions asked**: 5
+- **Hints used**: 0
+- **Criteria met**: 3 / 3
+
+### Coaching summary
+
+Metrics-first investigation -- went straight to CloudWatch and identified FreeStorageSpace dropping to zero as the root cause. Queried all three services (CloudWatch, RDS, EC2) and dug past the symptom to find that binary logs (3.2GB) and a verbose slow query log (1.8GB) consumed the remaining disk. Proposed auto-scaling with data-driven sizing. Did not check existing alarms to identify the monitoring gap.
+
+### Key takeaway
+
+When a database stops accepting writes but reads still work, storage exhaustion is the most likely cause. Always monitor FreeStorageSpace with a CloudWatch alarm, and enable RDS storage auto-scaling to prevent this class of outage entirely.

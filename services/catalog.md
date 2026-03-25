@@ -7,6 +7,7 @@ tags:
   - type/reference
   - domain/aws-simulator
 date: 2026-03-25
+updated: 2026-03-25
 ---
 
 # AWS Services Catalog
@@ -23,7 +24,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| ec2 | Amazon EC2 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
+| ec2 | Amazon EC2 | 1 | 1 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (3) |
 | auto-scaling | AWS Auto Scaling | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | elastic-beanstalk | AWS Elastic Beanstalk | 2 | 2 | SAA-C03; DVA-C02 | Not started |
 | batch | AWS Batch | 4 | 3 | SAA-C03; SAP-C02 | Not started |
@@ -48,7 +49,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| rds | Amazon RDS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
+| rds | Amazon RDS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | In progress (2) |
 | dynamodb | Amazon DynamoDB | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | elasticache | Amazon ElastiCache | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | aurora | Amazon Aurora | 3 | 3 | SAA-C03; SAP-C02; DVA-C02 | Not started |
@@ -114,7 +115,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
-| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started (0) |
+| cloudwatch | Amazon CloudWatch | 1 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | In progress (2) |
 | cloudformation | AWS CloudFormation | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 | cloudtrail | AWS CloudTrail | 2 | 2 | SAA-C03; SAP-C02; DVA-C02; SCS-C02 | Not started |
 | systems-manager | AWS Systems Manager | 2 | 2 | SAA-C03; SAP-C02; SCS-C02 | Not started |
