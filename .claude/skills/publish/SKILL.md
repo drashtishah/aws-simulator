@@ -21,9 +21,12 @@ command -v asciinema
 
 If missing: "asciinema is not installed. Run /setup for install instructions." Stop.
 
-Check authentication (mandatory):
+Check authentication (mandatory). asciinema v3 stores the install-id in a different location than v2:
 
 ```bash
+# v3 path (check first)
+test -f ~/.local/state/asciinema/install-id && echo "authenticated" || \
+# v2 path (fallback)
 test -f ~/.config/asciinema/install-id && echo "authenticated" || echo "not authenticated"
 ```
 
@@ -33,7 +36,11 @@ If not authenticated:
 >
 >     asciinema auth
 >
-> This opens a browser to link your CLI to an account. Run /publish again when done.
+> This prints a connect URL. Open that URL in your browser while logged in to your asciinema.org account.
+>
+> If you are not sure whether you have an account, go to asciinema.org and sign up or log in first. Your profile page will be at a URL like `https://asciinema.org/~your-username` -- keep that handy to verify the connection worked.
+>
+> Run /publish again when done.
 
 Stop. Do not proceed without authentication.
 
@@ -45,10 +52,10 @@ Read `learning/recordings/published.json`. If the file does not exist, treat as 
 {"recordings": []}
 ```
 
-Read the install-id for API calls:
+Read the install-id for API calls (check v3 path first, then v2 fallback):
 
 ```bash
-cat ~/.config/asciinema/install-id
+cat ~/.local/state/asciinema/install-id 2>/dev/null || cat ~/.config/asciinema/install-id
 ```
 
 Store this value -- it is needed for all API requests as HTTP Basic Auth password.

@@ -13,7 +13,7 @@ Prepares the workspace for a new player. Run once after cloning.
 
 ### 1. Check learning directory
 
-If `learning/` does not exist, create it. If `learning/sessions/` does not exist, create it.
+If `learning/` does not exist, create it. If `learning/sessions/` does not exist, create it. If `learning/recordings/` does not exist, create it.
 
 ### 2. Create profile
 
@@ -74,7 +74,7 @@ Feedback collected during play sessions via /feedback. Processed after each sim 
 
 ### 5. Create services catalog
 
-If `learning/catalog.csv` does not exist, generate it with a starter set of high-priority services extracted from `references/exam-topics.md`. Each row uses the merged format:
+If `learning/catalog.csv` does not exist, generate it with a starter set of high-priority services extracted from `.claude/skills/create-sim/references/exam-topics.md`. Each row uses the merged format:
 
 ```csv
 service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
@@ -94,40 +94,40 @@ Check that `.mcp.json` exists and contains `aws-knowledge-mcp-server`. If missin
 
 This is not a blocker. The MCP server enriches sim creation but is not required for playing existing sims.
 
-### 8. Check recording tools
+### 8. Check optional tools
 
-Check whether `asciinema`, `agg`, and `ffmpeg` are available on the system PATH:
+#### 8a. Verify python3
 
 ```bash
-command -v asciinema; command -v agg; command -v ffmpeg
+command -v python3
 ```
 
-If all three are found:
+If missing, warn: "python3 was not found. The /publish skill needs it for reading recording metadata." Informational only -- do not attempt to install python3.
 
-> Recording tools are installed. Run ./record to capture a session for YouTube.
+#### 8b. Check and install asciinema
 
-If any are missing, detect the player's platform by checking which package manager is available, then give the appropriate install command:
-
-- `brew` exists: `brew install {missing tools}`
-- `apt` exists: `sudo apt install {missing tools}` (note: agg may need to be downloaded from https://github.com/asciinema/agg/releases)
-- `pacman` exists: `pacman -S {missing tools}` (agg from AUR or GitHub releases)
-- `dnf` exists: `sudo dnf install {missing tools}`
-- None found: list each tool with its install page (asciinema.org, github.com/asciinema/agg, ffmpeg.org)
-
-Format as a single install command the player can copy-paste. Example:
-
-> Recording tools (optional): asciinema and agg not found. Install with:
->   brew install asciinema agg
-> This is only needed if you want to record sessions for YouTube.
-
-This is not a blocker. Recording is optional.
-
-### 8b. Check asciinema authentication
-
-If asciinema was found in Step 8, check whether it is linked to an account:
+asciinema is optional. It is only needed for recording and publishing terminal sessions.
 
 ```bash
-test -f ~/.config/asciinema/install-id && echo "authenticated" || echo "not authenticated"
+command -v asciinema
+```
+
+If found, skip to 8c.
+
+If missing:
+
+1. Detect which package manager is available (`brew`, `apt`, `pacman`, `dnf`).
+2. Tell the player: "asciinema is not installed. It is optional -- only needed if you want to record and publish sessions." Ask if they want to install it now.
+3. If yes, run the install command for their platform (e.g. `brew install asciinema`).
+4. If no, move on. This is not a blocker.
+5. If no known package manager is found, print the install page (asciinema.org/docs/installation) and move on.
+
+#### 8c. Check asciinema authentication
+
+Only run this if asciinema is installed. Check whether it is linked to an account:
+
+```bash
+test -f ~/.local/state/asciinema/install-id || test -f ~/.config/asciinema/install-id
 ```
 
 If not authenticated:
@@ -136,7 +136,7 @@ If not authenticated:
 >
 >     asciinema auth
 >
-> This opens a browser to link your CLI. You can skip this now and do it when you first run /publish.
+> This prints a connect URL. Open it in your browser while logged in to your asciinema.org account. You can skip this now and do it when you first run /publish.
 
 If authenticated:
 
@@ -161,3 +161,4 @@ If the profile already had progress:
 1. No emojis.
 2. Do not modify any existing files. Only create missing ones.
 3. Do not start a simulation. Setup is setup.
+4. When installing optional tools, ask the player before running package manager commands.
