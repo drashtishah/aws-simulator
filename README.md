@@ -40,30 +40,3 @@ Start playing:
 ```
 
 The simulator presents available incidents based on your current level. You pick one. You investigate.
-
-## Recording Sessions
-
-To record a session for YouTube, run this instead of `claude`:
-
-```
-./record
-```
-
-This starts a recorded terminal. Everything you type from this point is captured. Start Claude Code and play as usual:
-
-```
-claude
-/play
-```
-
-When the simulation ends, exit Claude Code. Then type `exit` to stop recording. Your recordings are saved in `learning/recordings/`.
-
-To publish a recording to asciinema.org:
-
-```
-/publish
-```
-
-This uploads your recording as an unlisted link you can share. You can also list, delete, or make recordings public from this command.
-
-Recording requires `asciinema`. Run `/setup` to check if it is installed and get install instructions for your system.
