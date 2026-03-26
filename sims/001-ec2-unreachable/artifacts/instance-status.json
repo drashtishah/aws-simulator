@@ -39,15 +39,7 @@
               "Key": "Application",
               "Value": "brightpath-lms"
             }
-          ],
-          "StatusChecks": {
-            "SystemStatus": {
-              "Status": "ok"
-            },
-            "InstanceStatus": {
-              "Status": "ok"
-            }
-          }
+          ]
         }
       ]
     }

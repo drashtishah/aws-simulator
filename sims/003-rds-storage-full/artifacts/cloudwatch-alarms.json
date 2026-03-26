@@ -1,9 +1,35 @@
 {
   "MetricAlarms": [
     {
+      "AlarmName": "cropsync-rds-free-storage-low",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:587412963801:alarm:cropsync-rds-free-storage-low",
+      "AlarmDescription": "RDS free storage space below 10% of 20 GB",
+      "StateValue": "ALARM",
+      "StateReason": "Threshold Crossed: 1 datapoint [157286400.0 (24/03/26 06:05:00)] was less than or equal to the threshold (2147483648.0).",
+      "MetricName": "FreeStorageSpace",
+      "Namespace": "AWS/RDS",
+      "Statistic": "Average",
+      "Dimensions": [
+        {
+          "Name": "DBInstanceIdentifier",
+          "Value": "cropsync-prod-db"
+        }
+      ],
+      "Period": 300,
+      "EvaluationPeriods": 1,
+      "Threshold": 2147483648.0,
+      "ComparisonOperator": "LessThanOrEqualToThreshold",
+      "ActionsEnabled": true,
+      "AlarmActions": [
+        "arn:aws:sns:us-east-1:587412963801:cropsync-ops-alerts"
+      ]
+    },
+    {
       "AlarmName": "cropsync-rds-cpu-high",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:587412963801:alarm:cropsync-rds-cpu-high",
       "AlarmDescription": "RDS CPU utilization above 80%",
       "StateValue": "OK",
+      "StateReason": "Threshold Crossed: 1 datapoint [12.4 (24/03/26 06:05:00)] was not greater than the threshold (80.0).",
       "MetricName": "CPUUtilization",
       "Namespace": "AWS/RDS",
       "Statistic": "Average",
@@ -24,8 +50,10 @@
     },
     {
       "AlarmName": "cropsync-rds-connections-high",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:587412963801:alarm:cropsync-rds-connections-high",
       "AlarmDescription": "RDS connections above 150",
       "StateValue": "OK",
+      "StateReason": "Threshold Crossed: 1 datapoint [3.0 (24/03/26 06:05:00)] was not greater than the threshold (150.0).",
       "MetricName": "DatabaseConnections",
       "Namespace": "AWS/RDS",
       "Statistic": "Average",

@@ -13,6 +13,7 @@
         "HostedZoneId": "Z2R2ITUGPM61AM"
       },
       "AllocatedStorage": 20,
+      "FreeStorageSpace": 157286400,
       "InstanceCreateTime": "2025-09-15T10:22:00Z",
       "BackupRetentionPeriod": 7,
       "DBSecurityGroups": [],
@@ -40,7 +41,6 @@
       "PubliclyAccessible": false,
       "StorageType": "gp3",
       "StorageEncrypted": true,
-      "MaxAllocatedStorage": null,
       "DeletionProtection": true,
       "Tags": [
         {
