@@ -13,7 +13,11 @@ Runs an AWS incident simulation end-to-end. Consumes sim packages from `sims/{id
 
 ### 0. Check Workspace
 
-If the `learning/` directory does not exist, tell the user: "Run `/setup` first to initialize your workspace." and stop.
+If any of the following are missing, tell the user: "Run `/setup` first to initialize your workspace." and stop.
+
+- `learning/` directory
+- `learning/profile.json`
+- `learning/catalog.csv`
 
 ### 1. Load Learner Profile
 
