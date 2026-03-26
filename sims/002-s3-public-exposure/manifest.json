@@ -3,8 +3,18 @@
   "title": "The Meridian Health Data Leak",
   "difficulty": 2,
   "category": "security",
-  "services": ["s3", "iam", "cloudtrail"],
-  "tags": ["bucket-policy", "public-access", "data-exposure", "hipaa", "forensics"],
+  "services": [
+    "s3",
+    "iam",
+    "cloudtrail"
+  ],
+  "tags": [
+    "bucket-policy",
+    "public-access",
+    "data-exposure",
+    "hipaa",
+    "forensics"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -54,9 +64,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "s3-console",
         "service": "s3",
         "artifacts": [
           "artifacts/bucket-policy.json",
@@ -72,7 +81,6 @@
         ]
       },
       {
-        "name": "iam-console",
         "service": "iam",
         "artifacts": [
           "artifacts/iam-policy.json"
@@ -85,7 +93,6 @@
         ]
       },
       {
-        "name": "cloudtrail-console",
         "service": "cloudtrail",
         "artifacts": [
           "artifacts/cloudtrail-events.json"

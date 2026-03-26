@@ -3,8 +3,17 @@
   "title": "The CropSync Harvest Crisis: Database Full",
   "difficulty": 1,
   "category": "data",
-  "services": ["rds", "cloudwatch", "ec2"],
-  "tags": ["rds-storage", "disk-full", "connection-timeout", "monitoring"],
+  "services": [
+    "rds",
+    "cloudwatch",
+    "ec2"
+  ],
+  "tags": [
+    "rds-storage",
+    "disk-full",
+    "connection-timeout",
+    "monitoring"
+  ],
   "estimated_minutes": 15,
   "prerequisites": [],
   "exam_topics": [
@@ -50,9 +59,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "rds-console",
         "service": "rds",
         "artifacts": [
           "artifacts/rds-instance-status.json",
@@ -66,7 +74,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/metrics.csv",
@@ -80,7 +87,6 @@
         ]
       },
       {
-        "name": "ec2-console",
         "service": "ec2",
         "artifacts": [
           "artifacts/architecture-hint.txt",

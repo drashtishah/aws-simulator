@@ -15,8 +15,8 @@ Gold-standard reference for the create-sim skill. Every generated simulation pac
 
 ```
 sims/001-s3-bucket-breach/
-  manifest.json        -- Machine-readable sim definition (agents, scoring, metadata)
-  story.md             -- Narrative for the Narrator agent (opening, resolution)
+  manifest.json        -- Machine-readable sim definition (consoles, scoring, metadata)
+  story.md             -- Narrative (opening, resolution)
   resolution.md        -- Root cause explanation, AWS docs, learning objectives
   artifacts/
     context.txt              -- REQUIRED: briefing card for sim opening
@@ -34,12 +34,12 @@ sims/001-s3-bucket-breach/
 
 ## 1. manifest.json
 
-The manifest is the machine-readable definition of the simulation. The play skill reads this to configure agents, evaluate the player's resolution, and track progress.
+The manifest is the machine-readable definition of the simulation. The play skill reads this to configure consoles, evaluate the player's resolution, and track progress.
 
 ```json
 {
   "id": "001-s3-bucket-breach",
-  "title": "The Midnight S3 Breach at NovaPay",
+  "title": "Someone Else's Keys",
   "difficulty": 2,
   "category": "security",
   "services": ["s3", "iam", "cloudtrail"],
@@ -93,9 +93,8 @@ The manifest is the machine-readable definition of the simulation. The play skil
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "s3-console",
         "service": "s3",
         "artifacts": [
           "artifacts/bucket-policy.json",
@@ -111,7 +110,6 @@ The manifest is the machine-readable definition of the simulation. The play skil
         ]
       },
       {
-        "name": "iam-console",
         "service": "iam",
         "artifacts": [
           "artifacts/iam-policy.json"
@@ -124,7 +122,6 @@ The manifest is the machine-readable definition of the simulation. The play skil
         ]
       },
       {
-        "name": "cloudtrail-console",
         "service": "cloudtrail",
         "artifacts": [
           "artifacts/cloudtrail-events.json"
@@ -174,7 +171,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 > [!tip] Manifest Quality Checklist
 > - `id` matches the directory name exactly
 > - `services` array uses slugs from `catalog.csv`
-> - Every service in `services` has a corresponding agent in `team.agents`
+> - Every service in `services` has a corresponding console entry in `team.consoles`
 > - `story_beats` includes at minimum `start` and `fix_validated` triggers
 > - `hints` progress from vague to specific
 > - `fix_criteria` has at least one `required: true` criterion
@@ -184,7 +181,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 
 ## 2. story.md
 
-The narrative file that the Narrator agent reads to the player. Must use Obsidian frontmatter with the project tag taxonomy.
+The narrative file read during the simulation. Must use Obsidian frontmatter with the project tag taxonomy.
 
 ```markdown
 ---
@@ -197,35 +194,36 @@ tags:
   - category/security
 ---
 
-# The Midnight S3 Breach at NovaPay
+# Someone Else's Keys
 
 ## Opening
 
-It is 3:14 AM on a Tuesday. Your phone buzzes with a PagerDuty alert -- HIGH SEVERITY. You fumble for your glasses and read the notification: "External report: NovaPay transaction data accessible via public URL."
+The PagerDuty notification said `External report: NovaPay transaction data accessible via public URL`. It was 3:14 AM. A Tuesday.
 
-NovaPay is a Series B fintech startup that processes payment transactions for 2,300 small merchants across the eastern seaboard. The platform handles roughly $4.2 million in daily transaction volume. Every merchant trusts NovaPay with their customers' payment data, and that trust is the foundation of the business.
+NovaPay processes payment transactions for 2,300 small merchants across the eastern seaboard. Series B. Forty-five engineers. Roughly $4.2 million in daily transaction volume. The merchants trust NovaPay with their customers' payment data. That is the entire business.
 
-You pull up the Slack bridge channel. The night-shift SRE has already confirmed it: someone posted a link on a security research forum showing that NovaPay's transaction report files are downloadable by anyone with the URL. No authentication required. The files contain merchant names, transaction amounts, timestamps, and partial card numbers.
+In the Slack bridge channel, the night-shift SRE had already confirmed it. Someone on a security research forum posted a direct link to NovaPay's transaction report files. Merchant names, transaction amounts, timestamps, partial card numbers. No authentication required. Just a URL.
 
-Three merchants have already emailed support. The VP of Engineering is on the bridge call. Legal wants a timeline. Your job as Incident Commander: figure out what happened, how long the data has been exposed, and shut it down. The clock started 20 minutes ago.
+Three merchants had emailed support. The VP of Engineering was on the bridge call. You are the Incident Commander. The exposure has been live for at least twenty minutes.
 
 ## Resolution
 
-The team traced the exposure to a bucket policy change made six days earlier. During a routine deployment, a junior engineer modified the `novapay-transaction-reports` S3 bucket policy to grant public read access. The change was intended to allow a third-party analytics vendor temporary access to generate monthly reports, but the policy used `Principal: *` instead of the vendor's specific AWS account ID.
+The bucket policy on `novapay-transaction-reports` had been changed six days earlier. A junior engineer needed to give a third-party analytics vendor read access for monthly report generation. The policy they wrote used `Principal: *` instead of the vendor's AWS account ID.
 
-For six days, 14,847 transaction report files were publicly accessible. CloudTrail logs confirmed that 23 unique IP addresses accessed the bucket during the exposure window, including the security researcher who reported it and several automated web crawlers.
+For six days, 14,847 transaction report files sat on the open internet. CloudTrail showed 23 unique IP addresses accessed the bucket during that window. One was the security researcher. Several were automated crawlers.
 
-The immediate fix was straightforward: replace `Principal: *` with the vendor's AWS account ARN (`arn:aws:iam::112233445566:root`) and enable S3 Block Public Access at the bucket level as a guardrail against future misconfigurations. The team also enabled S3 Block Public Access at the account level for all non-public buckets and added an AWS Config rule to detect any future public bucket policies.
+The fix was small. Replace `Principal: *` with the vendor's account ARN. Enable S3 Block Public Access at the bucket level. Then at the account level for all non-public buckets. Add an AWS Config rule to catch it next time.
 
-The post-incident review identified three contributing factors: no peer review for bucket policy changes, no automated detection of public access configurations, and no separation between production data buckets and integration buckets.
+The post-incident review found three gaps: no peer review for bucket policy changes, no automated detection of public access configurations, no separation between production data buckets and integration buckets.
 ```
 
 > [!tip] Story Quality Checklist
-> - Opening creates urgency: real users affected, real business impact, time pressure
+> - Opening uses flat, observational register -- tension through concrete detail, not breathless narration
 > - Company feels real: specific numbers (merchant count, transaction volume, team size)
-> - Customer-obsessed language: the story is about impact on merchants, not just technical details
+> - Simple declarative sentences. Mundane details sit next to the crisis at equal weight.
 > - Resolution explains the full chain: who did what, when, why, and how it was fixed
-> - No emojis, no fluff, no "learning moment" language -- this is an incident, not a tutorial
+> - No emojis, no exclamation marks, no "the clock is ticking" urgency language
+> - Title reads like a chapter heading -- quiet, understated, slightly literary
 
 ---
 
@@ -244,7 +242,7 @@ tags:
   - category/security
 ---
 
-# Resolution: The Midnight S3 Breach at NovaPay
+# Resolution: Someone Else's Keys
 
 ## Root Cause
 
@@ -329,7 +327,7 @@ CloudTrail logs every S3 management API call (PutBucketPolicy, DeleteBucketPolic
 
 ## 4. Artifact Files
 
-Every artifact must be in its native AWS format. No markdown wrappers. The play skill serves these files directly to the player when they query a service agent.
+Every artifact must be in its native AWS format. No markdown wrappers. The play skill serves these files directly to the player when they query a service console.
 
 ### artifacts/context.txt (REQUIRED for every sim)
 

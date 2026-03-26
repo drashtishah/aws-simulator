@@ -3,8 +3,17 @@
   "title": "The BrightPath Outage: Students Locked Out",
   "difficulty": 1,
   "category": "networking",
-  "services": ["ec2", "vpc", "cloudwatch"],
-  "tags": ["security-group", "inbound-rules", "port-blocking", "connectivity"],
+  "services": [
+    "ec2",
+    "vpc",
+    "cloudwatch"
+  ],
+  "tags": [
+    "security-group",
+    "inbound-rules",
+    "port-blocking",
+    "connectivity"
+  ],
   "estimated_minutes": 15,
   "prerequisites": [],
   "exam_topics": [
@@ -50,9 +59,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "ec2-console",
         "service": "ec2",
         "artifacts": [
           "artifacts/security-group-rules.json",
@@ -67,7 +75,6 @@
         ]
       },
       {
-        "name": "vpc-console",
         "service": "vpc",
         "artifacts": [
           "artifacts/architecture-hint.txt",
@@ -81,7 +88,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/metrics.csv",

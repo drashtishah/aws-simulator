@@ -3,8 +3,18 @@
   "title": "The Upload That Worked Everywhere Else",
   "difficulty": 2,
   "category": "operations",
-  "services": ["s3", "cloudfront", "api-gateway"],
-  "tags": ["cors", "presigned-url", "cloudfront-cache", "origin-header", "browser-upload"],
+  "services": [
+    "s3",
+    "cloudfront",
+    "api-gateway"
+  ],
+  "tags": [
+    "cors",
+    "presigned-url",
+    "cloudfront-cache",
+    "origin-header",
+    "browser-upload"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -50,9 +60,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "s3-console",
         "service": "s3",
         "artifacts": [
           "artifacts/s3-cors-config.json",
@@ -68,7 +77,6 @@
         ]
       },
       {
-        "name": "cloudfront-console",
         "service": "cloudfront",
         "artifacts": [
           "artifacts/cloudfront-config.json",
@@ -83,7 +91,6 @@
         ]
       },
       {
-        "name": "apigateway-console",
         "service": "api-gateway",
         "artifacts": [
           "artifacts/cloudwatch-logs.txt",

@@ -109,7 +109,7 @@
     },
     "team": {
       "type": "object",
-      "required": ["narrator", "agents"],
+      "required": ["narrator", "consoles"],
       "properties": {
         "narrator": {
           "type": "object",
@@ -160,19 +160,15 @@
           },
           "additionalProperties": false
         },
-        "agents": {
+        "consoles": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["name", "service", "artifacts", "capabilities"],
+            "required": ["service", "artifacts", "capabilities"],
             "properties": {
-              "name": {
-                "type": "string",
-                "description": "Agent identifier. Convention: service-name-console. Example: s3-console"
-              },
               "service": {
                 "type": "string",
-                "description": "AWS service slug this agent represents."
+                "description": "AWS service slug this console represents."
               },
               "artifacts": {
                 "type": "array",
@@ -180,7 +176,7 @@
                   "type": "string"
                 },
                 "minItems": 1,
-                "description": "Relative paths to artifact files this agent can serve."
+                "description": "Relative paths to artifact files this console can serve."
               },
               "capabilities": {
                 "type": "array",
@@ -188,13 +184,13 @@
                   "type": "string"
                 },
                 "minItems": 1,
-                "description": "Simulated API actions this agent supports. Use snake_case AWS action names."
+                "description": "Simulated API actions this console supports. Use snake_case AWS action names."
               }
             },
             "additionalProperties": false
           },
           "minItems": 2,
-          "description": "Service agents the player can query. Minimum 2 agents per sim."
+          "description": "Service consoles the player can query. Minimum 2 per sim."
         }
       },
       "additionalProperties": false

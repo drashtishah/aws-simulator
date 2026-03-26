@@ -3,7 +3,11 @@
   "title": "Someone Else's Keys",
   "difficulty": 1,
   "category": "security",
-  "services": ["iam", "sts", "secrets-manager"],
+  "services": [
+    "iam",
+    "sts",
+    "secrets-manager"
+  ],
   "tags": [
     "credential-chain",
     "environment-variables",
@@ -56,9 +60,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "iam-console",
         "service": "iam",
         "artifacts": [
           "artifacts/iam-user-details.json",
@@ -74,7 +77,6 @@
         ]
       },
       {
-        "name": "sts-console",
         "service": "sts",
         "artifacts": [
           "artifacts/sts-caller-identity.json"
@@ -86,7 +88,6 @@
         ]
       },
       {
-        "name": "cloudtrail-console",
         "service": "secrets-manager",
         "artifacts": [
           "artifacts/cloudtrail-events.json"

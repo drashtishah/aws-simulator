@@ -30,7 +30,7 @@ What did the player check first?
 
 ### 2. Investigation Breadth
 
-- How many different service agents did the player query?
+- How many different service consoles did the player query?
 - Did they query services outside the direct incident scope?
 - Did they correlate data across multiple services?
 
@@ -145,14 +145,14 @@ For each service in `manifest.services`, award points based on the player's inte
 
 | Action | Points | Condition |
 |---|---|---|
-| Asked relevant questions about the service | +1 | Player queried the service agent AND asked at least 1 question that returned useful data |
+| Asked relevant questions about the service | +1 | Player queried the service console AND asked at least 1 question that returned useful data |
 | Correctly identified an issue in the service | +1 | Player identified a misconfiguration, anomaly, or root cause component in this service |
 | Demonstrated config understanding | +1 | Player showed understanding of service-specific configuration (e.g., knew what a bucket policy Principal field means, understood security group rules, recognized CloudTrail event structure) |
 
 ### Scoring Constraints
 
 - **Cap: +2 per sim per service.** Even if the player scores +3 on the criteria above, record only +2. This prevents a single simulation from inflating scores.
-- **Minimum: +0.** If the player never interacted with a service agent, that service gets no score change.
+- **Minimum: +0.** If the player never interacted with a service console, that service gets no score change.
 - **No negative scores.** Do not reduce knowledge_score based on poor performance. The score represents exposure and understanding, not perfection.
 
 ### Catalog CSV Update Format
@@ -189,7 +189,7 @@ After scoring, update `learning/profile.json`:
 ### Weakness Detection
 
 Add a service to `weaknesses` if:
-- The player never queried that service's agent during a sim where it was involved
+- The player never queried that service's console during a sim where it was involved
 - The player scored 0 points for that service in this sim
 - The service is already in weaknesses and the player did not improve this sim
 
@@ -230,6 +230,6 @@ Update these counters after each sim to build a picture of the player's investig
 ## Related
 
 - [[SKILL]] -- Play skill workflow that triggers coaching analysis
-- [[agent-prompts]] -- Prompt templates that capture investigation data
+- [[agent-prompts]] -- Consolidated prompt template (Narrator Mode + Console Mode)
 - [[catalog.csv]] -- AWS services catalog with knowledge scores
 - [[profile.json]] -- Learner profile with patterns and progression
