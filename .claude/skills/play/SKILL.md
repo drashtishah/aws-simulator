@@ -167,7 +167,9 @@ When the player proposes a fix, check it against `manifest.resolution.fix_criter
 2. Present the marked architecture diagram from artifacts/architecture-resolution.txt
 3. Provide a learning summary referencing the manifest's learning_objectives
 4. Include real-world remediation approaches for each fix action -- explain how it would be done via AWS Console (step-by-step UI navigation), CLI (`aws` commands), and SDK/IaC (boto3, CloudFormation, or Terraform)
-5. Call `aws-knowledge-mcp-server` to retrieve the Agent SOP most relevant to the incident type. Present it under the heading "How AWS recommends approaching this" as numbered steps adapted to the sim's specific resources and company name. This section is separate from the narrative -- structured steps, not story prose.
+5. Attempt to call `aws-knowledge-mcp-server` to retrieve the Agent SOP most relevant to the incident type.
+   - **If the MCP server is active:** Present the SOP result under the heading "How AWS recommends approaching this" as numbered steps adapted to the sim's specific resources and company name. This section is separate from the narrative -- structured steps, not story prose.
+   - **If the MCP server is unavailable or returns an error:** Tell the user: "The AWS Knowledge MCP server is not connected. The 'How AWS recommends approaching this' section will be omitted. Restart your session and run `/mcp` to activate it for future sims." Then skip this section and continue to step 6.
 6. Update session state to `"status": "resolved"`
 7. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
 

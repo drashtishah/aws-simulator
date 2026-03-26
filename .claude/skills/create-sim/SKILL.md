@@ -18,6 +18,14 @@ Before starting, confirm these files exist:
 - `.claude/skills/create-sim/references/sim-template.md` -- Gold-standard template
 - `.claude/skills/create-sim/assets/manifest-schema.json` -- Manifest validation schema
 
+Check whether `aws-knowledge-mcp-server` is available as an active MCP tool in the current session. If it is not listed or returns an error on first call:
+
+Tell the user:
+> The AWS Knowledge MCP server (`aws-knowledge-mcp-server`) is not connected. It provides accurate API schemas, real error codes, and Agent SOPs used in step 9b and artifact generation. Without it, those steps will fall back to WebSearch, which may produce less accurate results.
+> Would you like to continue with WebSearch as a fallback, or restart your session to activate the MCP server first?
+
+Wait for the user's response. Store their answer as `mcp_available: true/false` and use it throughout the workflow.
+
 ---
 
 ## Workflow
@@ -40,13 +48,19 @@ Before starting, confirm these files exist:
 7. Look for patterns that involve 2-3 services interacting (not single-service trivial issues)
 8. Cross-reference findings against `references/exam-topics.md` to ensure exam domain coverage
 9. Prioritize patterns that cover multiple exam domains or certifications
-9b. For each service in the proposed scenarios, call `aws-knowledge-mcp-server` to retrieve:
+9b. **If `mcp_available: true`:** For each service in the proposed scenarios, call `aws-knowledge-mcp-server` to retrieve:
     - The exact API response schema for the primary API actions (e.g., `DescribeSecurityGroups`, `GetBucketPolicy`)
     - Real error codes and messages emitted by the service in failure states
     - CloudWatch metric names published by the service (for `metrics.csv` artifact accuracy)
     - IAM action names used to investigate and fix the issue (for `cloudtrail-events.json` accuracy)
     - The Agent SOP most relevant to remediating this type of incident
     Store all of this as reference data for Phase 4 artifact generation and validation.
+
+    **If `mcp_available: false`:** Use WebSearch to find the API response schema and error codes for each service. Search queries:
+    - `"AWS {service} API response JSON format site:docs.aws.amazon.com"`
+    - `"AWS {service} error codes list"`
+    - `"AWS CloudWatch metrics {service}"`
+    Note: SOP-based fix criteria and resolution alignment will be skipped; rely on exam-topics.md and WebSearch findings instead.
 
 ### Phase 3: Propose Scenarios
 
