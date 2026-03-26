@@ -44,6 +44,23 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                                                        |  skill files     |
                                                        |  feedback.md     |
                                                        +------------------+
+
++------------------+
+|   /publish       |
+|  (skill)         |
+|                  |
+| Reads:           |
+|  recordings/*.cast|
+|  published.json  |
+|  install-id      |
+|                  |
+| Writes:          |
+|  published.json  |
+|                  |
+| External:        |
+|  asciinema upload|
+|  asciinema API   |
++------------------+
 ```
 
 ## Data Flow
@@ -70,6 +87,14 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /fix ---------> reads feedback.md
             --> reads + writes skill files (.claude/skills/**)
             --> clears feedback.md
+                |
+                v
+/publish -----> reads learning/recordings/*.cast (metadata extraction)
+            --> reads learning/recordings/published.json (tracking state)
+            --> reads ~/.config/asciinema/install-id (auth)
+            --> runs asciinema upload (CLI, for new uploads)
+            --> calls asciinema.org API (DELETE, PATCH for management)
+            --> writes learning/recordings/published.json
 ```
 
 ## Shared Data Files
@@ -82,6 +107,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
+| `learning/recordings/published.json` | publish | publish | JSON: array of {file, id, url, title, visibility, uploaded_at} |
 
 ## Impact Analysis Guide
 
@@ -99,3 +125,5 @@ When changing a component, check what else reads/writes the same data:
 | `sessions/*.json` format | play (reads + writes + deletes), feedback (writes) |
 | Narrative voice rules | create-sim (story generation), play (live narration), narrative-voice.md, agent-prompts.md |
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
+| `published.json` format | publish (reads + writes) |
+| `learning/recordings/` path | record script, publish skill |
