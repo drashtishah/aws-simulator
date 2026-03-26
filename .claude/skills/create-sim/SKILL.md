@@ -12,7 +12,8 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 ## Prerequisites
 
 Before starting, confirm these files exist:
-- `services/catalog.csv` -- AWS service catalog with knowledge scores
+- `services/catalog.csv` -- AWS service catalog (static reference)
+- `learning/catalog.csv` -- Player service progress (for gap analysis)
 - `sims/registry.json` -- Simulation registry
 - `.claude/skills/create-sim/references/exam-topics.md` -- Exam domain reference
 - `.claude/skills/create-sim/references/sim-template.md` -- Gold-standard template
@@ -32,8 +33,10 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 
 ### Phase 1: Identify Knowledge Gaps
 
-1. Read `services/catalog.csv`
-2. Filter for services where `knowledge_score < 2` AND `exam_priority` is 1 or 2
+1. Read `services/catalog.csv` for service metadata (categories, exam_priority, cert_relevance)
+2. Read `learning/catalog.csv` for player progress (knowledge_score, sims_completed)
+3. Join on `service` column
+4. Filter for services where `knowledge_score < 2` AND `exam_priority` is 1 or 2
 3. Sort by `exam_priority` ascending (highest priority first)
 4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter the gap list to that category
 5. Note which certifications each gap service appears in (`cert_relevance` column)
@@ -171,7 +174,7 @@ For each approved scenario, execute steps 12-19:
 #### 16. Generate story.md
 
 - Consult `references/story-structure.md` for story beat pacing and `references/narrative-voice.md` for prose calibration
-- Obsidian frontmatter with tags: `type/simulation`, `service/{slug}` for each service, `difficulty/{level-name}`, `category/{category}`
+- YAML frontmatter with tags: `type/simulation`, `service/{slug}` for each service, `difficulty/{level-name}`, `category/{category}`
 - Difficulty tag mapping: 1=starter, 2=associate, 3=professional, 4=expert
 - Opening section (3-4 paragraphs):
   - Start with sensory detail (phone buzzing, Slack notification, dashboard turning red)
@@ -185,7 +188,7 @@ For each approved scenario, execute steps 12-19:
 
 #### 17. Generate resolution.md
 
-- Obsidian frontmatter matching `story.md` tags
+- YAML frontmatter matching `story.md` tags
 - Sections: Root Cause, Timeline (table), Correct Remediation (numbered), Key Concepts, Other Ways This Could Break, SOP Best Practices, Learning Objectives
 - The numbered remediation steps must align with the Agent SOP retrieved in step 9b, presented in the same sequence the SOP prescribes, adapted to the sim's specific company and resources
 - AWS documentation links must point to real docs pages
@@ -219,7 +222,7 @@ Situation: {one sentence, what brought you here}
 Rules for context.txt:
 - Users line includes concrete numbers, not "many users"
 - Situation line is factual, not dramatic
-- AWS Services uses official names from catalog.csv
+- AWS Services uses official names from services/catalog.csv
 - No markers, no hints about the root cause
 
 **architecture-hint.txt rules:**
@@ -272,7 +275,7 @@ Artifact rules:
 - Confirm `architecture-hint.txt` exists and contains NO problem markers
 - Confirm `architecture-resolution.txt` exists and contains problem markers
 - Confirm `architecture.txt` does NOT exist (old format removed)
-- Confirm `story.md` and `resolution.md` have valid Obsidian frontmatter
+- Confirm `story.md` and `resolution.md` have valid YAML frontmatter
 
 ### Phase 5: Register and Index
 
@@ -317,10 +320,7 @@ git add sims/index.md
 feat: add sim {id} -- {short title}
 ```
 
-24. Push to remote:
-```
-git push
-```
+24. Done. Do not push automatically -- let the user decide when to push.
 
 ---
 
@@ -361,7 +361,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 ## Rules
 
 1. No emojis in any output, files, or UI
-2. Obsidian formatting for all markdown: YAML frontmatter tags, wiki-links for internal references, callout syntax where appropriate
+2. Markdown formatting for all files: YAML frontmatter tags, callout syntax where appropriate
 3. Narrative language follows the style guide above -- quiet, observational, impact shown through concrete detail not dramatic language
 4. AWS vocabulary throughout -- use official service names (Amazon S3, not "S3 storage"), official API action names (PutBucketPolicy, not "change bucket settings")
 5. Artifacts in native AWS formats -- never wrap AWS JSON/logs in markdown code blocks within artifact files
@@ -378,7 +378,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 - [[sim-template]] -- Complete annotated example of a simulation package
 - [[exam-topics]] -- Exam domain and incident pattern reference
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
-- [[catalog.csv]] -- AWS services catalog with knowledge gaps
+- [[services/catalog.csv]] -- AWS services reference; [[learning/catalog.csv]] -- player progress
 - [[story-structure]] -- Campbell monomyth mapping for sim storytelling
 - [[narrative-voice]] -- Emi Yagi style guide for narrative prose
 - [[game-design]] -- Text-based game and investigation design best practices

@@ -1,92 +1,92 @@
-service,full_name,category,exam_priority,difficulty_level,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
-ec2,Amazon EC2,compute,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,001-ec2-unreachable: identified missing port 443 inbound rule on security group; understood security group deny-by-default behavior; 003-rds-storage-full: reviewed application logs on EC2 instances to confirm MySQL error 1114 across multiple tables
-lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,2,2026-03-26,006-wrong-region: identified function deployed to us-west-2 instead of us-east-1; understood regional nature of Lambda ARNs and CLI region resolution chain; 022-bedrock-guardrail-medical: did not query Lambda console
-s3,Amazon S3,storage,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,011-nat-gateway-cost: understood S3 traffic pattern from private subnet but did not query S3 console directly; grasped that S3 is a public service reachable via VPC endpoint
-iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,006-wrong-region: queried aws configure list and sts get-caller-identity to trace CI/CD identity and region source; 009-credential-chain: identified deactivated user raj.patel via access key metadata and offboarding tags; understood credential resolution chain priority order and env var override of instance profile
-vpc,Amazon VPC,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,2,2026-03-25,001-ec2-unreachable: did not query this service; 011-nat-gateway-cost: queried VPC console; identified empty VpcEndpoints array; understood private subnet route tables and proposed S3 gateway endpoint fix
-rds,Amazon RDS,database,1,2,SAA-C03;SAP-C02;DVA-C02,2,1,2026-03-25,003-rds-storage-full: identified zero FreeStorageSpace as root cause; investigated binlog and slow query log accumulation; understood AllocatedStorage vs MaxAllocatedStorage and parameter group configuration
-dynamodb,Amazon DynamoDB,database,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-cloudfront,Amazon CloudFront,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-sqs,Amazon SQS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-sns,Amazon SNS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,1,2026-03-26,022-bedrock-guardrail-medical: did not query SNS console during investigation; asked about SNS post-sim; SNS topic had zero subscribers -- missed as part of investigation
-elb,Elastic Load Balancing,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-auto-scaling,AWS Auto Scaling,compute,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,5,2026-03-26,001-ec2-unreachable: did not query this service; 006-wrong-region: did not query this service; 003-rds-storage-full: used get_metric_data to identify FreeStorageSpace trend dropping to zero; correlated metric timeline with incident onset; 011-nat-gateway-cost: queried Cost Explorer data to identify NAT Gateway data processing charges of $907/day; 022-bedrock-guardrail-medical: did not query CloudWatch console; missed GuardrailInterventions spike visible in metrics
-route53,Amazon Route 53,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-kms,AWS KMS,security,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-ebs,Amazon EBS,storage,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-efs,Amazon EFS,storage,2,2,SAA-C03;SAP-C02,0,0,,
-elasticache,Amazon ElastiCache,database,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-api-gateway,Amazon API Gateway,serverless,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-cloudformation,AWS CloudFormation,management,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-cloudtrail,AWS CloudTrail,management,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-secrets-manager,AWS Secrets Manager,security,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,009-credential-chain: queried CloudTrail events via this console; identified raj.patel as the authenticating principal across all failed API calls
-security-groups,Security Groups,security,2,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
-nacls,Network ACLs,security,2,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
-waf,AWS WAF,security,2,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
-cognito,Amazon Cognito,security,2,2,SAA-C03;DVA-C02;SCS-C02,0,0,,
-step-functions,AWS Step Functions,serverless,2,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
-eventbridge,Amazon EventBridge,integration,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-ecs,Amazon ECS,containers,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-ecr,Amazon ECR,containers,2,2,SAA-C03;DVA-C02,0,0,,
-codepipeline,AWS CodePipeline,developer-tools,2,2,SAA-C03;DVA-C02,0,0,,
-codebuild,AWS CodeBuild,developer-tools,2,2,SAA-C03;DVA-C02,0,0,,
-codedeploy,AWS CodeDeploy,developer-tools,2,2,SAA-C03;DVA-C02,0,0,,
-xray,AWS X-Ray,developer-tools,2,3,SAA-C03;DVA-C02,0,0,,
-systems-manager,AWS Systems Manager,management,2,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
-direct-connect,AWS Direct Connect,networking,3,3,SAA-C03;SAP-C02,0,0,,
-transit-gateway,AWS Transit Gateway,networking,3,3,SAA-C03;SAP-C02,0,0,,
-organizations,AWS Organizations,management,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-dms,AWS DMS,migration,3,3,SAA-C03;SAP-C02,0,0,,
-shield,AWS Shield,security,3,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
-guardduty,Amazon GuardDuty,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-macie,Amazon Macie,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-security-hub,AWS Security Hub,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-config,AWS Config,management,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-inspector,Amazon Inspector,security,3,3,SAA-C03;SCS-C02,0,0,,
-kinesis-data-streams,Amazon Kinesis Data Streams,analytics,3,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
-kinesis-data-firehose,Amazon Kinesis Data Firehose,analytics,3,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
-athena,Amazon Athena,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-redshift,Amazon Redshift,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-emr,Amazon EMR,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-glue,AWS Glue,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-sagemaker,Amazon SageMaker,ml-ai,3,3,SAA-C03;SAP-C02,0,0,,
-global-accelerator,AWS Global Accelerator,networking,3,3,SAA-C03;SAP-C02,0,0,,
-privatelink,AWS PrivateLink,networking,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-eks,Amazon EKS,containers,3,3,SAA-C03;SAP-C02,0,0,,
-fargate,AWS Fargate,containers,3,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-aurora,Amazon Aurora,database,3,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
-neptune,Amazon Neptune,database,3,3,SAA-C03;SAP-C02,0,0,,
-documentdb,Amazon DocumentDB,database,3,3,SAA-C03;SAP-C02,0,0,,
-appsync,AWS AppSync,serverless,3,3,SAA-C03;DVA-C02,0,0,,
-backup,AWS Backup,storage,3,3,SAA-C03;SAP-C02,0,0,,
-snow-family,AWS Snow Family,migration,4,2,SAA-C03;SAP-C02,0,0,,
-datasync,AWS DataSync,migration,4,3,SAA-C03;SAP-C02,0,0,,
-storage-gateway,AWS Storage Gateway,storage,4,3,SAA-C03;SAP-C02,0,0,,
-outposts,AWS Outposts,compute,4,4,SAA-C03;SAP-C02,0,0,,
-trusted-advisor,AWS Trusted Advisor,management,4,2,SAA-C03;SAP-C02,0,0,,
-service-catalog,AWS Service Catalog,management,4,3,SAA-C03;SAP-C02,0,0,,
-control-tower,AWS Control Tower,management,4,4,SAA-C03;SAP-C02;SCS-C02,0,0,,
-ram,AWS RAM,management,4,3,SAA-C03;SAP-C02,0,0,,
-detective,Amazon Detective,security,4,3,SAA-C03;SCS-C02,0,0,,
-acm,AWS Certificate Manager,security,4,2,SAA-C03;SAP-C02;SCS-C02,0,0,,
-directory-service,AWS Directory Service,security,4,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-fsx,Amazon FSx,storage,4,3,SAA-C03;SAP-C02,0,0,,
-transfer-family,AWS Transfer Family,migration,4,3,SAA-C03;SAP-C02,0,0,,
-batch,AWS Batch,compute,4,3,SAA-C03;SAP-C02,0,0,,
-app-runner,AWS App Runner,containers,4,2,SAA-C03;DVA-C02,0,0,,
-amplify,AWS Amplify,developer-tools,4,2,DVA-C02,0,0,,
-codecommit,AWS CodeCommit,developer-tools,2,2,DVA-C02,0,0,,
-elastic-beanstalk,AWS Elastic Beanstalk,compute,2,2,SAA-C03;DVA-C02,0,0,,
-parameter-store,AWS Systems Manager Parameter Store,management,2,2,SAA-C03;DVA-C02;SCS-C02,0,0,,
-sts,AWS STS,security,2,2,SAA-C03;DVA-C02;SCS-C02,0,1,2026-03-25,009-credential-chain: did not query STS console directly; did not run sts get-caller-identity independently
-firewall-manager,AWS Firewall Manager,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-cloudhsm,AWS CloudHSM,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-network-firewall,AWS Network Firewall,security,3,3,SAA-C03;SAP-C02;SCS-C02,0,0,,
-vpn,AWS Site-to-Site VPN,networking,2,2,SAA-C03;SAP-C02,0,0,,
-nat-gateway,NAT Gateway,networking,2,2,SAA-C03;SAP-C02,2,1,2026-03-25,011-nat-gateway-cost: identified NAT Gateway data processing as the $907/day cost source; understood per-GB pricing model and how private subnet routing forces all S3 traffic through NAT Gateway
-lake-formation,AWS Lake Formation,analytics,4,4,SAA-C03;SAP-C02,0,0,,
-opensearch,Amazon OpenSearch Service,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-bedrock,Amazon Bedrock,ml-ai,2,3,SAA-C03;SAP-C02;DVA-C02,2,1,2026-03-26,022-bedrock-guardrail-medical: queried guardrail config; identified broad denied topic definition and example phrases as root cause; understood inputAction vs outputAction distinction for input vs output filtering
-bedrock-agents,Amazon Bedrock Agents,ml-ai,3,3,SAP-C02;DVA-C02,0,0,,
-opensearch-serverless,Amazon OpenSearch Serverless,analytics,3,3,SAA-C03;SAP-C02,0,0,,
+service,full_name,category,exam_priority,difficulty_level,cert_relevance
+ec2,Amazon EC2,compute,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+s3,Amazon S3,storage,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+vpc,Amazon VPC,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+rds,Amazon RDS,database,1,2,SAA-C03;SAP-C02;DVA-C02
+dynamodb,Amazon DynamoDB,database,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+cloudfront,Amazon CloudFront,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+sqs,Amazon SQS,integration,1,2,SAA-C03;SAP-C02;DVA-C02
+sns,Amazon SNS,integration,1,2,SAA-C03;SAP-C02;DVA-C02
+elb,Elastic Load Balancing,networking,1,2,SAA-C03;SAP-C02;DVA-C02
+auto-scaling,AWS Auto Scaling,compute,1,2,SAA-C03;SAP-C02;DVA-C02
+cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+route53,Amazon Route 53,networking,1,2,SAA-C03;SAP-C02;DVA-C02
+kms,AWS KMS,security,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+ebs,Amazon EBS,storage,2,2,SAA-C03;SAP-C02;DVA-C02
+efs,Amazon EFS,storage,2,2,SAA-C03;SAP-C02
+elasticache,Amazon ElastiCache,database,2,2,SAA-C03;SAP-C02;DVA-C02
+api-gateway,Amazon API Gateway,serverless,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+cloudformation,AWS CloudFormation,management,2,2,SAA-C03;SAP-C02;DVA-C02
+cloudtrail,AWS CloudTrail,management,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+secrets-manager,AWS Secrets Manager,security,2,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+security-groups,Security Groups,security,2,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02
+nacls,Network ACLs,security,2,2,SAA-C03;SAP-C02;SCS-C02
+waf,AWS WAF,security,2,2,SAA-C03;SAP-C02;SCS-C02
+cognito,Amazon Cognito,security,2,2,SAA-C03;DVA-C02;SCS-C02
+step-functions,AWS Step Functions,serverless,2,3,SAA-C03;SAP-C02;DVA-C02
+eventbridge,Amazon EventBridge,integration,2,2,SAA-C03;SAP-C02;DVA-C02
+ecs,Amazon ECS,containers,2,2,SAA-C03;SAP-C02;DVA-C02
+ecr,Amazon ECR,containers,2,2,SAA-C03;DVA-C02
+codepipeline,AWS CodePipeline,developer-tools,2,2,SAA-C03;DVA-C02
+codebuild,AWS CodeBuild,developer-tools,2,2,SAA-C03;DVA-C02
+codedeploy,AWS CodeDeploy,developer-tools,2,2,SAA-C03;DVA-C02
+xray,AWS X-Ray,developer-tools,2,3,SAA-C03;DVA-C02
+systems-manager,AWS Systems Manager,management,2,2,SAA-C03;SAP-C02;SCS-C02
+direct-connect,AWS Direct Connect,networking,3,3,SAA-C03;SAP-C02
+transit-gateway,AWS Transit Gateway,networking,3,3,SAA-C03;SAP-C02
+organizations,AWS Organizations,management,3,3,SAA-C03;SAP-C02;SCS-C02
+dms,AWS DMS,migration,3,3,SAA-C03;SAP-C02
+shield,AWS Shield,security,3,2,SAA-C03;SAP-C02;SCS-C02
+guardduty,Amazon GuardDuty,security,3,3,SAA-C03;SAP-C02;SCS-C02
+macie,Amazon Macie,security,3,3,SAA-C03;SAP-C02;SCS-C02
+security-hub,AWS Security Hub,security,3,3,SAA-C03;SAP-C02;SCS-C02
+config,AWS Config,management,3,3,SAA-C03;SAP-C02;SCS-C02
+inspector,Amazon Inspector,security,3,3,SAA-C03;SCS-C02
+kinesis-data-streams,Amazon Kinesis Data Streams,analytics,3,3,SAA-C03;SAP-C02;DVA-C02
+kinesis-data-firehose,Amazon Kinesis Data Firehose,analytics,3,3,SAA-C03;SAP-C02;DVA-C02
+athena,Amazon Athena,analytics,3,3,SAA-C03;SAP-C02
+redshift,Amazon Redshift,analytics,3,3,SAA-C03;SAP-C02
+emr,Amazon EMR,analytics,3,3,SAA-C03;SAP-C02
+glue,AWS Glue,analytics,3,3,SAA-C03;SAP-C02
+sagemaker,Amazon SageMaker,ml-ai,3,3,SAA-C03;SAP-C02
+global-accelerator,AWS Global Accelerator,networking,3,3,SAA-C03;SAP-C02
+privatelink,AWS PrivateLink,networking,3,3,SAA-C03;SAP-C02;SCS-C02
+eks,Amazon EKS,containers,3,3,SAA-C03;SAP-C02
+fargate,AWS Fargate,containers,3,2,SAA-C03;SAP-C02;DVA-C02
+aurora,Amazon Aurora,database,3,3,SAA-C03;SAP-C02;DVA-C02
+neptune,Amazon Neptune,database,3,3,SAA-C03;SAP-C02
+documentdb,Amazon DocumentDB,database,3,3,SAA-C03;SAP-C02
+appsync,AWS AppSync,serverless,3,3,SAA-C03;DVA-C02
+backup,AWS Backup,storage,3,3,SAA-C03;SAP-C02
+snow-family,AWS Snow Family,migration,4,2,SAA-C03;SAP-C02
+datasync,AWS DataSync,migration,4,3,SAA-C03;SAP-C02
+storage-gateway,AWS Storage Gateway,storage,4,3,SAA-C03;SAP-C02
+outposts,AWS Outposts,compute,4,4,SAA-C03;SAP-C02
+trusted-advisor,AWS Trusted Advisor,management,4,2,SAA-C03;SAP-C02
+service-catalog,AWS Service Catalog,management,4,3,SAA-C03;SAP-C02
+control-tower,AWS Control Tower,management,4,4,SAA-C03;SAP-C02;SCS-C02
+ram,AWS RAM,management,4,3,SAA-C03;SAP-C02
+detective,Amazon Detective,security,4,3,SAA-C03;SCS-C02
+acm,AWS Certificate Manager,security,4,2,SAA-C03;SAP-C02;SCS-C02
+directory-service,AWS Directory Service,security,4,3,SAA-C03;SAP-C02;SCS-C02
+fsx,Amazon FSx,storage,4,3,SAA-C03;SAP-C02
+transfer-family,AWS Transfer Family,migration,4,3,SAA-C03;SAP-C02
+batch,AWS Batch,compute,4,3,SAA-C03;SAP-C02
+app-runner,AWS App Runner,containers,4,2,SAA-C03;DVA-C02
+amplify,AWS Amplify,developer-tools,4,2,DVA-C02
+codecommit,AWS CodeCommit,developer-tools,2,2,DVA-C02
+elastic-beanstalk,AWS Elastic Beanstalk,compute,2,2,SAA-C03;DVA-C02
+parameter-store,AWS Systems Manager Parameter Store,management,2,2,SAA-C03;DVA-C02;SCS-C02
+sts,AWS STS,security,2,2,SAA-C03;DVA-C02;SCS-C02
+firewall-manager,AWS Firewall Manager,security,3,3,SAA-C03;SAP-C02;SCS-C02
+cloudhsm,AWS CloudHSM,security,3,3,SAA-C03;SAP-C02;SCS-C02
+network-firewall,AWS Network Firewall,security,3,3,SAA-C03;SAP-C02;SCS-C02
+vpn,AWS Site-to-Site VPN,networking,2,2,SAA-C03;SAP-C02
+nat-gateway,NAT Gateway,networking,2,2,SAA-C03;SAP-C02
+lake-formation,AWS Lake Formation,analytics,4,4,SAA-C03;SAP-C02
+opensearch,Amazon OpenSearch Service,analytics,3,3,SAA-C03;SAP-C02
+bedrock,Amazon Bedrock,ml-ai,2,3,SAA-C03;SAP-C02;DVA-C02
+bedrock-agents,Amazon Bedrock Agents,ml-ai,3,3,SAP-C02;DVA-C02
+opensearch-serverless,Amazon OpenSearch Serverless,analytics,3,3,SAA-C03;SAP-C02

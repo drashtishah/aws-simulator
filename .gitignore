@@ -1,14 +1,5 @@
-# Session artifacts (transient)
-.sessions/
-.agent/
+# Player-specific data (created by /setup)
+learning/
 
-# Obsidian config
-.obsidian/
-
-# Claude Code local settings and plans (not skills)
-.claude/plans/
+# Claude Code local settings
 .claude/settings.local.json
-.claude/commands/
-
-# Transient sim session state (not the learning profile/journal)
-learning/sessions/

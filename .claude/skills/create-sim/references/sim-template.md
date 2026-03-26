@@ -258,7 +258,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 
 > [!tip] Manifest Quality Checklist
 > - `id` matches the directory name exactly
-> - `services` array uses slugs from `catalog.csv`
+> - `services` array uses slugs from `services/catalog.csv`
 > - Every service in `services` has a corresponding console entry in `team.consoles`
 > - `story_beats` includes at minimum `start` and `fix_validated` triggers
 > - `hints` are objects with `text`, `relevant_services`, and `skip_if_queried` -- progressing from vague to specific
@@ -275,7 +275,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 
 ## 2. story.md
 
-The narrative file read during the simulation. Must use Obsidian frontmatter with the project tag taxonomy.
+The narrative file read during the simulation. Must use YAML frontmatter with the project tag taxonomy.
 
 ```markdown
 ---
@@ -419,7 +419,7 @@ Instead of a public bucket policy, an attacker compromises an application that h
 ## Related
 
 - [[exam-topics#SAA-C03 -- Solutions Architect Associate]] -- Domain 1: Design Secure Architectures
-- [[catalog]] -- s3, iam, cloudtrail service entries
+- [[services/catalog.csv]] -- s3, iam, cloudtrail service entries
 ```
 
 > [!tip] Resolution Quality Checklist

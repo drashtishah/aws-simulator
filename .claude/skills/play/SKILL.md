@@ -1,6 +1,6 @@
 ---
 name: play
-description: Run an AWS incident simulation as an interactive session. Presents available sims based on learning level, loads narrator and console behavioral context, tracks investigation and validates fixes, updates learning profile and services catalog. Use when user says "play", "start sim", "run simulation", "practice AWS", or "let's play".
+description: Run an AWS incident simulation as an interactive session. Presents available sims based on learning level, loads narrator and console behavioral context, tracks investigation and validates fixes, updates learning profile and player catalog. Use when user says "play", "start sim", "run simulation", "practice AWS", or "let's play".
 ---
 
 # play Skill
@@ -10,6 +10,10 @@ Runs an AWS incident simulation end-to-end. Consumes sim packages from `sims/{id
 ---
 
 ## Phase 1: Setup
+
+### 0. Check Workspace
+
+If the `learning/` directory does not exist, tell the user: "Run `/setup` first to initialize your workspace." and stop.
 
 ### 1. Load Learner Profile
 
@@ -256,20 +260,16 @@ Read and update `learning/profile.json`:
 
 ### 18. Update Services Catalog
 
-Read `services/catalog.csv`. For each service in `manifest.services`:
+Read `learning/catalog.csv`. For each service in `manifest.services`:
 
 - Add the knowledge score to the `knowledge_score` column
 - Increment `sims_completed` by 1
 - Set `last_practiced` to today's date (YYYY-MM-DD)
 - Append coaching observation to `notes` (format: `{sim_id}: {observation}`)
 
-Write the updated CSV back to `services/catalog.csv`.
+Write the updated CSV back to `learning/catalog.csv`.
 
-### 19. Regenerate Catalog Markdown
-
-Regenerate `services/catalog.md` from the updated `services/catalog.csv`. Use the same format as the existing file, with an Obsidian frontmatter header and a markdown table.
-
-### 20. Write Journal Entry
+### 19. Write Journal Entry
 
 Append an entry to `learning/journal.md`:
 
@@ -294,27 +294,18 @@ Append an entry to `learning/journal.md`:
 {Single most important learning}
 ```
 
-### 21. Clean Up Session State
+### 20. Clean Up Session State
 
 Delete the session state file: `learning/sessions/{sim_id}.json`
 
-### 22. Report Feedback
+### 21. Report Feedback
 
 If `feedback_notes` in the session state is non-empty:
 
 1. Tell the user: "You left {count} feedback notes during this session. They are saved in `learning/feedback.md`. Run `/fix` in a fresh session to apply them."
 2. Do NOT apply feedback inline -- the `/fix` command handles skill improvements separately.
 
-### 23. Commit and Push
-
-```bash
-git add learning/profile.json learning/journal.md learning/sessions/ learning/feedback.md
-git add services/catalog.csv services/catalog.md
-git commit -m "learn: complete sim {id} -- {title}"
-git push
-```
-
-### 24. Wrap Up
+### 22. Wrap Up
 
 Tell the user: "Sim complete. Start a new Claude Code session to play the next one."
 
@@ -328,7 +319,7 @@ If the user quits, abandons, or closes the session before resolution:
 
 1. The auto-save ensures the latest session state is in `learning/sessions/{sim_id}.json`
 2. Do NOT mark the sim as complete
-3. Do NOT update `learning/profile.json` or `services/catalog.csv`
+3. Do NOT update `learning/profile.json` or `learning/catalog.csv`
 4. Do NOT delete the session state file
 5. Next time the user runs the play skill, Phase 1 Step 2 will detect the in-progress session and offer to resume
 
@@ -336,7 +327,7 @@ If the user quits, abandons, or closes the session before resolution:
 
 ## Handling /feedback Messages
 
-The user may run `/feedback [text]` during play. This is a Claude Code slash command (`.claude/commands/feedback.md`) that logs feedback to `learning/feedback.md` and updates the session state's `feedback_notes` array. No action needed from the play skill -- the command handles it.
+The user may run `/feedback [text]` during play. This is the `/feedback` skill that logs feedback to `learning/feedback.md` and updates the session state's `feedback_notes` array. No action needed from the play skill -- the skill handles it.
 
 ---
 
@@ -344,7 +335,7 @@ The user may run `/feedback [text]` during play. This is a Claude Code slash com
 
 1. One sim per session. After resolution, do not offer another sim.
 2. No emojis in any output or files.
-3. Obsidian formatting for journal entries: YAML frontmatter where applicable, wiki-links for internal references.
+3. Markdown formatting for journal entries: YAML frontmatter where applicable.
 4. AWS vocabulary throughout -- use official service names and API action names.
 5. Narrate the story AND serve raw console data. In Console Mode: raw AWS output only, no analysis.
 6. Session state must be saved after every significant interaction. If the process crashes, the player can resume.
@@ -361,5 +352,6 @@ The user may run `/feedback [text]` during play. This is a Claude Code slash com
 - [[coaching-patterns]] -- Investigation pattern analysis and scoring rules
 - [[sim-template]] -- Simulation package structure (consumed by this skill)
 - [[create-sim]] -- Companion skill that generates sim packages
-- [[catalog.csv]] -- AWS services catalog with knowledge scores
+- [[services/catalog.csv]] -- Static AWS services reference
+- [[learning/catalog.csv]] -- Player service progress
 - [[profile.json]] -- Learner state and progression

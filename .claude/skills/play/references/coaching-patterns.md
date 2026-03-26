@@ -137,7 +137,7 @@ Feedback: "Your question about {specific_question_example} was particularly effe
 
 ## Knowledge Score Update Rules
 
-After the simulation, update `services/catalog.csv` for each service involved in the sim.
+After the simulation, update `learning/catalog.csv` for each service involved in the sim.
 
 ### Scoring Criteria
 
@@ -157,7 +157,7 @@ For each service in `manifest.services`, award points based on the player's inte
 
 ### Catalog CSV Update Format
 
-For each service in `manifest.services`, update these columns in `services/catalog.csv`:
+For each service in `manifest.services`, update these columns in `learning/catalog.csv`:
 
 | Column | Update rule |
 |---|---|
@@ -231,5 +231,5 @@ Update these counters after each sim to build a picture of the player's investig
 
 - [[SKILL]] -- Play skill workflow that triggers coaching analysis
 - [[agent-prompts]] -- Consolidated prompt template (Narrator Mode + Console Mode)
-- [[catalog.csv]] -- AWS services catalog with knowledge scores
+- [[learning/catalog.csv]] -- Player service progress
 - [[profile.json]] -- Learner profile with patterns and progression
