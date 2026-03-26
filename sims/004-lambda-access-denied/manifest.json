@@ -3,8 +3,19 @@
   "title": "PacketForge Lambda Lockout: The Missing Permission",
   "difficulty": 2,
   "category": "security",
-  "services": ["lambda", "iam", "dynamodb", "cloudwatch"],
-  "tags": ["iam-role", "lambda-execution-role", "access-denied", "dynamodb", "least-privilege"],
+  "services": [
+    "lambda",
+    "iam",
+    "dynamodb",
+    "cloudwatch"
+  ],
+  "tags": [
+    "iam-role",
+    "lambda-execution-role",
+    "access-denied",
+    "dynamodb",
+    "least-privilege"
+  ],
   "estimated_minutes": 20,
   "prerequisites": [],
   "exam_topics": [
@@ -54,9 +65,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "lambda-console",
         "service": "lambda",
         "artifacts": [
           "artifacts/lambda-config.json",
@@ -70,7 +80,6 @@
         ]
       },
       {
-        "name": "iam-console",
         "service": "iam",
         "artifacts": [
           "artifacts/iam-execution-role.json",
@@ -84,7 +93,6 @@
         ]
       },
       {
-        "name": "dynamodb-console",
         "service": "dynamodb",
         "artifacts": [
           "artifacts/dynamodb-table.json",
@@ -97,7 +105,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/metrics.csv",

@@ -3,8 +3,19 @@
   "title": "UrbanFleet Rush Hour Meltdown: The 502 Storm",
   "difficulty": 2,
   "category": "reliability",
-  "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
-  "tags": ["health-check", "target-group", "502-errors", "auto-scaling", "deregistration"],
+  "services": [
+    "elb",
+    "auto-scaling",
+    "ec2",
+    "cloudwatch"
+  ],
+  "tags": [
+    "health-check",
+    "target-group",
+    "502-errors",
+    "auto-scaling",
+    "deregistration"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -54,9 +65,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "elb-console",
         "service": "elb",
         "artifacts": [
           "artifacts/target-group-config.json",
@@ -72,7 +82,6 @@
         ]
       },
       {
-        "name": "autoscaling-console",
         "service": "auto-scaling",
         "artifacts": [
           "artifacts/asg-config.json",
@@ -86,7 +95,6 @@
         ]
       },
       {
-        "name": "ec2-console",
         "service": "ec2",
         "artifacts": [
           "artifacts/architecture-hint.txt",
@@ -99,7 +107,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/metrics.csv",

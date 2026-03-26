@@ -3,8 +3,19 @@
   "title": "Four Million Records, One by One",
   "difficulty": 2,
   "category": "performance",
-  "services": ["dynamodb", "cloudwatch", "lambda"],
-  "tags": ["dynamodb-scan", "query-vs-scan", "throttling", "provisioned-capacity", "gsi", "partition-key"],
+  "services": [
+    "dynamodb",
+    "cloudwatch",
+    "lambda"
+  ],
+  "tags": [
+    "dynamodb-scan",
+    "query-vs-scan",
+    "throttling",
+    "provisioned-capacity",
+    "gsi",
+    "partition-key"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -55,9 +66,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "dynamodb-console",
         "service": "dynamodb",
         "artifacts": [
           "artifacts/table-description.json",
@@ -72,7 +82,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/metrics.csv",
@@ -86,7 +95,6 @@
         ]
       },
       {
-        "name": "lambda-console",
         "service": "lambda",
         "artifacts": [
           "artifacts/lambda-code-snippet.txt",

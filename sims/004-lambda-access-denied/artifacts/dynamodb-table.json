@@ -33,7 +33,8 @@
     "TableSizeBytes": 312847102,
     "ProvisionedThroughput": {
       "ReadCapacityUnits": 0,
-      "WriteCapacityUnits": 0
+      "WriteCapacityUnits": 0,
+      "NumberOfDecreasesToday": 0
     },
     "SSEDescription": {
       "Status": "ENABLED",

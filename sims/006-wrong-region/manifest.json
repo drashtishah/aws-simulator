@@ -3,8 +3,18 @@
   "title": "A Function in the Wrong Room",
   "difficulty": 1,
   "category": "operations",
-  "services": ["lambda", "cloudwatch", "iam"],
-  "tags": ["wrong-region", "aws-cli", "environment-variables", "credential-configuration", "lambda-deployment"],
+  "services": [
+    "lambda",
+    "cloudwatch",
+    "iam"
+  ],
+  "tags": [
+    "wrong-region",
+    "aws-cli",
+    "environment-variables",
+    "credential-configuration",
+    "lambda-deployment"
+  ],
   "estimated_minutes": 15,
   "prerequisites": [],
   "exam_topics": [
@@ -54,9 +64,8 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "lambda-console",
         "service": "lambda",
         "artifacts": [
           "artifacts/lambda-config.json",
@@ -70,7 +79,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/cloudwatch-logs.txt",
@@ -84,7 +92,6 @@
         ]
       },
       {
-        "name": "iam-console",
         "service": "iam",
         "artifacts": [
           "artifacts/cli-output.txt"

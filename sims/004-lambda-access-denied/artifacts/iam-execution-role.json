@@ -27,12 +27,6 @@
         "Key": "ManagedBy",
         "Value": "terraform"
       }
-    ],
-    "AttachedPolicies": [
-      {
-        "PolicyName": "packetforge-threat-sync-policy",
-        "PolicyArn": "arn:aws:iam::672913845210:policy/packetforge-threat-sync-policy"
-      }
     ]
   }
 }
