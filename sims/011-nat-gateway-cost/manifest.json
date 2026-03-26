@@ -3,8 +3,19 @@
   "title": "Nine Hundred Dollars for Nothing",
   "difficulty": 1,
   "category": "cost",
-  "services": ["nat-gateway", "s3", "vpc", "cloudwatch"],
-  "tags": ["nat-gateway", "vpc-endpoint", "data-transfer-cost", "s3-gateway-endpoint", "cost-optimization"],
+  "services": [
+    "nat-gateway",
+    "s3",
+    "vpc",
+    "cloudwatch"
+  ],
+  "tags": [
+    "nat-gateway",
+    "vpc-endpoint",
+    "data-transfer-cost",
+    "s3-gateway-endpoint",
+    "cost-optimization"
+  ],
   "estimated_minutes": 15,
   "prerequisites": [],
   "exam_topics": [
@@ -49,11 +60,13 @@
       ],
       "max_hints_before_nudge": 3
     },
-    "agents": [
+    "consoles": [
       {
-        "name": "vpc-console",
         "service": "vpc",
-        "covers": ["nat-gateway", "vpc"],
+        "covers": [
+          "nat-gateway",
+          "vpc"
+        ],
         "artifacts": [
           "artifacts/architecture-hint.txt",
           "artifacts/vpc-config.json",
@@ -70,7 +83,6 @@
         ]
       },
       {
-        "name": "s3-console",
         "service": "s3",
         "artifacts": [],
         "capabilities": [
@@ -80,7 +92,6 @@
         ]
       },
       {
-        "name": "cloudwatch-console",
         "service": "cloudwatch",
         "artifacts": [
           "artifacts/cost-explorer.csv"

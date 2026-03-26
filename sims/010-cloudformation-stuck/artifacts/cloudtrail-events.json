@@ -14,56 +14,7 @@
           "ResourceName": "threadline-prod-db"
         }
       ],
-      "CloudTrailEvent": {
-        "eventVersion": "1.08",
-        "userIdentity": {
-          "type": "IAMUser",
-          "principalId": "AIDAEXAMPLEUSERID001",
-          "arn": "arn:aws:iam::123456789012:user/mchen",
-          "accountId": "123456789012",
-          "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
-          "userName": "mchen",
-          "sessionContext": {
-            "sessionIssuer": {},
-            "webIdFederationData": {},
-            "attributes": {
-              "creationDate": "2026-03-20T18:30:00.000Z",
-              "mfaAuthenticated": "true"
-            }
-          }
-        },
-        "eventTime": "2026-03-20T21:47:13.000Z",
-        "eventSource": "rds.amazonaws.com",
-        "eventName": "DeleteDBInstance",
-        "awsRegion": "us-east-1",
-        "sourceIPAddress": "198.51.100.42",
-        "userAgent": "console.amazonaws.com",
-        "requestParameters": {
-          "dBInstanceIdentifier": "threadline-prod-db",
-          "skipFinalSnapshot": true,
-          "deleteAutomatedBackups": false
-        },
-        "responseElements": {
-          "dBInstanceIdentifier": "threadline-prod-db",
-          "dBInstanceStatus": "deleting",
-          "engine": "postgres",
-          "engineVersion": "15.4",
-          "dBInstanceClass": "db.r5.large",
-          "allocatedStorage": 100,
-          "masterUsername": "threadline_admin",
-          "dBName": "threadline_production",
-          "availabilityZone": "us-east-1a",
-          "multiAZ": false,
-          "storageType": "gp3"
-        },
-        "requestID": "3e4f5a6b-7c8d-9e0f-1a2b-3c4d5e6f7a8b",
-        "eventID": "b7c8d9e0-f1a2-3b4c-5d6e-7f8a9b0c1d2e",
-        "readOnly": false,
-        "eventType": "AwsApiCall",
-        "managementEvent": true,
-        "recipientAccountId": "123456789012",
-        "eventCategory": "Management"
-      }
+      "CloudTrailEvent": "{\"eventVersion\":\"1.08\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAEXAMPLEUSERID001\",\"arn\":\"arn:aws:iam::123456789012:user/mchen\",\"accountId\":\"123456789012\",\"accessKeyId\":\"AKIAIOSFODNN7EXAMPLE\",\"userName\":\"mchen\",\"sessionContext\":{\"sessionIssuer\":{},\"webIdFederationData\":{},\"attributes\":{\"creationDate\":\"2026-03-20T18:30:00.000Z\",\"mfaAuthenticated\":\"true\"}}},\"eventTime\":\"2026-03-20T21:47:13.000Z\",\"eventSource\":\"rds.amazonaws.com\",\"eventName\":\"DeleteDBInstance\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"198.51.100.42\",\"userAgent\":\"console.amazonaws.com\",\"requestParameters\":{\"dBInstanceIdentifier\":\"threadline-prod-db\",\"skipFinalSnapshot\":true,\"deleteAutomatedBackups\":false},\"responseElements\":{\"dBInstanceIdentifier\":\"threadline-prod-db\",\"dBInstanceStatus\":\"deleting\",\"engine\":\"postgres\",\"engineVersion\":\"15.4\",\"dBInstanceClass\":\"db.r5.large\",\"allocatedStorage\":100,\"masterUsername\":\"threadline_admin\",\"dBName\":\"threadline_production\",\"availabilityZone\":\"us-east-1a\",\"multiAZ\":false,\"storageType\":\"gp3\"},\"requestID\":\"3e4f5a6b-7c8d-9e0f-1a2b-3c4d5e6f7a8b\",\"eventID\":\"b7c8d9e0-f1a2-3b4c-5d6e-7f8a9b0c1d2e\",\"readOnly\":false,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"123456789012\",\"eventCategory\":\"Management\"}"
     },
     {
       "EventId": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
@@ -79,52 +30,7 @@
           "ResourceName": "threadline-prod-stack"
         }
       ],
-      "CloudTrailEvent": {
-        "eventVersion": "1.08",
-        "userIdentity": {
-          "type": "AssumedRole",
-          "principalId": "AROAEXAMPLEROLEID002:codepipeline-session",
-          "arn": "arn:aws:sts::123456789012:assumed-role/threadline-deploy-role/codepipeline-session",
-          "accountId": "123456789012",
-          "accessKeyId": "ASIAEXAMPLEDEPLOYKEY",
-          "sessionContext": {
-            "sessionIssuer": {
-              "type": "Role",
-              "principalId": "AROAEXAMPLEROLEID002",
-              "arn": "arn:aws:iam::123456789012:role/threadline-deploy-role",
-              "accountId": "123456789012",
-              "userName": "threadline-deploy-role"
-            },
-            "webIdFederationData": {},
-            "attributes": {
-              "creationDate": "2026-03-23T14:10:00.000Z",
-              "mfaAuthenticated": "false"
-            }
-          }
-        },
-        "eventTime": "2026-03-23T14:12:42.000Z",
-        "eventSource": "cloudformation.amazonaws.com",
-        "eventName": "UpdateStack",
-        "awsRegion": "us-east-1",
-        "sourceIPAddress": "codepipeline.amazonaws.com",
-        "userAgent": "codepipeline.amazonaws.com",
-        "requestParameters": {
-          "stackName": "threadline-prod-stack",
-          "roleARN": "arn:aws:iam::123456789012:role/threadline-deploy-role",
-          "capabilities": ["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
-          "templateURL": "https://s3.amazonaws.com/threadline-deploy-artifacts/templates/prod-stack-v247.yaml"
-        },
-        "responseElements": {
-          "stackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-        },
-        "requestID": "5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c",
-        "eventID": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
-        "readOnly": false,
-        "eventType": "AwsApiCall",
-        "managementEvent": true,
-        "recipientAccountId": "123456789012",
-        "eventCategory": "Management"
-      }
+      "CloudTrailEvent": "{\"eventVersion\":\"1.08\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROAEXAMPLEROLEID002:codepipeline-session\",\"arn\":\"arn:aws:sts::123456789012:assumed-role/threadline-deploy-role/codepipeline-session\",\"accountId\":\"123456789012\",\"accessKeyId\":\"ASIAEXAMPLEDEPLOYKEY\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"principalId\":\"AROAEXAMPLEROLEID002\",\"arn\":\"arn:aws:iam::123456789012:role/threadline-deploy-role\",\"accountId\":\"123456789012\",\"userName\":\"threadline-deploy-role\"},\"webIdFederationData\":{},\"attributes\":{\"creationDate\":\"2026-03-23T14:10:00.000Z\",\"mfaAuthenticated\":\"false\"}}},\"eventTime\":\"2026-03-23T14:12:42.000Z\",\"eventSource\":\"cloudformation.amazonaws.com\",\"eventName\":\"UpdateStack\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"codepipeline.amazonaws.com\",\"userAgent\":\"codepipeline.amazonaws.com\",\"requestParameters\":{\"stackName\":\"threadline-prod-stack\",\"roleARN\":\"arn:aws:iam::123456789012:role/threadline-deploy-role\",\"capabilities\":[\"CAPABILITY_IAM\",\"CAPABILITY_NAMED_IAM\"],\"templateURL\":\"https://s3.amazonaws.com/threadline-deploy-artifacts/templates/prod-stack-v247.yaml\"},\"responseElements\":{\"stackId\":\"arn:aws:cloudformation:us-east-1:123456789012:stack/threadline-prod-stack/a1b2c3d4-e5f6-7890-abcd-ef1234567890\"},\"requestID\":\"5f6a7b8c-9d0e-1f2a-3b4c-5d6e7f8a9b0c\",\"eventID\":\"d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a\",\"readOnly\":false,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"123456789012\",\"eventCategory\":\"Management\"}"
     },
     {
       "EventId": "a9b8c7d6-e5f4-3a2b-1c0d-9e8f7a6b5c4d",
@@ -140,44 +46,7 @@
           "ResourceName": "threadline-prod-stack"
         }
       ],
-      "CloudTrailEvent": {
-        "eventVersion": "1.08",
-        "userIdentity": {
-          "type": "AssumedRole",
-          "principalId": "AROAEXAMPLEROLEID002:codepipeline-session",
-          "arn": "arn:aws:sts::123456789012:assumed-role/threadline-deploy-role/codepipeline-session",
-          "accountId": "123456789012",
-          "accessKeyId": "ASIAEXAMPLEDEPLOYKEY",
-          "sessionContext": {
-            "sessionIssuer": {
-              "type": "Role",
-              "principalId": "AROAEXAMPLEROLEID002",
-              "arn": "arn:aws:iam::123456789012:role/threadline-deploy-role",
-              "accountId": "123456789012",
-              "userName": "threadline-deploy-role"
-            }
-          }
-        },
-        "eventTime": "2026-03-24T14:08:15.000Z",
-        "eventSource": "cloudformation.amazonaws.com",
-        "eventName": "UpdateStack",
-        "awsRegion": "us-east-1",
-        "sourceIPAddress": "72.21.198.66",
-        "userAgent": "console.amazonaws.com",
-        "errorCode": "ValidationError",
-        "errorMessage": "Stack [threadline-prod-stack] is in UPDATE_ROLLBACK_FAILED state and can not be updated.",
-        "requestParameters": {
-          "stackName": "threadline-prod-stack"
-        },
-        "responseElements": null,
-        "requestID": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
-        "eventID": "a9b8c7d6-e5f4-3a2b-1c0d-9e8f7a6b5c4d",
-        "readOnly": false,
-        "eventType": "AwsApiCall",
-        "managementEvent": true,
-        "recipientAccountId": "123456789012",
-        "eventCategory": "Management"
-      }
+      "CloudTrailEvent": "{\"eventVersion\":\"1.08\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROAEXAMPLEROLEID002:codepipeline-session\",\"arn\":\"arn:aws:sts::123456789012:assumed-role/threadline-deploy-role/codepipeline-session\",\"accountId\":\"123456789012\",\"accessKeyId\":\"ASIAEXAMPLEDEPLOYKEY\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"principalId\":\"AROAEXAMPLEROLEID002\",\"arn\":\"arn:aws:iam::123456789012:role/threadline-deploy-role\",\"accountId\":\"123456789012\",\"userName\":\"threadline-deploy-role\"}}},\"eventTime\":\"2026-03-24T14:08:15.000Z\",\"eventSource\":\"cloudformation.amazonaws.com\",\"eventName\":\"UpdateStack\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"72.21.198.66\",\"userAgent\":\"console.amazonaws.com\",\"errorCode\":\"ValidationError\",\"errorMessage\":\"Stack [threadline-prod-stack] is in UPDATE_ROLLBACK_FAILED state and can not be updated.\",\"requestParameters\":{\"stackName\":\"threadline-prod-stack\"},\"responseElements\":null,\"requestID\":\"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\"eventID\":\"a9b8c7d6-e5f4-3a2b-1c0d-9e8f7a6b5c4d\",\"readOnly\":false,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"123456789012\",\"eventCategory\":\"Management\"}"
     }
   ]
 }
