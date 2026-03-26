@@ -40,3 +40,11 @@ Start playing:
 ```
 
 The simulator presents available incidents based on your current level. You pick one. You investigate.
+
+## Example Simulation
+
+### Four Million Records, One by One
+
+An e-commerce startup's product search goes live. Within minutes, the order pipeline stalls. The new Lambda function scans four million DynamoDB items on every request, consuming all provisioned read capacity. The orders table starves. You trace the symptoms from Lambda timeouts back to a full-table Scan hiding behind a FilterExpression that filters nothing until after all the data is already read.
+
+[![asciicast](https://asciinema.org/a/d7CMYd0AFgnlsMqZ.svg)](https://asciinema.org/a/d7CMYd0AFgnlsMqZ)
