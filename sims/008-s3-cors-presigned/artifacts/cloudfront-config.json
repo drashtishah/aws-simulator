@@ -1,51 +1,120 @@
 {
-  "_comment": "Partial output of: aws cloudfront get-distribution-config --id EDFDVBD6EXAMPLE",
-  "_timestamp": "2024-09-12T16:45:00Z",
   "Distribution": {
     "Id": "EDFDVBD6EXAMPLE",
-    "DomainName": "d-EDFDVBD6EXAMPLE.cloudfront.net",
+    "ARN": "arn:aws:cloudfront::123456789012:distribution/EDFDVBD6EXAMPLE",
     "Status": "Deployed",
-    "Origins": {
-      "Quantity": 1,
-      "Items": [
-        {
-          "Id": "pollen-docs-prod-origin",
-          "DomainName": "pollen-docs-prod.s3.us-east-1.amazonaws.com",
-          "S3OriginConfig": {
-            "OriginAccessIdentity": ""
-          },
-          "OriginAccessControlId": "E2QWRUHAPOMQZL"
-        }
-      ]
+    "DomainName": "d-EDFDVBD6EXAMPLE.cloudfront.net",
+    "ActiveTrustedSigners": {
+      "Enabled": false,
+      "Quantity": 0
     },
-    "DefaultCacheBehavior": {
-      "TargetOriginId": "pollen-docs-prod-origin",
-      "ViewerProtocolPolicy": "redirect-to-https",
-      "AllowedMethods": {
-        "Quantity": 7,
-        "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
-        "CachedMethods": {
-          "Quantity": 2,
-          "Items": ["GET", "HEAD"]
+    "DistributionConfig": {
+      "CallerReference": "pollen-docs-cf-2024-09-01",
+      "Comment": "Pollen Systems document upload distribution",
+      "Enabled": true,
+      "HttpVersion": "http2",
+      "IsIPV6Enabled": true,
+      "PriceClass": "PriceClass_100",
+      "Aliases": {
+        "Quantity": 1,
+        "Items": [
+          "uploads.pollen.io"
+        ]
+      },
+      "Origins": {
+        "Quantity": 1,
+        "Items": [
+          {
+            "Id": "pollen-docs-prod-origin",
+            "DomainName": "pollen-docs-prod.s3.us-east-1.amazonaws.com",
+            "OriginPath": "",
+            "S3OriginConfig": {
+              "OriginAccessIdentity": ""
+            },
+            "OriginAccessControlId": "E2QWRUHAPOMQZL",
+            "CustomHeaders": {
+              "Quantity": 0
+            },
+            "ConnectionAttempts": 3,
+            "ConnectionTimeout": 10
+          }
+        ]
+      },
+      "DefaultCacheBehavior": {
+        "TargetOriginId": "pollen-docs-prod-origin",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "Compress": true,
+        "SmoothStreaming": false,
+        "FieldLevelEncryptionId": "",
+        "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+        "OriginRequestPolicyId": null,
+        "AllowedMethods": {
+          "Quantity": 7,
+          "Items": [
+            "GET",
+            "HEAD",
+            "OPTIONS",
+            "PUT",
+            "POST",
+            "PATCH",
+            "DELETE"
+          ],
+          "CachedMethods": {
+            "Quantity": 2,
+            "Items": [
+              "GET",
+              "HEAD"
+            ]
+          }
+        },
+        "ForwardedValues": {
+          "QueryString": true,
+          "Cookies": {
+            "Forward": "none"
+          },
+          "Headers": {
+            "Quantity": 0,
+            "Items": []
+          },
+          "QueryStringCacheKeys": {
+            "Quantity": 0
+          }
+        },
+        "TrustedSigners": {
+          "Enabled": false,
+          "Quantity": 0
+        },
+        "MinTTL": 0,
+        "DefaultTTL": 86400,
+        "MaxTTL": 31536000
+      },
+      "CacheBehaviors": {
+        "Quantity": 0
+      },
+      "CustomErrorResponses": {
+        "Quantity": 0
+      },
+      "Logging": {
+        "Enabled": false,
+        "IncludeCookies": false,
+        "Bucket": "",
+        "Prefix": ""
+      },
+      "ViewerCertificate": {
+        "ACMCertificateArn": "arn:aws:acm:us-east-1:123456789012:certificate/abc12345-1234-1234-1234-abc123456789",
+        "SSLSupportMethod": "sni-only",
+        "MinimumProtocolVersion": "TLSv1.2_2021",
+        "Certificate": "arn:aws:acm:us-east-1:123456789012:certificate/abc12345-1234-1234-1234-abc123456789",
+        "CertificateSource": "acm"
+      },
+      "Restrictions": {
+        "GeoRestriction": {
+          "RestrictionType": "none",
+          "Quantity": 0
         }
       },
-      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
-      "_cache_policy_name": "CachingOptimized",
-      "_cache_policy_note": "This policy caches based on query strings but does NOT include Origin in the cache key. Responses are cached without varying on the Origin header.",
-      "OriginRequestPolicyId": null,
-      "_origin_request_policy_note": "PROBLEM: No origin request policy is set. The Origin, Access-Control-Request-Headers, and Access-Control-Request-Method headers are NOT forwarded to S3. S3 never sees the Origin header and cannot evaluate CORS rules even if they existed.",
-      "Compress": true,
-      "SmoothStreaming": false
-    },
-    "_fix": {
-      "OriginRequestPolicyId": "88a5eaf4-2fd4-4709-b370-b4c650ea3fcf",
-      "_origin_request_policy_name": "Managed-CORS-S3Origin",
-      "_description": "AWS managed policy that forwards Origin, Access-Control-Request-Headers, and Access-Control-Request-Method to the origin",
-      "_headers_forwarded": [
-        "Origin",
-        "Access-Control-Request-Headers",
-        "Access-Control-Request-Method"
-      ]
+      "WebACLId": ""
     }
-  }
+  },
+  "ETag": "E2QWRUHEXAMPLE"
 }
