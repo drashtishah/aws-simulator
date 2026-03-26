@@ -40,6 +40,13 @@ Before starting, confirm these files exist:
 7. Look for patterns that involve 2-3 services interacting (not single-service trivial issues)
 8. Cross-reference findings against `references/exam-topics.md` to ensure exam domain coverage
 9. Prioritize patterns that cover multiple exam domains or certifications
+9b. For each service in the proposed scenarios, call `aws-knowledge-mcp-server` to retrieve:
+    - The exact API response schema for the primary API actions (e.g., `DescribeSecurityGroups`, `GetBucketPolicy`)
+    - Real error codes and messages emitted by the service in failure states
+    - CloudWatch metric names published by the service (for `metrics.csv` artifact accuracy)
+    - IAM action names used to investigate and fix the issue (for `cloudtrail-events.json` accuracy)
+    - The Agent SOP most relevant to remediating this type of incident
+    Store all of this as reference data for Phase 4 artifact generation and validation.
 
 ### Phase 3: Propose Scenarios
 
@@ -74,9 +81,10 @@ For each approved scenario, execute steps 12-19:
 - Narrator personality: match the incident tone (3am page vs business-hours escalation)
 - Story beats: minimum `start` and `fix_validated` triggers; add time-based pressure beats
 - Hints: 3-5 hints progressing from vague to specific
-- Agents: minimum 2 service agents; one per involved AWS service
-- Every service in the `services` array MUST have a corresponding agent
+- Agents: minimum 2 service consoles; one per involved AWS service
+- Every service in the `services` array MUST have a corresponding console entry
 - Fix criteria: at least 2, with at least 1 marked `required: true`
+- Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters
 - Exam topics: reference real domains from `references/exam-topics.md`
 
 #### 16. Generate story.md
@@ -97,6 +105,7 @@ For each approved scenario, execute steps 12-19:
 
 - Obsidian frontmatter matching `story.md` tags
 - Sections: Root Cause, Timeline (table), Correct Remediation (numbered), Key Concepts, AWS Documentation Links, Learning Objectives
+- The numbered remediation steps must align with the Agent SOP retrieved in step 9b, presented in the same sequence the SOP prescribes, adapted to the sim's specific company and resources
 - AWS documentation links must point to real docs pages
 - Key Concepts should explain 2-3 AWS concepts at the appropriate difficulty depth
 - Learning objectives should be concrete and testable
@@ -142,6 +151,12 @@ Rules for context.txt:
 - Markers use the format `[ALL CAPS DESCRIPTION]` next to the affected resource
 - May include annotation lines below the diagram explaining the problem area
 
+Before generating each service-specific artifact, use the `aws-knowledge-mcp-server` data retrieved in step 9b to verify accuracy:
+- JSON field names and types must match the real AWS API response exactly
+- Error codes must use the exact strings AWS returns (e.g., `"AccessDeniedException"` not `"AccessDenied"`)
+- CloudWatch metric names must be from the service's published metric list
+- IAM action names in `cloudtrail-events.json` must use the correct format (e.g., `"s3:GetBucketPolicy"`)
+
 Common artifact types (generate as needed based on services involved):
 
 - `bucket-policy.json` -- S3 bucket policy (native AWS JSON)
@@ -169,8 +184,8 @@ Artifact rules:
 #### 19. Validate the package
 
 - Verify `manifest.json` structure matches `assets/manifest-schema.json`
-- Confirm every artifact referenced in manifest `agents[].artifacts` exists
-- Confirm every service in `manifest.services` has a corresponding agent
+- Confirm every artifact referenced in manifest `consoles[].artifacts` exists
+- Confirm every service in `manifest.services` has a corresponding console entry
 - Confirm `context.txt` exists and follows the briefing card format (6 fields, one per line)
 - Confirm `architecture-hint.txt` exists and contains NO problem markers
 - Confirm `architecture-resolution.txt` exists and contains problem markers
@@ -268,7 +283,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 3. Narrative language follows the style guide above -- quiet, observational, impact shown through concrete detail not dramatic language
 4. AWS vocabulary throughout -- use official service names (Amazon S3, not "S3 storage"), official API action names (PutBucketPolicy, not "change bucket settings")
 5. Artifacts in native AWS formats -- never wrap AWS JSON/logs in markdown code blocks within artifact files
-6. Every sim requires at least 2 service agents plus the narrator
+6. Every sim requires at least 2 service consoles
 7. Three diagram files are REQUIRED for every sim: `context.txt`, `architecture-hint.txt`, `architecture-resolution.txt`
 8. Difficulty must match cert level: Level 1-2 for Associate services, Level 3-4 for Professional/Specialty services
 9. Company names must feel real -- match the industry, sound like a startup or enterprise that could exist
