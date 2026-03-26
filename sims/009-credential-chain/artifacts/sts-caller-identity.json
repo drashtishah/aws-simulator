@@ -1,14 +1,5 @@
 {
-  "_comment": "CURRENT OUTPUT -- what the CI machine returns (wrong identity)",
-  "current": {
     "UserId": "AIDAIOSFODNN7EXAMPLE",
     "Account": "123456789012",
     "Arn": "arn:aws:iam::123456789012:user/raj.patel"
-  },
-  "_comment2": "EXPECTED OUTPUT -- what it should return if instance profile were used",
-  "expected": {
-    "UserId": "AROAIOSFODNN7EXAMPLE:i-0f4e3d2c1b0a9f8e7",
-    "Account": "123456789012",
-    "Arn": "arn:aws:sts::123456789012:assumed-role/fenwick-ci-deploy-role/i-0f4e3d2c1b0a9f8e7"
-  }
 }

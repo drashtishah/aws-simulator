@@ -20,8 +20,7 @@
   "LoginProfile": {
     "UserName": "raj.patel",
     "CreateDate": "2024-11-15T09:22:18Z",
-    "PasswordResetRequired": false,
-    "_note": "Console login is disabled -- password was deleted during offboarding"
+    "PasswordResetRequired": false
   },
   "AccessKeyMetadata": [
     {
@@ -38,6 +37,5 @@
     "Region": "us-west-2"
   },
   "AttachedPolicies": [],
-  "Groups": [],
-  "_summary": "IAM user raj.patel was deactivated on 2025-11-08. Console access removed. Access key AKIAIOSFODNN7EXAMPLE marked Inactive. No policies attached. The key was last used on 2026-03-19 from the CI machine, returning AccessDenied."
+  "Groups": []
 }
