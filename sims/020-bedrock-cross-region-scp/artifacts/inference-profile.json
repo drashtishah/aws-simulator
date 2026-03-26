@@ -2,7 +2,7 @@
   "inferenceProfile": {
     "inferenceProfileName": "US Anthropic Claude 3.5 Sonnet v2",
     "inferenceProfileId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-    "inferenceProfileArn": "arn:aws:bedrock:us:anthropic:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "inferenceProfileArn": "arn:aws:bedrock:us-east-1::inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0",
     "description": "Cross-region inference profile for Anthropic Claude 3.5 Sonnet v2 across US regions",
     "createdAt": "2024-11-15T00:00:00Z",
     "updatedAt": "2024-11-15T00:00:00Z",

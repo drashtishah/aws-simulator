@@ -4,7 +4,7 @@
     "TableStatus": "ACTIVE",
     "TableArn": "arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats",
     "TableId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "CreationDateTime": "2025-11-02T09:18:44Z",
+    "CreationDateTime": 1762070324.0,
     "AttributeDefinitions": [
       {
         "AttributeName": "threat_id",
@@ -27,7 +27,7 @@
     ],
     "BillingModeSummary": {
       "BillingMode": "PAY_PER_REQUEST",
-      "LastUpdateToPayPerRequestDateTime": "2025-11-02T09:18:44Z"
+      "LastUpdateToPayPerRequestDateTime": 1762070324.0
     },
     "ItemCount": 847293,
     "TableSizeBytes": 312847102,
@@ -40,16 +40,6 @@
       "Status": "ENABLED",
       "SSEType": "KMS",
       "KMSMasterKeyArn": "arn:aws:kms:us-east-1:672913845210:key/mrk-abc123def456"
-    },
-    "Tags": [
-      {
-        "Key": "Application",
-        "Value": "packetforge-threat-pipeline"
-      },
-      {
-        "Key": "Environment",
-        "Value": "production"
-      }
-    ]
+    }
   }
 }

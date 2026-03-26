@@ -17,7 +17,7 @@
   ],
   "ScalingPolicies": [
     {
-      "PolicyARN": "arn:aws:autoscaling:us-east-1:891377106058:scalingPolicy:7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d:resource/sagemaker/endpoint/arcline-route-optimizer/variant/AllTraffic:policyName/arcline-route-scaling-policy",
+      "PolicyARN": "arn:aws:application-autoscaling:us-east-1:891377106058:scalingPolicy:7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d:resource/sagemaker/endpoint/arcline-route-optimizer/variant/AllTraffic:policyName/arcline-route-scaling-policy",
       "PolicyName": "arcline-route-scaling-policy",
       "ServiceNamespace": "sagemaker",
       "ResourceId": "endpoint/arcline-route-optimizer/variant/AllTraffic",

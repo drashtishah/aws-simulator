@@ -65,6 +65,8 @@
       }
     }
   ],
-  "HealthCheckId": "a1b2c3d4-5678-90ab-cdef-111111111111",
-  "OverallStatus": "UNHEALTHY"
+  "ResponseMetadata": {
+    "RequestId": "e5f6a7b8-c9d0-1234-ef56-789012345678",
+    "HTTPStatusCode": 200
+  }
 }

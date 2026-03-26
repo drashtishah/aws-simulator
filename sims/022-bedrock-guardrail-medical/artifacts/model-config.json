@@ -9,7 +9,7 @@
     "createdAt": "2025-11-02T14:30:00Z"
   },
   "invocationConfig": {
-    "guardrailIdentifier": "gr-patchwork-clinical-safety",
+    "guardrailIdentifier": "patchwork01",
     "guardrailVersion": "3",
     "trace": "ENABLED"
   },

@@ -1,70 +1,93 @@
 {
-  "CacheParameterGroupName": "trellis-redis-params",
-  "CacheParameterGroupFamily": "redis7",
-  "Description": "Custom parameter group for Trellis Health production Redis",
-  "IsGlobal": false,
-  "ARN": "arn:aws:elasticache:us-east-1:123456789012:parametergroup:trellis-redis-params",
-  "Parameters": [
-    {
-      "ParameterName": "maxmemory-policy",
-      "ParameterValue": "noeviction",
-      "Description": "The eviction policy for keys when maximum memory is reached",
-      "Source": "user",
-      "DataType": "string",
-      "AllowedValues": "volatile-lru,allkeys-lru,volatile-lfu,allkeys-lfu,volatile-random,allkeys-random,volatile-ttl,noeviction",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "2.8.6",
-      "ChangeType": "immediate"
-    },
-    {
-      "ParameterName": "maxmemory-samples",
-      "ParameterValue": "5",
-      "Description": "Number of keys to sample when evicting",
-      "Source": "system",
-      "DataType": "integer",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "2.8.6",
-      "ChangeType": "immediate"
-    },
-    {
-      "ParameterName": "timeout",
-      "ParameterValue": "0",
-      "Description": "Close connection after client is idle for N seconds (0 to disable)",
-      "Source": "system",
-      "DataType": "integer",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "2.8.6",
-      "ChangeType": "immediate"
-    },
-    {
-      "ParameterName": "tcp-keepalive",
-      "ParameterValue": "300",
-      "Description": "TCP keepalive interval in seconds",
-      "Source": "system",
-      "DataType": "integer",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "2.8.6",
-      "ChangeType": "immediate"
-    },
-    {
-      "ParameterName": "activedefrag",
-      "ParameterValue": "no",
-      "Description": "Enable active defragmentation",
-      "Source": "system",
-      "DataType": "string",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "4.0.0",
-      "ChangeType": "immediate"
-    },
-    {
-      "ParameterName": "hz",
-      "ParameterValue": "10",
-      "Description": "Server background tasks frequency",
-      "Source": "system",
-      "DataType": "integer",
-      "IsModifiable": true,
-      "MinimumEngineVersion": "2.8.6",
-      "ChangeType": "immediate"
+  "_comment": "Combined output: DescribeCacheParameterGroups + DescribeCacheParameters for trellis-redis-params",
+  "DescribeCacheParameterGroups": {
+    "CacheParameterGroups": [
+      {
+        "CacheParameterGroupName": "trellis-redis-params",
+        "CacheParameterGroupFamily": "redis7",
+        "Description": "Custom parameter group for Trellis Health production Redis",
+        "IsGlobal": false,
+        "ARN": "arn:aws:elasticache:us-east-1:123456789012:parametergroup:trellis-redis-params"
+      }
+    ],
+    "ResponseMetadata": {
+      "RequestId": "e5f6a7b8-c9d0-1234-ef56-789012345678",
+      "HTTPStatusCode": 200
     }
-  ]
+  },
+  "DescribeCacheParameters": {
+    "Parameters": [
+      {
+        "ParameterName": "maxmemory-policy",
+        "ParameterValue": "noeviction",
+        "Description": "The eviction policy for keys when maximum memory is reached",
+        "Source": "user",
+        "DataType": "string",
+        "AllowedValues": "volatile-lru,allkeys-lru,volatile-lfu,allkeys-lfu,volatile-random,allkeys-random,volatile-ttl,noeviction",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "2.8.6",
+        "ChangeType": "immediate"
+      },
+      {
+        "ParameterName": "maxmemory-samples",
+        "ParameterValue": "5",
+        "Description": "Number of keys to sample when evicting",
+        "Source": "system",
+        "DataType": "integer",
+        "AllowedValues": "1-20",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "2.8.6",
+        "ChangeType": "immediate"
+      },
+      {
+        "ParameterName": "timeout",
+        "ParameterValue": "0",
+        "Description": "Close connection after client is idle for N seconds (0 to disable)",
+        "Source": "system",
+        "DataType": "integer",
+        "AllowedValues": "0-",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "2.8.6",
+        "ChangeType": "immediate"
+      },
+      {
+        "ParameterName": "tcp-keepalive",
+        "ParameterValue": "300",
+        "Description": "TCP keepalive interval in seconds",
+        "Source": "system",
+        "DataType": "integer",
+        "AllowedValues": "0-",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "2.8.6",
+        "ChangeType": "immediate"
+      },
+      {
+        "ParameterName": "activedefrag",
+        "ParameterValue": "no",
+        "Description": "Enable active defragmentation",
+        "Source": "system",
+        "DataType": "string",
+        "AllowedValues": "yes,no",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "4.0.0",
+        "ChangeType": "immediate"
+      },
+      {
+        "ParameterName": "hz",
+        "ParameterValue": "10",
+        "Description": "Server background tasks frequency",
+        "Source": "system",
+        "DataType": "integer",
+        "AllowedValues": "1-500",
+        "IsModifiable": true,
+        "MinimumEngineVersion": "2.8.6",
+        "ChangeType": "immediate"
+      }
+    ],
+    "CacheNodeTypeSpecificParameters": [],
+    "ResponseMetadata": {
+      "RequestId": "f6a7b8c9-d0e1-2345-f678-901234567890",
+      "HTTPStatusCode": 200
+    }
+  }
 }

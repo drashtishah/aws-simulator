@@ -1,4 +1,5 @@
 {
+  "RoleName": "packetforge-threat-sync-role",
   "PolicyName": "packetforge-threat-sync-policy",
   "PolicyDocument": {
     "Version": "2012-10-17",

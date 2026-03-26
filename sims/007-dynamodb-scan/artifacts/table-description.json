@@ -35,8 +35,7 @@
     "TableSizeBytes": 1847293440,
     "ItemCount": 4012387,
     "BillingModeSummary": {
-      "BillingMode": "PROVISIONED",
-      "LastUpdateToPayPerRequestDateTime": null
+      "BillingMode": "PROVISIONED"
     },
     "GlobalSecondaryIndexes": [],
     "LocalSecondaryIndexes": [],

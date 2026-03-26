@@ -3,7 +3,9 @@
     "Id": "EDFDVBD6EXAMPLE",
     "ARN": "arn:aws:cloudfront::123456789012:distribution/EDFDVBD6EXAMPLE",
     "Status": "Deployed",
-    "DomainName": "d-EDFDVBD6EXAMPLE.cloudfront.net",
+    "LastModifiedTime": "2024-09-01T12:00:00.000Z",
+    "InProgressInvalidationBatches": 0,
+    "DomainName": "dEDFVBD6EXAMPLE.cloudfront.net",
     "ActiveTrustedSigners": {
       "Enabled": false,
       "Quantity": 0

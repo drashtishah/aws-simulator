@@ -1,122 +1,143 @@
 {
   "guardrailTrace": {
-    "traceId": "trace-8f3a2b1c-4d5e-6f78-9012-abcdef345678",
-    "guardrailId": "gr-patchwork-clinical-safety",
-    "guardrailVersion": "3",
-    "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
-    "timestamp": "2026-03-25T08:42:17.334Z",
-    "inputAssessment": {
-      "topicPolicy": {
-        "topics": [
-          {
-            "name": "Medical Advice and Diagnosis",
-            "type": "DENY",
-            "action": "BLOCKED",
-            "matchedPhrases": [
-              "chest pain",
-              "shortness of breath"
-            ],
-            "confidence": 0.94
-          }
-        ]
-      },
-      "contentPolicy": {
-        "filters": [
-          {
-            "type": "HATE",
-            "action": "ALLOWED",
-            "confidence": 0.01
-          },
-          {
-            "type": "INSULTS",
-            "action": "ALLOWED",
-            "confidence": 0.00
-          },
-          {
-            "type": "SEXUAL",
-            "action": "ALLOWED",
-            "confidence": 0.00
-          },
-          {
-            "type": "VIOLENCE",
-            "action": "ALLOWED",
-            "confidence": 0.03
-          },
-          {
-            "type": "MISCONDUCT",
-            "action": "ALLOWED",
-            "confidence": 0.01
-          }
-        ]
-      },
-      "wordPolicy": {
-        "matchedWords": []
+    "traceId": "gt-8f3a2b1c",
+    "action": "INTERVENED",
+    "inputAssessments": [
+      {
+        "topicPolicy": {
+          "topics": [
+            {
+              "name": "Medical Advice and Diagnosis",
+              "type": "DENY",
+              "action": "BLOCKED",
+              "detected": true
+            }
+          ]
+        },
+        "contentPolicy": {
+          "filters": [
+            {
+              "type": "HATE",
+              "confidence": "NONE",
+              "action": "NONE"
+            },
+            {
+              "type": "INSULTS",
+              "confidence": "NONE",
+              "action": "NONE"
+            },
+            {
+              "type": "SEXUAL",
+              "confidence": "NONE",
+              "action": "NONE"
+            },
+            {
+              "type": "VIOLENCE",
+              "confidence": "NONE",
+              "action": "NONE"
+            },
+            {
+              "type": "MISCONDUCT",
+              "confidence": "NONE",
+              "action": "NONE"
+            }
+          ]
+        },
+        "wordPolicy": {
+          "customWords": [],
+          "managedWordLists": []
+        }
       }
-    },
-    "outputAssessment": null,
-    "action": "BLOCKED",
-    "blockedResponse": "I'm sorry, I can't help with that request.",
-    "modelInvoked": false,
-    "input": {
-      "text": "I've been having chest pain for two days and shortness of breath when I climb stairs. It gets worse in the evening. I'm 54 years old and I take lisinopril for blood pressure."
-    },
-    "latencyMs": 47
+    ],
+    "outputAssessments": [],
+    "_note": "Input text: 'I've been having chest pain for two days and shortness of breath when I climb stairs. It gets worse in the evening. I'm 54 years old and I take lisinopril for blood pressure.' Guardrail intervened before the model was invoked. Blocked response returned: 'I'm sorry, I can't help with that request.'"
   },
-  "additionalTraces": [
+  "additionalSamples": [
     {
-      "traceId": "trace-1a2b3c4d-5e6f-7890-1234-abcdef567890",
-      "timestamp": "2026-03-25T08:39:04.112Z",
-      "input": {
-        "text": "My daughter has had a fever of 101.5 for three days and she's complaining of a sore throat."
-      },
-      "action": "BLOCKED",
-      "matchedTopic": "Medical Advice and Diagnosis",
-      "matchedPhrases": ["fever", "sore throat"],
-      "modelInvoked": false
+      "traceId": "gt-1a2b3c4d",
+      "action": "INTERVENED",
+      "inputAssessments": [
+        {
+          "topicPolicy": {
+            "topics": [
+              {
+                "name": "Medical Advice and Diagnosis",
+                "type": "DENY",
+                "action": "BLOCKED",
+                "detected": true
+              }
+            ]
+          }
+        }
+      ],
+      "outputAssessments": [],
+      "_note": "Input: 'My daughter has had a fever of 101.5 for three days and she's complaining of a sore throat.'"
     },
     {
-      "traceId": "trace-2b3c4d5e-6f78-9012-3456-abcdef678901",
-      "timestamp": "2026-03-25T08:37:22.887Z",
-      "input": {
-        "text": "I need to reschedule my appointment with Dr. Patel from Thursday to Friday."
-      },
-      "action": "ALLOWED",
-      "matchedTopic": null,
-      "matchedPhrases": [],
-      "modelInvoked": true
+      "traceId": "gt-2b3c4d5e",
+      "action": "NONE",
+      "inputAssessments": [
+        {
+          "topicPolicy": {
+            "topics": []
+          }
+        }
+      ],
+      "outputAssessments": [],
+      "_note": "Input: 'I need to reschedule my appointment with Dr. Patel from Thursday to Friday.' Model was invoked."
     },
     {
-      "traceId": "trace-3c4d5e6f-7890-1234-5678-abcdef789012",
-      "timestamp": "2026-03-25T08:35:51.443Z",
-      "input": {
-        "text": "I've been experiencing nausea and dizziness every morning for the past week. I also have a headache that won't go away."
-      },
-      "action": "BLOCKED",
-      "matchedTopic": "Medical Advice and Diagnosis",
-      "matchedPhrases": ["nausea", "dizziness", "headache"],
-      "modelInvoked": false
+      "traceId": "gt-3c4d5e6f",
+      "action": "INTERVENED",
+      "inputAssessments": [
+        {
+          "topicPolicy": {
+            "topics": [
+              {
+                "name": "Medical Advice and Diagnosis",
+                "type": "DENY",
+                "action": "BLOCKED",
+                "detected": true
+              }
+            ]
+          }
+        }
+      ],
+      "outputAssessments": [],
+      "_note": "Input: 'I've been experiencing nausea and dizziness every morning for the past week. I also have a headache that won't go away.'"
     },
     {
-      "traceId": "trace-4d5e6f78-9012-3456-7890-abcdef890123",
-      "timestamp": "2026-03-25T08:33:09.221Z",
-      "input": {
-        "text": "What insurance plans do you accept?"
-      },
-      "action": "ALLOWED",
-      "matchedTopic": null,
-      "matchedPhrases": [],
-      "modelInvoked": true
+      "traceId": "gt-4d5e6f78",
+      "action": "NONE",
+      "inputAssessments": [
+        {
+          "topicPolicy": {
+            "topics": []
+          }
+        }
+      ],
+      "outputAssessments": [],
+      "_note": "Input: 'What insurance plans do you accept?' Model was invoked."
     },
     {
-      "traceId": "trace-5e6f7890-1234-5678-9012-abcdef901234",
-      "timestamp": "2026-03-25T08:31:44.098Z",
-      "input": {
-        "text": "I ran out of my blood pressure medication and I need a refill. The medication is lisinopril 10mg."
-      },
-      "action": "BLOCKED",
-      "matchedTopic": "Medical Advice and Diagnosis",
-      "matchedPhrases": ["blood pressure medication", "medication"],
-      "modelInvoked": false
+      "traceId": "gt-5e6f7890",
+      "action": "INTERVENED",
+      "inputAssessments": [
+        {
+          "topicPolicy": {
+            "topics": [
+              {
+                "name": "Medical Advice and Diagnosis",
+                "type": "DENY",
+                "action": "BLOCKED",
+                "detected": true
+              }
+            ]
+          }
+        }
+      ],
+      "outputAssessments": [],
+      "_note": "Input: 'I ran out of my blood pressure medication and I need a refill. The medication is lisinopril 10mg.'"
     }
   ]
 }

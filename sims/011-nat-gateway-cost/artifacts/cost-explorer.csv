@@ -1,4 +1,4 @@
-Date,Service,UsageType,Description,Amount_USD
+Date,Service,UsageType,Description,UnblendedCost
 2026-03-18,EC2,USW2-BoxUsage:c5.2xlarge,EC2 instances (3x c5.2xlarge),29.38
 2026-03-18,EC2,USW2-EBS:VolumeUsage.gp3,EBS gp3 volumes,2.40
 2026-03-18,NAT Gateway,NatGateway-Hours,NAT Gateway hourly charge,1.56

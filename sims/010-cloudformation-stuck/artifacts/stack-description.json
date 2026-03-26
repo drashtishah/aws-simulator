@@ -56,8 +56,7 @@
       ],
       "EnableTerminationProtection": false,
       "DriftInformation": {
-        "StackDriftStatus": "NOT_CHECKED",
-        "LastCheckTimestamp": null
+        "StackDriftStatus": "NOT_CHECKED"
       },
       "RoleARN": "arn:aws:iam::123456789012:role/threadline-deploy-role",
       "Outputs": [

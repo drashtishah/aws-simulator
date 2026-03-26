@@ -71,14 +71,21 @@
       "TargetGroupARNs": [
         "arn:aws:elasticloadbalancing:us-east-1:841279356012:targetgroup/urbanfleet-dispatch-tg/a1b2c3d4e5f67890"
       ],
+      "CreatedTime": "2026-01-15T10:22:44.107Z",
       "Tags": [
         {
+          "ResourceId": "urbanfleet-dispatch-asg",
+          "ResourceType": "auto-scaling-group",
           "Key": "Name",
-          "Value": "urbanfleet-dispatch"
+          "Value": "urbanfleet-dispatch",
+          "PropagateAtLaunch": true
         },
         {
+          "ResourceId": "urbanfleet-dispatch-asg",
+          "ResourceType": "auto-scaling-group",
           "Key": "Environment",
-          "Value": "production"
+          "Value": "production",
+          "PropagateAtLaunch": true
         }
       ]
     }

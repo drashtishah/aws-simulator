@@ -5,7 +5,7 @@
       "DBInstanceClass": "db.t3.medium",
       "Engine": "mysql",
       "EngineVersion": "8.0.35",
-      "DBInstanceStatus": "available",
+      "DBInstanceStatus": "storage-full",
       "MasterUsername": "cropsync_admin",
       "Endpoint": {
         "Address": "cropsync-prod-db.c9aksj2m4x7e.us-east-1.rds.amazonaws.com",
@@ -13,7 +13,6 @@
         "HostedZoneId": "Z2R2ITUGPM61AM"
       },
       "AllocatedStorage": 20,
-      "FreeStorageSpace": 157286400,
       "InstanceCreateTime": "2025-09-15T10:22:00Z",
       "BackupRetentionPeriod": 7,
       "DBSecurityGroups": [],

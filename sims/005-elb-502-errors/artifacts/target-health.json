@@ -9,7 +9,7 @@
       "TargetHealth": {
         "State": "unhealthy",
         "Reason": "Target.Timeout",
-        "Description": "Health checks failed with these codes: [no response]"
+        "Description": "Health check requests timed out"
       }
     },
     {
@@ -21,7 +21,7 @@
       "TargetHealth": {
         "State": "unhealthy",
         "Reason": "Target.Timeout",
-        "Description": "Health checks failed with these codes: [no response]"
+        "Description": "Health check requests timed out"
       }
     },
     {
@@ -33,7 +33,7 @@
       "TargetHealth": {
         "State": "unhealthy",
         "Reason": "Target.Timeout",
-        "Description": "Health checks failed with these codes: [no response]"
+        "Description": "Health check requests timed out"
       }
     },
     {
