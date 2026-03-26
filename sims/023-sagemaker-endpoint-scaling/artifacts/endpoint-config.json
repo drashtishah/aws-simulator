@@ -1,0 +1,41 @@
+{
+  "EndpointConfigName": "arcline-route-optimizer-config-v3",
+  "EndpointConfigArn": "arn:aws:sagemaker:us-east-1:891377106058:endpoint-config/arcline-route-optimizer-config-v3",
+  "ProductionVariants": [
+    {
+      "VariantName": "optimized-v3",
+      "ModelName": "arcline-route-model-2026-03-04",
+      "InitialInstanceCount": 1,
+      "InstanceType": "ml.g4dn.xlarge",
+      "InitialVariantWeight": 1.0,
+      "AcceleratorType": "none",
+      "VolumeSizeInGB": 30,
+      "ModelDataDownloadTimeoutInSeconds": 600,
+      "ContainerStartupHealthCheckTimeoutInSeconds": 300
+    }
+  ],
+  "DataCaptureConfig": {
+    "EnableCapture": false,
+    "InitialSamplingPercentage": 0
+  },
+  "KmsKeyId": "arn:aws:kms:us-east-1:891377106058:key/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "CreationTime": "2026-03-04T14:18:33Z",
+  "Tags": [
+    {
+      "Key": "team",
+      "Value": "ml-platform"
+    },
+    {
+      "Key": "environment",
+      "Value": "production"
+    },
+    {
+      "Key": "deployment-type",
+      "Value": "blue-green"
+    },
+    {
+      "Key": "previous-variant",
+      "Value": "AllTraffic"
+    }
+  ]
+}

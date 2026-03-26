@@ -136,6 +136,54 @@
       "category": "performance",
       "services": ["elasticache", "elb", "cloudwatch"],
       "created": "2026-03-25"
+    },
+    {
+      "id": "018-bedrock-agent-lambda",
+      "title": "The Agent That Could Not Act",
+      "difficulty": 2,
+      "category": "operations",
+      "services": ["bedrock", "lambda", "iam", "cloudwatch"],
+      "created": "2026-03-26"
+    },
+    {
+      "id": "019-bedrock-rag-dimension",
+      "title": "One Thousand and Twenty-Four",
+      "difficulty": 2,
+      "category": "data",
+      "services": ["bedrock", "opensearch-serverless", "s3", "cloudwatch"],
+      "created": "2026-03-26"
+    },
+    {
+      "id": "020-bedrock-cross-region-scp",
+      "title": "Intermittent by Design",
+      "difficulty": 3,
+      "category": "operations",
+      "services": ["bedrock", "iam", "organizations", "cloudwatch"],
+      "created": "2026-03-26"
+    },
+    {
+      "id": "021-bedrock-agent-cost",
+      "title": "Ten Dollars a Minute",
+      "difficulty": 2,
+      "category": "cost",
+      "services": ["bedrock", "cloudwatch", "lambda"],
+      "created": "2026-03-26"
+    },
+    {
+      "id": "022-bedrock-guardrail-medical",
+      "title": "The Guardrail and the Doctor",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": ["bedrock", "cloudwatch", "lambda", "sns"],
+      "created": "2026-03-26"
+    },
+    {
+      "id": "023-sagemaker-endpoint-scaling",
+      "title": "The Endpoint That Stopped Thinking",
+      "difficulty": 3,
+      "category": "performance",
+      "services": ["sagemaker", "cloudwatch", "auto-scaling", "lambda"],
+      "created": "2026-03-26"
     }
   ]
 }

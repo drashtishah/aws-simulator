@@ -1,0 +1,47 @@
+{
+  "TopicAttributes": {
+    "TopicArn": "arn:aws:sns:us-east-1:384201914553:patchwork-guardrail-alerts",
+    "DisplayName": "Patchwork Guardrail Alerts",
+    "Owner": "384201914553",
+    "Policy": {
+      "Version": "2012-10-17",
+      "Id": "PatchworkGuardrailAlertPolicy",
+      "Statement": [
+        {
+          "Sid": "AllowCloudWatchPublish",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "cloudwatch.amazonaws.com"
+          },
+          "Action": "SNS:Publish",
+          "Resource": "arn:aws:sns:us-east-1:384201914553:patchwork-guardrail-alerts"
+        },
+        {
+          "Sid": "AllowLambdaPublish",
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "SNS:Publish",
+          "Resource": "arn:aws:sns:us-east-1:384201914553:patchwork-guardrail-alerts"
+        }
+      ]
+    },
+    "SubscriptionsConfirmed": "0",
+    "SubscriptionsPending": "0",
+    "SubscriptionsDeleted": "0",
+    "EffectiveDeliveryPolicy": {
+      "http": {
+        "defaultHealthyRetryPolicy": {
+          "minDelayTarget": 20,
+          "maxDelayTarget": 20,
+          "numRetries": 3
+        }
+      }
+    },
+    "CreatedAt": "2025-11-02T14:35:00Z",
+    "LastModified": "2025-11-02T14:35:00Z"
+  },
+  "Subscriptions": [],
+  "SubscriptionCount": 0
+}

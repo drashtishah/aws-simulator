@@ -1,0 +1,65 @@
+                          Terravox Legal Research Assistant
+                          ====================================
+
+    Law Firm Users
+         |
+         v
+  +-------------+       +------------------+       +-------------------------+
+  | API Gateway |------>| Lambda           |------>| Amazon Bedrock          |
+  | (REST API)  |       | (query-handler)  |       | RetrieveAndGenerate API |
+  +-------------+       +------------------+       +-------------------------+
+                                                            |
+                                                            v
+                                                   +------------------+
+                                                   | Bedrock          |
+                                                   | Knowledge Base   |
+                                                   | terravox-legal-kb|
+                                                   +------------------+
+                                                     |             |
+                                          (retrieval)|             |(embedding)
+                                                     v             v
+                                            +----------------+  +----------------------+
+                                            | OpenSearch     |  | Amazon Titan         |
+                                            | Serverless     |  | Embeddings V2        |
+                                            | Collection:    |  | Model Config:        |
+                                            | terravox-legal |  |   dimensions: 1024   |
+                                            | -vectors       |  +----------------------+
+                                            |                |
+                                            | Index:         |
+                                            | terravox-legal |         [DIMENSION MISMATCH]
+                                            | -index         |<-----  Model outputs 1024-dim
+                                            | dimension: 512 |        Index expects 512-dim
+                                            | [MISMATCH]     |        Vectors silently truncated
+                                            +----------------+        Semantic meaning destroyed
+                                                     ^
+                                                     | (ingestion)
+                                                     |
+                                            +------------------+
+                                            | Amazon S3        |
+                                            | terravox-legal-  |
+                                            | docs-prod        |
+                                            | (280,412 docs)   |
+                                            +------------------+
+
+
+  Monitoring:
+  +--------------------+
+  | Amazon CloudWatch  |
+  |  - Retrieve API    |        [NO ALARM ON RETRIEVAL QUALITY]
+  |    latency: OK     |        Precision dropped 0.91 -> 0.12
+  |  - Ingestion job   |        but no metric/alarm was configured
+  |    status: OK      |        to detect this regression
+  |  - OpenSearch      |
+  |    search: OK      |
+  +--------------------+
+
+  ROOT CAUSE: Embedding model config changed to 1024 dimensions.
+              OpenSearch index mapping still set to 512 dimensions.
+              Ingestion silently truncates vectors. No error raised.
+              All health checks pass. Retrieval quality is random.
+
+  FIX: 1. Delete OpenSearch index
+       2. Recreate with dimension: 1024
+       3. Re-sync knowledge base data source
+       4. Add CI check: model dimensions == index dimensions
+       5. Alarm on retrieval precision metric

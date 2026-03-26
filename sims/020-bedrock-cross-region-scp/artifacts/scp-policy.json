@@ -1,0 +1,65 @@
+{
+  "Policy": {
+    "PolicySummary": {
+      "Id": "p-r8k4m2n1v7",
+      "Arn": "arn:aws:organizations::110394857261:policy/o-meridian01/service_control_policy/p-r8k4m2n1v7",
+      "Name": "RegionRestriction-v3",
+      "Description": "Restrict all API actions to approved regions. Updated 2026-03-23 to remove us-east-2 and us-west-1 from approved list per Meridian cloud governance directive CG-2026-0147.",
+      "Type": "SERVICE_CONTROL_POLICY",
+      "AwsManaged": false
+    },
+    "Content": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowApprovedRegionsOnly",
+          "Effect": "Deny",
+          "NotAction": [
+            "iam:*",
+            "organizations:*",
+            "sts:*",
+            "support:*",
+            "budgets:*"
+          ],
+          "Resource": "*",
+          "Condition": {
+            "StringNotEquals": {
+              "aws:RequestedRegion": [
+                "us-east-1",
+                "us-west-2"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "Targets": [
+    {
+      "TargetId": "ou-root-polaris",
+      "Arn": "arn:aws:organizations::110394857261:ou/o-meridian01/ou-root-polaris",
+      "Name": "Polaris OU",
+      "Type": "ORGANIZATIONAL_UNIT"
+    }
+  ],
+  "ChangeHistory": [
+    {
+      "version": "v1",
+      "date": "2025-06-10",
+      "approvedRegions": ["us-east-1", "us-east-2", "us-west-1", "us-west-2"],
+      "note": "Initial region restriction policy"
+    },
+    {
+      "version": "v2",
+      "date": "2025-11-03",
+      "approvedRegions": ["us-east-1", "us-east-2", "us-west-2"],
+      "note": "Removed us-west-1 per cost optimization"
+    },
+    {
+      "version": "v3",
+      "date": "2026-03-23",
+      "approvedRegions": ["us-east-1", "us-west-2"],
+      "note": "Removed us-east-2 per Meridian cloud governance directive CG-2026-0147. Data residency compliance."
+    }
+  ]
+}

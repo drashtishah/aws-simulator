@@ -1,0 +1,6 @@
+Company: Camber Health (Series B startup, 52 engineers)
+Industry: Healthcare SaaS / patient portal
+Users: 85 healthcare providers, ~60,000 AI assistant queries per week
+AWS Services: Amazon Bedrock, Amazon CloudWatch, AWS Lambda
+Your role: Platform engineer, Monday morning after weekly cost report
+Situation: Bedrock weekly cost jumped from $812 to $12,147 with no change in user query volume

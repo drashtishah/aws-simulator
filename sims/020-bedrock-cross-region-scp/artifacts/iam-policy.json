@@ -1,0 +1,89 @@
+{
+  "Role": {
+    "RoleName": "polaris-claims-exec",
+    "RoleId": "AROAJ3KXHP5E7EXAMPLE",
+    "Arn": "arn:aws:iam::847193026541:role/polaris-claims-exec",
+    "CreateDate": "2025-09-14T08:22:31Z",
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    },
+    "MaxSessionDuration": 3600,
+    "Tags": [
+      {
+        "Key": "team",
+        "Value": "claims-engineering"
+      },
+      {
+        "Key": "environment",
+        "Value": "production"
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "AWSLambdaBasicExecutionRole",
+      "PolicyArn": "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    },
+    {
+      "PolicyName": "PolarisBedrock-ClaimsProcessor",
+      "PolicyArn": "arn:aws:iam::847193026541:policy/PolarisBedrock-ClaimsProcessor"
+    },
+    {
+      "PolicyName": "PolarisSQS-ClaimsReader",
+      "PolicyArn": "arn:aws:iam::847193026541:policy/PolarisSQS-ClaimsReader"
+    }
+  ],
+  "InlinePolicies": [],
+  "PolicyDocument_PolarisBedrock-ClaimsProcessor": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowBedrockInvoke",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ],
+        "Resource": [
+          "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+          "arn:aws:bedrock:us:anthropic:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+        ]
+      },
+      {
+        "Sid": "AllowBedrockProfileAccess",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:GetInferenceProfile",
+          "bedrock:ListInferenceProfiles"
+        ],
+        "Resource": "*"
+      }
+    ]
+  },
+  "PolicyDocument_PolarisSQS-ClaimsReader": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowSQSRead",
+        "Effect": "Allow",
+        "Action": [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        "Resource": "arn:aws:sqs:us-east-1:847193026541:claims-intake-q"
+      }
+    ]
+  }
+}

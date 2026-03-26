@@ -1,0 +1,51 @@
+{
+  "agent": {
+    "agentId": "ABCDE12345",
+    "agentName": "clairvue-bi-assistant",
+    "agentArn": "arn:aws:bedrock:us-east-1:847291034651:agent/ABCDE12345",
+    "agentVersion": "3",
+    "agentStatus": "PREPARED",
+    "foundationModel": "anthropic.claude-3-sonnet-20240229-v1:0",
+    "instruction": "You are a business intelligence assistant for Clairvue Analytics customers. When users ask about their metrics, dashboards, or KPIs, use the QueryDashboard action group to retrieve real data. Always provide specific numbers from the dashboard API. Do not estimate or approximate.",
+    "idleSessionTTLInSeconds": 1800,
+    "agentResourceRoleArn": "arn:aws:iam::847291034651:role/AmazonBedrockExecutionRoleForAgents_clairvue",
+    "createdAt": "2025-11-15T09:30:00Z",
+    "updatedAt": "2026-03-14T11:20:00Z",
+    "preparedAt": "2026-03-14T11:22:00Z",
+    "description": "Customer-facing BI assistant with dashboard query capabilities"
+  },
+  "agentActionGroups": [
+    {
+      "actionGroupId": "AG7890FGHIJ",
+      "actionGroupName": "QueryDashboard",
+      "actionGroupState": "ENABLED",
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:847291034651:function:clairvue-dashboard-query"
+      },
+      "apiSchema": {
+        "s3": {
+          "s3BucketName": "clairvue-bedrock-schemas",
+          "s3ObjectKey": "openapi/dashboard-query-v3.yaml"
+        }
+      },
+      "description": "Queries customer dashboard metrics via the internal API. Supports revenue, user engagement, funnel conversion, and custom KPI retrieval.",
+      "createdAt": "2025-11-15T10:00:00Z",
+      "updatedAt": "2026-03-14T11:20:00Z"
+    }
+  ],
+  "agentAliases": [
+    {
+      "agentAliasId": "TSTALIASID",
+      "agentAliasName": "production",
+      "agentAliasArn": "arn:aws:bedrock:us-east-1:847291034651:agent-alias/ABCDE12345/TSTALIASID",
+      "agentAliasStatus": "PREPARED",
+      "routingConfiguration": [
+        {
+          "agentVersion": "3"
+        }
+      ],
+      "createdAt": "2025-12-01T14:00:00Z",
+      "updatedAt": "2026-03-14T11:25:00Z"
+    }
+  ]
+}

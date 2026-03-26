@@ -1,0 +1,36 @@
+{
+  "terravox-legal-index": {
+    "mappings": {
+      "properties": {
+        "bedrock-knowledge-base-default-vector": {
+          "type": "knn_vector",
+          "dimension": 512,
+          "method": {
+            "engine": "faiss",
+            "space_type": "l2",
+            "name": "hnsw",
+            "parameters": {
+              "ef_construction": 512,
+              "m": 16
+            }
+          }
+        },
+        "AMAZON_BEDROCK_METADATA": {
+          "type": "text",
+          "index": false
+        },
+        "AMAZON_BEDROCK_TEXT_CHUNK": {
+          "type": "text"
+        }
+      }
+    },
+    "settings": {
+      "index": {
+        "number_of_shards": "2",
+        "number_of_replicas": "0",
+        "knn": true,
+        "knn.algo_param.ef_search": 512
+      }
+    }
+  }
+}

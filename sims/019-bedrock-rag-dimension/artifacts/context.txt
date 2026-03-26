@@ -1,0 +1,6 @@
+Company: Terravox (Growth-stage startup, 38 engineers)
+Industry: Legal technology
+Users: 120 law firms, 280,000 legal documents indexed, ~3,400 queries/day
+AWS Services: Amazon Bedrock, Amazon OpenSearch Serverless, Amazon S3, Amazon CloudWatch
+Your role: ML platform engineer, Friday morning after Thursday's model upgrade
+Situation: Legal research assistant is returning citations unrelated to user queries despite the knowledge base sync completing successfully

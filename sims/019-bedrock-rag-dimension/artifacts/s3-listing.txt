@@ -1,0 +1,21 @@
+aws s3 ls s3://terravox-legal-docs-prod/ --recursive --summarize
+
+2025-11-12 09:45:01    1,247,832 federal/securities/sec-v-capital-growth-2019.pdf
+2025-11-12 09:45:03      834,291 federal/securities/in-re-worldcom-securities-litigation.pdf
+2025-11-12 09:45:04      612,847 federal/securities/basic-v-levinson-1988.pdf
+2025-11-12 09:45:06    2,103,445 federal/bankruptcy/in-re-lehman-brothers-2012.pdf
+2025-11-12 09:45:08      498,213 federal/civil-rights/brown-v-board-1954.pdf
+2025-12-03 14:22:11      723,891 state/new-york/landlord-tenant/smith-v-greenfield-2021.pdf
+2025-12-03 14:22:13      445,672 state/new-york/landlord-tenant/doe-v-metro-properties-2020.pdf
+2025-12-03 14:22:15      891,334 state/california/employment/garcia-v-techcorp-2022.pdf
+2026-01-15 08:30:22    1,034,567 federal/tax/irs-v-consolidated-holdings-2023.pdf
+2026-01-15 08:30:24      567,891 federal/environmental/epa-v-clearwater-2021.pdf
+2026-02-20 11:15:33      778,234 state/texas/oil-gas/permian-basin-royalty-trust-2022.pdf
+2026-02-20 11:15:35      923,456 federal/intellectual-property/apple-v-samsung-2018.pdf
+2026-03-01 09:00:12      412,789 federal/immigration/hernandez-v-dhs-2023.pdf
+2026-03-10 16:45:01      654,321 state/florida/insurance/citizens-v-statewide-2022.pdf
+2026-03-10 16:45:03      534,678 federal/antitrust/ftc-v-meta-platforms-2024.pdf
+...
+
+Total Objects: 280412
+   Total Size: 187.3 GiB

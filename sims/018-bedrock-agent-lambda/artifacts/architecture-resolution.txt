@@ -1,0 +1,60 @@
+                          Clairvue Analytics -- AI Assistant Architecture
+
+    +----------+       +---------------+       +--------------------+
+    |  Users   | ----> | API Gateway   | ----> |  Bedrock Agent     |
+    | (SaaS)   |       | (REST API)    |       |  ABCDE12345        |
+    +----------+       +---------------+       +---------+----------+
+                                                         |
+                                          +--------------+--------------+
+                                          |                             |
+                                          v                             v
+                                 +------------------+        +-------------------+
+                                 | Action Group     |        | Foundation Model  |
+                                 | "QueryDashboard" |        | (Claude 3 Sonnet) |
+                                 +--------+---------+        +-------------------+
+                                          |
+                                          v
+                              +------------------------+
+                              | Lambda Function        |
+                              | clairvue-dashboard-    |
+                              | query                  |
+                              |                        |
+                              | Resource-based policy  |
+                              | allows bedrock.aws.com |
+                              | with SourceArn         |
+                              | condition              |
+                              +----------+-------------+
+                                         |
+                                         v
+                              +------------------------+
+                              | Internal Dashboard API |
+                              | (customer metrics)     |
+                              +------------------------+
+
+    IAM Roles:
+    +----------------------------------------------+
+    | AmazonBedrockExecutionRoleForAgents_clairvue |
+    | - Assumed by Bedrock Agent                   |
+    | - Allows: bedrock:InvokeModel                |
+    | - Allows: lambda:InvokeFunction              |
+    +----------------------------------------------+
+
+    Lambda Resource-Based Policy:
+    +----------------------------------------------+  [WRONG SOURCE ARN]
+    | Principal: bedrock.amazonaws.com             |
+    | Action: lambda:InvokeFunction                |
+    | Condition: aws:SourceArn =                   |
+    |   arn:aws:iam::847291034651:role/             |
+    |   AmazonBedrockExecutionRoleForAgents_       |
+    |   clairvue                                   |
+    |                                              |
+    | SHOULD BE:                                   |
+    |   arn:aws:bedrock:us-east-1:847291034651:    |
+    |   agent/ABCDE12345                           |
+    +----------------------------------------------+
+
+    The SourceArn condition references the IAM execution
+    role ARN instead of the Bedrock agent ARN. Lambda
+    silently rejects invocations. Bedrock Agent falls
+    back to foundation model, producing hallucinated
+    responses with no error surfaced.

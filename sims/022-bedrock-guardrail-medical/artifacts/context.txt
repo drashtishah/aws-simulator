@@ -1,0 +1,6 @@
+Company: Patchwork Health (Series C startup, 74 engineers)
+Industry: Digital health / telemedicine
+Users: 14,000 patients/month, 85 provider networks, AI triage handles ~1,100 queries/day
+AWS Services: Amazon Bedrock, Amazon CloudWatch, AWS Lambda, Amazon SNS
+Your role: Platform engineer, Wednesday morning after patient complaints
+Situation: AI triage assistant returning generic blocked responses to approximately 40% of patient symptom queries

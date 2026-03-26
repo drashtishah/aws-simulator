@@ -1,0 +1,30 @@
+{
+  "modelId": "anthropic.claude-3-haiku-20240307-v1:0",
+  "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+  "provisionedModelArn": null,
+  "inferenceProfile": {
+    "profileId": "patchwork-triage-profile",
+    "modelSource": "anthropic.claude-3-haiku-20240307-v1:0",
+    "status": "ACTIVE",
+    "createdAt": "2025-11-02T14:30:00Z"
+  },
+  "invocationConfig": {
+    "guardrailIdentifier": "gr-patchwork-clinical-safety",
+    "guardrailVersion": "3",
+    "trace": "ENABLED"
+  },
+  "inferenceConfig": {
+    "maxTokens": 1024,
+    "temperature": 0.3,
+    "topP": 0.9,
+    "stopSequences": []
+  },
+  "systemPrompt": "You are a medical triage assistant for Patchwork Health. Your role is to collect and categorize patient symptoms to route them to the appropriate specialist. You do NOT diagnose conditions or recommend treatments. You ask clarifying questions about symptoms, duration, severity, and relevant medical history, then produce a structured triage summary for the provider.\n\nFormat your response as:\n- Primary symptoms\n- Duration and severity\n- Relevant history\n- Recommended specialist category (General Practice, Cardiology, Orthopedics, Pediatrics, Dermatology, Gastroenterology, Neurology, Urgent/Emergency)\n- Urgency level (Routine, Soon, Urgent, Emergency)",
+  "modelStatus": {
+    "availability": "AVAILABLE",
+    "lastSuccessfulInvocation": "2026-03-25T08:37:22.887Z",
+    "invocationsLast24h": 647,
+    "averageLatencyMs": 892,
+    "errorRate": 0.002
+  }
+}

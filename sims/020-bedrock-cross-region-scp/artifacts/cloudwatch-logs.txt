@@ -1,0 +1,28 @@
+2026-03-25T14:47:12.334Z [INFO] RequestId: a1b2c3d4-1001 ClaimId: CLM-2026-041782 Action: InvokeModel Status: SUCCESS Duration: 2341ms TokensIn: 1247 TokensOut: 438
+2026-03-25T14:47:13.891Z [ERROR] RequestId: a1b2c3d4-1002 ClaimId: CLM-2026-041783 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:13.892Z [WARN] RequestId: a1b2c3d4-1002 ClaimId: CLM-2026-041783 Retrying in 1000ms (attempt 1 of 3)
+2026-03-25T14:47:15.102Z [INFO] RequestId: a1b2c3d4-1003 ClaimId: CLM-2026-041783 Action: InvokeModel Status: SUCCESS Duration: 2187ms TokensIn: 1102 TokensOut: 521 (retry attempt 1)
+2026-03-25T14:47:16.445Z [INFO] RequestId: a1b2c3d4-1004 ClaimId: CLM-2026-041784 Action: InvokeModel Status: SUCCESS Duration: 2543ms TokensIn: 1389 TokensOut: 467
+2026-03-25T14:47:17.998Z [ERROR] RequestId: a1b2c3d4-1005 ClaimId: CLM-2026-041785 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:17.999Z [WARN] RequestId: a1b2c3d4-1005 ClaimId: CLM-2026-041785 Retrying in 1000ms (attempt 1 of 3)
+2026-03-25T14:47:19.221Z [INFO] RequestId: a1b2c3d4-1006 ClaimId: CLM-2026-041785 Action: InvokeModel Status: SUCCESS Duration: 1998ms TokensIn: 1456 TokensOut: 389 (retry attempt 1)
+2026-03-25T14:47:20.567Z [INFO] RequestId: a1b2c3d4-1007 ClaimId: CLM-2026-041786 Action: InvokeModel Status: SUCCESS Duration: 2211ms TokensIn: 1198 TokensOut: 502
+2026-03-25T14:47:22.103Z [ERROR] RequestId: a1b2c3d4-1008 ClaimId: CLM-2026-041787 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:22.104Z [WARN] RequestId: a1b2c3d4-1008 ClaimId: CLM-2026-041787 Retrying in 1000ms (attempt 1 of 3)
+2026-03-25T14:47:23.445Z [ERROR] RequestId: a1b2c3d4-1009 ClaimId: CLM-2026-041787 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:23.446Z [WARN] RequestId: a1b2c3d4-1009 ClaimId: CLM-2026-041787 Retrying in 2000ms (attempt 2 of 3)
+2026-03-25T14:47:25.876Z [INFO] RequestId: a1b2c3d4-1010 ClaimId: CLM-2026-041787 Action: InvokeModel Status: SUCCESS Duration: 2089ms TokensIn: 1321 TokensOut: 445 (retry attempt 2)
+2026-03-25T14:47:27.112Z [INFO] RequestId: a1b2c3d4-1011 ClaimId: CLM-2026-041788 Action: InvokeModel Status: SUCCESS Duration: 2456ms TokensIn: 1278 TokensOut: 491
+2026-03-25T14:47:28.443Z [ERROR] RequestId: a1b2c3d4-1012 ClaimId: CLM-2026-041789 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:28.444Z [WARN] RequestId: a1b2c3d4-1012 ClaimId: CLM-2026-041789 Retrying in 1000ms (attempt 1 of 3)
+2026-03-25T14:47:29.998Z [INFO] RequestId: a1b2c3d4-1013 ClaimId: CLM-2026-041789 Action: InvokeModel Status: SUCCESS Duration: 2134ms TokensIn: 1167 TokensOut: 478 (retry attempt 1)
+2026-03-25T14:47:31.234Z [INFO] RequestId: a1b2c3d4-1014 ClaimId: CLM-2026-041790 Action: InvokeModel Status: SUCCESS Duration: 2298ms TokensIn: 1345 TokensOut: 456
+2026-03-25T14:47:32.567Z [INFO] RequestId: a1b2c3d4-1015 ClaimId: CLM-2026-041791 Action: InvokeModel Status: SUCCESS Duration: 2187ms TokensIn: 1234 TokensOut: 512
+2026-03-25T14:47:33.891Z [ERROR] RequestId: a1b2c3d4-1016 ClaimId: CLM-2026-041792 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:33.892Z [WARN] RequestId: a1b2c3d4-1016 ClaimId: CLM-2026-041792 Retrying in 1000ms (attempt 1 of 3)
+2026-03-25T14:47:35.123Z [ERROR] RequestId: a1b2c3d4-1017 ClaimId: CLM-2026-041792 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:35.124Z [WARN] RequestId: a1b2c3d4-1017 ClaimId: CLM-2026-041792 Retrying in 2000ms (attempt 2 of 3)
+2026-03-25T14:47:37.345Z [ERROR] RequestId: a1b2c3d4-1018 ClaimId: CLM-2026-041792 Action: InvokeModel Status: FAILED Error: AccessDeniedException - User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel with an explicit deny in a service control policy
+2026-03-25T14:47:37.346Z [ERROR] RequestId: a1b2c3d4-1018 ClaimId: CLM-2026-041792 All retry attempts exhausted. Claim sent to dead-letter queue: claims-intake-dlq
+2026-03-25T14:47:38.678Z [INFO] RequestId: a1b2c3d4-1019 ClaimId: CLM-2026-041793 Action: InvokeModel Status: SUCCESS Duration: 2345ms TokensIn: 1289 TokensOut: 467
+2026-03-25T14:47:40.012Z [INFO] RequestId: a1b2c3d4-1020 ClaimId: CLM-2026-041794 Action: InvokeModel Status: SUCCESS Duration: 2123ms TokensIn: 1178 TokensOut: 498

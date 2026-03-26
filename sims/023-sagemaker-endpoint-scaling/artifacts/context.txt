@@ -1,0 +1,6 @@
+Company: Arcline Logistics (Growth-stage, 64 engineers)
+Industry: Supply chain / logistics optimization
+Users: 1,400 delivery drivers, 12 regional carriers, route predictions needed before 9 AM daily
+AWS Services: Amazon SageMaker, Amazon CloudWatch, AWS Auto Scaling, AWS Lambda
+Your role: Infrastructure engineer, 6:30 AM during morning rush
+Situation: SageMaker endpoint returning 503 errors during peak traffic, auto-scaling not triggering despite being configured

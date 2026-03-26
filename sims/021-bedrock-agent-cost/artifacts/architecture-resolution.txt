@@ -1,0 +1,60 @@
+Camber Health -- AI Support Assistant Architecture (Annotated)
+==============================================================
+
+Patient Browser / Mobile App
+        |
+        v
+API Gateway (api.camberhealth.io)
+        |
+        v
+Lambda: camber-api-router (Node.js 20.x, 512 MB)
+        |
+        v
+Amazon Bedrock Agent: camber-support-agent
+  Model: anthropic.claude-3-5-sonnet-20241022-v2:0
+  Agent ID: AGNT7X2K9M
+        |
+        +-- Action Group: eligibility-check
+        |     Lambda: camber-eligibility-handler
+        |     -> Camber internal eligibility API
+        |     (1 invocation per query, ~2,800 tokens total)
+        |
+        +-- Action Group: appointment-schedule
+        |     Lambda: camber-appointment-handler
+        |     -> Camber scheduling service API
+        |     (1 invocation per query, ~2,600 tokens total)
+        |
+        +-- Action Group: comprehensive-benefits    [6-8 REASONING STEPS PER QUERY]
+              Lambda: camber-benefits-handler
+              -> Camber benefits comparison API
+              -> Camber copay lookup API
+              -> Camber network directory API
+              (Deployed 2026-03-17. Agent calls this action group
+               6-8 times per query in a reasoning loop.)
+
+Token Flow Per Benefits Query:                      [10x TOKEN CONSUMPTION]
+  Step 1: Reasoning (~3,800 tokens) -> call eligibility-check
+  Step 2: Reasoning (~4,200 tokens) -> call comprehensive-benefits (plan A)
+  Step 3: Reasoning (~4,100 tokens) -> call comprehensive-benefits (plan B)
+  Step 4: Reasoning (~3,900 tokens) -> call comprehensive-benefits (comparison)
+  Step 5: Reasoning (~4,300 tokens) -> call comprehensive-benefits (copay detail)
+  Step 6: Reasoning (~4,000 tokens) -> call comprehensive-benefits (network detail)
+  Step 7: Reasoning (~3,500 tokens) -> generate final response
+  -----------------------------------------------------------------
+  Total reasoning tokens: ~27,800 (billed as output tokens)
+  Total input tokens:      ~2,000
+  Total output tokens:       ~800
+  Per-query cost:           ~$0.20 (baseline was $0.02)
+
+  Before (2 steps):  ~2,800 tokens/query  -> $0.02/query  -> $812/week
+  After  (7 steps): ~30,600 tokens/query  -> $0.20/query  -> $12,147/week
+
+Root Cause: The comprehensive-benefits action group exposes granular
+actions (per-plan lookup, copay lookup, network lookup). The agent
+reasons through each sub-task individually, generating ~4,000
+chain-of-thought tokens per step. These reasoning tokens are billed
+at the output token rate. No token consumption alarms were configured.
+
+Fix: Consolidate the action group into a single compare-plans action
+that returns all plan comparison data in one response. Add CloudWatch
+alarms on Bedrock token metrics and daily cost thresholds.

@@ -1,0 +1,53 @@
+                          Terravox Legal Research Assistant
+                          ====================================
+
+    Law Firm Users
+         |
+         v
+  +-------------+       +------------------+       +-------------------------+
+  | API Gateway |------>| Lambda           |------>| Amazon Bedrock          |
+  | (REST API)  |       | (query-handler)  |       | RetrieveAndGenerate API |
+  +-------------+       +------------------+       +-------------------------+
+                                                            |
+                                                            v
+                                                   +------------------+
+                                                   | Bedrock          |
+                                                   | Knowledge Base   |
+                                                   | terravox-legal-kb|
+                                                   +------------------+
+                                                     |             |
+                                          (retrieval)|             |(embedding)
+                                                     v             v
+                                            +----------------+  +----------------------+
+                                            | OpenSearch     |  | Amazon Titan         |
+                                            | Serverless     |  | Embeddings V2        |
+                                            | Collection:    |  | Model Config:        |
+                                            | terravox-legal |  |   dimensions: 1024   |
+                                            | -vectors       |  +----------------------+
+                                            |                |
+                                            | Index:         |
+                                            | terravox-legal |
+                                            | -index         |
+                                            | (knn_vector)   |
+                                            +----------------+
+                                                     ^
+                                                     | (ingestion)
+                                                     |
+                                            +------------------+
+                                            | Amazon S3        |
+                                            | terravox-legal-  |
+                                            | docs-prod        |
+                                            | (280,412 docs)   |
+                                            +------------------+
+
+
+  Monitoring:
+  +--------------------+
+  | Amazon CloudWatch  |
+  |  - Retrieve API    |
+  |    latency         |
+  |  - Ingestion job   |
+  |    metrics         |
+  |  - OpenSearch      |
+  |    search latency  |
+  +--------------------+

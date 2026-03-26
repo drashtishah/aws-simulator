@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Id": "default",
+  "Statement": [
+    {
+      "Sid": "AllowBedrockAgentInvoke",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "bedrock.amazonaws.com"
+      },
+      "Action": "lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:us-east-1:847291034651:function:clairvue-dashboard-query",
+      "Condition": {
+        "ArnLike": {
+          "aws:SourceArn": "arn:aws:iam::847291034651:role/AmazonBedrockExecutionRoleForAgents_clairvue"
+        }
+      }
+    }
+  ]
+}

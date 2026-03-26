@@ -1,0 +1,49 @@
+Camber Health -- AI Support Assistant Architecture
+==================================================
+
+Patient Browser / Mobile App
+        |
+        v
+API Gateway (api.camberhealth.io)
+        |
+        v
+Lambda: camber-api-router (Node.js 20.x, 512 MB)
+        |
+        v
+Amazon Bedrock Agent: camber-support-agent
+  Model: anthropic.claude-3-5-sonnet-20241022-v2:0
+  Agent ID: AGNT7X2K9M
+        |
+        +-- Action Group: eligibility-check
+        |     Lambda: camber-eligibility-handler
+        |     -> Camber internal eligibility API
+        |
+        +-- Action Group: appointment-schedule
+        |     Lambda: camber-appointment-handler
+        |     -> Camber scheduling service API
+        |
+        +-- Action Group: comprehensive-benefits
+              Lambda: camber-benefits-handler
+              -> Camber benefits comparison API
+              -> Camber copay lookup API
+              -> Camber network directory API
+
+Data Flow (per user query):
+  1. User sends message via patient portal
+  2. API Gateway routes to router Lambda
+  3. Router Lambda invokes Bedrock Agent (InvokeAgent API)
+  4. Agent reasons about query, selects action group(s)
+  5. Agent invokes action group Lambda(s)
+  6. Action group Lambda calls internal APIs, returns data
+  7. Agent generates response to user
+  8. Response returned through API Gateway
+
+Token Flow:
+  - Input tokens: user message + action group schemas + conversation history
+  - Reasoning tokens: chain-of-thought at each orchestration step (internal, not shown to user)
+  - Output tokens: final response to user
+  - All token types billed at model rates
+
+Monthly Query Volume: ~240,000 (60,000/week)
+Weekly Bedrock Budget: $800
+Model: Claude 3.5 Sonnet ($0.003/1K input, $0.015/1K output)

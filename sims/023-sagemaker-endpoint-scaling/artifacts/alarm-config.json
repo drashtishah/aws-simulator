@@ -1,0 +1,40 @@
+{
+  "MetricAlarms": [
+    {
+      "AlarmName": "arcline-sagemaker-high-invocations",
+      "AlarmArn": "arn:aws:cloudwatch:us-east-1:891377106058:alarm:arcline-sagemaker-high-invocations",
+      "AlarmDescription": "Scale out SageMaker endpoint when InvocationsPerInstance exceeds threshold",
+      "AlarmConfigurationUpdatedTimestamp": "2026-02-11T10:15:44Z",
+      "ActionsEnabled": true,
+      "OKActions": [],
+      "AlarmActions": [
+        "arn:aws:autoscaling:us-east-1:891377106058:scalingPolicy:7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d:resource/sagemaker/endpoint/arcline-route-optimizer/variant/AllTraffic:policyName/arcline-route-scaling-policy"
+      ],
+      "InsufficientDataActions": [],
+      "StateValue": "INSUFFICIENT_DATA",
+      "StateReason": "Unchecked: Initial alarm creation",
+      "StateReasonData": "{\"version\":\"1.0\",\"queryDate\":\"2026-03-04T14:22:07.000Z\",\"startDate\":\"2026-03-04T14:17:07.000Z\",\"statistic\":\"Sum\",\"period\":60,\"recentDatapoints\":[],\"threshold\":100.0,\"evaluatedDatapoints\":[]}",
+      "StateUpdatedTimestamp": "2026-03-04T14:22:07Z",
+      "MetricName": "InvocationsPerInstance",
+      "Namespace": "AWS/SageMaker",
+      "Statistic": "Sum",
+      "Dimensions": [
+        {
+          "Name": "EndpointName",
+          "Value": "arcline-route-optimizer"
+        },
+        {
+          "Name": "VariantName",
+          "Value": "AllTraffic"
+        }
+      ],
+      "Period": 60,
+      "EvaluationPeriods": 3,
+      "DatapointsToAlarm": 3,
+      "Threshold": 100.0,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "TreatMissingData": "missing",
+      "StateTransitionedTimestamp": "2026-03-04T14:22:07Z"
+    }
+  ]
+}

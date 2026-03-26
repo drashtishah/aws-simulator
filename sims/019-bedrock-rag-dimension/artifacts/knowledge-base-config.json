@@ -1,0 +1,34 @@
+{
+  "knowledgeBase": {
+    "knowledgeBaseId": "TVXKB7R2NQ",
+    "name": "terravox-legal-kb",
+    "description": "Terravox legal document knowledge base for AI research assistant",
+    "roleArn": "arn:aws:iam::471923847561:role/AmazonBedrockExecutionRoleForKnowledgeBase_terravox",
+    "knowledgeBaseConfiguration": {
+      "type": "VECTOR",
+      "vectorKnowledgeBaseConfiguration": {
+        "embeddingModelArn": "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0",
+        "embeddingModelConfiguration": {
+          "bedrockEmbeddingModelConfiguration": {
+            "dimensions": 1024
+          }
+        }
+      }
+    },
+    "storageConfiguration": {
+      "type": "OPENSEARCH_SERVERLESS",
+      "opensearchServerlessConfiguration": {
+        "collectionArn": "arn:aws:aoss:us-east-1:471923847561:collection/terravox-legal-vectors",
+        "vectorIndexName": "terravox-legal-index",
+        "fieldMapping": {
+          "vectorField": "bedrock-knowledge-base-default-vector",
+          "textField": "AMAZON_BEDROCK_TEXT_CHUNK",
+          "metadataField": "AMAZON_BEDROCK_METADATA"
+        }
+      }
+    },
+    "status": "ACTIVE",
+    "createdAt": "2025-11-12T09:22:14.000Z",
+    "updatedAt": "2026-03-20T14:31:08.000Z"
+  }
+}

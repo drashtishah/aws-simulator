@@ -1,0 +1,51 @@
+Architecture -- Arcline Logistics Route Optimization (Resolution View)
+
+Request Flow:
+  Driver Mobile App
+    |
+    v
+  API Gateway (api.arcline.io/v2/route)
+    |
+    v
+  Lambda Function (arcline-route-handler)
+    | invoke_endpoint()
+    v
+  SageMaker Endpoint (arcline-route-optimizer)
+    | Production Variant: optimized-v3
+    | Instance: ml.g4dn.xlarge (count: 1)
+    | [503 ERRORS DURING PEAK -- SINGLE INSTANCE OVERWHELMED]
+    |
+    v
+  Route Prediction Response -> Lambda -> API Gateway -> Driver App
+
+Auto-Scaling Path:
+  CloudWatch Alarm (arcline-sagemaker-high-invocations)
+    | [INSUFFICIENT_DATA] -- has not evaluated in 3 weeks
+    | Metric: InvocationsPerInstance
+    | Namespace: AWS/SageMaker
+    | Dimensions:
+    |   EndpointName = arcline-route-optimizer
+    |   VariantName  = AllTraffic  [WRONG VARIANT DIMENSION: AllTraffic vs optimized-v3]
+    | Threshold: > 100 for 3 consecutive periods
+    | No metric data received -- variant AllTraffic no longer exists
+    |
+    v  (never triggers)
+  Application Auto Scaling Policy (arcline-route-scaling-policy)
+    | Target Tracking: InvocationsPerInstance
+    | Min Capacity: 1, Max Capacity: 6
+    | [SCALING NEVER FIRES -- alarm stuck in INSUFFICIENT_DATA]
+    |
+    v  (no action taken)
+  SageMaker Endpoint (arcline-route-optimizer)
+    | Instance count remains 1
+    | No scale-out events in 3 weeks
+
+Root Cause Chain:
+  Blue-green deployment (2026-03-04)
+    -> Variant renamed: AllTraffic -> optimized-v3
+    -> CloudWatch alarm dimensions not updated
+    -> Alarm references non-existent variant
+    -> No metric data -> INSUFFICIENT_DATA state
+    -> Scaling policy never triggers
+    -> Single instance handles all traffic
+    -> 503 errors during morning peak

@@ -1,0 +1,67 @@
+timestamp,metric,variant,value,unit
+# === 2026-03-24 (Yesterday) - Typical weekday pattern ===
+2026-03-24T05:00:00Z,InvocationsPerInstance,optimized-v3,42,Count
+2026-03-24T05:30:00Z,InvocationsPerInstance,optimized-v3,68,Count
+2026-03-24T06:00:00Z,InvocationsPerInstance,optimized-v3,198,Count
+2026-03-24T06:15:00Z,InvocationsPerInstance,optimized-v3,487,Count
+2026-03-24T06:30:00Z,InvocationsPerInstance,optimized-v3,756,Count
+2026-03-24T06:45:00Z,InvocationsPerInstance,optimized-v3,812,Count
+2026-03-24T07:00:00Z,InvocationsPerInstance,optimized-v3,789,Count
+2026-03-24T07:30:00Z,InvocationsPerInstance,optimized-v3,634,Count
+2026-03-24T08:00:00Z,InvocationsPerInstance,optimized-v3,421,Count
+2026-03-24T08:30:00Z,InvocationsPerInstance,optimized-v3,267,Count
+2026-03-24T09:00:00Z,InvocationsPerInstance,optimized-v3,145,Count
+2026-03-24T09:30:00Z,InvocationsPerInstance,optimized-v3,89,Count
+2026-03-24T10:00:00Z,InvocationsPerInstance,optimized-v3,62,Count
+2026-03-24T05:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-24T06:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-24T07:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-24T08:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-24T05:00:00Z,ModelLatency,optimized-v3,145,Milliseconds
+2026-03-24T05:30:00Z,ModelLatency,optimized-v3,152,Milliseconds
+2026-03-24T06:00:00Z,ModelLatency,optimized-v3,178,Milliseconds
+2026-03-24T06:15:00Z,ModelLatency,optimized-v3,1240,Milliseconds
+2026-03-24T06:30:00Z,ModelLatency,optimized-v3,4800,Milliseconds
+2026-03-24T06:45:00Z,ModelLatency,optimized-v3,7900,Milliseconds
+2026-03-24T07:00:00Z,ModelLatency,optimized-v3,8200,Milliseconds
+2026-03-24T07:30:00Z,ModelLatency,optimized-v3,5100,Milliseconds
+2026-03-24T08:00:00Z,ModelLatency,optimized-v3,2300,Milliseconds
+2026-03-24T08:30:00Z,ModelLatency,optimized-v3,410,Milliseconds
+2026-03-24T09:00:00Z,ModelLatency,optimized-v3,188,Milliseconds
+2026-03-24T05:00:00Z,Invocation5XXErrors,optimized-v3,0,Count
+2026-03-24T06:00:00Z,Invocation5XXErrors,optimized-v3,0,Count
+2026-03-24T06:15:00Z,Invocation5XXErrors,optimized-v3,38,Count
+2026-03-24T06:30:00Z,Invocation5XXErrors,optimized-v3,241,Count
+2026-03-24T06:45:00Z,Invocation5XXErrors,optimized-v3,298,Count
+2026-03-24T07:00:00Z,Invocation5XXErrors,optimized-v3,267,Count
+2026-03-24T07:30:00Z,Invocation5XXErrors,optimized-v3,124,Count
+2026-03-24T08:00:00Z,Invocation5XXErrors,optimized-v3,41,Count
+2026-03-24T08:30:00Z,Invocation5XXErrors,optimized-v3,3,Count
+2026-03-24T09:00:00Z,Invocation5XXErrors,optimized-v3,0,Count
+# === 2026-03-25 (Today) - Current incident ===
+2026-03-25T05:00:00Z,InvocationsPerInstance,optimized-v3,38,Count
+2026-03-25T05:30:00Z,InvocationsPerInstance,optimized-v3,71,Count
+2026-03-25T06:00:00Z,InvocationsPerInstance,optimized-v3,203,Count
+2026-03-25T06:15:00Z,InvocationsPerInstance,optimized-v3,512,Count
+2026-03-25T06:30:00Z,InvocationsPerInstance,optimized-v3,801,Count
+2026-03-25T06:45:00Z,InvocationsPerInstance,optimized-v3,756,Count
+2026-03-25T05:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-25T06:00:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-25T06:30:00Z,InvocationsPerInstance,AllTraffic,,,
+2026-03-25T05:00:00Z,ModelLatency,optimized-v3,141,Milliseconds
+2026-03-25T05:30:00Z,ModelLatency,optimized-v3,158,Milliseconds
+2026-03-25T06:00:00Z,ModelLatency,optimized-v3,182,Milliseconds
+2026-03-25T06:15:00Z,ModelLatency,optimized-v3,2340,Milliseconds
+2026-03-25T06:30:00Z,ModelLatency,optimized-v3,8100,Milliseconds
+2026-03-25T06:45:00Z,ModelLatency,optimized-v3,7100,Milliseconds
+2026-03-25T05:00:00Z,Invocation5XXErrors,optimized-v3,0,Count
+2026-03-25T06:00:00Z,Invocation5XXErrors,optimized-v3,0,Count
+2026-03-25T06:15:00Z,Invocation5XXErrors,optimized-v3,47,Count
+2026-03-25T06:30:00Z,Invocation5XXErrors,optimized-v3,287,Count
+2026-03-25T06:45:00Z,Invocation5XXErrors,optimized-v3,244,Count
+# === Scaling Events (last 3 weeks) ===
+# No scaling events recorded. ScalingActivities: []
+# Last scaling event prior to blue-green deployment:
+# 2026-03-03T06:34:00Z,ScalingEvent,AllTraffic,ScaleOut,1->3 instances
+# 2026-03-03T09:12:00Z,ScalingEvent,AllTraffic,ScaleIn,3->1 instances
+# After 2026-03-04 deployment: zero scaling events

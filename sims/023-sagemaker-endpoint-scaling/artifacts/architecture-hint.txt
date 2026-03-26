@@ -1,0 +1,43 @@
+Architecture -- Arcline Logistics Route Optimization
+
+Request Flow:
+  Driver Mobile App
+    |
+    v
+  API Gateway (api.arcline.io/v2/route)
+    |
+    v
+  Lambda Function (arcline-route-handler)
+    | invoke_endpoint()
+    v
+  SageMaker Endpoint (arcline-route-optimizer)
+    | Production Variant: optimized-v3
+    | Instance: ml.g4dn.xlarge (count: 1)
+    |
+    v
+  Route Prediction Response -> Lambda -> API Gateway -> Driver App
+
+Auto-Scaling Path:
+  CloudWatch Alarm (arcline-sagemaker-high-invocations)
+    | Metric: InvocationsPerInstance
+    | Namespace: AWS/SageMaker
+    | Dimensions: EndpointName, VariantName
+    | Threshold: > 100 for 3 consecutive periods
+    |
+    v
+  Application Auto Scaling Policy (arcline-route-scaling-policy)
+    | Target Tracking: InvocationsPerInstance
+    | Min Capacity: 1, Max Capacity: 6
+    |
+    v
+  SageMaker Endpoint (arcline-route-optimizer)
+    | Scale out: add instances to production variant
+
+Monitoring:
+  CloudWatch Metrics:
+    - InvocationsPerInstance (per variant)
+    - ModelLatency (per variant)
+    - Invocation5XXErrors (per variant)
+  CloudWatch Alarm:
+    - State drives scaling decisions
+    - Alarm dimensions must match active variant

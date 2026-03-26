@@ -1,0 +1,6 @@
+Company: Polaris Underwriting (Enterprise, 180 engineers)
+Industry: Insurance technology
+Users: 4,200 insurance claims processed daily, 12 claims adjusters, subsidiary of Meridian Insurance Group
+AWS Services: Amazon Bedrock, AWS IAM, AWS Organizations, Amazon CloudWatch
+Your role: Senior SRE, Wednesday afternoon
+Situation: Bedrock InvokeModel calls failing with AccessDeniedException approximately 31% of the time with no apparent pattern

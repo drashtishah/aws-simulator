@@ -1,0 +1,36 @@
+Log Group: /aws/lambda/clairvue-dashboard-query
+Region: us-east-1
+
+--- Log Stream: 2026/03/20/[$LATEST]a1b2c3d4e5f6 ---
+
+2026-03-20T14:22:03.412Z  START RequestId: 8f3a9b1c-4d2e-4f5a-b6c7-d8e9f0a1b2c3 Version: $LATEST
+2026-03-20T14:22:03.415Z  INFO  Received action group request: QueryDashboard /metrics/revenue
+2026-03-20T14:22:03.418Z  INFO  Parameters: account_name=Meridian Logistics, metric=revenue, period=Q1-2026
+2026-03-20T14:22:03.892Z  INFO  Dashboard API response: 200 OK, payload_size=1247 bytes
+2026-03-20T14:22:03.895Z  INFO  Returning metric result: revenue=$3,847,291.00, period=Q1-2026
+2026-03-20T14:22:03.897Z  END RequestId: 8f3a9b1c-4d2e-4f5a-b6c7-d8e9f0a1b2c3
+2026-03-20T14:22:03.897Z  REPORT RequestId: 8f3a9b1c-4d2e-4f5a-b6c7-d8e9f0a1b2c3  Duration: 485.12 ms  Billed Duration: 486 ms  Memory Size: 256 MB  Max Memory Used: 89 MB
+
+2026-03-20T14:35:17.201Z  START RequestId: 1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6 Version: $LATEST
+2026-03-20T14:35:17.204Z  INFO  Received action group request: QueryDashboard /metrics/engagement
+2026-03-20T14:35:17.207Z  INFO  Parameters: account_name=Redstone Capital, metric=user_engagement, period=2026-03
+2026-03-20T14:35:17.598Z  INFO  Dashboard API response: 200 OK, payload_size=2034 bytes
+2026-03-20T14:35:17.601Z  INFO  Returning metric result: dau=12847, mau=34291, engagement_rate=37.4%
+2026-03-20T14:35:17.603Z  END RequestId: 1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6
+2026-03-20T14:35:17.603Z  REPORT RequestId: 1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6  Duration: 401.88 ms  Billed Duration: 402 ms  Memory Size: 256 MB  Max Memory Used: 91 MB
+
+2026-03-20T15:48:44.330Z  START RequestId: 2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7 Version: $LATEST
+2026-03-20T15:48:44.333Z  INFO  Received action group request: QueryDashboard /metrics/funnel
+2026-03-20T15:48:44.336Z  INFO  Parameters: account_name=Greenfield Solar, metric=conversion_funnel, period=Q1-2026
+2026-03-20T15:48:44.801Z  INFO  Dashboard API response: 200 OK, payload_size=3891 bytes
+2026-03-20T15:48:44.804Z  INFO  Returning metric result: funnel_stages=5, top_of_funnel=28400, converted=2891, rate=10.2%
+2026-03-20T15:48:44.806Z  END RequestId: 2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7
+2026-03-20T15:48:44.806Z  REPORT RequestId: 2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7  Duration: 475.55 ms  Billed Duration: 476 ms  Memory Size: 256 MB  Max Memory Used: 90 MB
+
+--- End of log stream ---
+
+--- No further log streams after 2026-03-20 ---
+
+Note: The Lambda resource-based policy was updated on 2026-03-20 at approximately 16:00 UTC.
+No invocations have been recorded since the policy change.
+The function has not been invoked in the past 4 days (2026-03-20 16:00 UTC through 2026-03-24 09:00 UTC).

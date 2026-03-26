@@ -1,0 +1,70 @@
+2026-03-25T06:00:12.112Z 8a1b2c3d-e4f5-6789-abcd-ef0123456789 START RequestId: 8a1b2c3d-e4f5-6789-abcd-ef0123456789
+2026-03-25T06:00:12.334Z 8a1b2c3d-e4f5-6789-abcd-ef0123456789 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=northeast-express driver=DRV-1042
+2026-03-25T06:00:12.556Z 8a1b2c3d-e4f5-6789-abcd-ef0123456789 INFO  [arcline-route-handler] Prediction received. route_id=RT-20260325-1042. stops=14. estimated_miles=87.3. latency=178ms.
+2026-03-25T06:00:12.601Z 8a1b2c3d-e4f5-6789-abcd-ef0123456789 END Duration: 489ms Billed: 490ms Memory: 256MB MaxMemory: 118MB
+
+2026-03-25T06:14:02.112Z f8c9d0e1-2345-6789-abcd-ef0123456789 START RequestId: f8c9d0e1-2345-6789-abcd-ef0123456789
+2026-03-25T06:14:02.223Z f8c9d0e1-2345-6789-abcd-ef0123456789 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=coastal-freight driver=DRV-0387
+2026-03-25T06:14:02.445Z f8c9d0e1-2345-6789-abcd-ef0123456789 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Message="Model server request queue is full. Please retry later or contact service support."
+2026-03-25T06:14:02.446Z f8c9d0e1-2345-6789-abcd-ef0123456789 WARN  [arcline-route-handler] Retry attempt 1/3 for driver=DRV-0387. Backoff=500ms.
+2026-03-25T06:14:02.989Z f8c9d0e1-2345-6789-abcd-ef0123456789 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 1 failed.
+2026-03-25T06:14:02.990Z f8c9d0e1-2345-6789-abcd-ef0123456789 WARN  [arcline-route-handler] Retry attempt 2/3 for driver=DRV-0387. Backoff=1000ms.
+2026-03-25T06:14:04.112Z f8c9d0e1-2345-6789-abcd-ef0123456789 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 2 failed.
+2026-03-25T06:14:04.113Z f8c9d0e1-2345-6789-abcd-ef0123456789 WARN  [arcline-route-handler] Retry attempt 3/3 for driver=DRV-0387. Backoff=2000ms.
+2026-03-25T06:14:06.223Z f8c9d0e1-2345-6789-abcd-ef0123456789 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 3 failed. All retries exhausted.
+2026-03-25T06:14:06.224Z f8c9d0e1-2345-6789-abcd-ef0123456789 ERROR [arcline-route-handler] FALLBACK: Publishing manual routing notification for driver=DRV-0387 carrier=coastal-freight to SNS topic arn:aws:sns:us-east-1:891377106058:arcline-manual-routing-alerts
+2026-03-25T06:14:06.445Z f8c9d0e1-2345-6789-abcd-ef0123456789 INFO  [arcline-route-handler] SNS notification sent. MessageId=msg-a1b2c3d4-5678.
+2026-03-25T06:14:06.501Z f8c9d0e1-2345-6789-abcd-ef0123456789 END Duration: 4389ms Billed: 4390ms Memory: 256MB MaxMemory: 124MB
+
+2026-03-25T06:15:04.556Z a2b3c4d5-6789-abcd-ef01-234567890123 START RequestId: a2b3c4d5-6789-abcd-ef01-234567890123
+2026-03-25T06:15:04.667Z a2b3c4d5-6789-abcd-ef01-234567890123 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=northeast-express driver=DRV-0891
+2026-03-25T06:15:04.891Z a2b3c4d5-6789-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Message="Model server request queue is full. Please retry later or contact service support."
+2026-03-25T06:15:04.892Z a2b3c4d5-6789-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 1/3 for driver=DRV-0891. Backoff=500ms.
+2026-03-25T06:15:05.445Z a2b3c4d5-6789-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 1 failed.
+2026-03-25T06:15:05.446Z a2b3c4d5-6789-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 2/3 for driver=DRV-0891. Backoff=1000ms.
+2026-03-25T06:15:06.556Z a2b3c4d5-6789-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 2 failed.
+2026-03-25T06:15:06.557Z a2b3c4d5-6789-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 3/3 for driver=DRV-0891. Backoff=2000ms.
+2026-03-25T06:15:08.667Z a2b3c4d5-6789-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 3 failed. All retries exhausted.
+2026-03-25T06:15:08.668Z a2b3c4d5-6789-abcd-ef01-234567890123 ERROR [arcline-route-handler] FALLBACK: Publishing manual routing notification for driver=DRV-0891 carrier=northeast-express to SNS topic arn:aws:sns:us-east-1:891377106058:arcline-manual-routing-alerts
+2026-03-25T06:15:08.889Z a2b3c4d5-6789-abcd-ef01-234567890123 INFO  [arcline-route-handler] SNS notification sent. MessageId=msg-b2c3d4e5-6789.
+2026-03-25T06:15:08.901Z a2b3c4d5-6789-abcd-ef01-234567890123 END Duration: 4345ms Billed: 4346ms Memory: 256MB MaxMemory: 121MB
+
+2026-03-25T06:20:01.112Z b3c4d5e6-7890-abcd-ef01-234567890123 START RequestId: b3c4d5e6-7890-abcd-ef01-234567890123
+2026-03-25T06:20:01.223Z b3c4d5e6-7890-abcd-ef01-234567890123 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=midatlantic-transport driver=DRV-1204
+2026-03-25T06:20:01.445Z b3c4d5e6-7890-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Message="Model server request queue is full. Please retry later or contact service support."
+2026-03-25T06:20:01.446Z b3c4d5e6-7890-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 1/3 for driver=DRV-1204. Backoff=500ms.
+2026-03-25T06:20:02.001Z b3c4d5e6-7890-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 1 failed.
+2026-03-25T06:20:02.002Z b3c4d5e6-7890-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 2/3 for driver=DRV-1204. Backoff=1000ms.
+2026-03-25T06:20:03.112Z b3c4d5e6-7890-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 2 failed.
+2026-03-25T06:20:03.113Z b3c4d5e6-7890-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 3/3 for driver=DRV-1204. Backoff=2000ms.
+2026-03-25T06:20:05.223Z b3c4d5e6-7890-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 3 failed. All retries exhausted.
+2026-03-25T06:20:05.224Z b3c4d5e6-7890-abcd-ef01-234567890123 ERROR [arcline-route-handler] FALLBACK: Publishing manual routing notification for driver=DRV-1204 carrier=midatlantic-transport to SNS topic arn:aws:sns:us-east-1:891377106058:arcline-manual-routing-alerts
+2026-03-25T06:20:05.445Z b3c4d5e6-7890-abcd-ef01-234567890123 INFO  [arcline-route-handler] SNS notification sent. MessageId=msg-c3d4e5f6-7890.
+2026-03-25T06:20:05.501Z b3c4d5e6-7890-abcd-ef01-234567890123 END Duration: 4389ms Billed: 4390ms Memory: 256MB MaxMemory: 126MB
+
+2026-03-25T06:25:11.001Z c4d5e6f7-8901-abcd-ef01-234567890123 START RequestId: c4d5e6f7-8901-abcd-ef01-234567890123
+2026-03-25T06:25:11.112Z c4d5e6f7-8901-abcd-ef01-234567890123 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=northeast-express driver=DRV-0556
+2026-03-25T06:25:11.334Z c4d5e6f7-8901-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Message="Model server request queue is full. Please retry later or contact service support."
+2026-03-25T06:25:11.335Z c4d5e6f7-8901-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 1/3 for driver=DRV-0556. Backoff=500ms.
+2026-03-25T06:25:11.889Z c4d5e6f7-8901-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 1 failed.
+2026-03-25T06:25:11.890Z c4d5e6f7-8901-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 2/3 for driver=DRV-0556. Backoff=1000ms.
+2026-03-25T06:25:13.001Z c4d5e6f7-8901-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 2 failed.
+2026-03-25T06:25:13.002Z c4d5e6f7-8901-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 3/3 for driver=DRV-0556. Backoff=2000ms.
+2026-03-25T06:25:15.112Z c4d5e6f7-8901-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 3 failed. All retries exhausted.
+2026-03-25T06:25:15.113Z c4d5e6f7-8901-abcd-ef01-234567890123 ERROR [arcline-route-handler] FALLBACK: Publishing manual routing notification for driver=DRV-0556 carrier=northeast-express to SNS topic arn:aws:sns:us-east-1:891377106058:arcline-manual-routing-alerts
+2026-03-25T06:25:15.334Z c4d5e6f7-8901-abcd-ef01-234567890123 INFO  [arcline-route-handler] SNS notification sent. MessageId=msg-d4e5f6a7-8901.
+2026-03-25T06:25:15.401Z c4d5e6f7-8901-abcd-ef01-234567890123 END Duration: 4400ms Billed: 4401ms Memory: 256MB MaxMemory: 123MB
+
+2026-03-25T06:30:03.001Z d5e6f7a8-9012-abcd-ef01-234567890123 START RequestId: d5e6f7a8-9012-abcd-ef01-234567890123
+2026-03-25T06:30:03.112Z d5e6f7a8-9012-abcd-ef01-234567890123 INFO  [arcline-route-handler] Invoking endpoint arcline-route-optimizer for carrier=coastal-freight driver=DRV-0714
+2026-03-25T06:30:03.334Z d5e6f7a8-9012-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Message="Model server request queue is full. Please retry later or contact service support."
+2026-03-25T06:30:03.335Z d5e6f7a8-9012-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 1/3 for driver=DRV-0714. Backoff=500ms.
+2026-03-25T06:30:03.889Z d5e6f7a8-9012-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 1 failed.
+2026-03-25T06:30:03.890Z d5e6f7a8-9012-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 2/3 for driver=DRV-0714. Backoff=1000ms.
+2026-03-25T06:30:05.001Z d5e6f7a8-9012-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 2 failed.
+2026-03-25T06:30:05.002Z d5e6f7a8-9012-abcd-ef01-234567890123 WARN  [arcline-route-handler] Retry attempt 3/3 for driver=DRV-0714. Backoff=2000ms.
+2026-03-25T06:30:07.112Z d5e6f7a8-9012-abcd-ef01-234567890123 ERROR [arcline-route-handler] SageMaker endpoint returned 503 ModelError. Retry 3 failed. All retries exhausted.
+2026-03-25T06:30:07.113Z d5e6f7a8-9012-abcd-ef01-234567890123 ERROR [arcline-route-handler] FALLBACK: Publishing manual routing notification for driver=DRV-0714 carrier=coastal-freight to SNS topic arn:aws:sns:us-east-1:891377106058:arcline-manual-routing-alerts
+2026-03-25T06:30:07.225Z d5e6f7a8-9012-abcd-ef01-234567890123 WARN  [arcline-route-handler] Manual routing fallback count this hour: 87. Threshold for ops escalation: 50. Escalation already triggered at 06:22.
+2026-03-25T06:30:07.334Z d5e6f7a8-9012-abcd-ef01-234567890123 INFO  [arcline-route-handler] SNS notification sent. MessageId=msg-e5f6a7b8-9012.
+2026-03-25T06:30:07.401Z d5e6f7a8-9012-abcd-ef01-234567890123 END Duration: 4400ms Billed: 4401ms Memory: 256MB MaxMemory: 128MB

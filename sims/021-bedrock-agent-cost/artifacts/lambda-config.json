@@ -1,0 +1,95 @@
+{
+  "Functions": [
+    {
+      "FunctionName": "camber-api-router",
+      "FunctionArn": "arn:aws:lambda:us-east-1:491827364510:function:camber-api-router",
+      "Runtime": "nodejs20.x",
+      "Handler": "index.handler",
+      "CodeSize": 4218944,
+      "Description": "Routes patient portal API requests to Bedrock Agent",
+      "Timeout": 60,
+      "MemorySize": 512,
+      "LastModified": "2026-02-12T16:44:10.000Z",
+      "Role": "arn:aws:iam::491827364510:role/camber-api-router-role",
+      "Environment": {
+        "Variables": {
+          "BEDROCK_AGENT_ID": "AGNT7X2K9M",
+          "BEDROCK_AGENT_ALIAS_ID": "ALIAS_PROD_01",
+          "LOG_LEVEL": "info"
+        }
+      },
+      "TracingConfig": { "Mode": "Active" },
+      "Architectures": ["arm64"],
+      "EphemeralStorage": { "Size": 512 },
+      "PackageType": "Zip"
+    },
+    {
+      "FunctionName": "camber-eligibility-handler",
+      "FunctionArn": "arn:aws:lambda:us-east-1:491827364510:function:camber-eligibility-handler",
+      "Runtime": "nodejs20.x",
+      "Handler": "index.handler",
+      "CodeSize": 2847612,
+      "Description": "Handles eligibility check action group for Bedrock Agent",
+      "Timeout": 30,
+      "MemorySize": 256,
+      "LastModified": "2026-02-08T14:12:00.000Z",
+      "Role": "arn:aws:iam::491827364510:role/camber-eligibility-handler-role",
+      "Environment": {
+        "Variables": {
+          "ELIGIBILITY_API_URL": "https://internal-api.camberhealth.io/v2/eligibility",
+          "LOG_LEVEL": "info"
+        }
+      },
+      "TracingConfig": { "Mode": "Active" },
+      "Architectures": ["arm64"],
+      "EphemeralStorage": { "Size": 512 },
+      "PackageType": "Zip"
+    },
+    {
+      "FunctionName": "camber-appointment-handler",
+      "FunctionArn": "arn:aws:lambda:us-east-1:491827364510:function:camber-appointment-handler",
+      "Runtime": "nodejs20.x",
+      "Handler": "index.handler",
+      "CodeSize": 3124480,
+      "Description": "Handles appointment scheduling action group for Bedrock Agent",
+      "Timeout": 30,
+      "MemorySize": 256,
+      "LastModified": "2026-01-14T10:35:12.000Z",
+      "Role": "arn:aws:iam::491827364510:role/camber-appointment-handler-role",
+      "Environment": {
+        "Variables": {
+          "SCHEDULING_API_URL": "https://internal-api.camberhealth.io/v2/scheduling",
+          "LOG_LEVEL": "info"
+        }
+      },
+      "TracingConfig": { "Mode": "Active" },
+      "Architectures": ["arm64"],
+      "EphemeralStorage": { "Size": 512 },
+      "PackageType": "Zip"
+    },
+    {
+      "FunctionName": "camber-benefits-handler",
+      "FunctionArn": "arn:aws:lambda:us-east-1:491827364510:function:camber-benefits-handler",
+      "Runtime": "nodejs20.x",
+      "Handler": "index.handler",
+      "CodeSize": 3891204,
+      "Description": "Handles comprehensive benefits comparison action group for Bedrock Agent",
+      "Timeout": 30,
+      "MemorySize": 256,
+      "LastModified": "2026-03-17T09:10:44.000Z",
+      "Role": "arn:aws:iam::491827364510:role/camber-benefits-handler-role",
+      "Environment": {
+        "Variables": {
+          "BENEFITS_API_URL": "https://internal-api.camberhealth.io/v2/benefits",
+          "COPAY_API_URL": "https://internal-api.camberhealth.io/v2/copay",
+          "NETWORK_API_URL": "https://internal-api.camberhealth.io/v2/network",
+          "LOG_LEVEL": "info"
+        }
+      },
+      "TracingConfig": { "Mode": "Active" },
+      "Architectures": ["arm64"],
+      "EphemeralStorage": { "Size": 512 },
+      "PackageType": "Zip"
+    }
+  ]
+}

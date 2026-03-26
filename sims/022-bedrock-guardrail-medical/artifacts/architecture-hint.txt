@@ -1,0 +1,45 @@
+Patchwork Health -- AI Triage Assistant Architecture
+
+Patient Mobile App
+    |
+    v
+API Gateway (api.patchworkhealth.io/triage)
+    |
+    v
+Lambda Function (patchwork-triage-handler)
+    |  - Receives patient query
+    |  - Formats prompt with system context
+    |  - Calls Bedrock InvokeModel with guardrail
+    |
+    v
+Amazon Bedrock Guardrail (patchwork-clinical-safety, v3)
+    |  - Content filters: hate, violence, sexual
+    |  - Denied topics: evaluated against input
+    |  - Blocked input message returned if topic matched
+    |
+    v (if not blocked)
+Amazon Bedrock Foundation Model (anthropic.claude-3-haiku-20240307-v1:0)
+    |  - Generates triage categorization
+    |  - Returns structured symptom summary
+    |
+    v
+Lambda Function (response processing)
+    |  - Parses model response
+    |  - Routes to appropriate specialist queue
+    |
+    v
+Patient Mobile App (displays triage result or blocked message)
+
+
+Monitoring Path:
+
+Bedrock Guardrail Interventions --> CloudWatch Metrics
+                                        |
+                                        v
+                                  CloudWatch Alarm (not configured)
+                                        |
+                                        v
+                                  SNS Topic (patchwork-guardrail-alerts)
+                                        |
+                                        v
+                                  Subscribers (?)

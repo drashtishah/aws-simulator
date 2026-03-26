@@ -1,0 +1,75 @@
+{
+  "Role": {
+    "RoleName": "AmazonBedrockExecutionRoleForAgents_clairvue",
+    "RoleId": "AROA3EXAMPLE12345ROLE",
+    "Arn": "arn:aws:iam::847291034651:role/AmazonBedrockExecutionRoleForAgents_clairvue",
+    "Path": "/service-role/",
+    "CreateDate": "2025-11-15T09:25:00Z",
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "bedrock.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole",
+          "Condition": {
+            "StringEquals": {
+              "aws:SourceAccount": "847291034651"
+            },
+            "ArnLike": {
+              "aws:SourceArn": "arn:aws:bedrock:us-east-1:847291034651:agent/ABCDE12345"
+            }
+          }
+        }
+      ]
+    },
+    "MaxSessionDuration": 3600,
+    "Tags": [
+      {
+        "Key": "team",
+        "Value": "platform"
+      },
+      {
+        "Key": "managed-by",
+        "Value": "terraform"
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "ClairvueBedrockAgentPolicy",
+      "PolicyArn": "arn:aws:iam::847291034651:policy/ClairvueBedrockAgentPolicy"
+    }
+  ],
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "InvokeFoundationModel",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel"
+        ],
+        "Resource": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+      },
+      {
+        "Sid": "InvokeLambdaActionGroup",
+        "Effect": "Allow",
+        "Action": [
+          "lambda:InvokeFunction"
+        ],
+        "Resource": "arn:aws:lambda:us-east-1:847291034651:function:clairvue-dashboard-query"
+      },
+      {
+        "Sid": "ReadActionGroupSchema",
+        "Effect": "Allow",
+        "Action": [
+          "s3:GetObject"
+        ],
+        "Resource": "arn:aws:s3:::clairvue-bedrock-schemas/openapi/*"
+      }
+    ]
+  }
+}

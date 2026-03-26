@@ -1,0 +1,85 @@
+{
+  "agent": {
+    "agentId": "AGNT7X2K9M",
+    "agentName": "camber-support-agent",
+    "agentArn": "arn:aws:bedrock:us-east-1:491827364510:agent/AGNT7X2K9M",
+    "agentVersion": "3",
+    "agentStatus": "PREPARED",
+    "foundationModel": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+    "instruction": "You are a helpful customer support assistant for Camber Health, a healthcare SaaS platform. You help patients with insurance eligibility checks, appointment scheduling, and benefits explanations. Always be accurate and refer to the patient's specific plan details. If you are unsure about any information, say so rather than guessing.",
+    "idleSessionTTLInSeconds": 600,
+    "createdAt": "2026-01-14T10:22:18.000Z",
+    "updatedAt": "2026-03-17T09:14:33.000Z",
+    "preparedAt": "2026-03-17T09:14:55.000Z",
+    "agentResourceRoleArn": "arn:aws:iam::491827364510:role/AmazonBedrockExecutionRoleForAgents_camber",
+    "promptOverrideConfiguration": {
+      "promptConfigurations": [
+        {
+          "promptType": "ORCHESTRATION",
+          "promptState": "ENABLED",
+          "basePromptTemplate": "default",
+          "inferenceConfiguration": {
+            "temperature": 0.0,
+            "topP": 1.0,
+            "topK": 250,
+            "maximumLength": 2048,
+            "stopSequences": []
+          }
+        }
+      ]
+    }
+  },
+  "agentActionGroups": [
+    {
+      "actionGroupId": "AG_ELIG_01",
+      "actionGroupName": "eligibility-check",
+      "actionGroupState": "ENABLED",
+      "description": "Check patient insurance eligibility and coverage status",
+      "apiSchema": {
+        "s3": {
+          "s3BucketName": "camber-agent-schemas",
+          "s3ObjectKey": "eligibility-check-openapi.json"
+        }
+      },
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:491827364510:function:camber-eligibility-handler"
+      },
+      "createdAt": "2026-01-14T10:30:44.000Z",
+      "updatedAt": "2026-02-08T14:12:00.000Z"
+    },
+    {
+      "actionGroupId": "AG_APPT_01",
+      "actionGroupName": "appointment-schedule",
+      "actionGroupState": "ENABLED",
+      "description": "Schedule, reschedule, or cancel patient appointments",
+      "apiSchema": {
+        "s3": {
+          "s3BucketName": "camber-agent-schemas",
+          "s3ObjectKey": "appointment-schedule-openapi.json"
+        }
+      },
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:491827364510:function:camber-appointment-handler"
+      },
+      "createdAt": "2026-01-14T10:35:12.000Z",
+      "updatedAt": "2026-01-14T10:35:12.000Z"
+    },
+    {
+      "actionGroupId": "AG_BENE_01",
+      "actionGroupName": "comprehensive-benefits",
+      "actionGroupState": "ENABLED",
+      "description": "Retrieve and compare patient insurance benefits across multiple plans, including coverage details, copay structures, deductibles, and in-network provider information",
+      "apiSchema": {
+        "s3": {
+          "s3BucketName": "camber-agent-schemas",
+          "s3ObjectKey": "comprehensive-benefits-openapi.json"
+        }
+      },
+      "actionGroupExecutor": {
+        "lambda": "arn:aws:lambda:us-east-1:491827364510:function:camber-benefits-handler"
+      },
+      "createdAt": "2026-03-17T09:12:07.000Z",
+      "updatedAt": "2026-03-17T09:14:33.000Z"
+    }
+  ]
+}

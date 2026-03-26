@@ -87,3 +87,6 @@ vpn,AWS Site-to-Site VPN,networking,2,2,SAA-C03;SAP-C02,0,0,,
 nat-gateway,NAT Gateway,networking,2,2,SAA-C03;SAP-C02,2,1,2026-03-25,011-nat-gateway-cost: identified NAT Gateway data processing as the $907/day cost source; understood per-GB pricing model and how private subnet routing forces all S3 traffic through NAT Gateway
 lake-formation,AWS Lake Formation,analytics,4,4,SAA-C03;SAP-C02,0,0,,
 opensearch,Amazon OpenSearch Service,analytics,3,3,SAA-C03;SAP-C02,0,0,,
+bedrock,Amazon Bedrock,ml-ai,2,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
+bedrock-agents,Amazon Bedrock Agents,ml-ai,3,3,SAP-C02;DVA-C02,0,0,,
+opensearch-serverless,Amazon OpenSearch Serverless,analytics,3,3,SAA-C03;SAP-C02,0,0,,

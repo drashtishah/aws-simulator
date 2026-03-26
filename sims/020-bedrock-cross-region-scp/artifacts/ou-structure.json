@@ -1,0 +1,76 @@
+{
+  "Organization": {
+    "Id": "o-meridian01",
+    "Arn": "arn:aws:organizations::110394857261:organization/o-meridian01",
+    "MasterAccountId": "110394857261",
+    "MasterAccountEmail": "cloudops@meridianinsurance.com"
+  },
+  "Root": {
+    "Id": "r-root01",
+    "Name": "Root",
+    "PolicyTypes": [
+      {
+        "Type": "SERVICE_CONTROL_POLICY",
+        "Status": "ENABLED"
+      }
+    ]
+  },
+  "OrganizationalUnits": [
+    {
+      "Id": "ou-root-polaris",
+      "Name": "Polaris OU",
+      "Arn": "arn:aws:organizations::110394857261:ou/o-meridian01/ou-root-polaris",
+      "ParentId": "r-root01",
+      "Accounts": [
+        {
+          "Id": "847193026541",
+          "Name": "Polaris Underwriting",
+          "Email": "aws-prod@polarisuw.com",
+          "Status": "ACTIVE",
+          "JoinedTimestamp": "2024-03-15T09:00:00Z"
+        },
+        {
+          "Id": "293847561028",
+          "Name": "Polaris Dev",
+          "Email": "aws-dev@polarisuw.com",
+          "Status": "ACTIVE",
+          "JoinedTimestamp": "2024-03-15T09:15:00Z"
+        }
+      ],
+      "AttachedPolicies": [
+        {
+          "Id": "p-FullAWSAccess",
+          "Name": "FullAWSAccess",
+          "Type": "SERVICE_CONTROL_POLICY"
+        },
+        {
+          "Id": "p-r8k4m2n1v7",
+          "Name": "RegionRestriction-v3",
+          "Type": "SERVICE_CONTROL_POLICY"
+        }
+      ]
+    },
+    {
+      "Id": "ou-root-meridian",
+      "Name": "Meridian Core OU",
+      "Arn": "arn:aws:organizations::110394857261:ou/o-meridian01/ou-root-meridian",
+      "ParentId": "r-root01",
+      "Accounts": [
+        {
+          "Id": "110394857261",
+          "Name": "Meridian Production",
+          "Email": "aws-prod@meridianinsurance.com",
+          "Status": "ACTIVE",
+          "JoinedTimestamp": "2023-01-10T10:00:00Z"
+        }
+      ],
+      "AttachedPolicies": [
+        {
+          "Id": "p-FullAWSAccess",
+          "Name": "FullAWSAccess",
+          "Type": "SERVICE_CONTROL_POLICY"
+        }
+      ]
+    }
+  ]
+}

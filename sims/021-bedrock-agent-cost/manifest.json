@@ -1,0 +1,130 @@
+{
+  "id": "021-bedrock-agent-cost",
+  "title": "Ten Dollars a Minute",
+  "difficulty": 2,
+  "category": "cost",
+  "services": ["bedrock", "cloudwatch", "lambda"],
+  "tags": ["bedrock-agents", "token-cost", "reasoning-loop", "cost-optimization", "monitoring-gap"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain4:CostOptimization",
+    "DVA-C02:Domain4:TroubleshootingOptimization",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Camber Health",
+    "industry": "healthcare SaaS",
+    "size": "Series B startup, 52 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Finance operations lead. Reads spreadsheets the way other people read novels. States dollar amounts without inflection.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Daily cost for Bedrock was $1,714 yesterday. The monthly budget for the entire AI platform is $3,500. We have burned through four months of budget in one week."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Engineering traced the cost to the InvokeModel API. Token consumption per query is 10x the baseline. The new action group went live eight days ago."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "CFO has flagged the line item. She wants a root cause and a fix commitment by end of day."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The model pricing has not changed. The number of user queries has not changed. Look at what happens inside a single query -- how many tokens does the agent consume per request?"
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The cost increase correlates with a specific date. What changed in the agent configuration around that time?",
+        "Look at the agent trace for a single query. How many action group invocations does the agent make per user question?",
+        "Each action group invocation triggers a full reasoning cycle with chain-of-thought tokens. Those internal tokens are billed. Count the total tokens per query.",
+        "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates ~4,000 reasoning tokens. The per-query cost went from $0.02 to $0.20."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "bedrock",
+        "artifacts": [
+          "artifacts/agent-config.json",
+          "artifacts/agent-trace.json",
+          "artifacts/invocation-logs.json"
+        ],
+        "capabilities": [
+          "get_agent",
+          "get_agent_action_group",
+          "list_agent_action_groups",
+          "invoke_agent",
+          "get_model_invocation_logging_configuration"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cost-explorer.json"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "list_metrics",
+          "describe_alarms"
+        ]
+      },
+      {
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-config.json",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_function",
+          "get_function_configuration",
+          "list_functions"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "A new 'comprehensive-benefits' action group causes the Bedrock Agent to enter a multi-step reasoning loop, invoking 6-8 action group calls per user query. Each invocation generates ~4,000 chain-of-thought reasoning tokens billed at standard output token rates, increasing per-query cost from $0.02 to $0.20 and weekly cost from $800 to $12,000.",
+    "fix_criteria": [
+      {
+        "id": "identify_action_group_loop",
+        "description": "Player identifies that the comprehensive-benefits action group causes multiple reasoning steps per query",
+        "required": true
+      },
+      {
+        "id": "identify_token_cost",
+        "description": "Player traces the cost increase to the volume of reasoning/chain-of-thought tokens generated per query",
+        "required": true
+      },
+      {
+        "id": "propose_optimization",
+        "description": "Player proposes reducing the reasoning steps -- refactoring the action group to return consolidated data in fewer invocations, or limiting max iterations",
+        "required": true
+      },
+      {
+        "id": "propose_monitoring",
+        "description": "Player recommends setting up CloudWatch alarms on Bedrock token consumption and daily cost thresholds",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Bedrock Agents bill for internal reasoning tokens in multi-step workflows",
+      "The cost multiplier effect of chain-of-thought reasoning in agentic AI architectures",
+      "Setting up token-level and cost-level monitoring for generative AI workloads",
+      "Designing action groups to minimize unnecessary reasoning iterations"
+    ]
+  }
+}

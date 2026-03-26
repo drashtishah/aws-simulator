@@ -1,0 +1,112 @@
+{
+  "guardrail": {
+    "guardrailId": "gr-patchwork-clinical-safety",
+    "guardrailArn": "arn:aws:bedrock:us-east-1:384201914553:guardrail/gr-patchwork-clinical-safety",
+    "name": "patchwork-clinical-safety",
+    "description": "Safety guardrail for Patchwork Health AI triage assistant. Prevents harmful content and unauthorized medical advice.",
+    "version": "3",
+    "status": "READY",
+    "createdAt": "2025-11-02T14:22:08Z",
+    "updatedAt": "2026-03-23T09:14:33Z",
+    "topicPolicyConfig": {
+      "topicsConfig": [
+        {
+          "name": "Medical Advice and Diagnosis",
+          "definition": "Queries seeking medical diagnosis, treatment recommendations, or clinical advice. This includes any discussion of medical symptoms, conditions, procedures, or medications.",
+          "examples": [
+            "I have chest pain and shortness of breath",
+            "What are the symptoms of diabetes",
+            "Diagnose my condition based on these symptoms",
+            "What medication should I take for my headache",
+            "Can you prescribe antibiotics for my infection",
+            "I think I have strep throat what should I do",
+            "Treatment for lower back pain",
+            "Medication for high blood pressure",
+            "My child has a fever of 102 what does that mean",
+            "Shortness of breath when climbing stairs"
+          ],
+          "type": "DENY",
+          "inputAction": "BLOCK",
+          "outputAction": "NONE"
+        },
+        {
+          "name": "Insurance Fraud",
+          "definition": "Requests for assistance with submitting false insurance claims, fabricating medical records, or other insurance fraud.",
+          "examples": [
+            "How do I file a fake insurance claim",
+            "Help me fabricate medical records",
+            "How to inflate my medical bills"
+          ],
+          "type": "DENY",
+          "inputAction": "BLOCK",
+          "outputAction": "BLOCK"
+        }
+      ]
+    },
+    "contentPolicyConfig": {
+      "filtersConfig": [
+        {
+          "type": "HATE",
+          "inputStrength": "HIGH",
+          "outputStrength": "HIGH"
+        },
+        {
+          "type": "INSULTS",
+          "inputStrength": "HIGH",
+          "outputStrength": "HIGH"
+        },
+        {
+          "type": "SEXUAL",
+          "inputStrength": "HIGH",
+          "outputStrength": "HIGH"
+        },
+        {
+          "type": "VIOLENCE",
+          "inputStrength": "MEDIUM",
+          "outputStrength": "HIGH"
+        },
+        {
+          "type": "MISCONDUCT",
+          "inputStrength": "HIGH",
+          "outputStrength": "HIGH"
+        }
+      ]
+    },
+    "wordPolicyConfig": {
+      "wordsConfig": [],
+      "managedWordListsConfig": [
+        {
+          "type": "PROFANITY"
+        }
+      ]
+    },
+    "blockedInputMessaging": "I'm sorry, I can't help with that request.",
+    "blockedOutputsMessaging": "I'm unable to provide that information. Please consult with your healthcare provider directly.",
+    "kmsKeyArn": "arn:aws:kms:us-east-1:384201914553:key/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "tags": {
+      "team": "platform-engineering",
+      "application": "triage-assistant",
+      "environment": "production"
+    }
+  },
+  "versionHistory": [
+    {
+      "version": "1",
+      "description": "Initial guardrail with content filters only",
+      "createdAt": "2025-11-02T14:22:08Z",
+      "createdBy": "arn:aws:iam::384201914553:user/maria.santos"
+    },
+    {
+      "version": "2",
+      "description": "Added Insurance Fraud denied topic and profanity word filter",
+      "createdAt": "2026-01-15T11:03:44Z",
+      "createdBy": "arn:aws:iam::384201914553:user/maria.santos"
+    },
+    {
+      "version": "3",
+      "description": "Added Medical Advice and Diagnosis denied topic per compliance review CR-2026-0087",
+      "createdAt": "2026-03-23T09:14:33Z",
+      "createdBy": "arn:aws:iam::384201914553:user/daniel.okafor"
+    }
+  ]
+}

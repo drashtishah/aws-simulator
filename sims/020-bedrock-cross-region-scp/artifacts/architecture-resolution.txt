@@ -1,0 +1,87 @@
+Polaris Underwriting -- Claims Assessment Pipeline (Resolution View)
+=====================================================================
+
+                    Claims Intake
+                         |
+                         v
+                  +-------------+
+                  |  Amazon SQS |
+                  |  claims-    |
+                  |  intake-q   |
+                  +------+------+
+                         |
+                         v
+                  +-------------+
+                  |   Lambda    |
+                  |  claims-    |
+                  |  processor  |
+                  |             |
+                  | Role:       |
+                  | polaris-    |
+                  | claims-exec|
+                  +------+------+
+                         |
+                         | InvokeModel (cross-region inference profile)
+                         v
+              +---------------------+
+              |   Amazon Bedrock    |
+              |                     |
+              |  Inference Profile: |
+              |  us.anthropic.      |
+              |  claude-3-5-sonnet  |
+              |                     |
+              |  Routes to:         |
+              |   - us-east-1  [OK] |
+              |   - us-east-2  [BLOCKED BY SCP] <--- ROOT CAUSE
+              |   - us-west-2  [OK] |
+              +---------------------+
+                    |     |     |
+          +---------+     |     +---------+
+          |               |               |
+          v               v               v
+    us-east-1        us-east-2       us-west-2
+    SUCCESS       ACCESS DENIED      SUCCESS
+    (~34%)           (~31%)          (~35%)
+                       |
+                       |  SCP: RegionRestriction-v3
+                       |  Effect: Deny
+                       |  Condition: aws:RequestedRegion != us-east-1, us-west-2
+                       |
+                       v
+               AccessDeniedException
+               "User: arn:aws:sts::847193026541:assumed-role/
+               polaris-claims-exec/claims-processor is not
+               authorized to perform: bedrock:InvokeModel
+               with an explicit deny in a service control policy"
+
+
+AWS Organizations Structure
+============================
+
+  Meridian Insurance Group (Management Account)
+  |
+  +-- Root OU
+      |
+      +-- Polaris OU  <--- SCP RegionRestriction-v3 attached here
+      |   |
+      |   +-- Polaris Underwriting (Account: 847193026541)
+      |   |     \-- Lambda calls Bedrock via cross-region profile
+      |   |     \-- Profile routes to 3 regions, 1 is blocked
+      |   |
+      |   +-- Polaris Dev (Account: 293847561028)
+      |
+      +-- Meridian Core OU
+          |
+          +-- Meridian Production (Account: 110394857261)
+
+
+Fix Options
+===========
+
+  Option A (Recommended, no governance approval needed):
+    Create an application inference profile that only includes
+    us-east-1 and us-west-2. Update Lambda to use the new profile ARN.
+
+  Option B (Requires governance approval):
+    Add a targeted exception in the SCP allowing bedrock:InvokeModel
+    in us-east-2. Preserves three-region load balancing.

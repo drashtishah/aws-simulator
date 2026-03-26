@@ -1,0 +1,49 @@
+{
+  "Configuration": {
+    "FunctionName": "clairvue-dashboard-query",
+    "FunctionArn": "arn:aws:lambda:us-east-1:847291034651:function:clairvue-dashboard-query",
+    "Runtime": "python3.12",
+    "Role": "arn:aws:iam::847291034651:role/clairvue-dashboard-query-execution-role",
+    "Handler": "index.handler",
+    "CodeSize": 4521984,
+    "Description": "Handles Bedrock Agent action group requests for dashboard metric queries",
+    "Timeout": 30,
+    "MemorySize": 256,
+    "LastModified": "2026-03-07T14:15:00.000+0000",
+    "CodeSha256": "dGVzdGhhc2hmb3JzaW11bGF0aW9ucHVycG9zZXNvbmx5",
+    "Version": "$LATEST",
+    "Environment": {
+      "Variables": {
+        "DASHBOARD_API_URL": "https://api.internal.clairvue.io/v3/dashboards",
+        "DASHBOARD_API_KEY_SECRET": "arn:aws:secretsmanager:us-east-1:847291034651:secret:clairvue/dashboard-api-key-Xk9mN2",
+        "LOG_LEVEL": "INFO"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "RevisionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "State": "Active",
+    "StateReason": null,
+    "StateReasonCode": null,
+    "LastUpdateStatus": "Successful",
+    "LastUpdateStatusReason": null,
+    "PackageType": "Zip",
+    "Architectures": [
+      "arm64"
+    ],
+    "EphemeralStorage": {
+      "Size": 512
+    },
+    "LoggingConfig": {
+      "LogFormat": "Text",
+      "LogGroup": "/aws/lambda/clairvue-dashboard-query"
+    }
+  },
+  "Tags": {
+    "team": "platform",
+    "service": "bi-assistant",
+    "environment": "production",
+    "managed-by": "terraform"
+  }
+}

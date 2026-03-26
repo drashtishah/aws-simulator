@@ -1,0 +1,6 @@
+Company: Clairvue Analytics (Series A startup, 22 engineers)
+Industry: Business intelligence / SaaS
+Users: 340 mid-market accounts, $2.8M ARR, AI assistant handles ~1,200 queries/day
+AWS Services: Amazon Bedrock, AWS Lambda, AWS IAM, Amazon CloudWatch
+Your role: Platform team lead, Monday morning
+Situation: Enterprise customers report the AI assistant is returning fabricated metrics instead of querying their actual dashboards

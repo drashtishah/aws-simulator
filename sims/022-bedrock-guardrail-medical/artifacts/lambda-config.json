@@ -1,0 +1,53 @@
+{
+  "Configuration": {
+    "FunctionName": "patchwork-triage-handler",
+    "FunctionArn": "arn:aws:lambda:us-east-1:384201914553:function:patchwork-triage-handler",
+    "Runtime": "python3.12",
+    "Role": "arn:aws:iam::384201914553:role/patchwork-triage-lambda-role",
+    "Handler": "handler.lambda_handler",
+    "CodeSize": 245760,
+    "Description": "Handles patient triage queries via Bedrock foundation model with guardrail",
+    "Timeout": 30,
+    "MemorySize": 512,
+    "LastModified": "2026-02-18T10:45:22.000+0000",
+    "Version": "$LATEST",
+    "Environment": {
+      "Variables": {
+        "BEDROCK_MODEL_ID": "anthropic.claude-3-haiku-20240307-v1:0",
+        "BEDROCK_GUARDRAIL_ID": "gr-patchwork-clinical-safety",
+        "BEDROCK_GUARDRAIL_VERSION": "3",
+        "SNS_ALERT_TOPIC_ARN": "arn:aws:sns:us-east-1:384201914553:patchwork-guardrail-alerts",
+        "LOG_LEVEL": "INFO",
+        "REGION": "us-east-1"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "Architectures": ["arm64"],
+    "EphemeralStorage": {
+      "Size": 512
+    },
+    "LoggingConfig": {
+      "LogFormat": "JSON",
+      "LogGroup": "/aws/lambda/patchwork-triage-handler"
+    }
+  },
+  "Tags": {
+    "team": "platform-engineering",
+    "application": "triage-assistant",
+    "environment": "production"
+  },
+  "Concurrency": {
+    "ReservedConcurrentExecutions": 50
+  },
+  "recentInvocationMetrics": {
+    "invocationsLast24h": 1087,
+    "errorsLast24h": 3,
+    "throttlesLast24h": 0,
+    "averageDurationMs": 1243,
+    "p99DurationMs": 2891
+  }
+}

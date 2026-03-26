@@ -25,3 +25,9 @@ tags:
 | 015 | [[015-route53-failover-blind/story\|Sixteen Seconds of Nothing]] | 2 - Associate | Networking | route53, elb, cloudwatch | 25 min |
 | 016 | [[016-sns-unconfirmed/story\|A Notification for No One]] | 2 - Associate | Operations | sns, cloudwatch, lambda | 25 min |
 | 017 | [[017-elasticache-eviction/story\|The Cache That Forgot Everything]] | 2 - Associate | Performance | elasticache, elb, cloudwatch | 25 min |
+| 018 | [[018-bedrock-agent-lambda/story\|The Agent That Could Not Act]] | 2 - Associate | Operations | bedrock, lambda, iam, cloudwatch | 25 min |
+| 019 | [[019-bedrock-rag-dimension/story\|One Thousand and Twenty-Four]] | 2 - Associate | Data | bedrock, opensearch-serverless, s3, cloudwatch | 25 min |
+| 020 | [[020-bedrock-cross-region-scp/story\|Intermittent by Design]] | 3 - Professional | Operations | bedrock, iam, organizations, cloudwatch | 35 min |
+| 021 | [[021-bedrock-agent-cost/story\|Ten Dollars a Minute]] | 2 - Associate | Cost | bedrock, cloudwatch, lambda | 25 min |
+| 022 | [[022-bedrock-guardrail-medical/story\|The Guardrail and the Doctor]] | 2 - Associate | Reliability | bedrock, cloudwatch, lambda, sns | 25 min |
+| 023 | [[023-sagemaker-endpoint-scaling/story\|The Endpoint That Stopped Thinking]] | 3 - Professional | Performance | sagemaker, cloudwatch, auto-scaling, lambda | 35 min |

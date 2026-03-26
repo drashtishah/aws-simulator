@@ -1,0 +1,139 @@
+{
+  "id": "023-sagemaker-endpoint-scaling",
+  "title": "The Endpoint That Stopped Thinking",
+  "difficulty": 3,
+  "category": "performance",
+  "services": ["sagemaker", "cloudwatch", "auto-scaling", "lambda"],
+  "tags": ["sagemaker-endpoint", "auto-scaling", "cloudwatch-alarm", "variant-dimension", "503-errors"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "SAP-C02:Domain2:NewSolutions",
+    "DVA-C02:Domain4:TroubleshootingOptimization"
+  ],
+  "company": {
+    "name": "Arcline Logistics",
+    "industry": "supply chain",
+    "size": "Growth-stage, 64 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Infrastructure engineer. Thinks in request rates and p99 latencies. States facts about the fleet like a dispatcher reading positions.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "503 rate is at 34%. Dispatch team switched to manual routing for the eastern corridor. That adds twelve minutes per route."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "The auto-scaling policy exists. It just never fires. The endpoint has been running on one instance for three weeks, through every morning spike."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "Operations director is calculating the cost of manual routing. Fourteen drivers, twelve extra minutes each, every morning. It adds up."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The scaling policy configuration looks correct -- the thresholds are reasonable. The issue is not in the policy logic. Check whether the alarm is actually receiving metric data."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "Auto-scaling is configured but has never triggered. What drives the scaling decision?",
+        "The CloudWatch alarm for scaling is in INSUFFICIENT_DATA state. That means it is not receiving the metric it expects.",
+        "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension. Compare the alarm's dimension to the actual endpoint variant.",
+        "The alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3'. The metric namespace does not match, so the alarm never evaluates."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "sagemaker",
+        "artifacts": [
+          "artifacts/endpoint-config.json",
+          "artifacts/endpoint-status.json"
+        ],
+        "capabilities": [
+          "describe_endpoint",
+          "describe_endpoint_config",
+          "list_endpoints",
+          "list_endpoint_configs"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/alarm-config.json",
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "describe_alarms",
+          "list_metrics",
+          "get_metric_statistics"
+        ]
+      },
+      {
+        "service": "auto-scaling",
+        "artifacts": [
+          "artifacts/scaling-policy.json"
+        ],
+        "capabilities": [
+          "describe_scaling_policies",
+          "describe_scalable_targets",
+          "describe_scaling_activities"
+        ]
+      },
+      {
+        "service": "lambda",
+        "artifacts": [
+          "artifacts/lambda-logs.txt"
+        ],
+        "capabilities": [
+          "get_function",
+          "list_functions"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The Application Auto Scaling policy's CloudWatch alarm references the SageMaker endpoint variant dimension 'AllTraffic' which was the default variant before a blue-green deployment. The current production variant is 'optimized-v3'. The alarm evaluates a metric that no longer receives data points, stays in INSUFFICIENT_DATA state permanently, and never triggers scale-out actions.",
+    "fix_criteria": [
+      {
+        "id": "identify_alarm_insufficient_data",
+        "description": "Player identifies that the CloudWatch alarm is in INSUFFICIENT_DATA state and not receiving metric data",
+        "required": true
+      },
+      {
+        "id": "identify_variant_mismatch",
+        "description": "Player identifies the mismatch between the alarm's variant dimension (AllTraffic) and the actual endpoint variant (optimized-v3)",
+        "required": true
+      },
+      {
+        "id": "propose_alarm_update",
+        "description": "Player proposes updating the CloudWatch alarm dimension to reference the correct variant name, or reconfiguring the scaling policy",
+        "required": true
+      },
+      {
+        "id": "identify_deployment_gap",
+        "description": "Player notes that the blue-green deployment process should update dependent resources like scaling alarms when variant names change",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How SageMaker endpoint variant names affect CloudWatch metric dimensions",
+      "Application Auto Scaling configuration for SageMaker endpoints and the dependency on CloudWatch metric dimensions",
+      "Debugging INSUFFICIENT_DATA alarm states by examining metric dimension mismatches",
+      "Ensuring deployment processes update all dependent configurations including monitoring and scaling"
+    ]
+  }
+}

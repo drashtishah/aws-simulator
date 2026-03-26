@@ -1,0 +1,54 @@
+Log Group: /aws/lambda/camber-benefits-handler
+Log Stream: 2026/03/24/[$LATEST]a8c2e4f6b1d3
+
+--- Pre-deployment baseline (camber-eligibility-handler, for comparison) ---
+
+2026-03-15T10:14:23.112Z  req-a1b2c3d4-1001  INFO  Eligibility check invoked: patientId=PAT-88421, serviceType=physical_therapy
+2026-03-15T10:14:23.847Z  req-a1b2c3d4-1001  INFO  Eligibility API response: 200 OK, elapsed=734ms
+2026-03-15T10:14:23.849Z  req-a1b2c3d4-1001  INFO  Returning result to Bedrock Agent
+
+--- Post-deployment: single user session showing multiple invocations ---
+
+Log Group: /aws/lambda/camber-benefits-handler
+Log Stream: 2026/03/24/[$LATEST]c4e6a8b2d1f3
+
+2026-03-24T14:32:21.334Z  req-e5f6a7b8-2006  INFO  Benefits handler invoked: apiPath=/benefits/plan-details, planId=HMO-2240, serviceType=physical_therapy
+2026-03-24T14:32:22.018Z  req-e5f6a7b8-2006  INFO  Benefits API response: 200 OK, elapsed=683ms
+2026-03-24T14:32:22.020Z  req-e5f6a7b8-2006  INFO  Returning result to Bedrock Agent
+
+2026-03-24T14:32:25.447Z  req-e5f6a7b8-2006  INFO  Benefits handler invoked: apiPath=/benefits/plan-details, planId=PPO-5517, serviceType=physical_therapy
+2026-03-24T14:32:26.102Z  req-e5f6a7b8-2006  INFO  Benefits API response: 200 OK, elapsed=654ms
+2026-03-24T14:32:26.104Z  req-e5f6a7b8-2006  INFO  Returning result to Bedrock Agent
+
+2026-03-24T14:32:29.211Z  req-e5f6a7b8-2006  INFO  Benefits handler invoked: apiPath=/benefits/copay-breakdown, planIds=HMO-2240,PPO-5517, serviceType=physical_therapy
+2026-03-24T14:32:29.844Z  req-e5f6a7b8-2006  INFO  Benefits API response: 200 OK, elapsed=632ms
+2026-03-24T14:32:29.846Z  req-e5f6a7b8-2006  INFO  Returning result to Bedrock Agent
+
+2026-03-24T14:32:32.998Z  req-e5f6a7b8-2006  INFO  Benefits handler invoked: apiPath=/benefits/copay-detail, planIds=HMO-2240,PPO-5517, serviceType=physical_therapy
+2026-03-24T14:32:33.621Z  req-e5f6a7b8-2006  INFO  Benefits API response: 200 OK, elapsed=622ms
+2026-03-24T14:32:33.623Z  req-e5f6a7b8-2006  INFO  Returning result to Bedrock Agent
+
+2026-03-24T14:32:36.877Z  req-e5f6a7b8-2006  INFO  Benefits handler invoked: apiPath=/benefits/network-providers, planIds=HMO-2240,PPO-5517, serviceType=physical_therapy, zipCode=94103
+2026-03-24T14:32:37.509Z  req-e5f6a7b8-2006  INFO  Benefits API response: 200 OK, elapsed=631ms
+2026-03-24T14:32:37.511Z  req-e5f6a7b8-2006  INFO  Returning result to Bedrock Agent
+
+--- Summary: 5 invocations of camber-benefits-handler within 16 seconds for a single user session (sess-a8f3c1d2) ---
+--- Plus 1 invocation of camber-eligibility-handler at the start of the same session ---
+--- Total: 6 action group Lambda invocations for 1 user query ---
+
+--- Daily invocation counts (camber-benefits-handler only) ---
+
+2026-03-15  0 invocations (action group did not exist)
+2026-03-16  0 invocations
+2026-03-17  18,412 invocations (deployed at 09:14 UTC)
+2026-03-18  43,287 invocations
+2026-03-19  44,102 invocations
+2026-03-20  42,891 invocations
+2026-03-21  43,544 invocations
+2026-03-22  41,998 invocations
+2026-03-23  43,127 invocations
+2026-03-24  44,301 invocations
+
+--- Note: ~8,500 user queries/day, but each comparison query triggers 5-7 benefits handler invocations ---
+--- ~40% of queries (3,400/day) are comparison queries -> 3,400 * 6.5 avg invocations = ~22,100 benefits invocations ---
+--- Plus ~3,400 eligibility-check invocations for the same queries -> total ~43,000 action group invocations/day ---

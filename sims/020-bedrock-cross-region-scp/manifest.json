@@ -1,0 +1,142 @@
+{
+  "id": "020-bedrock-cross-region-scp",
+  "title": "Intermittent by Design",
+  "difficulty": 3,
+  "category": "operations",
+  "services": ["bedrock", "iam", "organizations", "cloudwatch"],
+  "tags": ["cross-region-inference", "scp", "intermittent-failure", "organizations", "access-denied"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain1:OrganizationalComplexity",
+    "SAA-C03:Domain1:SecureArchitectures",
+    "SCS-C02:Domain4:IdentityAccessManagement"
+  ],
+  "company": {
+    "name": "Polaris Underwriting",
+    "industry": "insurance technology",
+    "size": "Enterprise, 180 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "Senior SRE. Dry, precise. Has seen intermittent failures before and hates them. States error rates to two decimal places.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "Error rate is holding at 31.2% for the last six hours. No pattern by time of day. No pattern by request payload. Same request succeeds, then fails, then succeeds again."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "Claims processing SLA breach in 45 minutes. 847 claims queued behind the failures. Adjusters are processing manually as backup."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "The governance team confirmed the SCP change went in last Tuesday. They say it should not affect Bedrock. They are wrong about many things."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The IAM role permissions are correct. The Bedrock model access is enabled. The intermittent pattern is the key -- what causes a service call to succeed sometimes and fail others with the same inputs?"
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The failures are not random. They follow a pattern, but the pattern is not in the request. It is in the routing.",
+        "This account uses a cross-region inference profile. Where can Bedrock route the requests?",
+        "Check which regions the inference profile includes. Now check which regions the SCP allows.",
+        "The SCP blocks us-east-2. The inference profile includes us-east-2. When Bedrock routes there, the call is denied. When it routes to allowed regions, it succeeds."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "bedrock",
+        "artifacts": [
+          "artifacts/inference-profile.json",
+          "artifacts/invocation-logs.json"
+        ],
+        "capabilities": [
+          "get_inference_profile",
+          "list_inference_profiles",
+          "invoke_model",
+          "get_model_invocation_logging_configuration"
+        ]
+      },
+      {
+        "service": "iam",
+        "artifacts": [
+          "artifacts/iam-policy.json",
+          "artifacts/scp-policy.json"
+        ],
+        "capabilities": [
+          "get_role",
+          "get_role_policy",
+          "list_attached_policies",
+          "simulate_policy"
+        ]
+      },
+      {
+        "service": "organizations",
+        "artifacts": [
+          "artifacts/scp-policy.json",
+          "artifacts/ou-structure.json"
+        ],
+        "capabilities": [
+          "describe_organization",
+          "list_policies",
+          "describe_policy",
+          "list_targets_for_policy"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "list_metrics",
+          "describe_alarms"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "A cross-region inference profile routes Bedrock InvokeModel calls across us-east-1, us-east-2, and us-west-2 for load balancing. A Service Control Policy applied by the parent organization blocks all API calls in us-east-2. When Bedrock routes to us-east-2, the call fails with AccessDeniedException. When it routes to an allowed region, it succeeds, producing an intermittent ~30% failure rate.",
+    "fix_criteria": [
+      {
+        "id": "identify_scp_region_block",
+        "description": "Player identifies that the SCP blocks API calls in us-east-2",
+        "required": true
+      },
+      {
+        "id": "identify_inference_profile_regions",
+        "description": "Player identifies that the cross-region inference profile includes us-east-2 as a destination region",
+        "required": true
+      },
+      {
+        "id": "connect_intermittent_to_routing",
+        "description": "Player connects the intermittent failure pattern to Bedrock's load-balancing across regions, some of which are SCP-blocked",
+        "required": true
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes either updating the SCP to allow Bedrock in us-east-2 or switching to a geographic inference profile that only uses allowed regions",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "How cross-region inference profiles in Amazon Bedrock route requests across multiple regions for load balancing",
+      "How Service Control Policies interact with cross-region AWS service features",
+      "Debugging intermittent failures by examining the routing layer rather than the application layer",
+      "Coordinating cloud governance policies (SCPs) with service-level configurations (inference profiles)"
+    ]
+  }
+}

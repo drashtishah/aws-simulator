@@ -1,0 +1,48 @@
+Patchwork Health -- AI Triage Assistant Architecture (Resolution View)
+
+Patient Mobile App
+    |
+    v
+API Gateway (api.patchworkhealth.io/triage)
+    |
+    v
+Lambda Function (patchwork-triage-handler)
+    |  - Receives patient query
+    |  - Formats prompt with system context
+    |  - Calls Bedrock InvokeModel with guardrail
+    |
+    v
+Amazon Bedrock Guardrail (patchwork-clinical-safety, v3) [DENIED TOPIC TOO BROAD]
+    |  - Content filters: hate, violence, sexual (working correctly)
+    |  - Denied topic "Medical Advice and Diagnosis" matches symptom descriptions
+    |  - Definition too broad: "Queries seeking medical diagnosis, treatment
+    |    recommendations, or clinical advice"
+    |  - Example phrases ("chest pain", "shortness of breath", "medication for")
+    |    match 40% of legitimate triage queries
+    |  - Blocked input message: "I'm sorry, I can't help with that request."
+    |  - 440 queries/day blocked before reaching the model
+    |
+    v (only 60% of queries reach this point)
+Amazon Bedrock Foundation Model (anthropic.claude-3-haiku-20240307-v1:0)
+    |  - Model itself is functioning correctly
+    |  - Never sees the blocked queries
+    |
+    v
+Lambda Function (response processing)
+    |
+    v
+Patient Mobile App
+
+
+Monitoring Path:
+
+Bedrock Guardrail Interventions --> CloudWatch Metrics (spike visible: 2/day -> 440/day)
+                                        |
+                                        v
+                                  CloudWatch Alarm (not configured -- no alarm exists)
+                                        |
+                                        v
+                                  SNS Topic (patchwork-guardrail-alerts) [NO SUBSCRIBERS]
+                                        |
+                                        v
+                                  Subscribers: 0 -- nobody receives alerts

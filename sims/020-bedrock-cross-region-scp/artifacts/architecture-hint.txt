@@ -1,0 +1,73 @@
+Polaris Underwriting -- Claims Assessment Pipeline
+===================================================
+
+                    Claims Intake
+                         |
+                         v
+                  +-------------+
+                  |  Amazon SQS |
+                  |  claims-    |
+                  |  intake-q   |
+                  +------+------+
+                         |
+                         v
+                  +-------------+
+                  |   Lambda    |
+                  |  claims-    |
+                  |  processor  |
+                  |             |
+                  | Role:       |
+                  | polaris-    |
+                  | claims-exec|
+                  +------+------+
+                         |
+                         | InvokeModel (cross-region inference profile)
+                         v
+              +---------------------+
+              |   Amazon Bedrock    |
+              |                     |
+              |  Inference Profile: |
+              |  us.anthropic.      |
+              |  claude-3-5-sonnet  |
+              |                     |
+              |  Routes to:         |
+              |   - us-east-1       |
+              |   - us-east-2       |
+              |   - us-west-2       |
+              +---------------------+
+                         |
+                         v
+                  Claim Assessment
+                  Response returned
+                  to adjusters
+
+
+AWS Organizations Structure
+============================
+
+  Meridian Insurance Group (Management Account)
+  |
+  +-- Root OU
+      |
+      +-- Polaris OU
+      |   |
+      |   +-- Polaris Underwriting (Account: 847193026541)
+      |   |
+      |   +-- Polaris Dev (Account: 293847561028)
+      |
+      +-- Meridian Core OU
+          |
+          +-- Meridian Production (Account: 110394857261)
+
+
+Policies
+========
+
+  SCP: RegionRestriction-v3
+    Attached to: Polaris OU
+    Purpose: Restrict API calls to approved regions
+
+  IAM Role: polaris-claims-exec
+    Account: 847193026541
+    Attached Policy: PolarisBedrock-ClaimsProcessor
+    Trust: lambda.amazonaws.com

@@ -1,0 +1,45 @@
+--- Log Group: /aws/bedrock/knowledge-base/TVXKB7R2NQ ---
+
+2026-03-20T18:00:03.412Z [INFO] Ingestion job TVXIJ20260320 started for data source TVXDS4M1PL
+2026-03-20T18:00:03.415Z [INFO] Configuration: embeddingModelArn=arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0
+2026-03-20T18:00:03.418Z [INFO] Vector store: opensearch_serverless collection=terravox-legal-vectors index=terravox-legal-index
+2026-03-20T18:00:04.201Z [INFO] S3 data source scan initiated: s3://terravox-legal-docs-prod/
+2026-03-20T18:00:47.882Z [INFO] Document scan complete. Total documents: 280412
+2026-03-20T18:00:48.001Z [INFO] Beginning document chunking and embedding generation
+2026-03-20T18:15:22.334Z [INFO] Embedding batch 1/84 complete. Documents processed: 3338
+2026-03-20T18:30:41.112Z [INFO] Embedding batch 21/84 complete. Documents processed: 70098
+2026-03-20T18:45:03.556Z [INFO] Embedding batch 42/84 complete. Documents processed: 140196
+2026-03-20T19:00:18.889Z [INFO] Embedding batch 63/84 complete. Documents processed: 210294
+2026-03-20T19:12:44.223Z [INFO] Embedding batch 84/84 complete. Documents processed: 280412
+2026-03-20T19:12:46.001Z [INFO] Index refresh complete
+2026-03-20T19:12:47.114Z [INFO] Ingestion job TVXIJ20260320 completed successfully
+2026-03-20T19:12:47.118Z [INFO] Summary: scanned=280412 indexed=280412 failed=0 deleted=0
+
+--- Log Group: /aws/lambda/terravox-query-handler ---
+
+2026-03-21T08:17:22.001Z [INFO] RequestId: 7a3b9c1d-2e4f Query received: "securities fraud class action certification requirements"
+2026-03-21T08:17:22.142Z [INFO] RequestId: 7a3b9c1d-2e4f Calling Bedrock RetrieveAndGenerate API
+2026-03-21T08:17:22.289Z [INFO] RequestId: 7a3b9c1d-2e4f Retrieved 4 passages from knowledge base TVXKB7R2NQ
+2026-03-21T08:17:22.291Z [INFO] RequestId: 7a3b9c1d-2e4f Passage 1: smith-v-greenfield-2021.pdf (score: 0.34)
+2026-03-21T08:17:22.291Z [INFO] RequestId: 7a3b9c1d-2e4f Passage 2: doe-v-metro-properties-2020.pdf (score: 0.33)
+2026-03-21T08:17:22.292Z [INFO] RequestId: 7a3b9c1d-2e4f Passage 3: citizens-v-statewide-2022.pdf (score: 0.31)
+2026-03-21T08:17:22.292Z [INFO] RequestId: 7a3b9c1d-2e4f Passage 4: permian-basin-royalty-trust-2022.pdf (score: 0.30)
+2026-03-21T08:17:23.501Z [INFO] RequestId: 7a3b9c1d-2e4f Response generated. Latency: 1499ms
+
+2026-03-21T08:22:45.112Z [INFO] RequestId: 8b4c0d2e-3f5g Query received: "ERISA fiduciary duty breach remedies"
+2026-03-21T08:22:45.248Z [INFO] RequestId: 8b4c0d2e-3f5g Calling Bedrock RetrieveAndGenerate API
+2026-03-21T08:22:45.391Z [INFO] RequestId: 8b4c0d2e-3f5g Retrieved 4 passages from knowledge base TVXKB7R2NQ
+2026-03-21T08:22:45.393Z [INFO] RequestId: 8b4c0d2e-3f5g Passage 1: garcia-v-techcorp-2022.pdf (score: 0.32)
+2026-03-21T08:22:45.393Z [INFO] RequestId: 8b4c0d2e-3f5g Passage 2: epa-v-clearwater-2021.pdf (score: 0.31)
+2026-03-21T08:22:45.394Z [INFO] RequestId: 8b4c0d2e-3f5g Passage 3: hernandez-v-dhs-2023.pdf (score: 0.31)
+2026-03-21T08:22:45.394Z [INFO] RequestId: 8b4c0d2e-3f5g Passage 4: apple-v-samsung-2018.pdf (score: 0.29)
+2026-03-21T08:22:46.612Z [INFO] RequestId: 8b4c0d2e-3f5g Response generated. Latency: 1500ms
+
+2026-03-21T08:31:03.445Z [INFO] RequestId: 9c5d1e3f-4g6h Query received: "trade secret misappropriation damages calculation"
+2026-03-21T08:31:03.589Z [INFO] RequestId: 9c5d1e3f-4g6h Calling Bedrock RetrieveAndGenerate API
+2026-03-21T08:31:03.734Z [INFO] RequestId: 9c5d1e3f-4g6h Retrieved 4 passages from knowledge base TVXKB7R2NQ
+2026-03-21T08:31:03.736Z [INFO] RequestId: 9c5d1e3f-4g6h Passage 1: in-re-lehman-brothers-2012.pdf (score: 0.35)
+2026-03-21T08:31:03.736Z [INFO] RequestId: 9c5d1e3f-4g6h Passage 2: irs-v-consolidated-holdings-2023.pdf (score: 0.33)
+2026-03-21T08:31:03.737Z [INFO] RequestId: 9c5d1e3f-4g6h Passage 3: ftc-v-meta-platforms-2024.pdf (score: 0.32)
+2026-03-21T08:31:03.737Z [INFO] RequestId: 9c5d1e3f-4g6h Passage 4: brown-v-board-1954.pdf (score: 0.30)
+2026-03-21T08:31:04.891Z [INFO] RequestId: 9c5d1e3f-4g6h Response generated. Latency: 1446ms

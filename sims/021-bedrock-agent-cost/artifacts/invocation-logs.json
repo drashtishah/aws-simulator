@@ -1,0 +1,213 @@
+{
+  "modelInvocationLogs": {
+    "description": "Bedrock Agent invocation logs -- sampled entries showing per-query token consumption before and after comprehensive-benefits deployment",
+    "loggingConfiguration": {
+      "cloudWatchConfig": null,
+      "s3Config": {
+        "bucketName": "camber-bedrock-logs",
+        "keyPrefix": "invocation-logs/"
+      }
+    },
+    "entries": [
+      {
+        "timestamp": "2026-03-15T10:14:22.000Z",
+        "requestId": "req-a1b2c3d4-1001",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "2",
+        "sessionId": "sess-001-pre",
+        "inputText": "Am I eligible for an MRI under my current plan?",
+        "actionGroupsInvoked": ["eligibility-check"],
+        "orchestrationSteps": 2,
+        "metrics": {
+          "inputTokenCount": 724,
+          "outputTokenCount": 312,
+          "reasoningTokenCount": 1780,
+          "totalTokenCount": 2816,
+          "latencyMs": 1842,
+          "estimatedCostUsd": 0.018
+        }
+      },
+      {
+        "timestamp": "2026-03-15T10:18:45.000Z",
+        "requestId": "req-a1b2c3d4-1002",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "2",
+        "sessionId": "sess-002-pre",
+        "inputText": "Schedule a follow-up appointment with Dr. Chen next Tuesday",
+        "actionGroupsInvoked": ["appointment-schedule"],
+        "orchestrationSteps": 2,
+        "metrics": {
+          "inputTokenCount": 681,
+          "outputTokenCount": 287,
+          "reasoningTokenCount": 1654,
+          "totalTokenCount": 2622,
+          "latencyMs": 1724,
+          "estimatedCostUsd": 0.016
+        }
+      },
+      {
+        "timestamp": "2026-03-15T11:02:33.000Z",
+        "requestId": "req-a1b2c3d4-1003",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "2",
+        "sessionId": "sess-003-pre",
+        "inputText": "What does my plan cover for mental health visits?",
+        "actionGroupsInvoked": ["eligibility-check"],
+        "orchestrationSteps": 2,
+        "metrics": {
+          "inputTokenCount": 698,
+          "outputTokenCount": 345,
+          "reasoningTokenCount": 1823,
+          "totalTokenCount": 2866,
+          "latencyMs": 1901,
+          "estimatedCostUsd": 0.019
+        }
+      },
+      {
+        "timestamp": "2026-03-15T14:22:11.000Z",
+        "requestId": "req-a1b2c3d4-1004",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "2",
+        "sessionId": "sess-004-pre",
+        "inputText": "Is my prescription for metformin covered?",
+        "actionGroupsInvoked": ["eligibility-check"],
+        "orchestrationSteps": 2,
+        "metrics": {
+          "inputTokenCount": 712,
+          "outputTokenCount": 298,
+          "reasoningTokenCount": 1745,
+          "totalTokenCount": 2755,
+          "latencyMs": 1788,
+          "estimatedCostUsd": 0.017
+        }
+      },
+      {
+        "timestamp": "2026-03-17T09:41:08.000Z",
+        "requestId": "req-e5f6a7b8-2001",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-005-post",
+        "inputText": "Compare my HMO and PPO options for lab work",
+        "actionGroupsInvoked": ["eligibility-check", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits"],
+        "orchestrationSteps": 7,
+        "metrics": {
+          "inputTokenCount": 11842,
+          "outputTokenCount": 1876,
+          "reasoningTokenCount": 26441,
+          "totalTokenCount": 40159,
+          "latencyMs": 21433,
+          "estimatedCostUsd": 0.192
+        }
+      },
+      {
+        "timestamp": "2026-03-17T10:15:33.000Z",
+        "requestId": "req-e5f6a7b8-2002",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-006-post",
+        "inputText": "What are the differences between my two plans for specialist visits?",
+        "actionGroupsInvoked": ["eligibility-check", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits"],
+        "orchestrationSteps": 8,
+        "metrics": {
+          "inputTokenCount": 13104,
+          "outputTokenCount": 2041,
+          "reasoningTokenCount": 29873,
+          "totalTokenCount": 45018,
+          "latencyMs": 24102,
+          "estimatedCostUsd": 0.221
+        }
+      },
+      {
+        "timestamp": "2026-03-17T11:44:19.000Z",
+        "requestId": "req-e5f6a7b8-2003",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-007-post",
+        "inputText": "Can I still see Dr. Patel under my HMO?",
+        "actionGroupsInvoked": ["eligibility-check"],
+        "orchestrationSteps": 2,
+        "metrics": {
+          "inputTokenCount": 731,
+          "outputTokenCount": 304,
+          "reasoningTokenCount": 1798,
+          "totalTokenCount": 2833,
+          "latencyMs": 1856,
+          "estimatedCostUsd": 0.018
+        }
+      },
+      {
+        "timestamp": "2026-03-18T08:22:47.000Z",
+        "requestId": "req-e5f6a7b8-2004",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-008-post",
+        "inputText": "Compare dental coverage between my plans",
+        "actionGroupsInvoked": ["eligibility-check", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits"],
+        "orchestrationSteps": 7,
+        "metrics": {
+          "inputTokenCount": 12211,
+          "outputTokenCount": 1912,
+          "reasoningTokenCount": 27104,
+          "totalTokenCount": 41227,
+          "latencyMs": 22187,
+          "estimatedCostUsd": 0.196
+        }
+      },
+      {
+        "timestamp": "2026-03-22T15:33:02.000Z",
+        "requestId": "req-e5f6a7b8-2005",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-009-post",
+        "inputText": "Which plan is better for physical therapy? I need about 12 sessions",
+        "actionGroupsInvoked": ["eligibility-check", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits"],
+        "orchestrationSteps": 8,
+        "metrics": {
+          "inputTokenCount": 13487,
+          "outputTokenCount": 2108,
+          "reasoningTokenCount": 30219,
+          "totalTokenCount": 45814,
+          "latencyMs": 24890,
+          "estimatedCostUsd": 0.224
+        }
+      },
+      {
+        "timestamp": "2026-03-24T14:32:18.000Z",
+        "requestId": "req-e5f6a7b8-2006",
+        "agentId": "AGNT7X2K9M",
+        "agentVersion": "3",
+        "sessionId": "sess-010-post",
+        "inputText": "Compare my HMO and PPO benefits for physical therapy",
+        "actionGroupsInvoked": ["eligibility-check", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits", "comprehensive-benefits"],
+        "orchestrationSteps": 7,
+        "metrics": {
+          "inputTokenCount": 12652,
+          "outputTokenCount": 1946,
+          "reasoningTokenCount": 27838,
+          "totalTokenCount": 42436,
+          "latencyMs": 22488,
+          "estimatedCostUsd": 0.198
+        }
+      }
+    ],
+    "summary": {
+      "preDeployment": {
+        "period": "2026-03-10 to 2026-03-16",
+        "averageTokensPerQuery": 2765,
+        "averageReasoningTokensPerQuery": 1750,
+        "averageOrchestrationSteps": 2,
+        "averageCostPerQuery": 0.018,
+        "averageLatencyMs": 1814
+      },
+      "postDeployment": {
+        "period": "2026-03-17 to 2026-03-24",
+        "averageTokensPerQuery": 30612,
+        "averageReasoningTokensPerQuery": 27483,
+        "averageOrchestrationSteps": 6.8,
+        "averageCostPerQuery": 0.197,
+        "averageLatencyMs": 21744,
+        "note": "Averages include both comparison queries (high token count) and non-comparison queries (baseline token count). ~40% of queries trigger comprehensive-benefits action group."
+      }
+    }
+  }
+}

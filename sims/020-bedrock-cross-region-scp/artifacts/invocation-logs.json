@@ -1,0 +1,140 @@
+{
+  "invocationLogs": [
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111001",
+      "timestamp": "2026-03-25T14:47:12.334Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1247,
+      "outputTokenCount": 438,
+      "status": "SUCCESS",
+      "latencyMs": 2341
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111002",
+      "timestamp": "2026-03-25T14:47:13.891Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 0,
+      "outputTokenCount": 0,
+      "status": "ERROR",
+      "errorCode": "AccessDeniedException",
+      "errorMessage": "User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0 with an explicit deny in a service control policy"
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111003",
+      "timestamp": "2026-03-25T14:47:15.102Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1102,
+      "outputTokenCount": 521,
+      "status": "SUCCESS",
+      "latencyMs": 2187
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111004",
+      "timestamp": "2026-03-25T14:47:16.445Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1389,
+      "outputTokenCount": 467,
+      "status": "SUCCESS",
+      "latencyMs": 2543
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111005",
+      "timestamp": "2026-03-25T14:47:17.998Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 0,
+      "outputTokenCount": 0,
+      "status": "ERROR",
+      "errorCode": "AccessDeniedException",
+      "errorMessage": "User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0 with an explicit deny in a service control policy"
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111006",
+      "timestamp": "2026-03-25T14:47:19.221Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1456,
+      "outputTokenCount": 389,
+      "status": "SUCCESS",
+      "latencyMs": 1998
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111007",
+      "timestamp": "2026-03-25T14:47:20.567Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1198,
+      "outputTokenCount": 502,
+      "status": "SUCCESS",
+      "latencyMs": 2211
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111008",
+      "timestamp": "2026-03-25T14:47:22.103Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 0,
+      "outputTokenCount": 0,
+      "status": "ERROR",
+      "errorCode": "AccessDeniedException",
+      "errorMessage": "User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0 with an explicit deny in a service control policy"
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111009",
+      "timestamp": "2026-03-25T14:47:23.876Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1321,
+      "outputTokenCount": 445,
+      "status": "SUCCESS",
+      "latencyMs": 2089
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111010",
+      "timestamp": "2026-03-25T14:47:25.112Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1278,
+      "outputTokenCount": 491,
+      "status": "SUCCESS",
+      "latencyMs": 2456
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111011",
+      "timestamp": "2026-03-25T14:47:26.443Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 0,
+      "outputTokenCount": 0,
+      "status": "ERROR",
+      "errorCode": "AccessDeniedException",
+      "errorMessage": "User: arn:aws:sts::847193026541:assumed-role/polaris-claims-exec/claims-processor is not authorized to perform: bedrock:InvokeModel on resource: arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0 with an explicit deny in a service control policy"
+    },
+    {
+      "requestId": "a1b2c3d4-1001-4a00-b100-111111111012",
+      "timestamp": "2026-03-25T14:47:27.998Z",
+      "accountId": "847193026541",
+      "region": "us-east-1",
+      "modelId": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "inputTokenCount": 1167,
+      "outputTokenCount": 478,
+      "status": "SUCCESS",
+      "latencyMs": 2134
+    }
+  ]
+}

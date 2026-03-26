@@ -1,0 +1,178 @@
+{
+  "ResultsByTime": [
+    {
+      "TimePeriod": { "Start": "2026-03-10", "End": "2026-03-11" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "115.42", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-11", "End": "2026-03-12" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "117.08", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-12", "End": "2026-03-13" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "114.91", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-13", "End": "2026-03-14" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "116.73", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-14", "End": "2026-03-15" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "115.87", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-15", "End": "2026-03-16" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "113.44", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-16", "End": "2026-03-17" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "116.95", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-17", "End": "2026-03-18" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1287.33", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-18", "End": "2026-03-19" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1714.22", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-19", "End": "2026-03-20" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1698.47", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-20", "End": "2026-03-21" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1741.18", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-21", "End": "2026-03-22" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1722.09", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-22", "End": "2026-03-23" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1689.34", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-23", "End": "2026-03-24" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1735.81", "Unit": "USD" }
+          }
+        }
+      ]
+    },
+    {
+      "TimePeriod": { "Start": "2026-03-24", "End": "2026-03-25" },
+      "Groups": [
+        {
+          "Keys": ["Amazon Bedrock"],
+          "Metrics": {
+            "UnblendedCost": { "Amount": "1559.39", "Unit": "USD" }
+          }
+        }
+      ]
+    }
+  ],
+  "DimensionValueAttributes": [],
+  "_summary": {
+    "preDeployAvgDaily": 115.77,
+    "postDeployAvgDaily": 1643.48,
+    "deployDate": "2026-03-17",
+    "weeklyPreDeploy": 812.40,
+    "weeklyPostDeploy": 12147.83,
+    "increaseMultiplier": "14.9x"
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "id": "019-bedrock-rag-dimension",
+  "title": "One Thousand and Twenty-Four",
+  "difficulty": 2,
+  "category": "data",
+  "services": ["bedrock", "opensearch-serverless", "s3", "cloudwatch"],
+  "tags": ["knowledge-base", "rag", "vector-dimension", "opensearch-serverless", "embedding-model", "silent-failure"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "DVA-C02:Domain1:DevelopmentWithAWSServices",
+    "SAA-C03:Domain2:ResilientArchitectures"
+  ],
+  "company": {
+    "name": "Terravox",
+    "industry": "legal technology",
+    "size": "Growth-stage startup, 38 engineers"
+  },
+  "team": {
+    "narrator": {
+      "personality": "ML platform engineer. Methodical, speaks in specifics. References precision and recall like a reflex. Quietly worried about client trust.",
+      "story_beats": [
+        {
+          "trigger": "start",
+          "section": "opening"
+        },
+        {
+          "trigger": "elapsed_minutes:5",
+          "message": "A partner at Whitfield & Associates called in directly. Their associate used the assistant to prepare a brief and cited a case from an unrelated jurisdiction. The brief was filed yesterday."
+        },
+        {
+          "trigger": "elapsed_minutes:10",
+          "message": "QA team ran the regression suite. Retrieval precision dropped from 0.91 to 0.12 overnight. Every query returns results, but the results are essentially random."
+        },
+        {
+          "trigger": "elapsed_minutes:15",
+          "message": "CTO is asking whether we need to take the assistant offline. Two more firms reported incorrect citations this morning."
+        },
+        {
+          "trigger": "wrong_diagnosis",
+          "message": "The knowledge base sync succeeded and the S3 source documents are correct. The issue is in how the vectors are stored and matched, not in the source data."
+        },
+        {
+          "trigger": "fix_validated",
+          "section": "resolution"
+        }
+      ],
+      "hints": [
+        "The retrieval returns results for every query -- it just returns the wrong ones. What could cause a vector search to return near-random matches?",
+        "Something changed in the embedding pipeline recently. Compare the current embedding model configuration to the OpenSearch index mapping.",
+        "The embedding model now produces 1,024-dimension vectors. How many dimensions does the OpenSearch index expect?",
+        "The index mapping specifies 512 dimensions. The model produces 1,024. The vectors are being truncated during ingestion, destroying their semantic meaning."
+      ],
+      "max_hints_before_nudge": 3
+    },
+    "consoles": [
+      {
+        "service": "bedrock",
+        "artifacts": [
+          "artifacts/knowledge-base-config.json",
+          "artifacts/data-source-sync.json"
+        ],
+        "capabilities": [
+          "get_knowledge_base",
+          "get_data_source",
+          "list_data_sources",
+          "list_ingestion_jobs",
+          "retrieve"
+        ]
+      },
+      {
+        "service": "opensearch-serverless",
+        "artifacts": [
+          "artifacts/collection-config.json",
+          "artifacts/index-mapping.json"
+        ],
+        "capabilities": [
+          "batch_get_collection",
+          "get_access_policy",
+          "get_security_policy",
+          "list_collections"
+        ]
+      },
+      {
+        "service": "s3",
+        "artifacts": [
+          "artifacts/s3-listing.txt"
+        ],
+        "capabilities": [
+          "list_objects",
+          "get_bucket_policy",
+          "head_object"
+        ]
+      },
+      {
+        "service": "cloudwatch",
+        "artifacts": [
+          "artifacts/metrics.csv",
+          "artifacts/cloudwatch-logs.txt"
+        ],
+        "capabilities": [
+          "get_metric_data",
+          "list_metrics",
+          "describe_alarms"
+        ]
+      }
+    ]
+  },
+  "resolution": {
+    "root_cause": "The Bedrock Knowledge Base embedding model was reconfigured from Amazon Titan Embeddings V2 at 512 dimensions to 1,024 dimensions, but the OpenSearch Serverless index knn_vector mapping was never updated from its original 512-dimension definition, causing vectors to be silently truncated during ingestion and destroying semantic similarity.",
+    "fix_criteria": [
+      {
+        "id": "identify_dimension_mismatch",
+        "description": "Player identifies the mismatch between the embedding model's 1,024-dimension output and the OpenSearch index's 512-dimension mapping",
+        "required": true
+      },
+      {
+        "id": "understand_truncation_effect",
+        "description": "Player understands that the dimension mismatch causes vectors to lose semantic meaning, making retrieval effectively random",
+        "required": true
+      },
+      {
+        "id": "propose_index_recreation",
+        "description": "Player proposes recreating the OpenSearch index with the correct 1,024-dimension mapping and re-syncing the knowledge base",
+        "required": true
+      },
+      {
+        "id": "identify_missing_validation",
+        "description": "Player notes that the data source sync should validate dimension compatibility or that a CI check should compare model config to index schema",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How vector dimensions in embedding models must match the vector store index configuration",
+      "OpenSearch Serverless index mappings and knn_vector field configuration for Bedrock Knowledge Bases",
+      "Silent failure modes in RAG pipelines where ingestion succeeds but retrieval quality degrades",
+      "Importance of retrieval quality metrics (precision, recall) as operational monitoring alongside availability metrics"
+    ]
+  }
+}

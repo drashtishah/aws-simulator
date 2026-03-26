@@ -1,0 +1,49 @@
+{
+  "ScalableTargets": [
+    {
+      "ServiceNamespace": "sagemaker",
+      "ResourceId": "endpoint/arcline-route-optimizer/variant/AllTraffic",
+      "ScalableDimension": "sagemaker:variant:DesiredInstanceCount",
+      "MinCapacity": 1,
+      "MaxCapacity": 6,
+      "RoleARN": "arn:aws:iam::891377106058:role/aws-service-role/sagemaker.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_SageMakerEndpoint",
+      "CreationTime": "2026-02-11T10:12:30Z",
+      "SuspendedState": {
+        "DynamicScalingInSuspended": false,
+        "DynamicScalingOutSuspended": false,
+        "ScheduledScalingSuspended": false
+      }
+    }
+  ],
+  "ScalingPolicies": [
+    {
+      "PolicyARN": "arn:aws:autoscaling:us-east-1:891377106058:scalingPolicy:7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d:resource/sagemaker/endpoint/arcline-route-optimizer/variant/AllTraffic:policyName/arcline-route-scaling-policy",
+      "PolicyName": "arcline-route-scaling-policy",
+      "ServiceNamespace": "sagemaker",
+      "ResourceId": "endpoint/arcline-route-optimizer/variant/AllTraffic",
+      "ScalableDimension": "sagemaker:variant:DesiredInstanceCount",
+      "PolicyType": "TargetTrackingScaling",
+      "TargetTrackingScalingPolicyConfiguration": {
+        "TargetValue": 100.0,
+        "PredefinedMetricSpecification": {
+          "PredefinedMetricType": "SageMakerVariantInvocationsPerInstance"
+        },
+        "ScaleOutCooldown": 60,
+        "ScaleInCooldown": 300,
+        "DisableScaleIn": false
+      },
+      "Alarms": [
+        {
+          "AlarmName": "arcline-sagemaker-high-invocations",
+          "AlarmARN": "arn:aws:cloudwatch:us-east-1:891377106058:alarm:arcline-sagemaker-high-invocations"
+        },
+        {
+          "AlarmName": "arcline-sagemaker-low-invocations",
+          "AlarmARN": "arn:aws:cloudwatch:us-east-1:891377106058:alarm:arcline-sagemaker-low-invocations"
+        }
+      ],
+      "CreationTime": "2026-02-11T10:15:44Z"
+    }
+  ],
+  "ScalingActivities": []
+}

@@ -1,0 +1,19 @@
+{
+  "ingestionJob": {
+    "knowledgeBaseId": "TVXKB7R2NQ",
+    "dataSourceId": "TVXDS4M1PL",
+    "ingestionJobId": "TVXIJ20260320",
+    "description": "Scheduled sync after embedding model configuration update",
+    "status": "COMPLETE",
+    "statistics": {
+      "numberOfDocumentsScanned": 280412,
+      "numberOfDocumentsIndexed": 280412,
+      "numberOfDocumentsFailed": 0,
+      "numberOfNewDocumentsIndexed": 0,
+      "numberOfModifiedDocumentsIndexed": 280412,
+      "numberOfDocumentsDeleted": 0
+    },
+    "startedAt": "2026-03-20T18:00:03.000Z",
+    "updatedAt": "2026-03-20T19:12:47.000Z"
+  }
+}

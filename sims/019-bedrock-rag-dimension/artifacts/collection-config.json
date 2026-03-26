@@ -1,0 +1,17 @@
+{
+  "collectionDetails": [
+    {
+      "id": "tv8k3xnp2r",
+      "name": "terravox-legal-vectors",
+      "description": "Vector store for Terravox legal document knowledge base",
+      "status": "ACTIVE",
+      "type": "VECTORSEARCH",
+      "arn": "arn:aws:aoss:us-east-1:471923847561:collection/terravox-legal-vectors",
+      "kmsKeyArn": "arn:aws:kms:us-east-1:471923847561:key/mrk-9a3b1c2d-4e5f-6789-abcd-ef0123456789",
+      "createdDate": "2025-11-12T09:18:42.000Z",
+      "lastModifiedDate": "2026-03-20T18:00:05.000Z",
+      "collectionEndpoint": "https://tv8k3xnp2r.us-east-1.aoss.amazonaws.com",
+      "dashboardEndpoint": "https://tv8k3xnp2r.us-east-1.aoss.amazonaws.com/_dashboards"
+    }
+  ]
+}
