@@ -33,9 +33,9 @@ The Application Load Balancer `vellora-prod-alb` was not pre-warmed before a pla
 
 ## Correct Remediation
 
-1. **Pre-warm the ALB for planned events**: Contact AWS Support at least 48 hours before a known traffic event. Provide the expected request rate, the duration, and the average request/response size. AWS will pre-scale the ALB's internal capacity. Alternatively, configure LCU (Load Balancer Capacity Unit) reservation to guarantee a minimum capacity baseline.
+1. **Prepare the load balancer's internal capacity before the next event**. A load balancer (ALB) increases its internal capacity gradually -- it can handle roughly a 2x increase over five minutes, but not a 10x spike in under a minute. For planned events, you need to prepare it in advance. You can contact AWS Support at least 48 hours before the event and tell them the expected traffic rate, duration, and request sizes. AWS will scale the load balancer's internal capacity ahead of time (this is called "pre-warming"). Or you can use LCU reservation (Load Balancer Capacity Units) to set a minimum capacity baseline yourself.
 
-2. **Add ALBRequestCountPerTarget scaling policy**: Create a target tracking scaling policy on the `ALBRequestCountPerTarget` metric. This reacts directly to request volume rather than waiting for CPU to saturate:
+2. **Add a scaling policy that reacts to traffic, not CPU**. The current policy watches CPU usage, which is a lagging indicator -- by the time CPU spikes, requests have already been failing. Instead, create a policy that watches how many requests each server is handling. This metric is called ALBRequestCountPerTarget. A target tracking policy automatically adjusts the number of servers to keep each one below a target value (for example, 300 requests per server):
 
 ```bash
 aws autoscaling put-scaling-policy \
@@ -51,7 +51,7 @@ aws autoscaling put-scaling-policy \
   }'
 ```
 
-3. **Reduce cooldown periods**: Change the default cooldown from 300 seconds to 60 seconds for scale-out actions. This allows the Auto Scaling group to launch multiple instances in rapid succession during sustained spikes:
+3. **Shorten the cooldown period**. The cooldown is a waiting period that prevents the system from launching new servers too quickly. The current 300-second (5-minute) cooldown means only one batch of servers can launch every five minutes. For bursty traffic like a flash sale, reduce the cooldown to 60 seconds so the system can launch multiple rounds of servers in quick succession:
 
 ```bash
 aws autoscaling update-auto-scaling-group \
@@ -59,7 +59,7 @@ aws autoscaling update-auto-scaling-group \
   --default-cooldown 60
 ```
 
-4. **Pre-scale before planned events**: For known traffic events, manually set the desired capacity higher before the event begins:
+4. **Increase the number of running servers before planned events**. For known traffic events, manually increase the desired capacity (the target number of running servers) before the event starts:
 
 ```bash
 aws autoscaling set-desired-capacity \
@@ -67,9 +67,9 @@ aws autoscaling set-desired-capacity \
   --desired-capacity 8
 ```
 
-5. **Add CloudWatch alarms for request-based metrics**: Create alarms on `RequestCount`, `TargetResponseTime`, and `HTTPCode_ELB_5XX_Count` to detect request-driven issues that CPU-based alarms miss.
+5. **Add monitoring alerts that detect traffic problems, not just CPU**. Create CloudWatch alarms on `RequestCount` (total requests), `TargetResponseTime` (how long servers take to respond), and `HTTPCode_ELB_5XX_Count` (error responses from the load balancer). These metrics catch request-driven overload that CPU alarms miss entirely.
 
-6. **Consider scheduled scaling**: For recurring events, use scheduled scaling actions to increase capacity before the expected traffic window:
+6. **Automate the preparation for recurring events**. If flash sales happen regularly, use scheduled scaling actions to automatically increase capacity before the expected traffic window:
 
 ```bash
 aws autoscaling put-scheduled-update-group-action \
@@ -82,50 +82,50 @@ aws autoscaling put-scheduled-update-group-action \
 
 ## Key Concepts
 
-### ALB Scaling Behavior
+### How a load balancer scales (and when it cannot keep up)
 
-Application Load Balancers scale their internal capacity automatically, but gradually. Under normal traffic patterns, an ALB can absorb approximately a 2x increase over a five-minute period. A sudden 10x spike overwhelms the ALB's internal capacity before it can scale. When this happens, the ALB returns 503 errors and the `RejectedConnectionCount` metric spikes.
+An Application Load Balancer (ALB) automatically grows its internal capacity to match traffic, but it does so gradually. Under normal conditions, it can handle roughly a 2x traffic increase over a five-minute period. A sudden 10x spike, like a flash sale countdown reaching zero, overwhelms the load balancer before it can scale up. When this happens, the load balancer returns 503 errors (meaning "I am too busy to handle this") and the `RejectedConnectionCount` metric spikes -- this metric counts how many connections the load balancer refused.
 
-For planned traffic events, AWS Support can pre-provision the ALB's capacity. This is called "pre-warming" or "pre-scaling." You open a support ticket with the expected peak request rate, the expected duration, the percentage of traffic using HTTPS, and the average request/response size. AWS scales the load balancer nodes in advance. The newer alternative is LCU reservation, which allows you to reserve a minimum number of Load Balancer Capacity Units directly.
+For planned events, you can ask AWS to increase the load balancer's capacity in advance. This is called "pre-warming" or "pre-scaling." You open a support ticket with details: expected peak requests per second, expected duration, the percentage of traffic using HTTPS, and average request/response sizes. AWS then scales the load balancer's internal infrastructure ahead of time. A newer, self-service alternative is LCU reservation (Load Balancer Capacity Units), which lets you reserve a minimum capacity baseline without opening a support ticket.
 
-### Auto Scaling Metrics: CPU vs Request Count
+### Why CPU is the wrong metric for scaling web servers
 
-CPUUtilization is a lagging indicator for request-driven workloads. When a traffic spike hits, requests queue at the load balancer and targets before CPU fully saturates. By the time the CPU alarm evaluates (two periods of 60 seconds each, in this case), the damage is done.
+CPU usage (CPUUtilization) is a lagging indicator for web traffic. When a traffic spike hits, requests pile up at the load balancer and on the servers before CPU fully maxes out. By the time a CPU-based alarm triggers (in this case, after two consecutive 60-second evaluation periods), the damage is already done -- customers have already seen errors.
 
-`ALBRequestCountPerTarget` is a leading indicator. It measures the number of requests routed to each target in the group. When request count per target rises, the scaling policy reacts before CPU saturates. This is the recommended metric for web applications behind an ALB.
+A better metric is `ALBRequestCountPerTarget`, which counts how many requests each server behind the load balancer is handling. This reacts directly to traffic changes: when request count per server rises, the scaling policy launches new servers before CPU saturates. This is the recommended metric for web applications behind a load balancer.
 
-### Cooldown Periods
+### The cooldown period: the pause between scaling actions
 
-The default cooldown in Auto Scaling prevents the group from launching or terminating instances before the previous scaling activity takes effect. A 300-second cooldown is appropriate for workloads with gradual traffic changes. For spiky workloads like flash sales, a 300-second cooldown means only one scale-out event can occur every five minutes. A cooldown of 60 to 120 seconds allows multiple rapid scale-out events while still preventing thrashing. Target tracking policies manage their own cooldowns, but the group-level default cooldown applies to simple scaling policies.
+After launching new servers, the Auto Scaling group waits for a period called the cooldown before it will launch more. This prevents overreacting to temporary blips. A 300-second (5-minute) cooldown works for workloads with gradual traffic growth. But for spiky workloads like flash sales, a 5-minute cooldown means you can only add servers once every five minutes -- far too slow. A cooldown of 60 to 120 seconds allows the system to launch multiple rounds of servers quickly while still avoiding wasteful over-scaling. Target tracking policies manage their own cooldowns automatically, which is another reason to prefer them over simple scaling policies.
 
-### ELB Pre-Warming
+### Pre-warming: preparing the load balancer for a planned traffic event
 
-Pre-warming is not self-service. It requires a support ticket to the AWS ELB team. The information needed includes: expected peak requests per second, expected duration, average request size, average response size, percentage of HTTPS traffic, and whether the traffic pattern is sustained or bursty. AWS recommends submitting the request at least 48 hours before the event. LCU reservation is the newer programmatic alternative that does not require a support ticket.
+Pre-warming requires a support ticket to the AWS load balancer team. You provide the expected peak requests per second, expected duration, average request size, average response size, percentage of HTTPS traffic, and whether the traffic pattern is sustained or bursty. AWS recommends submitting the request at least 48 hours before the event. The newer alternative, LCU reservation, lets you set a minimum capacity baseline yourself through the console or CLI without opening a support ticket.
 
 ## Other Ways This Could Break
 
-### ALB Target Health Check Misconfiguration Causes Cascading 502 Errors
+### Health check misconfiguration causes the load balancer to return 502 errors
 
-In this incident, the ALB itself ran out of internal capacity and returned 503 errors. A different failure occurs when the ALB has sufficient capacity but the health check configuration is wrong. If the health check interval is too aggressive or the healthy threshold count is too high, the ALB may mark targets as unhealthy during normal startup or brief latency spikes. The ALB then stops routing to those targets, concentrating load on the remaining ones, which also fail their health checks. The result is 502 errors (bad gateway) rather than 503s (service unavailable). The fix is to set health check intervals and thresholds that account for actual application startup time and to use a dedicated /health endpoint that verifies downstream dependencies.
+In this incident, the load balancer itself ran out of internal capacity and returned 503 errors ("I am too busy"). A different failure happens when the load balancer has plenty of capacity but its health check -- the periodic test it sends to each server -- is configured incorrectly. If the health check interval is too aggressive or requires too many consecutive successes, the load balancer might mark healthy servers as unhealthy during normal startup or brief slowdowns. It stops sending traffic to those servers, overloading the remaining ones, which then also fail their health checks. The result is 502 errors ("bad gateway" -- the load balancer tried to forward a request but the server gave a bad response) rather than 503s. The fix is to set health check timing and thresholds based on how long your application actually takes to start, and to use a dedicated /health URL that checks downstream dependencies like the database.
 
-### Auto Scaling Group Hits MaxSize During a Sustained Traffic Event
+### The server group reaches its maximum size and stops adding servers
 
-In this sim, the ASG never reached its MaxSize of 20 because traffic dropped before scaling caught up. If the flash sale had generated sustained traffic for 30 minutes instead of a brief spike, the ASG could have scaled to its maximum and stopped. At that point, no further scale-out occurs regardless of alarm state. The bottleneck shifts from scaling speed to scaling ceiling. The fix is to set MaxSize with headroom above expected peak demand and to create a CloudWatch alarm on GroupMaxSize that alerts before the ceiling is reached.
+In this sim, the Auto Scaling group (the collection of servers that grows and shrinks automatically) never hit its ceiling of 20 servers because traffic dropped before scaling caught up. But if the flash sale had generated sustained traffic for 30 minutes, the group could have scaled to its maximum and stopped there. No more servers would launch regardless of how high traffic climbs. The bottleneck shifts from "how fast can we add servers" to "we are not allowed to add any more." The fix is to set the maximum group size well above your expected peak and to create a CloudWatch alarm that warns when the group is approaching its limit.
 
-### T3 Instance CPU Credit Exhaustion Under Sustained Load
+### Burstable servers run out of CPU credits under sustained load
 
-The two t3.large instances in this sim were overwhelmed by request volume in under a minute, before CPU credit depletion became a factor. Under a slower but sustained traffic increase -- say a 3x rise sustained for two hours -- t3 instances could exhaust their CPU credit balance and become throttled to baseline performance. The application would slow down without any alarm firing if the alarm threshold is above the baseline CPU. The fix is to enable unlimited mode for t3 instances in production workloads, or to use non-burstable instance types (m5, c5) for applications with sustained high CPU requirements.
+T3 servers (a cost-saving instance type) have a "credit" system for CPU power. They accumulate credits during quiet periods and spend them under heavy load. In this sim, the servers were overwhelmed too quickly for credits to matter. But under a slower, sustained traffic increase -- say a 3x rise lasting two hours -- the servers could exhaust their credit balance and be throttled to a fraction of their normal speed. The application would slow down, and if your alarm threshold is set above the throttled CPU level, no alert would fire. The fix is to enable "unlimited mode" for T3 servers in production so they are never throttled, or to use non-burstable instance types (like M5 or C5) for workloads with sustained high CPU.
 
-### Connection Draining Delay Prevents New Instances From Receiving Traffic
+### Slow connection draining keeps traffic stuck on old servers
 
-When targets are deregistered from a target group, the ALB waits for the deregistration delay (connection draining) to complete before fully removing them. If this delay is set to the default 300 seconds and unhealthy targets are being replaced, new instances may be ready but the ALB continues holding connections to the old ones. This delays recovery even when new capacity is available. The fix is to set the deregistration delay to match the application's typical connection lifetime -- 30 to 60 seconds for stateless web applications instead of the default 300 seconds.
+When a server is being removed from the load balancer's target group (for example, during a scaling event or deployment), the load balancer waits for existing connections to finish. This waiting period is called the deregistration delay or connection draining timeout, and it defaults to 300 seconds (5 minutes). If unhealthy servers are being replaced but the draining timeout is too long, the load balancer keeps holding connections on the old servers even though new healthy servers are available. Recovery is delayed despite new capacity being ready. The fix is to set the deregistration delay to match how long your application's connections typically last -- 30 to 60 seconds for stateless web applications instead of the 300-second default.
 
 ## SOP Best Practices
 
-- For any planned traffic event, pre-scale both the ALB (via LCU reservation or a support ticket submitted at least 48 hours in advance) and the ASG (via scheduled scaling or a manual desired capacity increase). The ALB can only double its capacity every five minutes on its own.
-- Use target tracking policies on request-based metrics (ALBRequestCountPerTarget) instead of simple scaling policies on CPU for web applications behind an ALB. CPU is a lagging indicator for request-driven workloads; by the time CPU saturates, requests have already been queuing.
-- Set cooldown periods based on workload pattern: 60 to 120 seconds for bursty or spiky traffic, 300 seconds only for gradual organic growth. Target tracking and step scaling policies manage their own warmup periods and do not use the default cooldown, which is another reason to prefer them over simple scaling policies.
-- Create CloudWatch alarms on HTTPCode_ELB_5XX_Count, RejectedConnectionCount, and TargetResponseTime in addition to CPU. These metrics detect load balancer capacity issues that CPU-based alarms miss entirely. A spike in RejectedConnectionCount is the earliest signal that the ALB itself is capacity-constrained.
+- Before any planned traffic event, prepare both the load balancer and the server group at least 48 hours in advance. Reserve load balancer capacity (via LCU reservation or a support ticket to AWS) and increase the number of running servers (via scheduled scaling or a manual capacity increase). The load balancer can only double its internal capacity every five minutes on its own -- not fast enough for a sudden spike.
+- For web applications behind a load balancer, use scaling policies that watch request count per server (ALBRequestCountPerTarget) instead of CPU usage. CPU is a lagging indicator -- by the time it spikes, requests have already been failing. Request count reacts directly to traffic changes and triggers scaling sooner.
+- Set the cooldown period (the pause between scaling actions) based on your traffic pattern. For bursty or spiky traffic, use 60 to 120 seconds. The default 300 seconds is only appropriate for gradual, organic growth. Target tracking and step scaling policies manage their own warmup periods and bypass the default cooldown, which is another reason to prefer them over simple scaling.
+- Create CloudWatch alarms on HTTPCode_ELB_5XX_Count (server errors from the load balancer), RejectedConnectionCount (connections the load balancer refused), and TargetResponseTime (how long servers take to respond) -- not just CPU. These metrics detect load balancer capacity problems that CPU alarms miss entirely. A spike in RejectedConnectionCount is the earliest signal that the load balancer itself is overwhelmed.
 
 ## Learning Objectives
 

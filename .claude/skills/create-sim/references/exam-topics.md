@@ -238,4 +238,4 @@ Reference for the create-sim skill. Maps exam domains, weight percentages, key s
 
 - [[sim-template]] -- Gold-standard simulation package example
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
-- [[services/catalog.csv]] -- AWS services catalog; [[learning/catalog.csv]] -- player progress
+- [[learning/catalog.csv]] -- Player service catalog and progress

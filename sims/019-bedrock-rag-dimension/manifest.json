@@ -214,47 +214,47 @@
       "Importance of retrieval quality metrics (precision, recall) as operational monitoring alongside availability metrics"
     ],
     "sop_steps": [
-      "1. Acknowledge the incident: law firms are reporting irrelevant citations from the Terravox legal research assistant.",
-      "2. Confirm the Bedrock Knowledge Base terravox-legal-kb (TVXKB7R2NQ) is in ACTIVE status using get-knowledge-base.",
-      "3. Review the latest ingestion job TVXIJ20260320 using list-ingestion-jobs -- confirm it completed with zero failures.",
-      "4. Check CloudWatch metrics for RetrievalPrecision and RetrievalRecall -- identify the drop from 0.91/0.87 to 0.12/0.09 after the sync.",
-      "5. Inspect the Bedrock Knowledge Base embedding model configuration -- note the dimensions field is set to 1024.",
-      "6. Inspect the OpenSearch Serverless index mapping for terravox-legal-index -- note the knn_vector dimension field is set to 512.",
-      "7. Identify the mismatch: the model produces 1,024-dimension vectors but the index accepts only 512, causing silent truncation.",
-      "8. Delete the existing terravox-legal-index in the OpenSearch Serverless collection (index mappings are immutable for dimension changes).",
-      "9. Recreate terravox-legal-index with dimension: 1024 in the knn_vector field mapping, keeping the same HNSW parameters (ef_construction: 512, m: 16).",
-      "10. Trigger a full data source re-sync on the knowledge base to re-embed and re-index all 280,412 documents.",
-      "11. Monitor the ingestion job until completion. Run the QA regression suite to confirm retrieval precision returns to baseline (0.91+).",
-      "12. Add a CI validation step that compares the Bedrock embedding model dimension configuration against the OpenSearch index mapping dimension before any deployment.",
-      "13. Wire the RetrievalPrecision custom CloudWatch metric to an alarm with a threshold below 0.80."
+      "1. Acknowledge the incident. Law firms are reporting that the Terravox legal research assistant is returning irrelevant case citations.",
+      "2. Check whether the knowledge base is running. Use get-knowledge-base to confirm the Bedrock Knowledge Base (terravox-legal-kb, ID TVXKB7R2NQ) is in ACTIVE status. A knowledge base is a managed service that connects your documents to an AI model for question-answering.",
+      "3. Check whether the latest data import succeeded. Use list-ingestion-jobs to review the most recent sync job (TVXIJ20260320). An ingestion job reads documents from S3, splits them into chunks, converts each chunk into a vector (a list of numbers representing its meaning), and stores those vectors in a search index. Confirm it completed with zero failures.",
+      "4. Check the quality of search results. Look at the RetrievalPrecision and RetrievalRecall metrics in CloudWatch. Precision measures how many of the returned results are actually relevant. Recall measures how many of the relevant results were found. Identify the drop from 0.91/0.87 to 0.12/0.09 after the sync -- search results are now essentially random.",
+      "5. Check how many numbers are in each vector the model produces. Inspect the Bedrock Knowledge Base embedding model configuration. The dimensions field is set to 1024, meaning each text chunk is converted into a list of 1,024 numbers.",
+      "6. Check how many numbers the search index expects. Inspect the OpenSearch Serverless index mapping for terravox-legal-index. The knn_vector dimension field is set to 512 -- the index only accepts lists of 512 numbers.",
+      "7. Identify the mismatch. The model produces 1,024-number vectors, but the index only accepts 512. When a longer vector is written to an index with a smaller dimension, the extra numbers are silently chopped off. This destroys the meaning encoded in the vector, making search results random.",
+      "8. Delete the existing index. The OpenSearch Serverless index (terravox-legal-index) cannot have its dimension changed in place -- the dimension is locked at creation time. You must delete and recreate it.",
+      "9. Recreate the index with the correct size. Set dimension to 1024 in the knn_vector field mapping. Keep the same search algorithm settings (HNSW with ef_construction: 512 and m: 16). HNSW is the algorithm OpenSearch uses to find similar vectors quickly.",
+      "10. Re-import all documents. Trigger a full data source re-sync on the knowledge base to re-embed and re-index all 280,412 documents with the correct 1,024-dimension vectors.",
+      "11. Verify the fix. Monitor the ingestion job until it completes, then run the QA regression suite to confirm retrieval precision returns to baseline (0.91 or higher).",
+      "12. Prevent this from happening again. Add a CI validation step that automatically compares the embedding model's dimension configuration against the OpenSearch index mapping dimension before any deployment reaches production.",
+      "13. Set up a quality alarm. Wire the RetrievalPrecision custom CloudWatch metric to an alarm that triggers if precision drops below 0.80. This catches quality problems before users do."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Embedding model ARN changed to a different model family with incompatible dimensions",
-        "how_it_differs": "Instead of reconfiguring the same model's dimensions, someone swaps Titan V2 for a Cohere or third-party embedding model that produces a completely different vector size. The mismatch is the same, but the root cause is a model swap rather than a configuration change.",
-        "prevention": "Include a pre-deployment check that resolves the embedding model ARN, queries its default output dimensions, and compares against the vector store index mapping before any knowledge base update."
+        "scenario": "Someone swaps the embedding model to a completely different one with a different vector size",
+        "how_it_differs": "Instead of changing a setting on the same model, someone replaces the model entirely -- for example, switching from Amazon Titan V2 to a Cohere model. The new model produces vectors of a different size. The mismatch effect is the same (silent truncation, random results), but the cause is a model swap rather than a configuration change, which may be harder to notice in a code review.",
+        "prevention": "Add a pre-deployment check that looks up the embedding model, determines how many dimensions it produces, and compares that number against the vector store index mapping before any knowledge base update goes live."
       },
       {
-        "scenario": "OpenSearch Serverless collection encryption key rotated or deleted, blocking index access",
-        "how_it_differs": "The KMS key used to encrypt the collection becomes unavailable. Unlike a dimension mismatch, this causes hard errors -- ingestion and retrieval both fail with access denied. The failure is loud, not silent.",
-        "prevention": "Use AWS KMS key policies that prevent accidental deletion. Enable CloudWatch alarms on KMS key state changes. Use multi-region keys for critical collections."
+        "scenario": "The encryption key for the OpenSearch collection is rotated or deleted, blocking all access",
+        "how_it_differs": "The collection is encrypted using a KMS key (a managed encryption key from AWS). If that key becomes unavailable -- deleted, disabled, or its permissions changed -- both ingestion and search fail with access denied errors. Unlike the dimension mismatch, this failure is loud and obvious: nothing works, and the error messages point directly to the key.",
+        "prevention": "Use KMS key policies that prevent accidental deletion. Set up CloudWatch alarms on KMS key state changes so you know immediately if a key is disabled or scheduled for deletion."
       },
       {
-        "scenario": "Chunking strategy changed without re-indexing, degrading retrieval quality",
-        "how_it_differs": "The chunk size or overlap parameters are modified in the data source configuration, but only new documents are re-chunked. Existing documents retain their old chunk boundaries. Retrieval quality degrades gradually rather than catastrophically, making the issue harder to detect.",
-        "prevention": "After any chunking configuration change, trigger a full re-sync (not incremental) to ensure all documents use the new strategy. Monitor retrieval quality metrics continuously."
+        "scenario": "The document splitting settings are changed but old documents keep their original chunks",
+        "how_it_differs": "The chunking strategy (how documents are split into smaller pieces for indexing) is modified -- for example, changing the chunk size or the overlap between chunks. But only newly added documents get the new chunking. Existing documents keep their old chunk boundaries. Search quality degrades gradually rather than catastrophically, making the problem harder to detect.",
+        "prevention": "After any change to chunking settings, run a full re-sync (not incremental) so all documents are re-split with the new strategy. Monitor retrieval quality metrics continuously."
       },
       {
-        "scenario": "OpenSearch Serverless collection hits index capacity limits, causing partial ingestion",
-        "how_it_differs": "The collection runs out of indexing capacity (OCU limits). Some vectors are indexed and some are silently dropped. Unlike the dimension mismatch where all vectors are bad, here some results are correct and some are missing entirely. Ingestion job statistics may show fewer documents indexed than scanned.",
-        "prevention": "Monitor OpenSearch Serverless OCU consumption and set alarms when utilization exceeds 80%. Compare documents-scanned to documents-indexed counts after every sync job."
+        "scenario": "The OpenSearch collection runs out of capacity and silently drops some vectors",
+        "how_it_differs": "OpenSearch Serverless collections have capacity limits measured in OCUs (OpenSearch Compute Units). If the collection runs out of indexing capacity, some vectors are indexed and others are quietly skipped. Unlike the dimension mismatch (where all vectors are bad), here some search results are correct and others are simply missing. The ingestion job may show fewer documents indexed than scanned.",
+        "prevention": "Monitor OpenSearch Serverless OCU consumption and set alarms when utilization exceeds 80%. After every sync job, compare the documents-scanned count to the documents-indexed count to catch dropped documents."
       }
     ],
     "sop_practices": [
-      "Always validate that the embedding model's output dimensions match the vector store index mapping dimensions before deploying any change to either component. Automate this check in CI/CD.",
-      "Treat retrieval quality metrics (precision, recall, NDCG) as first-class operational metrics. Wire them to CloudWatch alarms with the same urgency as latency and error rate alarms.",
-      "After any change to the embedding model, chunking strategy, or index configuration, run a full data source re-sync followed by a regression test suite -- never assume incremental syncs preserve quality.",
-      "Document the relationship between your embedding model configuration and your vector store index schema in a single source of truth. When one changes, the other must be reviewed."
+      "Before deploying any change to the embedding model or the vector store index, verify that the number of dimensions matches on both sides. The model produces vectors of a certain size; the index must be configured to accept exactly that size. Automate this comparison in your CI/CD pipeline so a mismatch is caught before it reaches production.",
+      "Treat search quality metrics as real operational metrics, not just experiment numbers. Precision (how many results are relevant), recall (how many relevant results were found), and NDCG (a ranking quality score) should have CloudWatch alarms with the same urgency as latency and error rate alarms.",
+      "After any change to the embedding model, the document splitting strategy, or the index configuration, run a full data source re-sync followed by a regression test suite. Do not assume an incremental sync (which only processes new or changed documents) will preserve quality -- old documents may now have incompatible vectors.",
+      "Keep a single source of truth that documents the relationship between your embedding model configuration (which model, how many dimensions) and your vector store index schema (which dimension the index expects). When one changes, the other must be reviewed."
     ]
   }
 }

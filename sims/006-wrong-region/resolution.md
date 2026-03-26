@@ -33,30 +33,30 @@ The Lambda function `calendine-booking-api` was deployed to `us-west-2` instead 
 
 ## Correct Remediation
 
-1. **Identify the mismatch**: Run `aws configure list` to see the active region and its source (environment variable, config file, or flag)
-2. **Confirm the function location**: Run `aws lambda get-function --function-name calendine-booking-api --region us-west-2` to confirm the function exists in the wrong region
-3. **Redeploy to the correct region**: Run `aws lambda update-function-code --function-name calendine-booking-api --region us-east-1 --s3-bucket calendine-deploy --s3-key booking-api/latest.zip`
-4. **Fix the pipeline**: Update `AWS_DEFAULT_REGION` in the CI/CD environment to `us-east-1`
-5. **Prevent recurrence**: Add an explicit `--region us-east-1` flag to the deploy script so it does not rely on ambient configuration
-6. **Cleanup**: Delete the orphaned function in us-west-2 to avoid confusion and cost
+1. **Find out where the CLI is sending commands**: Run `aws configure list`. This shows the current region setting and tells you where it comes from -- an environment variable, a config file, or a flag you typed. In this case, it reveals the CLI is targeting `us-west-2` instead of `us-east-1`.
+2. **Confirm the function landed in the wrong place**: Run `aws lambda get-function --function-name calendine-booking-api --region us-west-2`. If the function shows up here, the deploy went to the wrong region.
+3. **Redeploy to the correct region**: Run `aws lambda update-function-code --function-name calendine-booking-api --region us-east-1 --s3-bucket calendine-deploy --s3-key booking-api/latest.zip`. The `--region` flag overrides any default setting and sends the deploy exactly where you want it.
+4. **Fix the pipeline so it does not happen again**: The environment variable `AWS_DEFAULT_REGION` tells the CLI which region to use when no `--region` flag is given. Update it to `us-east-1` in the CI/CD workflow file.
+5. **Add a permanent safeguard**: Put an explicit `--region us-east-1` flag in the deploy command itself. Even if someone changes the environment variable later, the deploy will still go to the right region.
+6. **Clean up the accidental copy**: Delete the orphaned function in `us-west-2` so it does not cost money or confuse anyone: `aws lambda delete-function --function-name calendine-booking-api --region us-west-2`
 
 ## Key Concepts
 
-### AWS Region and Credential Resolution Chain
+### How the CLI Decides Which Region to Use
 
-The AWS CLI and SDKs resolve the region using a priority chain. Understanding this chain is essential for debugging region-related deployment issues:
+When you run an AWS CLI command, it needs to know which region to talk to. It checks several places in a fixed order, and the first one it finds wins:
 
-1. **Explicit `--region` flag** -- highest priority, overrides everything
-2. **`AWS_DEFAULT_REGION` environment variable** -- common in CI/CD pipelines
-3. **`AWS_REGION` environment variable** -- used by some SDKs
-4. **Config file** (`~/.aws/config`) -- the `region` setting under the active profile
-5. **Instance metadata** (EC2/ECS) -- used when running on AWS infrastructure
+1. **The `--region` flag on the command itself** -- highest priority, overrides everything else
+2. **The `AWS_DEFAULT_REGION` environment variable** -- a setting baked into the shell environment, common in CI/CD pipelines
+3. **The `AWS_REGION` environment variable** -- similar to the above, but preferred by some programming language SDKs
+4. **The config file** (`~/.aws/config`) -- a file on disk where you can save a default region
+5. **Instance metadata** (EC2/ECS) -- used when your code runs on AWS infrastructure itself
 
-The command `aws configure list` shows the active value for each setting and where it came from (env, config file, or instance metadata). This is the single most useful diagnostic command for region and credential issues.
+This order matters because if an environment variable is set, the CLI will use it even if your config file says something different. In this incident, the environment variable pointed to the wrong region, and nobody noticed because the config file was never consulted.
 
-### aws configure list
+### aws configure list -- Your First Diagnostic Command
 
-This command displays the current configuration, including the region and its source:
+This command shows you exactly what the CLI is using right now and where each setting comes from:
 
 ```
       Name                    Value             Type    Location
@@ -67,40 +67,40 @@ secret_key     ****************mN9v              env    AWS_SECRET_ACCESS_KEY
     region                us-west-2              env    AWS_DEFAULT_REGION
 ```
 
-The `Type` and `Location` columns tell you exactly where the value is coming from. In this incident, it shows the region is `us-west-2` from the `AWS_DEFAULT_REGION` environment variable.
+The `Type` column is the key. It tells you the source: `env` means an environment variable, `config-file` means the config file on disk, and `iam-role` means the machine itself is providing credentials. In this incident, the region row shows `us-west-2` coming from the environment variable `AWS_DEFAULT_REGION`.
 
-### aws sts get-caller-identity
+### aws sts get-caller-identity -- Checking Who You Are
 
-This command confirms which AWS account and IAM principal is making API calls. It does not tell you the region, but it confirms you are authenticated and shows the account ID -- useful for verifying you are deploying to the right account.
+This command answers the question "which AWS account and user is the CLI acting as right now?" It does not tell you the region, but it confirms you are logged in and shows your account number -- helpful when you want to make sure you are deploying to the right account.
 
-### Lambda ARNs Are Regional
+### Every Resource Address Includes the Region
 
-A Lambda function ARN includes the region: `arn:aws:lambda:us-east-1:491783620174:function:calendine-booking-api`. An API Gateway integration that references this ARN expects the function to exist in `us-east-1`. If the function is deployed to `us-west-2` instead, the ARN does not resolve and the invocation fails with `ResourceNotFoundException`.
+Every AWS resource has a unique address called an ARN (Amazon Resource Name). For a Lambda function, the ARN looks like this: `arn:aws:lambda:us-east-1:491783620174:function:calendine-booking-api`. Notice that `us-east-1` is baked into the address. The API Gateway is configured to call this exact address. If the function was deployed to `us-west-2` instead, it has a different ARN, and the address the API Gateway is looking for simply does not exist. AWS returns a "resource not found" error (called `ResourceNotFoundException`).
 
 ## Other Ways This Could Break
 
-### S3 deployment bucket in a different region than the Lambda function
-Instead of the function being in the wrong region, the deployment artifact (zip file in S3) is in a different region than the target function. Lambda returns PermanentRedirect because the S3 bucket must be in the same region as the function.
-**Prevention:** Create a deployment artifact S3 bucket in each region where you deploy Lambda functions. Validate that the bucket region matches the function region in the pipeline.
+### The deployment zip file is stored in a different region than the function
+The function itself is in the right region, but the zip file containing the code is stored in an S3 bucket in a different region. AWS requires the S3 bucket and the Lambda function to be in the same region. When they are not, AWS returns a redirect error (`PermanentRedirect`) instead of deploying the code.
+**Prevention:** Create a separate S3 bucket for deployment artifacts in each region where you run Lambda functions. Have your pipeline verify that the bucket region matches the function region before deploying.
 
-### API Gateway integration ARN points to a different account
-The function exists in the correct region but in a different AWS account. The ARN includes the account ID, so a mismatch produces the same ResourceNotFoundException. Cross-account invocation requires explicit Lambda resource policy permissions.
-**Prevention:** Use aws sts get-caller-identity in the pipeline to confirm the account ID before deploying. Pin the account ID in the API Gateway integration ARN.
+### The API Gateway points to a function in a different AWS account
+The function is in the correct region, but it lives in a different AWS account. Every resource address (ARN) includes the account number, and if the account number does not match, AWS reports the function as "not found" -- even though it exists elsewhere. Allowing cross-account access requires extra permission configuration on the function itself.
+**Prevention:** Before deploying, run `aws sts get-caller-identity` to confirm you are operating in the correct account. Hard-code the account ID in the API Gateway integration so mismatches are caught immediately.
 
-### AWS_REGION and AWS_DEFAULT_REGION set to different values
-The CLI uses AWS_DEFAULT_REGION, but some SDKs prefer AWS_REGION. If both are set to different values, the CLI and the application code may target different regions, causing the function to deploy to one region while the SDK-based integration expects another.
-**Prevention:** Set both AWS_REGION and AWS_DEFAULT_REGION to the same value in CI/CD environments. Better yet, use explicit --region flags and region parameters in code.
+### Two region variables conflict with each other
+AWS has two environment variables that control the target region: `AWS_DEFAULT_REGION` (used by the CLI) and `AWS_REGION` (preferred by some programming language SDKs). If both are set to different values, the CLI might deploy to one region while application code running in a different language SDK talks to another region.
+**Prevention:** Always set both `AWS_REGION` and `AWS_DEFAULT_REGION` to the same value in your CI/CD environment. Even better, use explicit `--region` flags so you never depend on either variable.
 
-### Lambda function alias or version referenced in API Gateway does not exist
-The function exists in the correct region, but the API Gateway integration ARN includes a version number or alias (e.g., :prod) that has not been published. The ARN does not resolve, producing the same ResourceNotFoundException.
-**Prevention:** Use Lambda aliases managed by your deployment pipeline. Verify the alias exists after each deploy with aws lambda get-alias before updating the API Gateway integration.
+### The function exists but the API Gateway references a version label that was never created
+The function is in the right region and account, but the API Gateway's address includes a version label (like `:prod`) that does not exist yet. Think of it like mailing a letter to the right building but the wrong apartment number -- the building exists, but the specific unit does not. AWS returns the same "not found" error.
+**Prevention:** Use version labels (called aliases in Lambda) that your deployment pipeline creates automatically. After each deploy, verify the alias exists by running `aws lambda get-alias` before updating the API Gateway.
 
 ## SOP Best Practices
 
-- Always use explicit --region flags in CI/CD deploy commands rather than relying on AWS_DEFAULT_REGION or config file defaults -- ambient configuration is the most common source of wrong-region deployments
-- Run aws configure list as the first diagnostic step when any deployment produces unexpected ResourceNotFoundException or region-related errors
-- Pin both AWS_REGION and AWS_DEFAULT_REGION to the same value in pipeline environments, and treat any divergence as a configuration error
-- After fixing a wrong-region deployment, delete orphaned resources in the incorrect region to avoid phantom costs and debugging confusion
+- Always spell out the region explicitly in deploy commands using the `--region` flag. Do not rely on environment variables or config files to pick the right region -- those defaults are the most common reason deploys end up in the wrong place.
+- When a deploy produces a "resource not found" error (called `ResourceNotFoundException`), the first thing to check is which region the CLI is targeting. Run `aws configure list` -- it shows the active region and where that setting is coming from.
+- If your CI/CD environment uses region variables, make sure both `AWS_REGION` and `AWS_DEFAULT_REGION` are set to the same value. Different tools read different variables, and a mismatch means some tools talk to one region while others talk to another.
+- After fixing a wrong-region deploy, go back and delete the accidental copy of the resource in the wrong region. Leftover resources cost money and confuse anyone who looks at the account later.
 
 ## Learning Objectives
 

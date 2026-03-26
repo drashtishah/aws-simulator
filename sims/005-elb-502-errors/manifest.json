@@ -222,45 +222,45 @@
       "Target group health check settings (port, path, thresholds) must match the actual application configuration"
     ],
     "sop_steps": [
-      "Open the EC2 console and navigate to Target Groups. Select urbanfleet-dispatch-tg.",
-      "Check the Health checks tab. Note the health check port (8080) and path (/health).",
-      "Compare the health check port to the registered target port (3000). Identify the mismatch.",
-      "Click Edit health check settings. Change the health check port from 8080 to traffic-port.",
-      "Save the change. Wait 10-30 seconds for the ALB to re-evaluate target health.",
-      "Verify all registered instances transition from unhealthy to healthy in the Targets tab.",
-      "Confirm 502 errors stop by checking the ALB access logs or the HTTPCode_ELB_502_Count CloudWatch metric.",
-      "Review the IaC template that introduced the port change. Revert the health check port to traffic-port in code.",
-      "Add a pre-deployment validation step to the CI/CD pipeline that checks the health check port matches the application listening port.",
-      "Create a dedicated /health endpoint in the application that checks downstream dependencies (database, cache) and deploy it.",
-      "Set up a CloudWatch alarm on HTTPCode_ELB_502_Count with a threshold of 10 per minute and a 1-minute evaluation period."
+      "Open the EC2 console and go to Target Groups. A target group is a named collection of servers that a load balancer sends traffic to. Select urbanfleet-dispatch-tg.",
+      "Click the Health checks tab. The load balancer periodically checks each server to see if it is working. Note the health check port (8080) and path (/health). The port is where the load balancer sends its test request, and the path is the URL it checks.",
+      "Compare the health check port (8080) to the port the application actually listens on (3000). If these do not match, the health check is knocking on a door nobody is behind, and every check will fail.",
+      "Fix the mismatch. Click Edit health check settings and change the port from 8080 to 'traffic-port'. The traffic-port setting tells the load balancer to check the same port the server is registered on, so it always matches the application.",
+      "Save the change. The load balancer will re-check each server within 10-30 seconds. No server restart is needed.",
+      "Go to the Targets tab and verify that all servers transition from 'unhealthy' to 'healthy'. This means the load balancer can now reach the application and will start sending it real user traffic again.",
+      "Confirm the 502 errors have stopped. Check the ALB access logs or the HTTPCode_ELB_502_Count metric in CloudWatch (AWS's monitoring service). The 502 count should drop to zero.",
+      "Fix the root cause in code. Find the infrastructure-as-code template (Terraform, CloudFormation, etc.) that changed the health check port and revert it to traffic-port. This prevents the problem from coming back on the next deployment.",
+      "Add a pre-deployment check to your CI/CD pipeline that verifies the health check port matches the port the application listens on. This catches misconfigured health checks before they reach production.",
+      "Create a dedicated /health endpoint in your application. A good health endpoint checks that downstream services (like the database and cache) are reachable, so the load balancer knows the server is truly ready to serve traffic, not just running.",
+      "Set up a CloudWatch alarm on HTTPCode_ELB_502_Count with a threshold of 10 per minute and a 1-minute evaluation period. This alerts your team within a minute if the load balancer starts returning errors to users."
     ],
     "related_failure_modes": [
       {
         "scenario": "Health check path returns non-200 status",
-        "how_it_differs": "The port is correct but the health check path (e.g., /health) returns a 500 or 404 because the application's health endpoint is broken or does not exist at that path. The ALB marks targets unhealthy for a different reason code (Target.ResponseCodeMismatch instead of Target.Timeout).",
-        "prevention": "Always deploy the health check endpoint before updating the target group to reference it. Test the endpoint manually after deployment."
+        "how_it_differs": "The port is correct, but the URL path the load balancer checks (for example, /health) returns an error response (like 500 or 404) because the health endpoint is broken or does not exist at that path. The load balancer reports a different failure reason -- Target.ResponseCodeMismatch (meaning the response code was not the expected 200 OK) instead of Target.Timeout (meaning no response at all).",
+        "prevention": "Always deploy your health check endpoint before telling the target group to use it. After deployment, manually test the endpoint to confirm it returns a 200 OK response."
       },
       {
         "scenario": "Security group blocks health check traffic",
-        "how_it_differs": "The health check port and path are correct, but the instance security group does not allow inbound traffic from the ALB's security group on the health check port. Checks fail with a timeout, identical to a port mismatch, but the fix is a security group rule change rather than a target group setting change.",
-        "prevention": "Ensure the instance security group allows inbound traffic from the ALB security group on both the application port and the health check port."
+        "how_it_differs": "The health check port and path are correct, but the server's firewall (security group) does not allow incoming traffic from the load balancer on the health check port. The symptom looks identical to a port mismatch -- checks time out -- but the fix is different. Instead of changing the health check settings, you need to add a firewall rule that lets the load balancer talk to the server.",
+        "prevention": "Make sure the server's security group allows inbound traffic from the load balancer's security group on both the application port and the health check port."
       },
       {
         "scenario": "Health check timeout shorter than application startup time",
-        "how_it_differs": "The port and path are correct, but the application takes longer to start than the health check grace period allows. New instances are marked unhealthy before they finish booting. Unlike a port mismatch, the instances eventually become healthy if the thresholds are adjusted.",
-        "prevention": "Set the Auto Scaling health check grace period longer than the application's worst-case startup time. Increase the unhealthy threshold count to tolerate slow starts."
+        "how_it_differs": "The port and path are correct, but the application takes a long time to start up (loading data, warming caches, etc.). The load balancer checks too soon and marks the server as unhealthy before the application has finished starting. Unlike a port mismatch, the servers would eventually pass health checks if given enough time.",
+        "prevention": "Set the Auto Scaling health check grace period (a waiting period before health checks count) to be longer than the worst-case startup time for your application. You can also increase the unhealthy threshold -- the number of failed checks required before marking a server unhealthy -- to give slow starters more chances."
       },
       {
         "scenario": "Target group registered on wrong port",
-        "how_it_differs": "The health check is configured to use traffic-port, but the instances were registered on the wrong port (e.g., 8080 instead of 3000). Both traffic forwarding and health checks fail. The symptom is similar, but the fix is re-registering targets on the correct port.",
-        "prevention": "Validate that the target group registration port matches the application listening port in the launch template or IaC configuration."
+        "how_it_differs": "The health check uses traffic-port (which automatically matches the registered port), but the servers were registered on the wrong port in the first place (for example, 8080 instead of 3000). Both real traffic and health checks go to the wrong port. The symptom looks similar to this scenario, but the fix is re-registering the servers on the correct port rather than changing the health check.",
+        "prevention": "Verify that the port in your target group registration matches the port your application actually listens on. Check this in your launch template or infrastructure-as-code configuration."
       }
     ],
     "sop_practices": [
-      "Always use traffic-port for health checks unless you have a dedicated health check endpoint on a separate port that is confirmed to be listening.",
-      "Treat health check configuration changes as high-risk deployments: validate in staging, deploy with a canary, and monitor HealthyHostCount immediately after rollout.",
-      "Set a CloudWatch alarm on HealthyHostCount dropping below your minimum acceptable threshold, not just on 502 error counts, so you catch health check regressions before they cause user-facing errors.",
-      "When using Auto Scaling with ELB health checks, set the health check grace period long enough for the application to fully start and pass its first health check, or the ASG will terminate instances before they have a chance to become healthy."
+      "Always set the health check port to 'traffic-port' (which automatically matches the port the server is registered on) unless you have a dedicated health check endpoint on a separate port that you have confirmed is working. Hard-coding a port number is fragile and easy to get wrong.",
+      "Treat any change to health check settings as a high-risk deployment. Test in staging first, deploy gradually (with a canary -- a small test group), and immediately watch the HealthyHostCount metric after rollout to catch problems before all servers are affected.",
+      "Set up a CloudWatch alarm that fires when HealthyHostCount (the number of servers the load balancer considers healthy) drops below your minimum acceptable number. This catches health check problems before they cause 502 errors for users -- it is an earlier warning signal than monitoring 502 counts alone.",
+      "When using Auto Scaling with load balancer health checks, set the health check grace period (the waiting time before health checks start counting) long enough for your application to fully start up. If the grace period is too short, Auto Scaling will keep terminating servers before they finish booting, creating an endless cycle of launching and killing instances."
     ]
   }
 }

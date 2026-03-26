@@ -19,6 +19,10 @@ If any of the following are missing, tell the user: "Run `/setup` first to initi
 - `learning/profile.json`
 - `learning/catalog.csv`
 
+### 0b. Disable MCP Tools
+
+The `aws-knowledge-mcp-server` MCP tools are for sim creation, not gameplay. Do NOT call any `aws___` prefixed tools during the play session. If the player asks about AWS documentation or service details, answer from the sim's artifacts and glossary only.
+
 ### 1. Load Learner Profile
 
 Read `learning/profile.json`. If the file is missing or empty, create it with this default:
@@ -204,12 +208,12 @@ When the player proposes a fix, check it against `manifest.resolution.fix_criter
 1. Deliver the Resolution section from story.md
 2. Present the marked architecture diagram from artifacts/architecture-resolution.txt
 3. Provide a learning summary referencing the manifest's learning_objectives
-4. Include real-world remediation approaches for each fix action -- explain how it would be done via AWS Console (step-by-step UI navigation), CLI (`aws` commands), and SDK/IaC (boto3, CloudFormation, or Terraform)
-5. Present `manifest.resolution.sop_steps` as numbered steps under the heading "How AWS recommends approaching this". This section is separate from the narrative -- structured steps, not story prose.
-6. Present `manifest.resolution.related_failure_modes` under the heading "Other ways this system could break". For each entry, describe the scenario, how it differs from the resolved root cause, and how to prevent it.
-7. Present `manifest.resolution.sop_practices` as a bulleted list under the heading "Best practices from AWS SOPs".
+4. Include real-world remediation approaches for each fix action -- explain how it would be done via AWS Console (step-by-step UI navigation), CLI (`aws` commands), and SDK/IaC (boto3, CloudFormation, or Terraform). Use beginner-friendly language: describe what each step accomplishes before naming the specific AWS setting or API action.
+5. Present `manifest.resolution.sop_steps` as numbered steps under the heading "How AWS recommends approaching this". This section is separate from the narrative -- structured steps, not story prose. Rephrase any jargon-heavy steps so the concept is clear before the AWS term appears.
+6. Present `manifest.resolution.related_failure_modes` under the heading "Other ways this system could break". For each entry, describe the scenario, how it differs from the resolved root cause, and how to prevent it. Use beginner-friendly language: lead with a plain English explanation of what happens, then introduce the AWS term. If the manifest text already contains unexplained jargon, rephrase it during delivery.
+7. Present `manifest.resolution.sop_practices` as a bulleted list under the heading "Best practices from AWS SOPs". Same beginner-friendly rule: plain English first, AWS terms second.
 8. Update session state to `"status": "resolved"`
-7. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
+9. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
 
 ### 15. Coaching Analysis
 
@@ -347,6 +351,7 @@ The user may run `/feedback [text]` during play. This is the `/feedback` skill t
 8. Level progression requires completing 2 sims at the current level before unlocking the next.
 9. Coaching feedback must be specific and reference actual player behavior from the session. No generic advice.
 10. All learning file updates happen ONLY after successful resolution. Mid-sim quits preserve state but change nothing else.
+11. Never call MCP tools (aws___*) during a play session. All information comes from the sim package.
 
 ---
 
@@ -356,6 +361,5 @@ The user may run `/feedback [text]` during play. This is the `/feedback` skill t
 - [[coaching-patterns]] -- Investigation pattern analysis and scoring rules
 - [[sim-template]] -- Simulation package structure (consumed by this skill)
 - [[create-sim]] -- Companion skill that generates sim packages
-- [[services/catalog.csv]] -- Static AWS services reference
-- [[learning/catalog.csv]] -- Player service progress
+- [[learning/catalog.csv]] -- Player service catalog and progress
 - [[profile.json]] -- Learner state and progression

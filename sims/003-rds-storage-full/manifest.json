@@ -188,38 +188,38 @@
       "RDS storage auto-scaling can automatically increase storage when free space drops below a threshold"
     ],
     "sop_steps": [
-      "Confirm the RDS instance status is storage-full by running describe-db-instances and checking DBInstanceStatus",
-      "Check CloudWatch FreeStorageSpace metric to verify storage is at zero bytes",
-      "Identify storage consumers: query information_schema.tables for database sizes, check binary log retention with mysql.rds_show_configuration, and review slow query log and general log settings in the parameter group",
-      "Increase allocated storage via modify-db-instance with --allocated-storage and --apply-immediately (no downtime required for most engines)",
-      "Purge accumulated binary logs by calling mysql.rds_set_configuration to reduce binlog retention hours",
-      "Disable verbose logging: set slow_query_log and general_log parameters back to appropriate levels in the DB parameter group",
-      "Enable storage auto-scaling via modify-db-instance with --max-allocated-storage set to a safe ceiling",
-      "Create a CloudWatch alarm on FreeStorageSpace with a warning threshold at 4GB and critical at 2GB, sending to an SNS topic",
-      "Add storage capacity review to monthly operations checklist to catch growth trends before they become incidents"
+      "Check the database status. Run describe-db-instances (a command that shows details about your database) and look at DBInstanceStatus. If it says 'storage-full', the database has run out of disk space and cannot write any new data.",
+      "Verify by checking the FreeStorageSpace metric in CloudWatch (AWS's monitoring service). This metric shows how many bytes of disk space remain. If it is at zero, the database is completely out of room.",
+      "Figure out what is using all the space. Check three things: (1) Query information_schema.tables to see how large each database table has grown. (2) Check binary log retention -- binary logs are files the database writes to record every change, used for backups and replication, but they take up disk space. (3) Review the slow query log and general log settings in the parameter group (a collection of database configuration settings). Verbose logging can quietly consume gigabytes.",
+      "Give the database more disk space immediately. Use the modify-db-instance command with --allocated-storage set to a larger value (e.g., 50GB) and --apply-immediately. For most database types, this does not cause any downtime.",
+      "Clean up the binary logs that have been piling up. Call mysql.rds_set_configuration to reduce how many hours of binary logs the database keeps. Shorter retention means old logs are deleted sooner, freeing up space.",
+      "Turn off verbose logging that was left on. In the parameter group, set slow_query_log and general_log back to reasonable levels. These logs are useful for debugging but should not stay at high verbosity in production.",
+      "Turn on storage auto-scaling so this cannot happen again. Use modify-db-instance with --max-allocated-storage set to a safe ceiling (e.g., 100GB). With auto-scaling enabled, RDS automatically adds more disk space when free space drops below 10% of the total.",
+      "Set up an early warning system. Create a CloudWatch alarm on FreeStorageSpace that alerts your team (via SNS, a notification service) when space drops below 4GB (warning) and 2GB (critical). This gives you time to act before the database fills up completely.",
+      "Add a monthly check of database storage trends to your operations routine. Reviewing how fast storage is growing lets you plan ahead instead of reacting to emergencies."
     ],
     "related_failure_modes": [
       {
         "scenario": "InnoDB temporary tablespace exhaustion",
-        "how_it_differs": "The ibtmp1 file grows unbounded during long-running queries or large sorts. The error message references /rdsdbdata/tmp/ paths instead of user tables. A restart reclaims the space, but the root fix is optimizing queries or increasing temptable_max_mmap.",
-        "prevention": "Monitor FreeStorageSpace alongside query duration. Set temptable_max_ram and temptable_max_mmap to bounded values in the parameter group."
+        "how_it_differs": "Instead of your actual data filling the disk, a temporary file used by the database engine (called ibtmp1) grows out of control. This happens when the database runs long or complex queries that need temporary scratch space. The error message mentions /rdsdbdata/tmp/ paths instead of your own tables. Restarting the database reclaims the space, but the real fix is optimizing those queries or limiting how much temporary space the database can use.",
+        "prevention": "Monitor FreeStorageSpace alongside how long queries take to run. In the parameter group, set bounded values for temptable_max_ram and temptable_max_mmap -- settings that cap how much temporary space the database can use."
       },
       {
         "scenario": "RDS instance reaches maximum allocated storage limit",
-        "how_it_differs": "Storage auto-scaling is enabled but the maximum storage threshold is set too low, so auto-scaling stops before the workload stops growing. The alarm may not fire because the condition appeared to be handled.",
-        "prevention": "Set the maximum storage threshold to at least 26 percent above current allocation. Review the threshold quarterly as data grows."
+        "how_it_differs": "Storage auto-scaling is turned on, but the maximum limit was set too low. Auto-scaling stops adding space once it hits that ceiling, even if data keeps growing. The tricky part is that alerts might not fire because auto-scaling appeared to be handling the situation -- until it could not anymore.",
+        "prevention": "Set the maximum storage limit to at least 26 percent above your current usage. Review this ceiling every few months as your data grows to make sure it still has enough headroom."
       },
       {
         "scenario": "Binary log replication lag filling storage on a read replica",
-        "how_it_differs": "The primary instance has space, but the read replica falls behind on applying relay logs, which accumulate and fill the replica's storage. Write failures appear only on the replica, not the primary.",
-        "prevention": "Monitor FreeStorageSpace on every replica separately. Set binlog retention hours to the minimum acceptable window and alert on ReplicaLag."
+        "how_it_differs": "The primary database has plenty of space, but its read replica (a copy of the database used for handling read traffic) falls behind on processing changes. The unprocessed change logs (called relay logs) pile up on the replica and fill its disk. Write failures only show up on the replica, not the primary, which makes it confusing to diagnose.",
+        "prevention": "Monitor FreeStorageSpace on every replica individually, not just the primary. Keep binary log retention as short as acceptable. Set up an alert on ReplicaLag -- a metric that shows how far behind the replica is."
       }
     ],
     "sop_practices": [
-      "Always enable storage auto-scaling on production RDS instances and set a maximum storage threshold that accounts for at least 6 months of projected growth",
-      "Create CloudWatch alarms on FreeStorageSpace for every RDS instance at provisioning time, not after the first incident",
-      "Treat binary log retention and slow query log settings as infrastructure configuration, not developer debugging toggles -- review them in your parameter group baseline",
-      "Include RDS storage utilization trends in monthly capacity planning reviews so growth is visible before it becomes an emergency"
+      "Always turn on storage auto-scaling when you create a production database. Set the maximum storage limit high enough to cover at least 6 months of expected data growth. Auto-scaling automatically adds disk space when free space drops below 10%, so you never run out unexpectedly.",
+      "Set up a CloudWatch alarm on FreeStorageSpace for every database the moment you create it -- do not wait until after the first storage emergency. Early warnings give you time to act before writes start failing.",
+      "Treat binary log retention and slow query log settings as part of your infrastructure setup, not as temporary debugging switches. Review these settings in your parameter group (the database's configuration template) to make sure they are not quietly consuming disk space.",
+      "Include database storage trends in your monthly capacity reviews. Checking how fast storage is growing each month lets you spot problems early and plan upgrades before they become emergencies."
     ]
   }
 }

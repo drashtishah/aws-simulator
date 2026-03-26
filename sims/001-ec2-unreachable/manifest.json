@@ -203,44 +203,44 @@
       "Changes to security groups take effect immediately with no downtime or restart required"
     ],
     "sop_steps": [
-      "1. Acknowledge the PagerDuty alert and join the BrightPath incident channel.",
-      "2. Confirm the instance brightpath-prod-web-01 (i-0abc123def456789a) is in a running state using describe-instances.",
-      "3. Check application-level health by reviewing CloudWatch logs for brightpath-lms -- confirm the app is healthy but receiving no traffic.",
-      "4. Review CloudWatch NetworkPacketsIn metric for i-0abc123def456789a -- confirm traffic dropped to near-zero at approximately 19:42 UTC.",
-      "5. Describe the security group sg-0a1b2c3d4e5f67890 and list all inbound rules using describe-security-groups.",
-      "6. Identify that no inbound rule exists for TCP port 443 (HTTPS) from 0.0.0.0/0.",
-      "7. Cross-check the Network ACL acl-0fedcba987654321 to confirm it allows TCP 443 inbound -- rule the NACL out as the cause.",
-      "8. Add an inbound rule to sg-0a1b2c3d4e5f67890: protocol TCP, port 443, source 0.0.0.0/0 and ::/0 for IPv6.",
-      "9. Verify the fix by confirming the /health endpoint responds from an external network and CloudWatch health check alarm returns to OK.",
-      "10. Document the incident timeline, root cause, and remediation in the post-incident review channel."
+      "1. Acknowledge the alert and join the incident channel so the team knows someone is investigating.",
+      "2. Check whether the server is actually running. Use the describe-instances command to confirm the instance brightpath-prod-web-01 shows a 'running' state. A running instance means the machine itself is on -- it does not mean users can reach it.",
+      "3. Look at the application logs in CloudWatch (a monitoring service that collects logs and metrics). Confirm the app is healthy internally but is not receiving any incoming traffic -- this points to a network-level block rather than an app crash.",
+      "4. Check the NetworkPacketsIn metric in CloudWatch for this instance. This metric counts how many network packets arrive at the server. If it dropped to zero around 19:42 UTC, something started blocking all incoming traffic at that time.",
+      "5. Inspect the security group attached to this instance. A security group is a virtual firewall that controls what traffic is allowed to reach the server. Use describe-security-groups to list all its inbound rules -- the rules that say which incoming traffic is permitted.",
+      "6. Look for a rule that allows TCP traffic on port 443 (the standard port for HTTPS, or secure web traffic) from 0.0.0.0/0 (meaning any IP address on the internet). If that rule is missing, every web request from users is being silently dropped.",
+      "7. Also check the Network ACL -- a second layer of firewall that operates at the subnet level (a subnet is a section of your virtual network). Confirm it allows port 443 inbound, so you can rule it out and focus on the security group as the cause.",
+      "8. Fix the problem by adding an inbound rule to the security group: allow TCP traffic on port 443 from 0.0.0.0/0 (for IPv4 users) and ::/0 (for IPv6 users). Security group changes take effect instantly -- no server restart needed.",
+      "9. Verify the fix works by checking that the /health endpoint (a URL that reports whether the app is online) responds from an external network. Also confirm the CloudWatch health check alarm goes back to OK.",
+      "10. Write up what happened, when it happened, and how it was fixed. Post it in the incident review channel so the team can learn from it and prevent similar issues."
     ],
     "related_failure_modes": [
       {
         "scenario": "Network ACL deny rule blocks port 443",
-        "how_it_differs": "Instead of the security group, a Network ACL deny rule with a lower rule number than the allow rule blocks HTTPS traffic at the subnet level. Because NACLs are stateless, both inbound and outbound rules must be checked. The security group would look correct in this case, making the problem harder to spot.",
-        "prevention": "Audit NACL rules after changes and ensure allow rules for required ports have lower rule numbers than any broad deny rules. Use VPC Flow Logs to confirm where traffic is being rejected."
+        "how_it_differs": "Instead of the security group (the firewall around the server), the problem is in the Network ACL -- a separate firewall that protects the entire subnet (a section of your network). Network ACLs evaluate rules in numbered order, and a deny rule with a lower number than an allow rule wins. Unlike security groups, Network ACLs are stateless, meaning you need separate rules for traffic going in and coming out. The security group would look fine in this case, making it harder to find.",
+        "prevention": "After any changes, review Network ACL rules to make sure allow rules for required ports have lower rule numbers than any broad deny rules. Turn on VPC Flow Logs -- a feature that records which traffic was accepted or rejected -- to see exactly where traffic is being blocked."
       },
       {
         "scenario": "Route table missing default route to Internet Gateway",
-        "how_it_differs": "The public subnet route table loses its 0.0.0.0/0 route pointing to the Internet Gateway. All internet traffic stops reaching the subnet entirely -- not just one port. The instance also loses outbound internet access, which distinguishes it from a security group issue.",
-        "prevention": "Tag production route tables and use AWS Config rules to detect when a public subnet route table lacks a default route to an Internet Gateway."
+        "how_it_differs": "Every subnet has a route table that tells traffic where to go. If the route table loses its default route (the 0.0.0.0/0 entry that sends internet-bound traffic to the Internet Gateway), all internet traffic stops reaching the subnet -- not just one port. The server also loses its ability to reach the internet, which is different from a security group issue where only inbound traffic is affected.",
+        "prevention": "Label production route tables clearly and use AWS Config rules (automated compliance checks) to detect when a public subnet's route table is missing its default route to the Internet Gateway."
       },
       {
         "scenario": "Elastic IP or public IP disassociated from instance",
-        "how_it_differs": "The instance loses its public IP address, so DNS resolution or direct IP access fails. Unlike a security group issue, the instance becomes unreachable on all ports, and the public IP no longer appears in describe-instances output.",
-        "prevention": "Use Elastic IPs for production instances instead of auto-assigned public IPs. Set up CloudWatch alarms to alert when a production instance has no associated public IP."
+        "how_it_differs": "Every server that needs to be reached from the internet must have a public IP address. If the public IP gets removed, the server becomes unreachable on all ports -- not just one. You can spot this by checking the instance details: the public IP field will be empty.",
+        "prevention": "Use an Elastic IP (a permanent public IP address that you own) for production servers instead of auto-assigned public IPs that can change. Set up a CloudWatch alarm to alert if a production server loses its public IP."
       },
       {
         "scenario": "Security group connection tracking limit exceeded",
-        "how_it_differs": "The security group rules are correct, but the instance has too many concurrent tracked connections and starts dropping new ones. Symptoms appear as intermittent timeouts under high load rather than a complete outage. ENA driver metrics show conntrack_allowance_exceeded incrementing.",
-        "prevention": "Monitor conntrack_allowance_available via ENA driver metrics. Scale to a larger instance type for higher connection tracking limits, or configure security group rules to avoid tracking where possible."
+        "how_it_differs": "The firewall rules are correct, but the server is handling so many simultaneous connections that it hits a built-in limit on how many connections the security group can track. This causes intermittent timeouts under heavy load rather than a complete outage. You can spot this by checking ENA driver metrics (network card statistics) for a counter called conntrack_allowance_exceeded going up.",
+        "prevention": "Monitor the connection tracking metrics from the network card. If you are hitting limits, move to a larger server type that supports more connections, or adjust security group rules to reduce tracking overhead."
       }
     ],
     "sop_practices": [
-      "Always validate security group rules against a documented list of required application ports before and after any modification -- automate this check in CI/CD pipelines.",
-      "Test security group changes in a staging environment that mirrors production network topology before applying them to production.",
-      "Enable VPC Flow Logs on production subnets to provide an audit trail of accepted and rejected traffic, which accelerates root-cause analysis during connectivity incidents.",
-      "Set up CloudWatch alarms on external reachability probes (not just instance status checks) so that network-level outages are detected within minutes, not hours."
+      "Before and after changing any firewall rules, check them against a list of ports your application needs to be reachable on. Automate this check in your deployment pipeline (CI/CD) so human error cannot skip it.",
+      "Test firewall changes in a staging environment (a copy of your production setup used for testing) before applying them to the real production servers. The staging network layout should match production so the test is meaningful.",
+      "Turn on VPC Flow Logs for your production subnets. Flow Logs record every connection attempt and whether it was accepted or rejected. When something goes wrong, these logs let you quickly see where traffic is being blocked.",
+      "Set up CloudWatch alarms that check whether your application is reachable from outside your network -- not just whether the server is running. Instance status checks only confirm the machine is on; they do not catch firewall misconfigurations that block user traffic."
     ]
   }
 }

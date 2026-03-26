@@ -198,42 +198,42 @@
       "API Gateway Lambda integrations reference a function ARN that includes the region -- the function must exist in that specific region"
     ],
     "sop_steps": [
-      "Run aws configure list to identify the active region and its source -- confirm whether the region is coming from an environment variable, config file, or explicit flag",
-      "Run aws lambda get-function --function-name calendine-booking-api --region us-east-1 to confirm the function does not exist in the expected region",
-      "Run aws lambda get-function --function-name calendine-booking-api --region us-west-2 to confirm the function exists in the wrong region",
-      "Redeploy the function to the correct region: aws lambda update-function-code --function-name calendine-booking-api --region us-east-1 --s3-bucket calendine-deploy --s3-key booking-api/latest.zip",
-      "Correct the CI/CD pipeline environment variable: set AWS_DEFAULT_REGION=us-east-1 in the GitHub Actions workflow",
-      "Add an explicit --region us-east-1 flag to the deploy command in the pipeline script so it never depends on ambient environment configuration",
-      "Delete the orphaned function in us-west-2 to avoid confusion and unnecessary cost: aws lambda delete-function --function-name calendine-booking-api --region us-west-2",
-      "Verify the fix by calling the API endpoint and confirming a 200 response"
+      "Check which region the CLI is currently targeting. Run aws configure list and look at the region row -- it tells you where commands are being sent and whether that setting comes from an environment variable, a config file, or a flag you typed explicitly.",
+      "Try to look up the function in the region where it should be. Run aws lambda get-function --function-name calendine-booking-api --region us-east-1. If it comes back 'not found,' the function was never deployed there.",
+      "Now check the other region. Run aws lambda get-function --function-name calendine-booking-api --region us-west-2. If it shows up here, the deploy went to the wrong place.",
+      "Redeploy the function to the correct region by adding an explicit --region flag: aws lambda update-function-code --function-name calendine-booking-api --region us-east-1 --s3-bucket calendine-deploy --s3-key booking-api/latest.zip. The --region flag overrides any default and sends the deploy exactly where you want it.",
+      "Fix the root cause in the CI/CD pipeline. The environment variable AWS_DEFAULT_REGION controls where the CLI sends commands when no --region flag is given. Update it to us-east-1 in the GitHub Actions workflow file.",
+      "Add a permanent safeguard: put an explicit --region us-east-1 flag directly in the deploy command inside the pipeline script. This way, even if the environment variable changes again, deploys still go to the right place.",
+      "Clean up the accidental copy. Delete the orphaned function sitting in the wrong region so it does not confuse anyone or cost money: aws lambda delete-function --function-name calendine-booking-api --region us-west-2.",
+      "Verify everything works end-to-end by calling the API endpoint and confirming you get a 200 response instead of the previous error."
     ],
     "related_failure_modes": [
       {
-        "scenario": "S3 deployment bucket in a different region than the Lambda function",
-        "how_it_differs": "Instead of the function being in the wrong region, the deployment artifact (zip file in S3) is in a different region than the target function. Lambda returns PermanentRedirect because the S3 bucket must be in the same region as the function.",
-        "prevention": "Create a deployment artifact S3 bucket in each region where you deploy Lambda functions. Validate that the bucket region matches the function region in the pipeline."
+        "scenario": "The deployment package (zip file) is stored in S3 in a different region than the function",
+        "how_it_differs": "Here the function itself is in the right region, but the zip file it needs to load is stored in an S3 bucket in a different region. AWS requires the S3 bucket and the Lambda function to be in the same region. When they are not, AWS returns a PermanentRedirect error instead of deploying the code.",
+        "prevention": "Create a separate S3 bucket for deployment artifacts in each region where you run Lambda functions. Have your pipeline verify that the bucket region matches the function region before deploying."
       },
       {
-        "scenario": "API Gateway integration ARN points to a different account",
-        "how_it_differs": "The function exists in the correct region but in a different AWS account. The ARN includes the account ID, so a mismatch produces the same ResourceNotFoundException. Cross-account invocation requires explicit Lambda resource policy permissions.",
-        "prevention": "Use aws sts get-caller-identity in the pipeline to confirm the account ID before deploying. Pin the account ID in the API Gateway integration ARN."
+        "scenario": "The API Gateway points to a function in a different AWS account",
+        "how_it_differs": "The function is in the correct region, but it lives in a different AWS account. Every AWS resource has a unique address called an ARN (Amazon Resource Name), and that address includes the account number. If the account number in the ARN does not match, AWS reports the function as 'not found' -- even though it exists somewhere. Allowing cross-account access requires extra permission configuration on the function.",
+        "prevention": "Before deploying, run aws sts get-caller-identity to confirm you are operating in the correct account. Hard-code the account ID in the API Gateway integration so mismatches are caught immediately."
       },
       {
-        "scenario": "AWS_REGION and AWS_DEFAULT_REGION set to different values",
-        "how_it_differs": "The CLI uses AWS_DEFAULT_REGION, but some SDKs prefer AWS_REGION. If both are set to different values, the CLI and the application code may target different regions, causing the function to deploy to one region while the SDK-based integration expects another.",
-        "prevention": "Set both AWS_REGION and AWS_DEFAULT_REGION to the same value in CI/CD environments. Better yet, use explicit --region flags and region parameters in code."
+        "scenario": "Two different region settings (AWS_REGION and AWS_DEFAULT_REGION) conflict with each other",
+        "how_it_differs": "AWS has two environment variables that control the target region: AWS_DEFAULT_REGION (used by the CLI) and AWS_REGION (preferred by some programming language SDKs). If both are set to different values, the CLI might deploy to one region while application code running in a different language SDK talks to another region.",
+        "prevention": "Always set both AWS_REGION and AWS_DEFAULT_REGION to the same value in your CI/CD environment. Even better, use explicit --region flags so you never depend on either variable."
       },
       {
-        "scenario": "Lambda function alias or version referenced in API Gateway does not exist",
-        "how_it_differs": "The function exists in the correct region, but the API Gateway integration ARN includes a version number or alias (e.g., :prod) that has not been published. The ARN does not resolve, producing the same ResourceNotFoundException.",
-        "prevention": "Use Lambda aliases managed by your deployment pipeline. Verify the alias exists after each deploy with aws lambda get-alias before updating the API Gateway integration."
+        "scenario": "The function exists but the API Gateway references a specific version or alias that was never published",
+        "how_it_differs": "The function is in the right region and the right account, but the API Gateway's address for the function includes a version label (like ':prod') that does not exist yet. Think of it like mailing a letter to the right building but the wrong apartment number -- the building exists, but the specific unit does not. AWS returns the same 'not found' error.",
+        "prevention": "Use version labels (called aliases in Lambda) that your deployment pipeline creates automatically. After each deploy, verify the alias exists by running aws lambda get-alias before updating the API Gateway."
       }
     ],
     "sop_practices": [
-      "Always use explicit --region flags in CI/CD deploy commands rather than relying on AWS_DEFAULT_REGION or config file defaults -- ambient configuration is the most common source of wrong-region deployments",
-      "Run aws configure list as the first diagnostic step when any deployment produces unexpected ResourceNotFoundException or region-related errors",
-      "Pin both AWS_REGION and AWS_DEFAULT_REGION to the same value in pipeline environments, and treat any divergence as a configuration error",
-      "After fixing a wrong-region deployment, delete orphaned resources in the incorrect region to avoid phantom costs and debugging confusion"
+      "Always spell out the region explicitly in deploy commands using the --region flag. Do not rely on environment variables or config files to pick the right region -- those defaults are the most common reason deploys end up in the wrong place.",
+      "When a deploy produces a 'resource not found' error (called ResourceNotFoundException), the first thing to check is which region the CLI is targeting. Run aws configure list -- it shows the active region and where that setting is coming from.",
+      "If your CI/CD environment uses region variables, make sure both AWS_REGION and AWS_DEFAULT_REGION are set to the same value. Different tools read different variables, and a mismatch means some tools talk to one region while others talk to another.",
+      "After fixing a wrong-region deploy, go back and delete the accidental copy of the resource in the wrong region. Leftover resources cost money and confuse anyone who looks at the account later."
     ]
   }
 }

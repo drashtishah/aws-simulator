@@ -1,5 +1,7 @@
 Apply accumulated feedback to improve the simulation skills.
 
+Before making changes, read `references/workspace-map.md` to understand component dependencies and impact.
+
 1. Read `learning/feedback.md`. If there are no entries beyond the header, say "No feedback to process." and stop.
 
 2. Group feedback entries by target:

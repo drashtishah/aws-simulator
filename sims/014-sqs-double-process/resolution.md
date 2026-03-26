@@ -31,7 +31,7 @@ The SQS standard queue `canopy-order-queue` had a visibility timeout of 30 secon
 
 ## Correct Remediation
 
-1. **Increase SQS visibility timeout**:
+1. **Increase the visibility timeout so messages stay hidden long enough for the function to finish**. The visibility timeout controls how long a message is hidden from other consumers after being picked up. If the function has not finished processing before this timeout expires, SQS assumes the message was lost and makes it available again -- which is what caused the duplicate processing. AWS recommends setting the visibility timeout to at least 6 times the Lambda function timeout. With a 90-second Lambda timeout, the minimum is 540 seconds:
 
 ```bash
 aws sqs set-queue-attributes \
@@ -39,9 +39,7 @@ aws sqs set-queue-attributes \
   --attributes '{"VisibilityTimeout": "540"}'
 ```
 
-AWS recommends setting the visibility timeout to at least 6 times the Lambda function timeout. With a 90-second Lambda timeout, the minimum recommended visibility timeout is 540 seconds.
-
-2. **Create a dead-letter queue and configure redrive policy**:
+2. **Create a dead-letter queue (DLQ) to catch messages that keep failing**. A dead-letter queue is a separate queue where messages land after failing processing a set number of times (controlled by maxReceiveCount). Instead of retrying forever and wasting resources, the failed message is moved aside for a human to investigate:
 
 ```bash
 aws sqs create-queue \
@@ -52,11 +50,11 @@ aws sqs set-queue-attributes \
   --attributes '{"RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:123456789012:canopy-order-queue-dlq\",\"maxReceiveCount\":\"3\"}"}'
 ```
 
-Messages that fail processing after 3 attempts are moved to the DLQ instead of retrying indefinitely.
+With this configuration, a message that fails 3 times moves to the DLQ instead of retrying forever.
 
-3. **Add idempotency check to Lambda function**: Before processing, query DynamoDB for the order ID. If the order has already been charged (status is `COMPLETED`), log a duplicate detection event and return success without reprocessing. This makes the consumer idempotent regardless of SQS delivery guarantees.
+3. **Add duplicate-detection logic (idempotency) to the Lambda function**. Before charging the customer or updating inventory, query DynamoDB for the order ID. If the order has already been processed (status is `COMPLETED`), log a duplicate detection event and return success without doing anything. This makes the function safe to run multiple times on the same message, regardless of whether SQS delivers it once or twice.
 
-4. **Configure CloudWatch alarms**:
+4. **Set up an alert for the dead-letter queue**. Any message landing in the DLQ means something went wrong. Create a CloudWatch alarm that fires when the DLQ has any messages waiting:
 
 ```bash
 aws cloudwatch put-metric-alarm \
@@ -72,47 +70,51 @@ aws cloudwatch put-metric-alarm \
   --alarm-actions arn:aws:sns:us-east-1:123456789012:canopy-alerts
 ```
 
-5. **Process refunds**: Identify all duplicate charges by querying Stripe for orders with two successful charges on the same order ID. Issue refunds for the duplicate transactions.
+5. **Refund affected customers**. Find all duplicate charges by querying Stripe for orders with two successful charges on the same order ID. Issue refunds for the duplicate transactions.
 
 ## Key Concepts
 
-### SQS Visibility Timeout
+### The visibility timeout: how SQS decides when to redeliver a message
 
-When a consumer receives a message from an SQS queue, the message becomes invisible to other consumers for the duration of the visibility timeout. If the consumer does not delete the message before the timeout expires, the message becomes visible again and can be received by another consumer. The default visibility timeout is 30 seconds. For Lambda event source mappings, AWS recommends setting the visibility timeout to at least 6 times the function timeout. This accounts for the function execution time plus potential retries by the Lambda service.
+When a worker picks up a message from an SQS queue, SQS hides that message from all other workers for a period called the visibility timeout. This gives the worker time to finish processing and delete the message. If the worker does not delete the message before the timeout expires, SQS assumes something went wrong and makes the message visible again so another worker can try. The default visibility timeout is 30 seconds.
 
-### Dead-Letter Queues
+When using Lambda as the worker (connected via an event source mapping), AWS recommends setting the visibility timeout to at least 6 times the Lambda function timeout. This provides a wide margin to account for the function execution, any internal retries by the Lambda service, and processing variability.
 
-A dead-letter queue (DLQ) receives messages that could not be processed successfully after a specified number of attempts (`maxReceiveCount`). Without a DLQ, failed messages remain in the source queue and are retried indefinitely, consuming Lambda concurrency and potentially causing the same errors repeatedly. The DLQ acts as a holding area where engineers can inspect failed messages, diagnose the failure, and either fix the issue and replay the messages or discard them.
+### Dead-letter queues: a safety net for messages that keep failing
 
-### Idempotency in Distributed Systems
+A dead-letter queue (DLQ) is a separate queue that catches messages which fail processing too many times. You configure a redrive policy on the main queue with a `maxReceiveCount` -- say, 3 -- meaning that after a message has been picked up and not successfully processed 3 times, SQS automatically moves it to the DLQ. Without a DLQ, failed messages stay in the main queue forever, getting retried endlessly, consuming Lambda capacity, and potentially causing the same error over and over. The DLQ gives engineers a place to inspect failures, figure out what went wrong, and either replay the messages after fixing the issue or discard them.
 
-SQS standard queues guarantee at-least-once delivery. This means a message may be delivered more than once even when the visibility timeout is configured correctly. Any consumer of an SQS standard queue must be idempotent -- processing the same message twice must produce the same result as processing it once. Common idempotency strategies include: using a unique identifier (order ID) to check for prior processing before executing side effects, storing processing state in a database with conditional writes, or using an idempotency library that tracks request IDs.
+### Why your message consumer must handle duplicates (idempotency)
+
+SQS standard queues guarantee "at-least-once delivery." This means every message will be delivered at least once, but the same message might be delivered more than once -- even when the visibility timeout is configured correctly. This is a fundamental property of the queue, not a bug. Because of this, every consumer of an SQS standard queue must be idempotent, meaning that processing the same message twice produces the same result as processing it once.
+
+For example, before charging a customer, you check whether the order has already been charged. Common strategies include: looking up the order ID in a database before executing side effects, using conditional writes that only succeed if the record does not already exist, or using an idempotency library that tracks which requests have already been handled.
 
 ## Other Ways This Could Break
 
-### Lambda timeout shorter than processing time
+### Lambda times out before finishing, causing failed orders
 
-If the Lambda timeout were set below the actual processing duration (say, 30 seconds instead of 90), the function would be killed mid-execution before completing the Stripe charge or inventory update. The message would return to the queue and eventually land in a DLQ (if one existed). The symptom would be failed orders and growing DLQ depth, not duplicate charges. The distinction matters: in this sim, the Lambda had enough time to finish, but SQS did not know that.
+In this sim, the Lambda function had enough time to finish its work (90-second timeout). The problem was that the queue's visibility timeout (30 seconds) expired first, making the message available to a second function copy. A different failure happens if the Lambda timeout is set too short -- say, 30 seconds when the function needs 60. In that case, AWS kills the function mid-execution before it finishes charging the customer or updating inventory. The message returns to the queue and eventually lands in a dead-letter queue (if one exists). The symptom is failed orders and a growing DLQ, not duplicate charges. The key distinction: in this sim, the function completed its work fine -- SQS just did not know it was still working.
 
-### FIFO queue throttling from message group ID contention
+### Using a FIFO queue causes a throughput bottleneck
 
-A FIFO queue guarantees exactly-once processing and strict ordering within a message group. If Canopy had used a FIFO queue, the double-charge problem would not have occurred. However, if every order shared a single message group ID, throughput would be capped at 300 transactions per second per group. The symptom would be rising queue depth and delivery latency during high-traffic periods like the promotional campaign. The fix is to assign distinct group IDs per customer or per region to allow parallel processing across groups.
+A FIFO (first-in, first-out) queue guarantees each message is processed exactly once and in order. If Canopy had used a FIFO queue, the double-charge problem would not have happened. However, FIFO queues process messages in groups. If every order shared the same group ID, throughput would be capped at 300 messages per second for that group. During a promotional campaign with high order volume, this would cause orders to pile up in the queue and processing would fall behind. The fix is to use different group IDs (for example, per customer or per region) so orders in different groups can be processed in parallel.
 
-### Poison-pill messages without a dead-letter queue
+### A broken message retries forever because there is no dead-letter queue
 
-A poison-pill message is one that always fails processing -- for example, an order with a malformed payload that causes the Lambda to throw an unhandled exception. Without a DLQ, SQS retries the message indefinitely. Each retry consumes a Lambda invocation and the message never leaves the queue. Over time, ApproximateAgeOfOldestMessage climbs, Lambda concurrency is wasted on repeated failures, and legitimate messages back up behind the poison pill. In this sim, messages were not failing -- they were succeeding twice. But the absence of a DLQ meant there was no safety net for either scenario.
+A "poison-pill" message is one with bad data that always causes the function to crash -- for example, an order with a malformed payload. Without a dead-letter queue, SQS retries this message indefinitely. Each retry wastes a Lambda invocation, the message never leaves the queue, and other legitimate orders get stuck waiting behind it. Over time, the oldest message in the queue gets older and older (shown by the ApproximateAgeOfOldestMessage metric). In this sim, messages were not failing -- they were succeeding twice. But the absence of a DLQ meant there was no safety net for either scenario.
 
-### Lambda reserved concurrency too low for queue throughput
+### Lambda concurrency limit causes orders to wait in the queue
 
-If the Lambda function had a reserved concurrency of 5 but the queue contained 50 pending messages during the promotional campaign, the Lambda service would throttle invocations. SQS would back off polling and messages would sit in the queue longer, but each message would still be processed only once (assuming the visibility timeout was correct). The symptom would be increased order processing latency and spikes in the Lambda Throttles metric, not duplicate charges.
+If the Lambda function is limited to, say, 5 simultaneous copies (a setting called reserved concurrency) but the queue has 50 messages waiting during a promotional campaign, AWS throttles the function and SQS slows down its polling. Messages sit in the queue longer, but each one is still processed only once (assuming the visibility timeout is correct). The symptom is slow order processing and spikes in the Lambda Throttles metric, not duplicate charges. The fix is to set reserved concurrency proportional to expected order volume and monitor the Throttles metric.
 
 ## SOP Best Practices
 
-- Always set the SQS visibility timeout to at least 6 times the consumer function timeout when using Lambda event source mappings. This is the ratio AWS recommends in its documentation. For a 90-second Lambda timeout, the minimum visibility timeout is 540 seconds.
-- Configure a dead-letter queue on every production SQS queue. Set maxReceiveCount between 3 and 5. Set the DLQ retention period longer than the source queue retention period so messages are not lost before inspection.
-- Add a CloudWatch alarm on the DLQ ApproximateNumberOfMessagesVisible metric with a threshold of 1. Any message landing in the DLQ indicates a processing failure that requires investigation.
-- Design every SQS consumer to be idempotent. Use a unique identifier from the message (order ID, transaction ID) to check whether the operation has already been performed before executing side effects like charges, inventory decrements, or slot reservations. SQS standard queues guarantee at-least-once delivery, meaning duplicates can occur even with a correctly configured visibility timeout.
-- Monitor the ratio of NumberOfMessagesReceived to NumberOfMessagesSent in CloudWatch. Under normal operation the ratio is approximately 1:1. A sustained ratio above 1 indicates message redelivery, which signals either a visibility timeout problem or repeated processing failures.
+- Always set the SQS visibility timeout to at least 6 times the Lambda function timeout when they are connected via an event source mapping. This ratio is what AWS recommends. For a 90-second Lambda timeout, the minimum visibility timeout is 540 seconds. This ensures the message stays hidden long enough for the function to finish, even if it runs slowly or retries internally.
+- Set up a dead-letter queue on every production SQS queue. Set maxReceiveCount (the number of failed attempts before moving the message aside) between 3 and 5. Make the DLQ retention period longer than the main queue's retention period so messages are not deleted before an engineer can inspect them.
+- Add a CloudWatch alarm on the DLQ's ApproximateNumberOfMessagesVisible metric with a threshold of 1. Any message in the DLQ means something went wrong with processing and needs investigation.
+- Design every message consumer to be idempotent -- meaning processing the same message twice produces the same result as processing it once. Before performing side effects like charging a customer, updating inventory, or reserving a delivery slot, check whether the operation was already completed using a unique identifier like the order ID. SQS standard queues guarantee at-least-once delivery, so duplicates can occur even with a correctly configured visibility timeout.
+- Monitor the ratio of messages received to messages sent in CloudWatch. Under normal operation, each message should be picked up approximately once (a 1:1 ratio). A sustained ratio above 1 means messages are being redelivered, which signals either a visibility timeout that is too short or repeated processing failures.
 
 ## Learning Objectives
 

@@ -56,7 +56,7 @@
         "type": "string"
       },
       "minItems": 1,
-      "description": "AWS service slugs involved. Must match service column in services/catalog.csv."
+      "description": "AWS service slugs involved. Must match service column in learning/catalog.csv."
     },
     "tags": {
       "type": "array",

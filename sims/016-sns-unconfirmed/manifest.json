@@ -216,47 +216,47 @@
       "Notification pipelines need monitoring: SNS delivery metrics (NumberOfNotificationsFailed) should trigger a separate alert path"
     ],
     "sop_steps": [
-      "1. Acknowledge the incident and join the Clarabridge incident channel. Note that the team learned about the outage from a customer tweet, not from any alerting system.",
-      "2. Confirm the CloudWatch alarm clarabridge-ingest-error-rate is in ALARM state using describe-alarms. Verify the alarm action targets SNS topic clarabridge-ops-alerts.",
-      "3. List subscriptions on the topic using list-subscriptions-by-topic. Record the protocol, endpoint, and SubscriptionArn for each subscription.",
-      "4. Identify that the email subscription to ops-team@clarabridge.io has SubscriptionArn set to PendingConfirmation -- delivery was never attempted.",
-      "5. Check CloudWatch Logs for the clarabridge-slack-notifier Lambda function. Identify the 403 Forbidden errors from the Slack webhook API indicating a rotated webhook URL.",
-      "6. Check SNS SMS account attributes using get-sms-attributes. Confirm the MonthlySpendLimit is $1.00 and the SMSMonthToDateSpentUSD metric shows the limit is exhausted.",
-      "7. Confirm the email subscription by locating the confirmation email in the ops-team@clarabridge.io spam folder and clicking the confirmation link. If expired, delete and re-create the subscription.",
-      "8. Update the clarabridge-slack-notifier Lambda environment variable SLACK_WEBHOOK_URL with the current webhook URL using update-function-configuration.",
-      "9. Increase the SNS SMS spending limit using set-sms-attributes with a MonthlySpendLimit of $50 or higher.",
-      "10. Configure a dead-letter queue on the clarabridge-slack-notifier Lambda to capture future invocation failures.",
-      "11. Create a new CloudWatch alarm on NumberOfNotificationsFailed for the clarabridge-ops-alerts topic. Route this alarm to a separate, verified notification path (e.g., a PagerDuty integration).",
-      "12. Run a periodic subscription health check (weekly cron or AWS Config rule) that alerts if any subscription on critical topics is in PendingConfirmation status.",
-      "13. Verify all three paths deliver a test notification. Document the incident timeline and remediation in the post-incident review."
+      "1. Acknowledge the incident. Note that the team found out about the outage from a customer tweet -- the alerting system did not notify anyone.",
+      "2. Check whether the alarm actually fired. Use the describe-alarms API to confirm the CloudWatch alarm (clarabridge-ingest-error-rate) is in ALARM state. CloudWatch alarms watch a metric over time and take an action when a threshold is crossed. Verify its action is set to publish to the SNS topic clarabridge-ops-alerts.",
+      "3. Look at who is subscribed to the topic. Use list-subscriptions-by-topic to see every subscription -- each one is a delivery path (email, Lambda, SMS, etc.) that SNS tries to send the message to. Record the protocol, endpoint, and subscription ARN for each.",
+      "4. Find the broken email path. The email subscription to ops-team@clarabridge.io shows a status of PendingConfirmation. That means the recipient never clicked the confirmation link AWS sent, so SNS silently skipped delivery -- no error, no log, no metric.",
+      "5. Find the broken Slack path. Check the CloudWatch Logs for the clarabridge-slack-notifier Lambda function. Look for 403 Forbidden errors from the Slack webhook API. A webhook is an HTTP endpoint that receives automated messages -- this one was rotated (its URL changed) and the Lambda still has the old URL.",
+      "6. Find the broken SMS path. Use get-sms-attributes to check the account's text message settings. SNS has a monthly spending cap for text messages (the MonthlySpendLimit -- it defaults to just $1.00). Confirm the cap has been reached for the month, which causes SNS to silently stop sending texts.",
+      "7. Fix the email path. Find the original confirmation email in the ops inbox spam folder and click the link. If the link has expired, delete the subscription and create a new one using the sns subscribe API, then immediately confirm the new email.",
+      "8. Fix the Slack path. Update the Lambda function's environment variable (a configuration value the function reads at runtime) called SLACK_WEBHOOK_URL with the current webhook URL. Use the update-function-configuration API.",
+      "9. Fix the SMS path. Raise the monthly text message spending cap to a value that can handle your normal alert volume. Use set-sms-attributes to set MonthlySpendLimit to $50 or higher.",
+      "10. Add a safety net for the Slack Lambda. Configure a dead-letter queue (a queue that captures messages that failed to process) on the function so that future invocation failures are saved instead of silently lost.",
+      "11. Monitor the notification pipeline itself. Create a new CloudWatch alarm on the NumberOfNotificationsFailed metric for the SNS topic. This metric counts how many delivery attempts failed. Route this alarm to a separate, already-verified notification path (such as a PagerDuty integration) so you find out when alerts themselves are broken.",
+      "12. Automate subscription health checks. Set up a weekly check (using a scheduled Lambda or AWS Config rule) that lists all subscriptions on critical topics and alerts if any are still in PendingConfirmation status.",
+      "13. Verify all three paths work. Send a test notification through the topic and confirm it arrives via email, Slack, and SMS. Document the incident timeline and remediation."
     ],
     "related_failure_modes": [
       {
-        "scenario": "SNS subscription filter policy silently drops messages",
-        "how_it_differs": "The subscription is confirmed and the endpoint is healthy, but a filter policy on the subscription does not match the message attributes. SNS increments NumberOfNotificationsFilteredOut instead of NumberOfNotificationsFailed. The message is intentionally dropped, not failed, so delivery status logging does not capture it as an error.",
-        "prevention": "Audit subscription filter policies when changing message attribute schemas. Monitor the NumberOfNotificationsFilteredOut metric alongside NumberOfNotificationsFailed to detect unexpected filtering."
+        "scenario": "A subscription filter quietly drops messages before they are delivered",
+        "how_it_differs": "The subscription is confirmed and the endpoint is working, but a filter rule on the subscription does not match the incoming message's tags. SNS intentionally skips delivery -- it counts this as 'filtered out,' not 'failed,' so the NumberOfNotificationsFailed metric stays at zero. The message is dropped on purpose, but the effect feels the same: nobody gets notified. SNS tracks this separately in a metric called NumberOfNotificationsFilteredOut.",
+        "prevention": "Whenever you change the structure of your message tags (called message attributes), review the filter rules (filter policies) on every subscription to make sure they still match. Monitor NumberOfNotificationsFilteredOut alongside NumberOfNotificationsFailed so you can spot unexpected filtering."
       },
       {
-        "scenario": "SNS topic policy blocks the publishing service",
-        "how_it_differs": "The publish itself fails instead of the delivery. If the topic policy does not grant sns:Publish permission to the cloudwatch.amazonaws.com service principal, the CloudWatch alarm action returns AccessDenied and no message reaches the topic at all. The alarm shows ActionsExecutionState as FAILED.",
-        "prevention": "Include a Condition with ArnLike on aws:SourceArn in the topic policy to allow CloudWatch alarms. Test alarm actions in staging by manually setting the alarm state with set-alarm-state."
+        "scenario": "The SNS topic's permission policy blocks the service trying to publish to it",
+        "how_it_differs": "Here the problem is earlier in the chain -- the message never even reaches the topic. Every SNS topic has an access policy that controls who can publish messages to it. If that policy does not allow the CloudWatch service to publish, the alarm action fails with an AccessDenied error and no subscription receives anything. The alarm's ActionsExecutionState shows FAILED.",
+        "prevention": "Make sure the topic's access policy grants sns:Publish permission to cloudwatch.amazonaws.com (the CloudWatch service). Test alarm actions in a staging environment by manually triggering the alarm with the set-alarm-state API."
       },
       {
-        "scenario": "Lambda destination or DLQ misconfigured, failures vanish",
-        "how_it_differs": "The Lambda subscription is confirmed and SNS invokes the function successfully, but the function fails internally. Without a dead-letter queue or on-failure destination, the failed invocation is retried and then discarded. The failure is only visible in CloudWatch Logs for the function, which nobody monitors.",
-        "prevention": "Always configure a dead-letter queue or on-failure destination on Lambda functions triggered by SNS. Set a CloudWatch alarm on the DLQ ApproximateNumberOfMessagesVisible metric."
+        "scenario": "A Lambda function fails internally but has no dead-letter queue, so failures vanish",
+        "how_it_differs": "SNS successfully calls the Lambda function (the subscription is confirmed and working), but the function's own code crashes. Without a dead-letter queue (a place to save failed messages) or an on-failure destination, the failed run is retried a few times and then discarded. The only evidence is buried in the function's CloudWatch Logs, which nobody is watching.",
+        "prevention": "Always set up a dead-letter queue or on-failure destination on Lambda functions that are triggered by SNS. Create a CloudWatch alarm on the dead-letter queue's message count (ApproximateNumberOfMessagesVisible) so you know when failures are piling up."
       },
       {
-        "scenario": "SNS delivery retry exhaustion for HTTPS endpoints",
-        "how_it_differs": "An HTTPS subscription endpoint is temporarily unavailable. SNS retries according to the delivery policy (default: 3 retries over 20 seconds for HTTP). If all retries fail, the message is discarded unless a DLQ is configured on the subscription itself. Unlike Lambda, SNS subscriptions support their own redrive policy.",
-        "prevention": "Configure a subscription-level redrive policy pointing to an SQS dead-letter queue. Monitor the NumberOfNotificationsFailed metric and the DLQ depth."
+        "scenario": "SNS gives up retrying an HTTPS endpoint and discards the message",
+        "how_it_differs": "An HTTPS subscription endpoint (a web server that receives notifications) is temporarily down. SNS retries delivery a few times (by default, 3 retries over 20 seconds for HTTP). If every retry fails, SNS discards the message -- unless you have configured a dead-letter queue on the subscription itself. SNS subscriptions (not just Lambda functions) can have their own dead-letter queue, called a redrive policy.",
+        "prevention": "Set up a subscription-level redrive policy that sends failed messages to an SQS dead-letter queue. Monitor both the NumberOfNotificationsFailed metric and the dead-letter queue depth."
       }
     ],
     "sop_practices": [
-      "After creating any SNS email subscription, immediately verify it reaches Confirmed status -- do not assume the confirmation email was received. Check spam folders and set a calendar reminder to verify within 24 hours.",
-      "Set the SNS SMS MonthlySpendLimit to a value that accommodates peak alert volume with headroom, and create a CloudWatch alarm on SMSMonthToDateSpentUSD that fires at 80% of the limit.",
-      "Configure dead-letter queues on every Lambda function invoked by SNS, and on every HTTPS subscription, so that delivery failures are captured rather than silently discarded.",
-      "Monitor the notification pipeline itself: create a CloudWatch alarm on NumberOfNotificationsFailed for every critical SNS topic and route it to a separate, independently verified notification path."
+      "After creating any email subscription on an SNS topic, immediately check that it reaches Confirmed status. Do not assume the confirmation email arrived -- look in spam folders and set a calendar reminder to verify within 24 hours. Until confirmed, SNS silently drops every message meant for that address.",
+      "Raise the monthly text message spending cap (MonthlySpendLimit) to a value that can handle your peak alert volume with room to spare. The default is just $1.00 per month. Also create a CloudWatch alarm on the SMSMonthToDateSpentUSD metric that fires at 80% of your limit, so you know before texts stop sending.",
+      "Set up a dead-letter queue on every Lambda function that SNS triggers, and on every HTTPS subscription. A dead-letter queue catches messages that failed to deliver, so failures are saved for investigation instead of silently thrown away.",
+      "Monitor the notification pipeline itself. Create a CloudWatch alarm on the NumberOfNotificationsFailed metric for every important SNS topic, and route that alarm to a separate, already-verified notification path. This way, if your alerts break, the alert-about-alerts still works."
     ]
   }
 }

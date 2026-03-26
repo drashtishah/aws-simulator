@@ -208,39 +208,39 @@
       "Route tables for gateway endpoints use prefix lists (pl-xxxxxxxx) to direct S3-bound traffic to the endpoint instead of the NAT Gateway"
     ],
     "sop_steps": [
-      "Turn on VPC flow logs and analyze traffic to identify which destinations account for the highest data transfer through the NAT Gateway",
-      "Open Cost Explorer and filter by NAT Gateway service to quantify data processing charges by day and identify the start date of the cost anomaly",
-      "Check the private subnet route table for existing VPC endpoints -- confirm that no S3 or DynamoDB gateway endpoint exists",
-      "Create an S3 VPC gateway endpoint using aws ec2 create-vpc-endpoint with --vpc-endpoint-type Gateway and associate it with the private subnet route table",
-      "Verify the route table now contains a prefix list entry (pl-xxxxxxxx) targeting the new VPC endpoint, which takes priority over the 0.0.0.0/0 NAT Gateway route",
-      "Confirm the data pipeline continues writing to S3 without errors -- gateway endpoints are transparent to applications and require no SDK or code changes",
-      "Monitor NAT Gateway data processing charges in Cost Explorer over the next 24 hours to confirm the cost reduction",
-      "Evaluate whether a DynamoDB gateway endpoint is also needed for any workloads in the private subnet",
-      "Create a CloudWatch billing alarm for NAT Gateway charges exceeding a daily threshold to catch similar issues in the future",
-      "Audit all other private subnets in the VPC for high-volume traffic to S3 or DynamoDB that could benefit from gateway endpoints"
+      "Turn on network traffic logs (called VPC flow logs) so you can see where data from your private servers is going. Look for which destinations are sending the most data through the NAT Gateway -- a relay service that charges you per gigabyte.",
+      "Open the AWS spending dashboard (Cost Explorer) and filter by NAT Gateway. Look at the daily charges to see how much you are paying and when the high charges started.",
+      "Look at the private subnet's route table -- this is the list of rules that tells your servers where to send traffic. Check whether any shortcuts to S3 or DynamoDB exist (these shortcuts are called VPC gateway endpoints). In this case, none exist.",
+      "Create a free shortcut so traffic to S3 stays inside the AWS network instead of going through the NAT Gateway. This shortcut is called an S3 VPC gateway endpoint. Use the command aws ec2 create-vpc-endpoint with --vpc-endpoint-type Gateway and attach it to the private subnet's route table.",
+      "After creating the endpoint, check the route table to confirm a new entry appeared. This entry uses a prefix list (a set of S3 IP addresses, written as pl-xxxxxxxx) and points to the new endpoint. Because this rule is more specific than the catch-all rule that sends everything through the NAT Gateway, S3 traffic now takes the free path instead.",
+      "Confirm your data pipeline still writes to S3 without errors. Gateway endpoints work invisibly -- your application code and AWS SDK calls do not need any changes.",
+      "Watch the NAT Gateway charges in Cost Explorer over the next 24 hours. You should see the daily cost drop sharply because S3 traffic no longer passes through it.",
+      "Check whether any servers in the private subnet also talk to DynamoDB (a managed database service). If so, create a DynamoDB gateway endpoint the same way -- it is also free.",
+      "Set up a spending alert (a CloudWatch billing alarm) that notifies you if NAT Gateway charges exceed a daily threshold. This catches similar problems in days instead of months.",
+      "Check all other private subnets in your network for servers that send large amounts of data to S3 or DynamoDB. Each subnet needs its own route table entry to use the gateway endpoint."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Gateway endpoint created but not associated with the correct route table",
-        "how_it_differs": "The endpoint exists but the private subnet route table still has no prefix list entry for S3. Traffic continues through the NAT Gateway because the endpoint was associated with a different route table, such as the public subnet route table.",
-        "prevention": "When creating a gateway endpoint, explicitly specify --route-table-ids for every private subnet route table that needs the S3 route. Verify with aws ec2 describe-route-tables that the prefix list entry appears in each target route table."
+        "scenario": "Gateway endpoint created but attached to the wrong route table",
+        "how_it_differs": "The endpoint exists, but it was linked to the wrong route table -- for example, the public subnet's route table instead of the private subnet's. The private subnet still has no shortcut to S3, so traffic continues going through the NAT Gateway and you keep getting charged.",
+        "prevention": "When creating the endpoint, list every private subnet route table that needs the S3 shortcut using the --route-table-ids option. Then verify each route table actually has the new prefix list entry by running aws ec2 describe-route-tables."
       },
       {
-        "scenario": "Cross-region S3 access through NAT Gateway",
-        "how_it_differs": "A gateway endpoint only routes traffic to S3 buckets in the same region as the VPC. If the pipeline writes to an S3 bucket in a different region, the traffic still goes through the NAT Gateway and incurs data processing charges plus cross-region data transfer fees.",
-        "prevention": "Ensure S3 buckets accessed from private subnets are in the same region as the VPC. If cross-region access is required, understand that gateway endpoints will not help and budget for NAT Gateway and data transfer costs."
+        "scenario": "Accessing an S3 bucket in a different region",
+        "how_it_differs": "A gateway endpoint only works for S3 buckets in the same AWS region as your network (VPC). If your pipeline writes to a bucket in a different region, the traffic still goes through the NAT Gateway and you pay both the NAT Gateway fee and a cross-region data transfer fee.",
+        "prevention": "Keep your S3 buckets in the same region as the servers that use them. If you must access buckets in another region, know that the gateway endpoint will not help, and plan your budget accordingly."
       },
       {
-        "scenario": "VPC endpoint policy blocks the application",
-        "how_it_differs": "A custom endpoint policy is attached to the gateway endpoint that restricts access to specific buckets or actions. The pipeline's PutObject calls are denied by the policy, causing write failures instead of cost savings.",
-        "prevention": "Use the default endpoint policy (full access) unless there is a specific security requirement. If a custom policy is needed, test it against the application's actual S3 API calls before applying to production."
+        "scenario": "An endpoint security policy blocks your application",
+        "how_it_differs": "When creating a gateway endpoint, you can attach a policy that restricts which buckets or actions are allowed. If this policy is too restrictive, your pipeline's write requests (PutObject calls) get denied. Instead of saving money, the pipeline breaks.",
+        "prevention": "Use the default policy (which allows all access) unless you have a specific security reason to restrict it. If you add a custom policy, test it against your application's actual S3 operations before applying it in production."
       }
     ],
     "sop_practices": [
-      "Include S3 and DynamoDB gateway endpoints as a standard part of any VPC design with private subnets -- they are free and eliminate unnecessary NAT Gateway charges",
-      "Set up billing alerts for NAT Gateway data processing charges early, before high-volume workloads go live, to catch cost anomalies within days instead of months",
-      "Use VPC flow logs and Cost Explorer together to identify which traffic patterns are driving NAT Gateway costs and whether they can be routed through endpoints instead",
-      "After creating a gateway endpoint, verify the route table entry and monitor Cost Explorer to confirm the expected cost reduction within 24 hours"
+      "Whenever you build a private network (VPC) with private subnets, add S3 and DynamoDB gateway endpoints from the start. They cost nothing and prevent servers from routing AWS-service traffic through the NAT Gateway, which charges per gigabyte.",
+      "Set up spending alerts for NAT Gateway charges before you launch high-volume workloads. Catching a cost problem in the first week is much cheaper than discovering it three months later.",
+      "Use network traffic logs (VPC flow logs) alongside the spending dashboard (Cost Explorer) to figure out which traffic patterns are driving NAT Gateway costs. If the traffic is going to S3 or DynamoDB, a free gateway endpoint can eliminate the charge.",
+      "After creating a gateway endpoint, confirm the route table entry is in place and then check Cost Explorer over the next 24 hours to verify that charges dropped as expected."
     ]
   }
 }

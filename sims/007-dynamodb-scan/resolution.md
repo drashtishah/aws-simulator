@@ -33,65 +33,65 @@ The `tidepool-product-search` Lambda function performed a full DynamoDB `Scan` o
 
 ## Correct Remediation
 
-1. **Immediate -- Disable the search Lambda**: Remove the API Gateway trigger or set the Lambda concurrency to 0 to stop the Scans. This restores read capacity to the order pipeline within seconds.
-2. **Add a Global Secondary Index**: Create a GSI on the `tidepool-products` table with `category` as the partition key and `productName` as the sort key. This allows efficient Query operations by category.
-3. **Rewrite Scan to Query**: Replace the `Scan` + `FilterExpression` call with a `Query` against the new GSI using `KeyConditionExpression`. This reads only matching items instead of the entire table.
-4. **Consider on-demand capacity mode**: Evaluate switching from provisioned to on-demand capacity for the `tidepool-products` table. On-demand mode scales automatically and prevents throttling from sudden read spikes, though at higher per-request cost.
-5. **Add load testing for new access patterns**: Any new Lambda that reads from a shared DynamoDB table should be load-tested against production-scale data before deployment.
+1. **Stop the bleeding immediately**: The search function is devouring all the table's read capacity. Disable it by removing its API Gateway trigger (the route that sends web requests to it) or setting its allowed concurrent executions to 0. This frees up read capacity for the order pipeline within seconds.
+2. **Build a shortcut for category lookups**: Create a Global Secondary Index (GSI) on the `tidepool-products` table. A GSI is like a second table of contents organized by a different attribute -- in this case, `category` as the main lookup key and `productName` as a secondary sort key. This lets the database jump directly to matching items instead of reading everything.
+3. **Rewrite the search code to use the shortcut**: Replace the `Scan` + `FilterExpression` call with a `Query` against the new GSI using `KeyConditionExpression`. A Scan reads every item in the table and then throws away what does not match. A Query tells the database exactly what to look for, so it reads only the matching items -- dramatically less work for the same result.
+4. **Consider automatic scaling for the table**: The table currently has a fixed read budget (called provisioned capacity). On-demand capacity mode removes the fixed limit and scales automatically based on traffic. This prevents capacity exhaustion from sudden spikes, though it costs more per individual read.
+5. **Require load testing for new features**: Any new function that reads from a shared DynamoDB table should be tested against production-scale data volumes before deployment. A search that works fine on 1,000 test items can cripple a table with 4 million items.
 
 ## Key Concepts
 
-### Query vs Scan
+### Query vs Scan -- Two Very Different Ways to Read Data
 
-A **Query** operation uses the partition key (and optionally the sort key) to locate specific items. It reads only the items that match the key condition. A **Scan** operation reads every item in the entire table, then optionally applies a filter. The filter does not reduce the read capacity consumed -- it only reduces the data returned to the caller.
+Think of a DynamoDB table as a massive filing cabinet. A **Query** is like knowing exactly which drawer to open -- you go straight to the items that match a specific key and read only those. A **Scan** is like opening every drawer and looking through every folder, one by one, from start to finish. Even if you only want a handful of items, a Scan reads everything.
 
-For a table with 4 million items, a Query targeting 200 matching items reads ~200 items worth of RCUs. A Scan with a FilterExpression that returns 200 items still reads all 4 million items worth of RCUs.
+For a table with 4 million items, a Query targeting 200 matching items reads about 200 items worth of capacity. A Scan that returns the same 200 items still reads all 4 million items worth of capacity. The cost difference is enormous.
 
-### Global Secondary Index (GSI) Design
+### What Is a Global Secondary Index (GSI)?
 
-A GSI projects some or all attributes from the base table into a new index with a different partition key and optional sort key. This enables Query access patterns that the base table's key schema does not support. GSIs have their own provisioned capacity, separate from the base table.
+A DynamoDB table organizes its data by a primary key (like `productId`). But what if you want to look up items by a different attribute, like `category`? That is what a Global Secondary Index is for. It is like creating a second table of contents for your filing cabinet, organized by category instead of product ID. Once the GSI exists, you can run a Query by category and go straight to the matching items.
 
-Key considerations:
-- GSI partition key should have high cardinality to distribute reads evenly
-- GSI writes consume WCUs on the index in addition to the base table
-- GSI eventually consistent only (no strongly consistent reads)
+Key things to know about GSIs:
+- The attribute you choose as the GSI's main key should have many distinct values (called high cardinality) so reads spread evenly
+- Every time you write to the main table, DynamoDB also updates the GSI, which uses additional write capacity
+- GSI reads are always eventually consistent -- there may be a brief delay before newly written data appears in the index
 
-### Partition Key Selection
+### Choosing a Good Primary Key
 
-A well-chosen partition key distributes data and requests evenly. For the `tidepool-products` table, `productId` is a good base table partition key (unique per item). For the search use case, `category` works as a GSI partition key because searches are always by category.
+DynamoDB splits data into internal storage units called partitions. The partition key determines which partition stores each item. A good partition key has many unique values (like `productId`) so data and traffic spread evenly. A bad partition key (like `status`, which might have only 3 values) concentrates data and traffic on a few partitions.
 
-### ConsumedCapacity and ReturnConsumedCapacity
+### How to See Read Consumption
 
-DynamoDB operations can return capacity consumption data when `ReturnConsumedCapacity` is set to `TOTAL` or `INDEXES`. This is essential for debugging. The `ConsumedReadCapacityUnits` CloudWatch metric shows aggregate consumption per minute. When this metric equals the provisioned RCUs, every additional read is throttled.
+You can ask DynamoDB to report how much capacity each operation used by setting `ReturnConsumedCapacity` to `TOTAL` or `INDEXES` in your API call. For a broader view, the CloudWatch metric `ConsumedReadCapacityUnits` shows total reads per minute for the table. When this metric equals your provisioned limit, every additional read is rejected.
 
-### FilterExpression vs KeyConditionExpression
+### FilterExpression vs KeyConditionExpression -- A Common Trap
 
-`KeyConditionExpression` is used with Query and defines which items to read based on the key. It reduces the data DynamoDB reads from storage. `FilterExpression` is applied after the data is read and only reduces what is returned to the caller. It does not save any RCUs.
+A `KeyConditionExpression` is used with Query and tells DynamoDB which items to read from storage. It reduces the actual work the database does. A `FilterExpression` is different -- it is applied after the data has already been read. It filters the results you get back, but the database still did all the reading work and consumed all the capacity. A FilterExpression on a Scan gives you the illusion of a targeted search while still reading the entire table behind the scenes.
 
 ## Other Ways This Could Break
 
-### Hot partition key causes throttling even with adequate total capacity
+### One popular item gets all the traffic and overwhelms its storage partition
 
-A hot partition issue occurs when one partition key receives disproportionate traffic, throttling that partition even if overall provisioned capacity is not saturated. Unlike this sim -- where a Scan exhausts total table-level RCUs -- the CloudWatch metric ThrottledRequests rises but ConsumedReadCapacityUnits may stay below the provisioned limit. Prevention: choose high-cardinality partition keys, use CloudWatch Contributor Insights to detect hot keys, and consider write sharding for frequently accessed keys.
+DynamoDB splits data across internal storage units called partitions. If one partition key value (like a single product ID) gets far more traffic than others, that partition becomes a bottleneck. The confusing part: overall read consumption may look normal, but requests to that one key get throttled. In this sim, the problem was total table-level exhaustion from a Scan. A hot partition problem is more subtle -- the table as a whole has capacity to spare, but one slice is overwhelmed. Prevention: choose partition keys with many unique values so traffic spreads evenly. Use CloudWatch Contributor Insights to detect which keys are getting the most traffic.
 
-### GSI write throttling causes back-pressure on the base table
+### A secondary index cannot keep up with writes, which slows down the main table
 
-When a GSI has insufficient write capacity, DynamoDB throttles writes to the base table to maintain index consistency. In this sim, no GSI exists and reads are the problem. With GSI back-pressure, write operations fail even though the base table itself has capacity. Prevention: provision GSI write capacity proportional to the base table write rate, monitor IndexWriteProvisionedThroughputExceeded, and use on-demand mode if write patterns are unpredictable.
+When you create a Global Secondary Index (GSI), DynamoDB must update that index every time you write to the main table. If the index does not have enough write capacity, DynamoDB throttles writes to the main table itself to prevent the index from falling behind. In this sim, there was no GSI and reads were the problem. With GSI back-pressure, writes fail even though the main table has plenty of capacity -- a frustrating mismatch. Prevention: give the GSI enough write capacity to match the main table's write rate. Monitor the metric `IndexWriteProvisionedThroughputExceeded`. Use on-demand mode if write patterns are unpredictable.
 
-### On-demand table throttled by exceeding double the previous peak within 30 minutes
+### An on-demand table hits its automatic scaling limit during a sudden spike
 
-On-demand tables scale automatically but still have a limit: traffic cannot exceed double the previous peak within a 30-minute window. This sim uses provisioned mode with a hard RCU ceiling. A sudden burst from a new feature can hit the on-demand ceiling even when there is no fixed provisioned limit. Prevention: pre-warm on-demand tables by gradually increasing traffic before launch, set maximum throughput limits as a cost safeguard, and monitor for MaxOnDemandThroughputExceeded throttling reasons.
+On-demand capacity mode removes the fixed read/write budget and scales automatically. But it still has a limit: traffic cannot more than double within a 30-minute window. This sim uses provisioned mode with a hard ceiling. With on-demand mode, a brand-new feature that suddenly generates heavy traffic can hit the scaling ceiling even though there is no manually set limit. Prevention: gradually ramp up traffic before launching a new feature so the on-demand scaling can keep pace. Set a maximum throughput limit as a cost safety net. Monitor for throttling with the reason `MaxOnDemandThroughputExceeded`.
 
-### Paginated Scan with no rate limiting starves other operations during batch jobs
+### A scheduled batch job reads the entire table and starves other operations
 
-A batch-processing Scan (for analytics, exports, or backfills) causes the same capacity exhaustion as this sim but happens during scheduled jobs rather than on-demand API calls. The symptoms appear periodically rather than suddenly after a deployment. Prevention: use a smaller page size (Limit parameter) on batch Scans, add deliberate pauses between pages, and run batch Scans on a read replica or isolated shadow table.
+A batch job (for analytics, data exports, or backfills) that reads the entire table causes the same capacity exhaustion as this sim, but it happens on a schedule rather than after a deployment. The symptoms appear periodically -- every night at 2 AM, for example -- and disappear once the job finishes. Prevention: read the table in small pages with deliberate pauses between each page to spread the load over time. Better yet, run batch reads against a read replica or a separate copy of the table so production traffic is not affected.
 
 ## SOP Best Practices
 
-- Design tables for Query access from the start. Treat Scan as a last resort for administrative or one-time operations, never for user-facing read paths.
-- Load-test every new Lambda against production-scale data volumes before deployment, especially when the Lambda reads from a shared DynamoDB table.
-- Set CloudWatch alarms on both ConsumedReadCapacityUnits and ThrottledRequests so that capacity exhaustion is detected within minutes, not after customer complaints.
-- Review FilterExpression usage in code reviews. A FilterExpression on a Scan is almost always a sign that a GSI or a redesigned key schema is needed.
+- Design your table so that everyday lookups use Query (which goes straight to the matching items) instead of Scan (which reads the entire table). Scan should be reserved for rare administrative tasks, never for user-facing features.
+- Before deploying any new function that reads from a shared DynamoDB table, test it against production-scale data volumes. A search that works fine on 1,000 test items can cripple a table with 4 million items.
+- Set up CloudWatch alarms on ConsumedReadCapacityUnits (how much of your read budget is being used) and ThrottledRequests (how many reads are being rejected). You want to know about capacity problems within minutes, not after customers start complaining.
+- During code reviews, watch for FilterExpression used with Scan. A FilterExpression only filters results after the entire table has already been read -- it does not save any read capacity. If you see this pattern, it almost always means the code needs a Global Secondary Index and a Query instead.
 
 ## Learning Objectives
 

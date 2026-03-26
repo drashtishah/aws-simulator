@@ -214,46 +214,46 @@
       "Coordinating cloud governance policies (SCPs) with service-level configurations (inference profiles)"
     ],
     "sop_steps": [
-      "1. Acknowledge the incident alert and confirm the 31.2% error rate on Bedrock InvokeModel calls in CloudWatch metrics.",
-      "2. Pull the last 50 invocation log entries and confirm the failing requests all return AccessDeniedException with 'explicit deny in a service control policy.'",
-      "3. Note that the error messages reference the us-east-2 Bedrock endpoint ARN -- the calls are being denied in that specific region.",
-      "4. Describe the cross-region inference profile us.anthropic.claude-3-5-sonnet-20241022-v2:0 and list its destination regions: us-east-1, us-east-2, us-west-2.",
-      "5. List SCPs attached to the Polaris OU using organizations:ListPoliciesForTarget. Identify RegionRestriction-v3.",
-      "6. Describe the SCP content. Confirm it denies all actions (except IAM, Organizations, STS, Support, Budgets) in regions outside us-east-1 and us-west-2. The region us-east-2 is blocked.",
-      "7. Correlate: the inference profile routes to three regions, the SCP allows two of three. One-third of requests hit the blocked region and fail.",
-      "8. Immediate mitigation: switch the Lambda function to invoke the model directly in us-east-1 (single-region), eliminating cross-region routing to blocked regions.",
-      "9. Short-term fix: create an application inference profile using CreateInferenceProfile that includes only us-east-1 and us-west-2. Update the Lambda to use the new profile ARN.",
-      "10. Verify the error rate drops to baseline (<0.3%) by monitoring CloudWatch InvocationErrors for 15 minutes.",
-      "11. Long-term: coordinate with the Meridian governance team to add a pre-deployment check that cross-references SCP region restrictions against active cross-region inference profile configurations.",
-      "12. Document the incident timeline, root cause, and remediation in the post-incident review."
+      "1. Confirm the error rate. Check CloudWatch metrics to verify the 31.2% failure rate on Bedrock InvokeModel calls. InvokeModel is the API action that sends a prompt to an AI model and gets a response back.",
+      "2. Look at what the errors say. Pull the last 50 invocation log entries and confirm the failures all return AccessDeniedException with the message 'explicit deny in a service control policy.' This tells you the call was blocked by an organizational policy, not by the function's own permissions.",
+      "3. Notice which region the errors mention. The error messages reference the us-east-2 Bedrock endpoint ARN. The calls are being blocked specifically in that region.",
+      "4. Check where the inference profile sends requests. A cross-region inference profile spreads AI model requests across multiple AWS regions for higher throughput. Describe the profile (us.anthropic.claude-3-5-sonnet-20241022-v2:0) and list its destination regions: us-east-1, us-east-2, and us-west-2. You do not control which region handles any given request -- Bedrock's internal load balancer decides.",
+      "5. Check which regions the organization allows. Use organizations:ListPoliciesForTarget to list the Service Control Policies (SCPs) attached to the Polaris OU. An SCP is a policy set at the organization level that defines the maximum permissions for all accounts in a group. Identify RegionRestriction-v3.",
+      "6. Read the SCP. Confirm it denies all API actions (with exceptions for IAM, Organizations, STS, Support, and Budgets) in any region outside us-east-1 and us-west-2. The region us-east-2 is blocked.",
+      "7. Connect the dots. The inference profile routes to three regions. The SCP allows only two of those three. When Bedrock's load balancer picks us-east-2, the SCP blocks the call before it reaches Bedrock. When it picks us-east-1 or us-west-2, the call succeeds. One-third blocked equals roughly 31.2% failures.",
+      "8. Immediate fix: stop using cross-region routing. Switch the Lambda function to call the model directly in us-east-1 (a single allowed region). This eliminates the chance of routing to us-east-2 and restores 100% success rate, at the cost of losing cross-region load balancing.",
+      "9. Better fix: create a custom inference profile with only allowed regions. Use CreateInferenceProfile to build an application inference profile (one where you choose the regions) that includes only us-east-1 and us-west-2. Update the Lambda to use the new profile ARN. This restores cross-region load balancing without routing to blocked regions.",
+      "10. Verify the fix. Monitor CloudWatch InvocationErrors for 15 minutes and confirm the error rate drops to baseline (below 0.3%).",
+      "11. Prevent future conflicts. Work with the governance team to add a pre-deployment check that compares SCP region restrictions against active cross-region inference profiles. The SCP and the inference profile operate at different layers and neither validates against the other -- this gap is what caused the incident.",
+      "12. Document the incident. Record the timeline, root cause, and remediation in the post-incident review."
     ],
     "related_failure_modes": [
       {
-        "scenario": "SCP blocks all Bedrock actions, producing 100% failure instead of intermittent",
-        "how_it_differs": "If the SCP denied bedrock:InvokeModel in all regions (including the source region), every single request would fail -- not just one-third. The error rate would be 100% instead of 31.2%, and the pattern would be obvious rather than puzzling. The intermittent nature of this incident is what makes it harder to diagnose.",
-        "prevention": "When applying region-restriction SCPs, enumerate all cross-region AWS features in use (inference profiles, S3 replication, DynamoDB global tables) and verify every destination region is in the approved list."
+        "scenario": "The SCP blocks Bedrock in every region, causing 100% failure instead of intermittent",
+        "how_it_differs": "If the SCP denied bedrock:InvokeModel in all regions -- including the ones the app normally uses -- every single request would fail, not just one-third. The error rate would be 100%, and the cause would be obvious. The intermittent pattern in this incident (31.2%) is what makes it deceptive: it looks like a service glitch rather than a policy conflict.",
+        "prevention": "Before applying SCP region restrictions, make a list of all cross-region AWS features your teams use (inference profiles, S3 cross-region replication, DynamoDB global tables, etc.) and verify that every destination region stays on the approved list."
       },
       {
-        "scenario": "IAM policy missing permissions for one destination region in the inference profile",
-        "how_it_differs": "If the IAM policy on the Lambda role only granted bedrock:InvokeModel for models in us-east-1 and us-west-2 but not us-east-2, the symptom would be similar -- intermittent AccessDeniedException. However, the error message would say 'not authorized to perform' without mentioning a service control policy. The fix would be updating the IAM policy resource ARNs rather than the SCP or inference profile.",
-        "prevention": "When configuring IAM policies for cross-region inference, include foundation model ARNs for every region listed in the inference profile. Use the bedrock:InferenceProfileArn condition key to scope access precisely."
+        "scenario": "The IAM policy on the Lambda role is missing permission for one of the inference profile regions",
+        "how_it_differs": "If the IAM policy (the permission document attached to the Lambda function's role) only granted bedrock:InvokeModel for models in us-east-1 and us-west-2 but not us-east-2, the symptom would look similar -- intermittent AccessDeniedException at roughly one-third of requests. The clue is in the error message: it would say 'not authorized to perform' without mentioning 'service control policy.' The fix is updating the IAM policy, not the SCP or inference profile.",
+        "prevention": "When setting up IAM policies for cross-region inference, include model ARNs for every region listed in the inference profile. This ensures the role has permission regardless of where Bedrock routes the request."
       },
       {
-        "scenario": "Bedrock destination region is an opt-in region that was never enabled",
-        "how_it_differs": "Some AWS regions require explicit opt-in at the account level. If a cross-region inference profile includes an opt-in region that the account has not enabled, requests routed there fail. The error may differ from an SCP deny -- it could appear as a region-not-enabled error rather than AccessDeniedException. The fix is to enable the region in account settings rather than changing SCPs.",
-        "prevention": "Before using cross-region inference profiles, confirm all destination regions are enabled in the account. Check the inference profile documentation for which regions are opt-in."
+        "scenario": "One of the inference profile regions is an opt-in region that was never enabled",
+        "how_it_differs": "Some AWS regions are not active by default -- you must explicitly enable them in your account settings (these are called opt-in regions). If a cross-region inference profile includes one of these and the account never enabled it, requests routed there fail. The error message may differ from an SCP block. The fix is to enable the region in account settings, not to change policies.",
+        "prevention": "Before using a cross-region inference profile, check that every destination region is enabled in the account. Some regions (like af-south-1 or ap-east-1) require opt-in."
       },
       {
-        "scenario": "AWS Control Tower region deny control blocks cross-region inference",
-        "how_it_differs": "Organizations using AWS Control Tower may have a landing zone region deny control that functions similarly to a manual SCP but is managed by Control Tower. The symptoms are identical, but the remediation path differs -- you must modify the Control Tower configuration or add a targeted SCP exception rather than editing the region deny control directly.",
-        "prevention": "When enabling cross-region inference in a Control Tower environment, use the built-in mechanisms to extend region deny controls with Bedrock-specific exceptions, as described in the AWS documentation for enabling cross-region inference in multi-account environments."
+        "scenario": "AWS Control Tower's region deny control blocks cross-region inference",
+        "how_it_differs": "Organizations using AWS Control Tower (a service for setting up and governing multi-account environments) may have a managed region deny control that works like an SCP but is managed by Control Tower, not created manually. The symptoms are identical, but you cannot edit the control directly. Instead, you must modify the Control Tower configuration or add a targeted SCP exception that overrides the managed control.",
+        "prevention": "When enabling cross-region inference in a Control Tower environment, use the built-in mechanisms to extend region deny controls with Bedrock-specific exceptions. AWS documents this in their guide for enabling cross-region inference in multi-account setups."
       }
     ],
     "sop_practices": [
-      "Before applying SCP region restrictions, inventory all cross-region AWS features in active use -- inference profiles, S3 cross-region replication, DynamoDB global tables, Aurora global databases -- and verify every destination region remains in the approved list.",
-      "Use application inference profiles instead of system-defined profiles when operating under SCPs, so you control exactly which regions are included and can align them with organizational policy.",
-      "Add a pre-deployment validation step to the governance pipeline that cross-references proposed SCP region changes against active cross-region service configurations in affected accounts.",
-      "Monitor Bedrock InvocationErrors as a percentage of InvocationCount with a CloudWatch alarm. A stable, non-trivial error rate (not near 0% or 100%) is a strong signal of a routing or policy conflict rather than an application bug."
+      "Before applying SCP region restrictions, make a complete list of all cross-region AWS features your teams use -- inference profiles, S3 cross-region replication, DynamoDB global tables, Aurora global databases, and similar services that route traffic across regions. Verify that every destination region stays on the approved list. SCPs and cross-region features operate at different layers and neither validates against the other.",
+      "Use application inference profiles (custom profiles where you choose which regions to include) instead of system-defined profiles (fixed profiles with a preset region list) when your organization has region restrictions. This way you control exactly which regions Bedrock routes to, and you can align them with your organizational policies.",
+      "Add a pre-deployment validation step to the governance pipeline that automatically compares proposed SCP region changes against active cross-region service configurations in affected accounts. This catches conflicts before they cause intermittent failures in production.",
+      "Set up a CloudWatch alarm on Bedrock InvocationErrors as a percentage of InvocationCount. A stable, non-trivial error rate -- not near 0% and not near 100% -- is a strong signal of a routing or policy conflict rather than an application bug. In this case, the steady 31.2% rate was the key clue."
     ]
   }
 }

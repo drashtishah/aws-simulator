@@ -200,48 +200,48 @@
       "Health check monitoring: CloudWatch alarms on HealthCheckStatus should page the team, not sit in ALARM state unnoticed"
     ],
     "sop_steps": [
-      "1. Acknowledge the incident and confirm the customer-facing symptom: docs.spellbook.dev is unreachable, returning connection timeouts.",
-      "2. Check the primary ALB (spellbook-prod-alb-east) in us-east-1 using describe-target-health -- confirm all targets are unhealthy or draining.",
-      "3. Check the secondary ALB (spellbook-prod-alb-west) in eu-west-1 using describe-target-health -- confirm four healthy targets are available.",
-      "4. Query Route 53 using list-resource-record-sets for the docs.spellbook.dev hosted zone -- identify the failover record set and note the HealthCheckId and EvaluateTargetHealth values on the primary record.",
-      "5. Retrieve the health check configuration using get-health-check -- note the protocol (HTTP), port (80), and resource path (/).",
-      "6. Retrieve the health check status using get-health-check-status -- confirm all checker regions report UNHEALTHY with 'HTTP Status Code 301' or 'Connection timed out'.",
-      "7. Compare the health check config to the ALB listener config: the ALB listens on HTTPS port 443, but the health check probes HTTP port 80. The path '/' returns a 301 redirect, not a 200.",
-      "8. Check CloudWatch alarm spellbook-route53-health-check using describe-alarms -- confirm it is in ALARM state and AlarmActions is an empty list (no SNS topic).",
-      "9. Immediate mitigation: manually update the Route 53 primary record to point to the eu-west-1 ALB to restore service.",
-      "10. Fix the health check: update to HTTPS, port 443, path '/healthz', and enable SNI using update-health-check.",
-      "11. Fix the failover record: set EvaluateTargetHealth to true on the primary failover alias record using change-resource-record-sets.",
-      "12. Fix the alarm: create an SNS topic with the on-call engineer subscribed and attach it to the CloudWatch alarm's AlarmActions.",
-      "13. Validate: temporarily simulate a primary failure and confirm Route 53 returns the secondary ALB. Confirm the alarm sends a notification.",
-      "14. Document the incident timeline, root cause, and remediation actions. Add disaster recovery testing to the quarterly runbook."
+      "1. Acknowledge the incident and confirm what users are seeing: docs.spellbook.dev is unreachable, with browsers timing out after about sixteen seconds.",
+      "2. Check the primary load balancer (the ALB in us-east-1) using describe-target-health. Confirm that all the servers behind it are unhealthy or shutting down.",
+      "3. Check the backup load balancer (the ALB in eu-west-1) using describe-target-health. Confirm it has four healthy servers ready to handle traffic.",
+      "4. Look at the DNS configuration in Route 53 -- the AWS domain name system that translates 'docs.spellbook.dev' into a server address. Use list-resource-record-sets to find the failover record set. Note two things on the primary record: which health check it is linked to (HealthCheckId), and whether it actually uses health check results when routing traffic (EvaluateTargetHealth).",
+      "5. Pull up the health check configuration using get-health-check. Note the protocol (HTTP), port (80), and URL path (/). These settings control how Route 53 tests whether the primary endpoint is alive.",
+      "6. Check the health check's current status using get-health-check-status. Confirm that checkers in all regions report UNHEALTHY, with reasons like 'HTTP Status Code 301' (a redirect, not a success) or 'Connection timed out.'",
+      "7. Compare the health check settings to the actual load balancer setup. The load balancer listens on HTTPS port 443, but the health check was probing HTTP port 80. And the path '/' returns a redirect (301), not a success response (200). The health check was testing the wrong thing from the start.",
+      "8. Check the CloudWatch alarm (spellbook-route53-health-check) using describe-alarms. Confirm it is in ALARM state and that AlarmActions is empty -- meaning no notification channel (SNS topic) was connected, so nobody ever got alerted.",
+      "9. Restore service immediately: manually update the Route 53 record to point traffic to the healthy backup load balancer in eu-west-1.",
+      "10. Fix the health check so it tests the right thing: change it to HTTPS, port 443, and a path like '/healthz' that returns a 200 success response. Use update-health-check to apply the changes.",
+      "11. Fix the failover record so Route 53 actually acts on health check results. Set EvaluateTargetHealth to true on the primary failover alias record using change-resource-record-sets. Without this, Route 53 always assumes the primary is healthy and never switches to the backup.",
+      "12. Fix the alarm so it reaches a human. Create an SNS topic (a notification channel), subscribe the on-call engineer to it, and attach it to the CloudWatch alarm's AlarmActions.",
+      "13. Test the failover: simulate a primary failure and confirm that Route 53 starts returning the backup load balancer's address. Confirm the alarm sends a notification to the on-call engineer.",
+      "14. Document everything and add disaster recovery testing to the quarterly schedule so the failover is tested regularly, not just after an outage."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Health check passes but EvaluateTargetHealth is false, so failover still does not trigger",
-        "how_it_differs": "The health check is correctly configured and reports HEALTHY when the primary is up. But because EvaluateTargetHealth is false on the alias record, Route 53 ignores the health check entirely. When the primary goes down, the health check transitions to UNHEALTHY but Route 53 never reads that value. The symptoms during an outage are identical to sim 015, but the health check history looks normal until the actual failure.",
-        "prevention": "Always set EvaluateTargetHealth to true on failover alias records. Use AWS Config rules to detect alias records with EvaluateTargetHealth set to false."
+        "scenario": "Health check works correctly, but Route 53 ignores it because EvaluateTargetHealth is turned off",
+        "how_it_differs": "In this scenario, the health check itself is configured properly -- right protocol, right port, right path. It reports HEALTHY when the primary is up. But the DNS failover record has EvaluateTargetHealth set to false, so Route 53 never looks at the health check result when deciding where to send traffic. When the primary goes down, the health check correctly switches to UNHEALTHY, but Route 53 does not care. The outage looks identical to this sim, but the health check history appears normal until the failure.",
+        "prevention": "Always set EvaluateTargetHealth to true on failover alias records. Use AWS Config rules (automated compliance checks) to detect any records where this setting is turned off."
       },
       {
-        "scenario": "DNS TTL caching delays failover even after Route 53 switches",
-        "how_it_differs": "Route 53 correctly detects the primary is unhealthy and starts returning the secondary in DNS responses. But recursive resolvers and client-side DNS caches hold the old (primary) IP address until the TTL expires. Users continue hitting the dead primary for the duration of the TTL. The root cause is not a misconfiguration of failover itself but an excessively high TTL on the failover record.",
-        "prevention": "Set failover record TTL to 60 seconds or less. Test failover end-to-end including DNS propagation delay to verify actual recovery time."
+        "scenario": "DNS caching delays the failover even after Route 53 switches",
+        "how_it_differs": "Route 53 correctly detects the primary is down and starts giving out the backup's address in DNS responses. But internet DNS resolvers and users' computers have cached the old (primary) address and will keep using it until the cache expires. This expiration time is called the TTL (Time to Live). Users keep hitting the dead primary for the entire TTL duration. The failover itself worked -- the delay is caused by stale cached DNS entries.",
+        "prevention": "Set the failover record's TTL to 60 seconds or less. This means caches expire quickly and users get the updated address sooner. Test failover end-to-end to measure the actual recovery time including DNS propagation."
       },
       {
-        "scenario": "Health check region selection causes false positives",
-        "how_it_differs": "The health check is configured with a limited set of checker regions. If the primary ALB is experiencing a regional network partition, health checkers in unaffected regions may still reach the ALB and report HEALTHY while actual users in affected regions cannot. Failover does not trigger because the majority of checkers see the endpoint as healthy.",
-        "prevention": "Use the default set of health check regions (all available) rather than restricting to a few. Monitor HealthCheckPercentageHealthy in CloudWatch to detect partial reachability issues."
+        "scenario": "Health check only runs from a few locations and misses a regional outage",
+        "how_it_differs": "The health check is configured to probe from only a few geographic locations. If the primary load balancer is experiencing a network problem in one region, checkers in unaffected regions may still reach it and report HEALTHY. Actual users in the affected region cannot reach the site, but failover does not trigger because the majority of checkers see the endpoint as alive.",
+        "prevention": "Use the default set of health check regions (all available locations) rather than limiting to a few. Monitor the HealthCheckPercentageHealthy metric in CloudWatch to spot cases where some checkers succeed while others fail."
       },
       {
-        "scenario": "Secondary region is also unhealthy when failover triggers",
-        "how_it_differs": "Route 53 correctly detects the primary is down and attempts to fail over. But the secondary region has its own issues -- stale deployment, expired TLS certificate, or cold-start database replica lag. Traffic moves to the secondary but users still get errors. The DNS failover worked, but the standby was not actually ready to serve production traffic.",
-        "prevention": "Run continuous health checks against the secondary endpoint as well. Include the secondary region in regular deployment pipelines and load testing. Add a health check to the secondary failover record set."
+        "scenario": "The backup region has its own problems when traffic arrives",
+        "how_it_differs": "Route 53 correctly detects the primary is down and sends traffic to the backup. But the backup region is not actually ready -- maybe it has a stale code deployment, an expired security certificate, or a database that has not caught up with recent changes. Users get errors in the backup region too. The DNS failover worked, but the standby was never truly production-ready.",
+        "prevention": "Run continuous health checks against the backup endpoint too. Include the backup region in regular code deployments and load testing. Add a health check to the secondary failover record so Route 53 knows if the backup is also unhealthy."
       }
     ],
     "sop_practices": [
-      "Route 53 health checks must match the target's actual listener configuration: correct protocol (HTTP vs HTTPS), correct port, and a path that returns HTTP 200 -- not a redirect.",
-      "Always set EvaluateTargetHealth to true on failover alias records. Without it, Route 53 treats the primary as permanently healthy and failover can never trigger.",
-      "Every CloudWatch alarm must have at least one action (SNS topic) that reaches a human. An alarm with no subscribers is invisible.",
-      "Test disaster recovery end-to-end on a regular schedule. Simulate a primary region failure and verify that DNS failover completes, the secondary serves traffic, and the on-call team is notified."
+      "The Route 53 health check must test the same protocol, port, and URL path that the actual load balancer uses. If the load balancer listens on HTTPS port 443, the health check must probe HTTPS port 443. And the URL path must return a 200 success response -- a redirect (301) counts as a failure.",
+      "Always set EvaluateTargetHealth to true on failover alias records. This is the switch that tells Route 53 to actually look at health check results when deciding where to send traffic. Without it, Route 53 treats the primary as permanently healthy and the backup will never receive traffic automatically.",
+      "Every CloudWatch alarm must be connected to a notification channel (an SNS topic) that reaches a real person. An alarm that fires but does not notify anyone is invisible -- it is the same as having no alarm at all.",
+      "Test your disaster recovery setup end-to-end on a regular schedule. Simulate a primary region failure and verify three things: that DNS failover completes, that the backup region actually serves traffic correctly, and that the on-call team receives a notification."
     ]
   }
 }

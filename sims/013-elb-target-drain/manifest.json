@@ -204,42 +204,42 @@
       "Deployment safety: batch size, timing, and health check configuration interact to determine deployment risk"
     ],
     "sop_steps": [
-      "Confirm the incident by checking CloudWatch metrics for HealthyHostCount and HTTPCode_ELB_5XX_Count on the affected target group (ridgewell-web-tg) during the deployment window",
-      "Identify the deregistration delay on the target group using describe-target-group-attributes and compare it to the health check time-to-healthy (interval x healthy threshold)",
-      "Review the target health timeline to confirm that HealthyHostCount dropped to zero and the ALB entered fail-open mode",
-      "Increase the deregistration delay to at least 300 seconds so old targets continue serving traffic while new targets initialize: aws elbv2 modify-target-group-attributes --attributes Key=deregistration_delay.timeout_seconds,Value=300",
-      "Reduce the healthy threshold from 5 to 2 to shorten time-to-healthy from 150 seconds to 60 seconds: aws elbv2 modify-target-group --healthy-threshold-count 2",
-      "Reduce the CodeDeploy deployment batch size from 50% to 25% so at least three of four targets remain healthy during each batch",
-      "Add a CloudWatch alarm on HealthyHostCount with a threshold of 2, evaluation period of 1, and an SNS action to alert the on-call team",
-      "Establish a deployment policy that prohibits production deployments during the 5 AM to 11 AM peak window"
+      "Confirm what happened by checking CloudWatch metrics during the deployment window. Look at HealthyHostCount (how many servers the load balancer considers ready) and HTTPCode_ELB_5XX_Count (how many error responses the load balancer returned) for the affected target group.",
+      "Find out how long old servers are allowed to finish their work before being fully removed. This setting is called the deregistration delay. Use describe-target-group-attributes to read it. Then calculate how long new servers need to become ready: multiply the health check interval (time between checks) by the healthy threshold (number of checks that must pass). Compare the two numbers.",
+      "Look at the target health timeline to confirm that the number of healthy servers dropped to zero. When that happens, the load balancer enters 'fail-open mode' -- it sends traffic to all servers, even ones that are not ready, which produces errors.",
+      "Increase the deregistration delay to at least 300 seconds so old servers keep handling traffic while new servers start up and pass their health checks. Command: aws elbv2 modify-target-group-attributes --attributes Key=deregistration_delay.timeout_seconds,Value=300",
+      "Reduce the healthy threshold from 5 to 2. This means a new server only needs to pass 2 consecutive health checks instead of 5, cutting the time-to-ready from 150 seconds to 60 seconds. Command: aws elbv2 modify-target-group --healthy-threshold-count 2",
+      "Reduce the deployment batch size from 50% to 25%. Instead of replacing half the servers at once (2 of 4), replace one quarter at a time, so at least 3 servers stay healthy throughout the deployment.",
+      "Add a monitoring alert (CloudWatch alarm) on HealthyHostCount. Set it to fire when the count drops below 2 and notify the on-call team immediately through an SNS topic (a notification channel).",
+      "Establish a team rule: no production deployments during the 5 AM to 11 AM peak window when dispatchers are actively using the system."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Health check path returns 200 before the application is fully initialized",
-        "how_it_differs": "Instead of a timing gap between deregistration and health checks, the health check endpoint responds successfully while the application is still loading caches or establishing database connections. Traffic arrives at a target that passes health checks but cannot serve requests correctly.",
-        "prevention": "Implement a readiness check that verifies all downstream dependencies (database connections, cache warmup, configuration loading) before the health check endpoint returns 200. Do not use a simple TCP or root-path check for applications with warm-up requirements."
+        "scenario": "Health check passes before the application is actually ready",
+        "how_it_differs": "In this sim, the problem was a timing gap -- old servers left before new ones passed health checks. In this other failure, the health check URL returns 'OK' before the application has finished loading its data, connecting to the database, or warming up caches. The load balancer thinks the server is ready and sends traffic, but the server cannot handle it properly yet.",
+        "prevention": "Build a readiness check that verifies all downstream systems (database connections, caches, configuration) before the health URL returns a success response. A simple check of 'is the web server running' is not enough for applications that need warm-up time."
       },
       {
-        "scenario": "Auto Scaling group replaces instances due to failed ELB health checks during deployment",
-        "how_it_differs": "Instead of the deployment causing a capacity gap, the ASG health check detects unhealthy new instances (still initializing) and terminates them before they finish starting up, creating a loop of launch-terminate-launch. The health check grace period is too short relative to the application startup time.",
-        "prevention": "Set the ASG health check grace period to at least the time-to-healthy plus application startup time. Monitor scaling activities for repeated launch-terminate cycles."
+        "scenario": "Auto Scaling group kills new servers before they finish starting",
+        "how_it_differs": "Instead of a gap where no servers are ready, the Auto Scaling group -- which manages the fleet of servers -- detects that new servers are failing health checks (because they are still starting up) and terminates them. Then it launches replacements, which also get killed before they finish starting. This creates an endless loop of launch-and-terminate.",
+        "prevention": "Set the health check grace period (the time the Auto Scaling group waits before checking new servers) to at least the time-to-ready plus the application startup time. Watch the scaling activity log for repeated terminations."
       },
       {
-        "scenario": "ALB slow start mode disabled causes new targets to receive full traffic immediately",
-        "how_it_differs": "Instead of a zero-healthy-host scenario, new targets pass health checks and immediately receive an equal share of traffic. If the application needs warm-up time (loading caches, JIT compilation), the sudden load causes latency spikes or errors even though the target is technically healthy.",
-        "prevention": "Enable slow start mode on the target group with a duration matching the application warm-up time (typically 30 to 120 seconds). This ramps traffic gradually to new targets."
+        "scenario": "New servers get full traffic immediately and crash under the load",
+        "how_it_differs": "Instead of having zero healthy servers, this failure happens when new servers pass health checks and instantly receive the same amount of traffic as servers that have been running for hours. If the application needs time to warm up (load caches, compile code), the sudden load causes slowdowns or errors even though the server is technically 'healthy.'",
+        "prevention": "Enable slow start mode on the target group. This gradually increases traffic to a new server over a set time (typically 30 to 120 seconds) instead of sending full traffic all at once."
       },
       {
-        "scenario": "Cross-zone load balancing disabled causes uneven traffic distribution during deployment",
-        "how_it_differs": "Instead of all targets going unhealthy, the deployment removes targets in one availability zone while the other zone remains healthy. Without cross-zone load balancing, the ALB node in the depleted zone has no healthy targets and enters fail-open for that zone only, while the other zone is overloaded.",
-        "prevention": "Enable cross-zone load balancing on the ALB so that each load balancer node can route to healthy targets in any availability zone during partial deployments."
+        "scenario": "Traffic distribution breaks when servers are in different availability zones",
+        "how_it_differs": "Instead of all servers going unhealthy at once, the deployment removes servers in one data center zone while the other zone still has healthy servers. If cross-zone load balancing is turned off, the load balancer node in the empty zone has no healthy targets and enters fail-open, while the other zone gets overloaded.",
+        "prevention": "Enable cross-zone load balancing so the load balancer can send traffic to healthy servers in any zone, not just the zone where the request arrived."
       }
     ],
     "sop_practices": [
-      "Always verify that the deregistration delay exceeds the health check time-to-healthy (interval multiplied by healthy threshold) before running any rolling deployment",
-      "Add a CloudWatch alarm on HealthyHostCount for every production target group -- alert when the count drops below the minimum required for safe operation",
-      "Use deployment batch sizes small enough that the remaining healthy targets can absorb the full traffic load while replacements initialize",
-      "Schedule production deployments outside peak traffic windows and document the policy in the team runbook"
+      "Before any rolling deployment, verify that the deregistration delay (how long old servers keep serving) is longer than the time-to-ready for new servers (health check interval multiplied by healthy threshold). If old servers leave before new ones are ready, there will be a gap with no healthy capacity.",
+      "Add a CloudWatch alarm on HealthyHostCount for every production target group. Set it to alert when the count drops below the minimum number of servers needed to handle traffic safely.",
+      "Use deployment batch sizes small enough that the remaining healthy servers can handle all the traffic while replacements start up. Replacing half the fleet at once is risky; replacing one quarter at a time is safer.",
+      "Schedule production deployments outside of peak traffic hours and document the rule in the team runbook so everyone follows it."
     ]
   }
 }

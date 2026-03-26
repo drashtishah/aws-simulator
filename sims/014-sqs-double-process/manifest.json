@@ -223,43 +223,43 @@
       "Idempotency in message consumers: use a unique identifier (order ID) to detect and skip duplicate processing"
     ],
     "sop_steps": [
-      "Identify the SQS queue feeding the affected Lambda function using the event source mapping.",
-      "Compare the queue VisibilityTimeout attribute against the Lambda function Timeout. If VisibilityTimeout is less than 6x the Lambda timeout, it is misconfigured.",
-      "Check CloudWatch metrics: compare NumberOfMessagesReceived to NumberOfMessagesSent. A ratio greater than 1 indicates redelivery.",
-      "Review CloudWatch Logs for the Lambda function. Search for the same order ID appearing in multiple invocations with different request IDs.",
-      "Increase the visibility timeout to at least 6x the Lambda timeout using aws sqs set-queue-attributes.",
-      "Create a dead-letter queue with the same queue type as the source. Configure a redrive policy with maxReceiveCount of 3.",
-      "Add a CloudWatch alarm on the DLQ ApproximateNumberOfMessagesVisible metric to alert when messages land in the DLQ.",
-      "Add idempotency logic to the Lambda function: check DynamoDB for the order ID before processing side effects.",
-      "Verify the fix by monitoring NumberOfMessagesReceived vs NumberOfMessagesSent -- the ratio should return to 1:1."
+      "Find which message queue feeds the Lambda function that processes orders. The connection between a queue and a Lambda function is called an event source mapping. Use the Lambda console or CLI to identify the queue name.",
+      "Compare two timeout settings: the queue's visibility timeout (how long a message stays hidden after a worker picks it up) and the Lambda function's timeout (the maximum time the function is allowed to run). AWS recommends the visibility timeout be at least 6 times the Lambda timeout. If it is shorter, messages can reappear while the function is still working on them.",
+      "Check CloudWatch metrics to confirm redelivery is happening. Compare NumberOfMessagesReceived (how many times messages were picked up) to NumberOfMessagesSent (how many messages were added). If the received count is higher than the sent count, messages are being picked up more than once.",
+      "Search CloudWatch Logs for the Lambda function. Look for the same order ID showing up in multiple invocations with different request IDs. This confirms the same order was processed more than once.",
+      "Increase the visibility timeout to at least 6 times the Lambda timeout. For a Lambda with a 90-second timeout, set the visibility timeout to at least 540 seconds. Use aws sqs set-queue-attributes to make the change.",
+      "Create a dead-letter queue (DLQ) -- a separate queue that catches messages which fail processing too many times. Configure a redrive policy on the main queue with maxReceiveCount set to 3, meaning a message gets three chances before being moved to the DLQ for human review.",
+      "Add a CloudWatch alarm on the DLQ's ApproximateNumberOfMessagesVisible metric. Any message landing in the DLQ means something went wrong, so set the threshold to 1 and have it notify the team immediately.",
+      "Add duplicate-detection logic (called idempotency) to the Lambda function. Before charging the customer or updating inventory, check DynamoDB for the order ID. If the order has already been processed, skip the side effects and return success. This protects against duplicates even if the queue delivers the same message twice.",
+      "Verify the fix by monitoring the received-to-sent ratio in CloudWatch over the next day. Under normal operation it should be approximately 1:1."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Lambda timeout shorter than processing time causes function to be killed mid-execution",
-        "how_it_differs": "In this sim, the Lambda timeout (90s) was long enough. The problem was the SQS visibility timeout (30s) expiring first. If the Lambda timeout were too short instead, the function would be killed before finishing, the message would return to the queue, and a DLQ would eventually catch it. The symptom would be failed orders, not duplicate orders.",
-        "prevention": "Set Lambda timeout to at least the p99 execution duration. Monitor the Duration metric against the configured timeout."
+        "scenario": "Lambda times out before finishing, causing failed orders instead of duplicate orders",
+        "how_it_differs": "In this sim, the Lambda had enough time to finish (90-second timeout). The problem was that the queue's visibility timeout (30 seconds) expired first, so a second copy of the function started on the same message. If the Lambda timeout were too short instead, the function would be killed mid-work. The message would return to the queue, eventually land in a dead-letter queue (if one existed), and the customer's order would fail rather than get charged twice.",
+        "prevention": "Set the Lambda timeout to cover the slowest expected execution (look at the p99 duration metric). Monitor the Duration metric against the configured timeout to catch functions that are getting close to the limit."
       },
       {
-        "scenario": "SQS FIFO queue throttling due to message group ID contention",
-        "how_it_differs": "A FIFO queue processes messages in order within a message group. If all orders share one group ID, throughput is limited to 300 messages per second per group. The symptom is increased queue depth and latency, not duplicate processing. FIFO queues also provide exactly-once processing, which would have prevented the double-charge problem in this sim.",
-        "prevention": "Use distinct message group IDs (e.g., per-customer or per-region) to parallelize processing. Monitor ApproximateAgeOfOldestMessage for growing delays."
+        "scenario": "Using a FIFO queue causes a throughput bottleneck",
+        "how_it_differs": "A FIFO (first-in, first-out) queue guarantees each message is processed exactly once and in order, which would have prevented the double-charge in this sim. But FIFO queues process messages in groups. If every order shares the same group ID, throughput is capped at 300 messages per second for that group. The symptom is orders piling up in the queue and processing delays -- not duplicates.",
+        "prevention": "If you use a FIFO queue, assign different group IDs (for example, by customer or by region) so orders from different groups can be processed in parallel. Watch the ApproximateAgeOfOldestMessage metric for growing backlogs."
       },
       {
-        "scenario": "No dead-letter queue causes poison-pill messages to retry indefinitely",
-        "how_it_differs": "In this sim, messages were processed successfully -- the problem was they were processed twice. A poison-pill message is one that always fails (e.g., malformed payload). Without a DLQ, it stays in the queue and gets retried forever, consuming Lambda concurrency and blocking other messages. The symptom is a growing ApproximateAgeOfOldestMessage and elevated Lambda errors, not duplicate side effects.",
-        "prevention": "Always configure a DLQ with a maxReceiveCount between 3 and 5. Set a CloudWatch alarm on the DLQ message count."
+        "scenario": "A broken message retries forever because there is no dead-letter queue",
+        "how_it_differs": "In this sim, messages were processed successfully -- just processed twice. A different problem is a 'poison-pill' message with bad data that always causes the function to crash. Without a dead-letter queue, this message stays in the main queue forever, getting retried endlessly. It wastes Lambda capacity and blocks other messages from being processed. The symptom is errors and a growing backlog, not duplicate charges.",
+        "prevention": "Always set up a dead-letter queue with a maxReceiveCount between 3 and 5. Add a CloudWatch alarm on the DLQ message count so you know immediately when something fails."
       },
       {
-        "scenario": "Lambda reserved concurrency set too low causes throttling under load",
-        "how_it_differs": "If the Lambda function has reserved concurrency of 5 but the queue has 50 messages, Lambda throttles and SQS backs off polling. Messages stay in the queue longer but are not duplicated. The symptom is high ApproximateAgeOfOldestMessage and Lambda Throttles metric spikes, not duplicate charges.",
-        "prevention": "Set reserved concurrency proportional to expected queue throughput. Monitor the Throttles metric and SQS age-of-oldest-message."
+        "scenario": "Lambda concurrency limit causes orders to wait in the queue",
+        "how_it_differs": "If the Lambda function is limited to, say, 5 simultaneous copies but the queue has 50 messages waiting, AWS throttles the function and SQS slows down its polling. Messages sit in the queue longer but each one is only processed once. The symptom is slow order processing and spikes in the Lambda Throttles metric, not duplicate charges.",
+        "prevention": "Set the reserved concurrency (the maximum number of simultaneous function copies) proportional to your expected order volume. Monitor the Throttles metric and the age of the oldest message in the queue."
       }
     ],
     "sop_practices": [
-      "Always set SQS visibility timeout to at least 6x the consumer function timeout when using Lambda event source mappings.",
-      "Configure a dead-letter queue on every SQS queue, with a maxReceiveCount between 3 and 5, and set a CloudWatch alarm on the DLQ message count.",
-      "Design all SQS consumers to be idempotent: use a unique message identifier to check for prior processing before executing side effects like payments or inventory changes.",
-      "Monitor the ratio of NumberOfMessagesReceived to NumberOfMessagesSent in CloudWatch -- a ratio above 1 indicates message redelivery and possible duplicate processing."
+      "Always set the SQS visibility timeout to at least 6 times the Lambda function timeout when they are connected via an event source mapping. This ensures the message stays hidden long enough for the function to finish, even if it runs slowly or retries internally.",
+      "Set up a dead-letter queue on every production SQS queue, with maxReceiveCount between 3 and 5. Add a CloudWatch alarm that fires when any message lands in the DLQ, so your team is notified immediately about processing failures.",
+      "Design every message consumer to be idempotent -- meaning processing the same message twice produces the same result as processing it once. Before performing side effects like charging a customer or updating inventory, check whether the operation has already been completed using a unique identifier like the order ID.",
+      "Monitor the ratio of messages received to messages sent in CloudWatch. Under normal conditions, each message should be received approximately once. A ratio above 1 indicates messages are being redelivered, which points to a visibility timeout problem or repeated processing failures."
     ]
   }
 }

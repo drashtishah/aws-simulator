@@ -221,44 +221,44 @@
       "When provisioned RCUs are exhausted, all consumers of the table experience ProvisionedThroughputExceededException"
     ],
     "sop_steps": [
-      "Confirm throttling: check CloudWatch ConsumedReadCapacityUnits and ThrottledRequests metrics for the affected table to verify reads are hitting the provisioned ceiling",
-      "Identify the consumer: correlate the throttling start time with recent deployments or new Lambda invocations by reviewing CloudWatch Logs and deployment timestamps",
-      "Inspect the access pattern: read the Lambda code to determine whether it uses Scan or Query; check for FilterExpression usage that masks full-table reads",
-      "Stop the bleeding: disable the offending Lambda by removing its API Gateway trigger or setting reserved concurrency to 0; confirm ThrottledRequests drops to 0",
-      "Drain the backlog: process messages in the dead-letter queue once the table is no longer throttled; verify order-writer Lambda resumes normal operation",
-      "Design the index: create a Global Secondary Index with the searched attribute (category) as partition key and a useful sort key (productName); provision adequate RCUs on the GSI",
-      "Rewrite the query: replace Scan + FilterExpression with Query + KeyConditionExpression against the new GSI; test with production-scale data volumes",
-      "Validate capacity: monitor ConsumedReadCapacityUnits after redeployment to confirm the Query consumes a fraction of the previous Scan capacity",
-      "Evaluate capacity mode: consider switching from provisioned to on-demand capacity as a safeguard if the table serves unpredictable or bursty workloads",
-      "Add guardrails: implement CloudWatch alarms on ConsumedReadCapacityUnits and ThrottledRequests; require load testing against production-scale data for any new Lambda that reads from shared tables"
+      "Confirm the table is overwhelmed. Check CloudWatch metrics for the table -- look at ConsumedReadCapacityUnits (how many reads are happening) and ThrottledRequests (how many reads are being rejected). If consumed reads equal the maximum you set, the table is at capacity and rejecting overflow.",
+      "Figure out what is consuming all the reads. Compare the time when throttling started with any recent code deployments or new features. Check CloudWatch Logs and deployment timestamps to find what changed right before things broke.",
+      "Look at the code. Read the Lambda function to see how it reads from the table. A Scan reads every single item in the table from start to finish. A Query reads only the items that match a specific key. If the code uses Scan with a FilterExpression, it is reading everything and then throwing away what it does not need -- wasting enormous amounts of read capacity.",
+      "Stop the immediate damage. Disable the Lambda that is doing the Scan by removing its trigger from API Gateway (the service that routes web requests to it) or by setting its allowed concurrent executions to 0. Watch the ThrottledRequests metric drop to zero.",
+      "Process the backlog. Orders that failed while the table was overwhelmed were sent to a dead-letter queue (a holding area for failed messages). Once throttling stops, re-process those messages so the orders go through.",
+      "Build a shortcut for lookups. Create a Global Secondary Index (GSI) -- think of it as a second table of contents organized by a different attribute. Use the searched attribute (category) as the main lookup key and productName as a secondary sort key. This lets the database jump directly to matching items instead of reading everything.",
+      "Rewrite the code to use the shortcut. Replace the Scan + FilterExpression call with a Query + KeyConditionExpression against the new GSI. A Query tells the database exactly what to look for, so it reads only the matching items. Test with production-scale data to confirm it works.",
+      "Verify the fix reduced read consumption. Monitor ConsumedReadCapacityUnits after redeployment. The Query should consume a tiny fraction of what the Scan was using.",
+      "Consider switching to automatic scaling. The table currently has a fixed read budget (called provisioned capacity). On-demand capacity mode scales automatically based on traffic, which prevents this kind of exhaustion -- though it costs more per individual read.",
+      "Add early warning systems. Set up CloudWatch alarms on ConsumedReadCapacityUnits and ThrottledRequests so you get notified within minutes of capacity exhaustion, not after customers complain. Require load testing against production-scale data for any new Lambda that reads from shared tables."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Hot partition key causes throttling even with adequate total capacity",
-        "how_it_differs": "In this sim, the Scan exhausts total table-level RCUs. A hot partition issue occurs when one partition key receives disproportionate traffic, throttling that partition even if overall provisioned capacity is not saturated. The CloudWatch metric ThrottledRequests rises, but ConsumedReadCapacityUnits may stay below the provisioned limit.",
-        "prevention": "Choose high-cardinality partition keys. Use CloudWatch Contributor Insights to detect hot keys. Consider write sharding for frequently accessed keys."
+        "scenario": "One popular item gets all the traffic and overwhelms its storage partition",
+        "how_it_differs": "In this sim, the Scan uses up all the read capacity for the entire table. A 'hot partition' problem is different: the total capacity is not exhausted, but one specific group of data gets so much traffic that its individual slice of the database cannot keep up. Reads to that one key get throttled while the rest of the table is fine. The monitoring looks confusing because overall consumption appears normal.",
+        "prevention": "Choose a partition key (the attribute DynamoDB uses to organize data internally) that spreads traffic evenly -- like a unique ID rather than a status code. Use CloudWatch Contributor Insights to detect which keys are getting the most traffic."
       },
       {
-        "scenario": "GSI write throttling causes back-pressure on the base table",
-        "how_it_differs": "In this sim, no GSI exists and reads are the problem. GSI back-pressure throttling happens when a GSI has insufficient write capacity, causing DynamoDB to throttle writes to the base table to maintain index consistency. Write operations fail even though the base table itself has capacity.",
-        "prevention": "Provision GSI write capacity proportional to the base table write rate. Monitor IndexWriteProvisionedThroughputExceeded. Use on-demand mode if write patterns are unpredictable."
+        "scenario": "A secondary index cannot keep up with writes, and that slows down the main table too",
+        "how_it_differs": "In this sim, there is no secondary index and reads are the problem. This scenario is about writes. When you add a Global Secondary Index (GSI), DynamoDB must update that index every time you write to the main table. If the index does not have enough write capacity, DynamoDB throttles writes to the main table itself to avoid the index falling behind. Your main table has plenty of capacity, but writes still fail.",
+        "prevention": "Give the GSI enough write capacity to keep up with the main table. Monitor the metric called IndexWriteProvisionedThroughputExceeded. Consider on-demand capacity mode if write patterns are unpredictable."
       },
       {
-        "scenario": "On-demand table throttled by exceeding double the previous peak within 30 minutes",
-        "how_it_differs": "This sim uses provisioned mode with a hard RCU ceiling. On-demand tables scale automatically but still have a limit: traffic cannot exceed double the previous peak within a 30-minute window. A sudden burst from a new feature can hit this ceiling even though there is no fixed provisioned limit.",
-        "prevention": "Pre-warm on-demand tables by gradually increasing traffic before launch. Set maximum throughput limits as a cost safeguard. Monitor for MaxOnDemandThroughputExceeded throttling reasons."
+        "scenario": "An on-demand table hits its automatic scaling limit during a sudden traffic spike",
+        "how_it_differs": "This sim uses a fixed read budget (provisioned mode). On-demand mode removes the fixed budget and scales automatically, but it still has a limit: traffic cannot more than double within a 30-minute window. A brand-new feature that suddenly generates heavy traffic can hit this ceiling even though there is no manually set limit.",
+        "prevention": "Gradually ramp up traffic before launching a new feature so the on-demand scaling can keep pace. Set a maximum throughput limit as a cost safety net. Monitor for throttling with the reason MaxOnDemandThroughputExceeded."
       },
       {
-        "scenario": "Paginated Scan with no rate limiting starves other operations during off-peak batch jobs",
-        "how_it_differs": "This sim involves a user-facing Lambda running Scans on every request. A batch-processing Scan (for analytics, exports, or backfills) causes the same capacity exhaustion but happens during scheduled jobs rather than on-demand API calls. The symptoms appear periodically rather than suddenly after a deployment.",
-        "prevention": "Use a smaller page size (Limit parameter) on batch Scans. Add deliberate pauses between pages. Run batch Scans on a read replica or isolated shadow table."
+        "scenario": "A scheduled batch job reads the entire table and starves other operations",
+        "how_it_differs": "This sim has a user-facing function running Scans on every customer request. A batch job (for analytics, exports, or data backfills) causes the same capacity exhaustion, but it happens on a schedule rather than after a deployment. The symptoms appear periodically -- every night at 2 AM, for example -- rather than suddenly.",
+        "prevention": "When you must read the entire table for a batch job, read it in small pages with deliberate pauses between each page. This spreads the read load over time instead of consuming everything at once. Better yet, run batch jobs against a read replica or a separate copy of the table."
       }
     ],
     "sop_practices": [
-      "Design tables for Query access from the start; treat Scan as a last resort for administrative or one-time operations, never for user-facing read paths",
-      "Load-test every new Lambda against production-scale data volumes before deployment, especially when the Lambda reads from a shared DynamoDB table",
-      "Set CloudWatch alarms on both ConsumedReadCapacityUnits and ThrottledRequests so that capacity exhaustion is detected within minutes, not after customer complaints",
-      "Review FilterExpression usage in code reviews; a FilterExpression on a Scan is almost always a sign that a GSI or a redesigned key schema is needed"
+      "Design your table so that everyday lookups use Query (which goes straight to the matching items) instead of Scan (which reads the entire table). Scan should be reserved for rare administrative tasks, never for user-facing features.",
+      "Before deploying any new function that reads from a shared DynamoDB table, test it against production-scale data volumes. A query that works fine on 1,000 test items can cripple a table with 4 million items.",
+      "Set up CloudWatch alarms on ConsumedReadCapacityUnits (how much of your read budget is being used) and ThrottledRequests (how many reads are being rejected). You want to know about capacity problems within minutes, not after customers start complaining.",
+      "During code reviews, watch for FilterExpression used with Scan. A FilterExpression only filters results after the entire table has already been read -- it does not save any read capacity. If you see this pattern, it almost always means the code needs a Global Secondary Index (a secondary lookup structure) and a Query instead."
     ]
   }
 }

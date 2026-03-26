@@ -232,43 +232,43 @@
       "Cooldown periods: 300-second cooldown prevents rapid scale-out during sustained traffic surges; shorter cooldowns (60-120s) are appropriate for spiky workloads"
     ],
     "sop_steps": [
-      "Identify the scope: confirm the ALB name, target group, and ASG involved in the incident using describe_load_balancers, describe_target_groups, and describe_auto_scaling_groups",
-      "Check ALB metrics: pull RequestCount, HTTPCode_ELB_5XX_Count, RejectedConnectionCount, and TargetResponseTime from CloudWatch for the incident window to confirm the ALB was capacity-constrained",
-      "Check ASG scaling activity: run describe_scaling_activities to see when instances were launched and whether cooldown periods delayed scale-out",
-      "Review the scaling policy: confirm the policy type (simple vs. target tracking), the metric it watches (CPUUtilization vs. ALBRequestCountPerTarget), and the cooldown duration",
-      "Remediate ALB capacity: for immediate relief, contact AWS Support to pre-warm the ALB with expected peak request rate, duration, HTTPS percentage, and average request/response size. For self-service, configure LCU reservation via the console or modify-load-balancer-attributes CLI",
-      "Remediate scaling policy: create a target tracking policy on ALBRequestCountPerTarget with an appropriate target value (e.g., 300 requests per target). Reduce the default cooldown to 60 seconds for scale-out",
-      "Pre-scale for future events: set desired capacity higher before known events using set-desired-capacity, or create scheduled scaling actions with put-scheduled-update-group-action",
-      "Add monitoring: create CloudWatch alarms on RequestCount, TargetResponseTime, and HTTPCode_ELB_5XX_Count to catch request-driven overload that CPU alarms miss",
-      "Validate: run a load test or wait for the next traffic event to confirm the ALB handles the spike without 503 errors and the ASG scales within the first evaluation period"
+      "Figure out which load balancer, server group, and scaling setup are involved. Use describe_load_balancers, describe_target_groups, and describe_auto_scaling_groups to get the names and current state of each component.",
+      "Look at the load balancer's traffic metrics in CloudWatch for the time the incident happened. Pull RequestCount (total requests), HTTPCode_ELB_5XX_Count (server errors the load balancer returned), RejectedConnectionCount (connections the load balancer refused), and TargetResponseTime (how long servers took to respond). These confirm whether the load balancer itself was overwhelmed.",
+      "Check the Auto Scaling activity log by running describe_scaling_activities. This shows when new servers were launched and whether the cooldown period -- a waiting window that blocks further scaling -- delayed additional launches.",
+      "Review the scaling policy to understand what triggers new servers to launch. Check whether it watches CPU usage (a slow-reacting metric) or request count per server (a fast-reacting metric called ALBRequestCountPerTarget). Also note the cooldown duration -- how many seconds the system waits between scaling actions.",
+      "Fix the load balancer capacity for the next event. You can ask AWS Support to pre-warm the load balancer (increase its internal capacity in advance) by providing the expected traffic rate, duration, and request sizes. Or use LCU reservation (Load Balancer Capacity Units) to reserve a minimum capacity baseline yourself through the console or CLI.",
+      "Fix the scaling policy. Create a target tracking policy that watches ALBRequestCountPerTarget -- this metric counts how many requests each server handles and reacts directly to traffic changes. Set a target value (for example, 300 requests per server). Reduce the cooldown to 60 seconds so the system can launch multiple servers quickly during a sustained spike.",
+      "Before future planned events, increase the number of running servers ahead of time. Use set-desired-capacity to manually set a higher count, or create a scheduled scaling action with put-scheduled-update-group-action to automate it.",
+      "Add monitoring alerts for request-based metrics. Create CloudWatch alarms on RequestCount, TargetResponseTime, and HTTPCode_ELB_5XX_Count. These detect load balancer overload that CPU-based alarms miss entirely, because CPU is a lagging indicator -- it rises after requests have already started failing.",
+      "Validate the fix by running a load test or waiting for the next traffic event. Confirm the load balancer handles the spike without returning 503 errors (meaning 'too busy') and that the scaling group adds servers within the first evaluation period."
     ],
     "related_failure_modes": [
       {
-        "scenario": "ALB target health check misconfiguration causes cascading 502 errors",
-        "how_it_differs": "In this sim, the ALB itself ran out of capacity (503s). In a health check misconfiguration, the ALB has capacity but routes to targets it considers healthy when they are not, or marks healthy targets as unhealthy due to aggressive thresholds. The result is 502 errors, not 503s.",
-        "prevention": "Set health check interval and thresholds based on actual application startup time. Use a dedicated /health endpoint that checks downstream dependencies."
+        "scenario": "Health check misconfiguration causes the load balancer to return 502 errors",
+        "how_it_differs": "In this sim, the load balancer itself ran out of internal capacity and returned 503 ('too busy') errors. A different problem occurs when the load balancer has plenty of capacity but its health check -- the periodic test it sends to each server -- is configured too aggressively. It might mark healthy servers as unhealthy, or consider servers healthy when they are not. The result is 502 ('bad gateway') errors instead of 503s.",
+        "prevention": "Set health check timing and pass/fail thresholds based on how long your application actually takes to start. Use a dedicated /health URL that checks whether the database and other dependencies are reachable."
       },
       {
-        "scenario": "Auto Scaling group hits MaxSize during a sustained traffic event",
-        "how_it_differs": "In this sim, the ASG never reached MaxSize because traffic dropped before scaling caught up. If the sale had lasted longer and the ASG reached its max of 20 instances, no further scale-out would occur regardless of metric values. The bottleneck shifts from scaling speed to scaling ceiling.",
-        "prevention": "Set MaxSize with headroom above expected peak. Use CloudWatch alarms on GroupMaxSize to alert when the ASG approaches its limit."
+        "scenario": "The server group hits its maximum size during a long traffic event",
+        "how_it_differs": "In this sim, the Auto Scaling group (the collection of servers that can grow and shrink) never reached its ceiling of 20 because traffic dropped before scaling caught up. If the sale had lasted longer, the group could have maxed out and stopped adding servers, no matter how high the traffic went. The bottleneck shifts from how fast servers are added to how many servers are allowed.",
+        "prevention": "Set the maximum group size well above your expected peak. Create a CloudWatch alarm that warns you when the group is approaching its limit."
       },
       {
-        "scenario": "T3 instance CPU credit exhaustion under sustained load",
-        "how_it_differs": "In this sim, the t3.large instances were overwhelmed by request volume before CPU credits became relevant. Under a slower, sustained traffic increase, t3 instances could exhaust their CPU credit balance and become throttled even if the ALB and scaling policy are configured correctly.",
-        "prevention": "Use unlimited mode for t3 instances in production, or use non-burstable instance types (m5, c5) for workloads with sustained high CPU."
+        "scenario": "Burstable servers run out of CPU credits under sustained load",
+        "how_it_differs": "T3 servers (a cost-saving instance type) have a 'credit' system for CPU power. They store credits during quiet periods and spend them under load. In this sim, the servers were overwhelmed too quickly for credits to matter. But under a slower, sustained traffic increase, credits could run out, throttling the servers to a fraction of their normal speed -- even if the load balancer and scaling are configured correctly.",
+        "prevention": "Turn on 'unlimited mode' for T3 servers in production so they never get throttled. Or use non-burstable server types (like M5 or C5) for workloads that need sustained high CPU."
       },
       {
-        "scenario": "Connection draining delay prevents new instances from receiving traffic",
-        "how_it_differs": "In this sim, new instances were slow to help because of health check delays. A separate failure mode occurs when the deregistration delay (connection draining) on old or unhealthy targets is set too high, keeping connections tied to overloaded instances instead of shifting to healthy ones.",
-        "prevention": "Set deregistration delay to match your application's connection lifetime. For stateless web apps, 30-60 seconds is typical instead of the default 300 seconds."
+        "scenario": "Slow connection draining keeps traffic on overloaded servers",
+        "how_it_differs": "In this sim, new servers were slow to help because they had to pass health checks first. A different problem happens when the load balancer holds connections to old or failing servers for too long (this holding period is called the deregistration delay or connection draining timeout). New servers may be ready, but traffic stays stuck on the old ones.",
+        "prevention": "Set the deregistration delay to match how long your application's connections typically last. For stateless web apps, 30 to 60 seconds is typical instead of the default 300 seconds."
       }
     ],
     "sop_practices": [
-      "For any planned traffic event, pre-scale both the ALB (via LCU reservation or support ticket) and the ASG (via scheduled scaling or manual desired capacity) at least 48 hours in advance",
-      "Use target tracking policies on request-based metrics (ALBRequestCountPerTarget) instead of simple scaling policies on CPU for web applications behind an ALB",
-      "Set cooldown periods based on workload pattern: 60-120 seconds for bursty/spiky traffic, 300 seconds only for gradual organic growth",
-      "Create CloudWatch alarms on HTTPCode_ELB_5XX_Count, RejectedConnectionCount, and TargetResponseTime in addition to CPU -- these detect load balancer capacity issues that CPU-based alarms miss entirely"
+      "Before any planned traffic event, prepare both the load balancer and the server group at least 48 hours in advance. Reserve load balancer capacity (via LCU reservation or a support ticket to AWS) and increase the number of running servers (via scheduled scaling or a manual capacity increase). The load balancer can only double its internal capacity every five minutes on its own.",
+      "For web applications behind a load balancer, use scaling policies that watch request count per server (ALBRequestCountPerTarget) instead of CPU usage. CPU is a lagging indicator -- by the time it spikes, requests have already been failing. Request count reacts directly to traffic changes.",
+      "Set the cooldown period -- the pause between scaling actions -- based on your traffic pattern. For bursty or spiky traffic, use 60 to 120 seconds. The default 300 seconds is only appropriate for gradual, organic growth. Target tracking and step scaling policies manage their own cooldowns, which is another reason to prefer them over simple scaling.",
+      "Create CloudWatch alarms on HTTPCode_ELB_5XX_Count (server errors from the load balancer), RejectedConnectionCount (connections refused), and TargetResponseTime (how long servers take to respond) -- not just CPU. These metrics detect load balancer capacity problems that CPU alarms miss entirely."
     ]
   }
 }

@@ -34,30 +34,30 @@ The AWS CLI resolves credentials in a fixed priority order. Environment variable
 
 ## Correct Remediation
 
-1. **Immediate**: Remove `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from `/etc/environment` on the CI instance. Start a new shell session or reboot the instance to clear the variables from the running environment.
-2. **Verification**: Run `aws sts get-caller-identity` to confirm the CLI now resolves to the instance profile role ARN. Run the deploy script manually to verify it succeeds.
-3. **Audit**: Search all EC2 instances for hardcoded AWS credentials in environment variables, `.bashrc`, `.bash_profile`, `/etc/environment`, and cron job definitions. Remove any that are found.
-4. **Offboarding process**: Add a step to the offboarding checklist -- search all shared infrastructure (CI machines, jump boxes, dev servers) for credentials belonging to the departing engineer.
-5. **Detection**: Configure CloudTrail to alert on `AccessDenied` events from IAM users that are inactive or do not match expected principals for a given source IP.
+1. **Remove the stale credentials**: Delete the lines containing `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from `/etc/environment` on the CI instance. These environment variables are overriding the machine's built-in credentials. Start a new shell session or reboot the instance so the change takes effect -- environment variables stay in memory until the shell that loaded them is closed.
+2. **Confirm the fix**: Run `aws sts get-caller-identity` to check who the CLI is acting as now. The output should show the machine's own role (a role ARN like `arn:aws:sts::...:assumed-role/fenwick-ci-deploy-role/...`) instead of the former employee's user account. Run the deploy script manually to verify it succeeds.
+3. **Audit other machines**: Search all EC2 instances and shared infrastructure for hardcoded AWS credentials. Check environment variables, `.bashrc`, `.bash_profile`, `/etc/environment`, `~/.aws/credentials`, and cron job definitions. If one machine had leftover credentials, others might too.
+4. **Update the offboarding process**: Add a step to the offboarding checklist: when someone leaves the company, search all shared infrastructure (CI machines, jump boxes, dev servers) for credentials belonging to them.
+5. **Set up automatic detection**: Configure CloudTrail (the AWS audit log service) to alert on `AccessDenied` errors from inactive users or from users that do not match the expected role for a given machine's IP address. This catches credential override problems early, before they cause days-long outages.
 
 ## Key Concepts
 
-### AWS Credential Resolution Chain
+### How the CLI Decides Which Credentials to Use (The Credential Chain)
 
-The AWS CLI and SDKs resolve credentials in this fixed order. The first source that provides credentials wins. Later sources are never consulted.
+When you run an AWS CLI command, it needs credentials to prove who you are. It checks several places in a fixed order, and the first one it finds wins. It never looks further.
 
-1. **Command-line options** -- `--profile`, explicit `--access-key-id` and `--secret-access-key` flags
-2. **Environment variables** -- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
-3. **CLI credentials file** -- `~/.aws/credentials` (the `[default]` profile or a named profile)
-4. **CLI config file** -- `~/.aws/config` (can specify role_arn for assume-role, SSO configuration)
-5. **Container credentials** -- ECS task role credentials via the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` endpoint
-6. **Instance profile** -- EC2 instance metadata service (IMDS) providing temporary credentials from the attached IAM role
+1. **Flags you typed on the command line** -- like `--profile` or explicit key flags. Highest priority.
+2. **Environment variables** -- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and optionally `AWS_SESSION_TOKEN`. These are settings baked into the shell environment.
+3. **The credentials file on disk** -- `~/.aws/credentials`, a file that can store access keys for different profiles.
+4. **The config file on disk** -- `~/.aws/config`, which can specify roles to assume or SSO settings.
+5. **Container credentials** -- used when code runs inside a container on AWS (like ECS). Not relevant for EC2 instances.
+6. **The machine's built-in role (instance profile)** -- EC2 instances can have a role attached that provides temporary credentials automatically. This is the most secure option because the credentials rotate on their own.
 
-In this incident, the environment variables (priority 2) contained credentials for a deactivated user. The instance profile (priority 6) had the correct role. The CLI never reached priority 6.
+In this incident, environment variables (priority 2) contained a former employee's deactivated credentials. The machine's instance profile (priority 6) had the correct role and permissions. But the CLI found the environment variables first and never looked further.
 
-### `aws configure list`
+### aws configure list -- See Where Your Credentials Come From
 
-This command shows which credential source is active and where each component comes from:
+This command shows which credential source the CLI is currently using and where each value comes from:
 
 ```
       Name                    Value             Type    Location
@@ -68,42 +68,42 @@ secret_key     ****************XMPL              env    AWS_SECRET_ACCESS_KEY
     region                us-west-2      config-file    ~/.aws/config
 ```
 
-The `Type` column reveals the source. If it says `env`, credentials are coming from environment variables, not the instance profile. If it says `iam-role`, they come from the instance profile.
+The `Type` column is the most important part. If it says `env`, the credentials are coming from environment variables -- not from the machine's built-in role. If it says `iam-role`, they come from the instance profile, which is what you want on an EC2 instance.
 
-### `aws sts get-caller-identity`
+### aws sts get-caller-identity -- Check Who AWS Thinks You Are
 
-This command returns the IAM principal the CLI is currently authenticating as. It works even when the principal lacks permissions for other actions. It is the single fastest way to answer "who does AWS think I am right now?"
+This command answers the question "who am I right now?" It returns the identity (user or role) the CLI is authenticating as. It works even when you lack permissions for anything else -- it is always allowed. It is the single fastest way to check whether you are acting as the right principal.
 
-If the output shows an IAM user ARN when you expect a role ARN, something in the credential chain is overriding the instance profile.
+If the output shows an IAM user name (like `raj.patel`) when you expected a machine role, something in the credential chain is overriding the instance profile.
 
-### Why Environment Variables Are Dangerous
+### Why Leftover Environment Variables Are Dangerous
 
-Environment variables are invisible in day-to-day operations. They persist across reboots if set in `/etc/environment` or shell profiles. They silently override instance profiles and config files. Engineers set them for quick debugging and forget to remove them. When the associated IAM user is offboarded, the credentials break with no warning until the next API call.
+Environment variables are invisible in day-to-day work. You do not see them unless you look for them. They persist across reboots if set in `/etc/environment` or shell profile files. They silently override the machine's built-in role and any config files. Engineers set them for a quick debugging session and forget to clean them up. Months later, when the associated user account is deactivated during offboarding, every API call on that machine starts failing -- with no obvious explanation because nothing about the machine itself changed.
 
 ## Other Ways This Could Break
 
-### Credentials file override
+### A credentials file on disk overrides the machine's built-in role
 
-The `~/.aws/credentials` file on the instance contains long-lived access keys from a previous setup, overriding the instance profile. This differs from the environment variable scenario because the credential source is the shared credentials file (priority 3 in the chain) rather than environment variables (priority 2). Running `aws configure list` shows Type as `shared-credentials-file` instead of `env`. The fix is the same pattern: remove the credentials file and let the instance profile take over. Prevention: never store long-lived credentials on shared infrastructure; use instance profiles exclusively for EC2 workloads.
+The file `~/.aws/credentials` on the instance contains long-lived access keys from a previous setup. This is similar to the environment variable problem, but the credentials come from a file on disk (priority 3 in the chain) instead of environment variables (priority 2). Running `aws configure list` shows Type as `shared-credentials-file` instead of `env`. The fix is the same pattern: remove the credentials file and let the machine's instance profile take over. Prevention: never store long-lived credentials on shared infrastructure. Use instance profiles exclusively for EC2 workloads.
 
-### Expired STS session token
+### A temporary security token expired but the variables are still set
 
-An engineer ran `aws sts get-session-token` and exported `AWS_SESSION_TOKEN` alongside the access key variables into a persistent file like `/etc/environment`. The session token expired, but the environment variables remain. The error message is `ExpiredToken` rather than `AccessDenied`, which is the key difference. The access key itself may still be valid, but the session token has a fixed expiration. Prevention: never export temporary session tokens into persistent environment files. Use instance profiles or role assumption for automated workloads.
+An engineer once generated temporary credentials by running `aws sts get-session-token` and saved all three values (access key, secret key, and session token) as environment variables in a persistent file like `/etc/environment`. The session token expired after a few hours, but the variables are still set. The error message says `ExpiredToken` rather than `AccessDenied` -- that is the key difference. The access key may still be valid on its own, but the session token has a fixed lifetime and once it expires, every call fails. Prevention: never save temporary session tokens into persistent files. Use instance profiles for automated workloads -- they handle token renewal automatically.
 
-### Wrong instance profile attached
+### The machine's built-in role does not have the right permissions
 
-The EC2 instance has an instance profile, but it is associated with a role that lacks the required permissions. The CLI authenticates as the role (`get-caller-identity` returns a role ARN, not a user ARN), but the role's policies do not include the needed actions (s3:PutObject, secretsmanager:GetSecretValue, etc.). The fix is updating the role's policies, not removing credential overrides. Prevention: use infrastructure-as-code to define instance profile roles and their policies; review role permissions when deploy requirements change.
+The EC2 instance has an instance profile, and the CLI correctly authenticates as that role (`get-caller-identity` shows a role ARN, not a user ARN). But the role's permission policy does not include the actions the deploy script needs (like uploading files to S3 or updating a Lambda function). The fix is different from this sim: you need to update the role's permissions, not remove credential overrides. Prevention: define instance profile roles and their permissions using infrastructure-as-code. Review role permissions whenever deploy requirements change.
 
-### IMDSv2 enforcement blocks credential retrieval
+### The instance's metadata service is locked down and the CLI cannot reach it
 
-The instance was configured to require IMDSv2 (token-based metadata access), but the AWS CLI or SDK version running on the instance does not support IMDSv2. The credential chain reaches the instance profile step but fails to retrieve credentials from the metadata service. The error is `Unable to locate credentials` rather than `AccessDenied`. Prevention: update the AWS CLI and SDKs to versions that support IMDSv2 before enforcing it on instances.
+The instance was configured to require a newer, more secure version of the metadata service (called IMDSv2). But the AWS CLI or SDK version running on the machine does not support IMDSv2. The credential chain reaches the instance profile step but fails to retrieve credentials because it cannot speak the right protocol. The error says `Unable to locate credentials` rather than `AccessDenied`. Prevention: update the AWS CLI and SDKs to versions that support IMDSv2 before enabling the requirement on instances. Test credential retrieval after making the switch.
 
 ## SOP Best Practices
 
-- **Use instance profiles instead of access keys for EC2 workloads.** Instance profiles provide automatic credential rotation through the metadata service. There are no keys to lose, leak, or forget to remove. The SOP for setting up an instance profile involves creating an IAM role with a trust policy for ec2.amazonaws.com, wrapping it in an instance profile, and attaching it to the instance.
-- **Run `aws sts get-caller-identity` as the first step in any AccessDenied investigation.** It reveals the actual authenticating principal regardless of what you expect. If the output shows an IAM user ARN when you expect a role ARN, something in the credential chain is overriding the instance profile.
-- **Include a credential sweep in your offboarding checklist.** Search all shared infrastructure (CI machines, jump boxes, dev servers) for environment variables, credentials files, and config files belonging to the departing engineer. Check `/etc/environment`, `~/.bashrc`, `~/.bash_profile`, `~/.aws/credentials`, and cron job definitions.
-- **Configure CloudTrail alerts for AccessDenied events from inactive or unexpected principals.** This catches credential override issues before they cause extended outages. Alert when the principal in a CloudTrail event does not match the expected instance profile role for a given source IP.
+- **Use the machine's built-in role (instance profile) instead of hardcoded access keys for EC2 workloads.** An instance profile provides temporary credentials that rotate automatically through the metadata service. There are no keys to lose, leak, or forget to remove when someone leaves the company.
+- **When you see AccessDenied, the first question to answer is "who does AWS think I am?"** Run `aws sts get-caller-identity`. If the output shows a personal user account when you expected the machine's role, something in the credential chain is overriding the instance profile. This single command saves hours of looking in the wrong place.
+- **Add a credential sweep to your offboarding checklist.** When someone leaves the company, search all shared infrastructure (CI machines, jump boxes, dev servers) for their credentials. Check `/etc/environment`, `~/.bashrc`, `~/.bash_profile`, `~/.aws/credentials`, and cron job definitions. Leftover credentials are invisible until they break.
+- **Set up automatic detection using CloudTrail alerts.** CloudTrail records every API call made in your account. Configure it to alert when AccessDenied errors come from inactive users or from users that do not match the expected role for a given machine. This catches credential override problems before they cause days-long outages.
 
 ## Learning Objectives
 

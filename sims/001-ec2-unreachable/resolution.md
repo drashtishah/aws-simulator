@@ -29,55 +29,55 @@ The EC2 instance `brightpath-prod-web-01` (i-0abc123def456789a) had its security
 
 ## Correct Remediation
 
-1. **Immediate**: Add inbound rule to sg-0a1b2c3d4e5f67890 allowing TCP port 443 from 0.0.0.0/0 (IPv4) and ::/0 (IPv6)
-2. **Verification**: Confirm health checks pass and the application is accessible from an external browser
-3. **Prevention**: Create a runbook that documents required security group rules for each production service, with port numbers and justifications
-4. **Detection**: Add a CloudWatch alarm on the `StatusCheckFailed` metric with a 1-minute evaluation period to reduce detection time
-5. **Process**: Require peer review and staging environment validation before modifying production security groups
+1. **Immediate**: Add a firewall rule to the security group (sg-0a1b2c3d4e5f67890) that allows incoming web traffic. Specifically, allow TCP traffic on port 443 (the standard port for HTTPS -- secure web connections) from 0.0.0.0/0 (all IPv4 addresses) and ::/0 (all IPv6 addresses). Security group changes take effect instantly -- no server restart needed.
+2. **Verification**: Confirm the application is reachable again by checking that health checks pass and the site loads from an external browser.
+3. **Prevention**: Create a runbook (a documented checklist) listing every port that each production service needs open, along with the reason each port is required. Reference this list before and after any firewall changes.
+4. **Detection**: Set up a CloudWatch alarm on the `StatusCheckFailed` metric with a 1-minute evaluation period. CloudWatch alarms watch a metric and notify your team when something crosses a threshold -- this reduces the time between an outage starting and someone knowing about it.
+5. **Process**: Require a second engineer to review any production firewall changes before they are applied. Test changes in a staging environment (a copy of production used for safe testing) first.
 
 ## Key Concepts
 
-### Security Groups
+### Security Groups -- Your Server's Firewall
 
-Security groups are stateful virtual firewalls attached to EC2 instances (technically, to elastic network interfaces). Key properties:
+A security group is a virtual firewall that wraps around your server (EC2 instance) and controls what network traffic can reach it. Think of it as a bouncer at a door -- only traffic that matches a rule on the guest list gets in.
 
-- **Default deny**: If no rule explicitly allows traffic, it is dropped. There is no explicit deny -- you control access by what you allow.
-- **Stateful**: If an inbound rule allows traffic in, the response traffic is automatically allowed out, regardless of outbound rules.
-- **Immediate effect**: Changes apply instantly. No instance restart or reattachment needed.
-- **Multiple groups**: An instance can have up to five security groups. Rules across all groups are evaluated together as a union.
+- **Default deny**: If no rule explicitly allows traffic, it is silently dropped. There is no way to write a "block this" rule -- you only write "allow this" rules. Everything else is blocked automatically.
+- **Stateful**: If a rule lets a request in, the response is automatically allowed out. You do not need a separate outbound rule for replies. This is what "stateful" means -- the firewall remembers the conversation.
+- **Immediate effect**: Changes apply the moment you save them. No server restart needed.
+- **Multiple groups**: A server can have up to five security groups attached. AWS combines all their rules together -- if any group allows the traffic, it gets through.
 
-### Security Groups vs Network ACLs
+### Security Groups vs Network ACLs -- Two Layers of Firewall
 
-Security groups operate at the instance level and are stateful. Network ACLs operate at the subnet level and are stateless (you must configure both inbound and outbound rules). For this incident, the Network ACL was not the issue -- it correctly allowed traffic on port 443. The security group was the chokepoint.
+AWS gives you two firewalls. Security groups wrap individual servers and are stateful (they remember connections). Network ACLs (Access Control Lists) wrap an entire subnet (a section of your network) and are stateless -- you must write separate rules for traffic going in and coming out. In this incident, the Network ACL was fine. The security group was the one blocking traffic.
 
-### CloudWatch Instance Metrics
+### CloudWatch Instance Metrics -- What They Do and Do Not Tell You
 
-EC2 instances report `StatusCheckFailed_Instance` (OS-level) and `StatusCheckFailed_System` (hardware-level) metrics. These check if the instance is running, not if the application is reachable. A custom health check or an ALB target group health check is needed to detect application-level failures.
+EC2 instances report two built-in health metrics: `StatusCheckFailed_Instance` (checks if the operating system is responsive) and `StatusCheckFailed_System` (checks if the underlying hardware is working). These only tell you whether the machine is running -- they do not tell you whether users can actually reach your application. To detect network-level or application-level problems, you need a custom health check or a load balancer health check that tests the application from the outside.
 
 ## Other Ways This Could Break
 
 ### Network ACL deny rule blocks port 443
-Instead of the security group, a Network ACL deny rule with a lower rule number than the allow rule blocks HTTPS traffic at the subnet level. Because NACLs are stateless, both inbound and outbound rules must be checked. The security group would look correct in this case, making the problem harder to spot.
-**Prevention:** Audit NACL rules after changes and ensure allow rules for required ports have lower rule numbers than any broad deny rules. Use VPC Flow Logs to confirm where traffic is being rejected.
+Instead of the security group (the firewall around the server), the problem is in the Network ACL -- a separate firewall that protects the entire subnet (a section of your network). Network ACLs evaluate rules in numbered order, and a deny rule with a lower number than an allow rule wins. Unlike security groups, Network ACLs are stateless, meaning you need separate rules for traffic going in and coming out. The security group would look fine, making this harder to spot.
+**Prevention:** After any changes, review Network ACL rules to make sure allow rules for required ports have lower rule numbers than deny rules. Turn on VPC Flow Logs (a feature that records which traffic was accepted or rejected) to see exactly where traffic is being blocked.
 
 ### Route table missing default route to Internet Gateway
-The public subnet route table loses its 0.0.0.0/0 route pointing to the Internet Gateway. All internet traffic stops reaching the subnet entirely -- not just one port. The instance also loses outbound internet access, which distinguishes it from a security group issue.
-**Prevention:** Tag production route tables and use AWS Config rules to detect when a public subnet route table lacks a default route to an Internet Gateway.
+Every subnet has a route table that tells traffic where to go. If the route table loses its default route -- the entry (0.0.0.0/0) that sends internet-bound traffic to the Internet Gateway (the door between your virtual network and the internet) -- all internet traffic stops reaching the subnet. Not just one port, but everything. The server also loses its ability to reach the internet, which distinguishes this from a security group issue.
+**Prevention:** Label production route tables clearly and use AWS Config rules (automated compliance checks) to detect when a public subnet's route table is missing its default route to the Internet Gateway.
 
 ### Elastic IP or public IP disassociated from instance
-The instance loses its public IP address, so DNS resolution or direct IP access fails. Unlike a security group issue, the instance becomes unreachable on all ports, and the public IP no longer appears in describe-instances output.
-**Prevention:** Use Elastic IPs for production instances instead of auto-assigned public IPs. Set up CloudWatch alarms to alert when a production instance has no associated public IP.
+Every server that needs to be reached from the internet must have a public IP address. If the public IP gets removed, the server becomes unreachable on all ports -- not just one. You can spot this by checking the instance details: the public IP field will be empty.
+**Prevention:** Use an Elastic IP (a permanent public IP address that you own and control) for production servers instead of auto-assigned public IPs that can change. Set up a CloudWatch alarm to alert if a production server loses its public IP.
 
 ### Security group connection tracking limit exceeded
-The security group rules are correct, but the instance has too many concurrent tracked connections and starts dropping new ones. Symptoms appear as intermittent timeouts under high load rather than a complete outage. ENA driver metrics show conntrack_allowance_exceeded incrementing.
-**Prevention:** Monitor conntrack_allowance_available via ENA driver metrics. Scale to a larger instance type for higher connection tracking limits, or configure security group rules to avoid tracking where possible.
+The firewall rules are correct, but the server is handling so many simultaneous connections that it hits a built-in limit on how many connections the security group can track at once. This causes intermittent timeouts under heavy load rather than a complete outage. You can spot this by checking ENA driver metrics (network card statistics) for a counter called conntrack_allowance_exceeded going up.
+**Prevention:** Monitor connection tracking metrics from the network card. If you are hitting limits, move to a larger server type that supports more connections, or adjust security group rules to reduce tracking overhead.
 
 ## SOP Best Practices
 
-- Always validate security group rules against a documented list of required application ports before and after any modification -- automate this check in CI/CD pipelines.
-- Test security group changes in a staging environment that mirrors production network topology before applying them to production.
-- Enable VPC Flow Logs on production subnets to provide an audit trail of accepted and rejected traffic, which accelerates root-cause analysis during connectivity incidents.
-- Set up CloudWatch alarms on external reachability probes (not just instance status checks) so that network-level outages are detected within minutes, not hours.
+- Before and after changing any firewall rules, check them against a documented list of ports your application needs to be reachable on. Automate this check in your deployment pipeline (CI/CD) so human error cannot skip it.
+- Test firewall changes in a staging environment (a copy of your production setup used for testing) before applying them to the real production servers. The staging network layout should match production so the test is meaningful.
+- Turn on VPC Flow Logs for your production subnets. Flow Logs record every connection attempt and whether it was accepted or rejected. When something goes wrong, these logs let you quickly see where traffic is being blocked instead of guessing.
+- Set up CloudWatch alarms that check whether your application is reachable from outside your network -- not just whether the server is running. Instance status checks only confirm the machine is on; they do not catch firewall misconfigurations that block user traffic.
 
 ## Learning Objectives
 

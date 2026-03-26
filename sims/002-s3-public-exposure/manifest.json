@@ -207,44 +207,44 @@
       "Incident response workflow: detect, contain, investigate, remediate"
     ],
     "sop_steps": [
-      "1. Confirm public access: run GetBucketPolicyStatus on meridian-patient-documents to verify the bucket policy grants public access.",
-      "2. Identify the offending statement: retrieve the bucket policy and locate the statement with Principal: * (AllowVendorReadAccess).",
-      "3. Contain immediately: replace Principal: * with the vendor's specific account ARN (arn:aws:iam::887766554433:root) in the AllowVendorReadAccess statement using PutBucketPolicy.",
-      "4. Enable S3 Block Public Access on meridian-patient-documents: set BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets to true.",
-      "5. Enable S3 Block Public Access at the Meridian Health account level for all buckets that should not be public.",
-      "6. Determine blast radius: query CloudTrail for all GetObject events on meridian-patient-documents during the four-day exposure window. Cross-reference with S3 server access logs to identify the 187 external IP addresses.",
-      "7. Trace the root cause: look up the PutBucketPolicy event in CloudTrail to confirm meridian-deploy-svc made the change four days prior from IP 10.0.3.91 using aws-cli.",
-      "8. Enable detective controls: activate AWS Config rule s3-bucket-public-read-prohibited to continuously monitor all buckets for public read access.",
-      "9. Add preventive controls: add a CI/CD pipeline check that rejects any bucket policy containing Principal: * before deployment.",
-      "10. Notify compliance: provide the exposure timeline, affected patient count (48,000), and list of external accessor IPs to the compliance team for HIPAA breach notification."
+      "1. Confirm the bucket is publicly accessible. Run GetBucketPolicyStatus on meridian-patient-documents -- this command tells you whether the bucket's access rules allow anyone on the internet to read its contents.",
+      "2. Pull up the bucket policy -- a JSON document that controls who can access the bucket. Find the statement named AllowVendorReadAccess. Look at its Principal field: if it says * (a wildcard meaning 'everyone'), that is the problem.",
+      "3. Stop the bleeding immediately. Replace Principal: * with the vendor's specific account ID (written as an ARN, which is an Amazon Resource Name -- a unique address for any AWS resource). Use the PutBucketPolicy command to save the corrected policy.",
+      "4. Turn on S3 Block Public Access for this bucket. Block Public Access is a set of four safety switches that override any policy or setting that would make the bucket public. Enable all four: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets.",
+      "5. Turn on S3 Block Public Access at the account level too, so that every bucket in the account is protected by default. This prevents future accidents on any bucket, not just this one.",
+      "6. Figure out how bad the damage is. Use CloudTrail (a service that logs every action taken in your AWS account) to search for all GetObject events (file downloads) on this bucket during the four days it was exposed. Cross-reference with S3 server access logs to identify the 187 external IP addresses that accessed the files.",
+      "7. Trace who made the change and when. Look up the PutBucketPolicy event in CloudTrail to confirm that the meridian-deploy-svc service account made the change four days ago. CloudTrail records the IP address, tool used, and exact time of every API call.",
+      "8. Set up ongoing monitoring. Activate the AWS Config rule s3-bucket-public-read-prohibited -- this is an automated compliance check that continuously watches all your buckets and alerts you if any one of them becomes publicly readable.",
+      "9. Add a check to your deployment pipeline (CI/CD) that automatically rejects any bucket policy containing Principal: * before it gets deployed. This catches the mistake before it reaches production.",
+      "10. Notify the compliance team with the exposure timeline, the number of affected patients (48,000), and the list of external IPs that accessed the files. Under HIPAA (the law governing healthcare data privacy), affected patients must be notified within 60 days."
     ],
     "related_failure_modes": [
       {
         "scenario": "Bucket ACL grants public read access instead of bucket policy",
-        "how_it_differs": "The exposure comes from a legacy ACL setting (AllUsers READ) rather than a policy statement. Block Public Access with IgnorePublicAcls would prevent this, but the ACL itself would not appear in the bucket policy.",
-        "prevention": "Disable ACLs entirely by setting S3 Object Ownership to BucketOwnerEnforced. This makes ACL-based public access impossible."
+        "how_it_differs": "Instead of the bucket policy, the exposure comes from an older access control mechanism called an ACL (Access Control List). If the ACL is set to AllUsers READ, anyone can download files. The tricky part is that ACLs are separate from bucket policies, so the bucket policy might look fine while the ACL is the real problem. Turning on Block Public Access with IgnorePublicAcls would override this.",
+        "prevention": "Disable ACLs entirely by setting S3 Object Ownership to BucketOwnerEnforced. This setting makes it impossible for anyone to grant public access through an ACL, removing the risk altogether."
       },
       {
         "scenario": "Presigned URL generated with overly long expiration leaks via shared link",
-        "how_it_differs": "The bucket policy is correctly scoped, but a presigned URL with a multi-day expiration gets shared outside the organization. The URL works for anyone who has it until it expires.",
-        "prevention": "Set a maximum presigned URL expiration policy via STS session duration limits. Monitor for presigned URL generation in CloudTrail data events."
+        "how_it_differs": "The bucket policy is correctly locked down, but someone generated a presigned URL -- a temporary link that grants access to a specific file for a limited time. If the expiration is set to days instead of minutes, and that link gets shared outside the organization, anyone with the link can download the file until it expires.",
+        "prevention": "Limit how long presigned URLs can last by setting shorter session duration limits. Monitor for presigned URL generation in CloudTrail data events (detailed logs of who accessed what)."
       },
       {
         "scenario": "S3 static website hosting enabled on a bucket containing private data",
-        "how_it_differs": "Enabling static website hosting on a bucket makes objects accessible via the website endpoint, bypassing some access controls. The bucket does not need Principal: * if website hosting is on and there is no explicit deny.",
-        "prevention": "Never enable static website hosting on buckets containing sensitive data. Use CloudFront with Origin Access Control for any content that must be served over HTTP."
+        "how_it_differs": "S3 can serve files as a website (like a simple web server). If this feature is turned on for a bucket that contains private data, the files become accessible through a special website URL, bypassing some normal access controls. The bucket does not even need a Principal: * policy -- website hosting alone can expose files if there is no explicit deny rule.",
+        "prevention": "Never turn on static website hosting for buckets that contain sensitive data. If you need to serve files over the web, use CloudFront (a content delivery service) with Origin Access Control, which keeps the bucket private while still serving content to authorized users."
       },
       {
         "scenario": "Cross-account role with overly broad S3 permissions exfiltrates data",
-        "how_it_differs": "The bucket policy correctly restricts the Principal to a specific vendor account, but the vendor's IAM role has s3:GetObject on * and can read all buckets shared with that account, not just the intended one.",
-        "prevention": "Apply condition keys (aws:PrincipalOrgID, s3:prefix) in the bucket policy to restrict which objects the cross-account role can access. Monitor cross-account access patterns in CloudTrail."
+        "how_it_differs": "The bucket policy correctly limits access to a specific vendor account, but the vendor's IAM role (their set of permissions) has s3:GetObject on * -- meaning it can read from any bucket that grants it access, not just the one you intended. The vendor could read other shared buckets you did not mean to expose.",
+        "prevention": "Add condition keys to your bucket policy to restrict access more precisely. For example, use aws:PrincipalOrgID to limit access to your organization, or s3:prefix to limit which folders the vendor can read. Monitor cross-account access patterns in CloudTrail."
       }
     ],
     "sop_practices": [
-      "Enable S3 Block Public Access at the account level as a default guardrail -- override it per-bucket only when public access is an explicit, documented requirement.",
-      "Never use Principal: * in a bucket policy for cross-account access. Always specify the exact account ARN, role ARN, or use aws:PrincipalOrgID conditions.",
-      "Enable AWS Config rules (s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited) for continuous compliance monitoring across all buckets.",
-      "Require bucket policy changes to go through a CI/CD pipeline with automated policy validation that rejects wildcard principals and overly broad permissions."
+      "Turn on S3 Block Public Access at the account level so that all buckets are protected by default. Only turn it off for a specific bucket when you have a documented, deliberate reason to make that bucket public.",
+      "Never use Principal: * (meaning 'everyone on the internet') in a bucket policy when you want to share data with a specific partner or vendor. Always specify the exact account or role using their ARN (Amazon Resource Name -- the unique address for that AWS identity).",
+      "Turn on AWS Config rules like s3-bucket-public-read-prohibited and s3-bucket-public-write-prohibited. AWS Config continuously checks your resources against rules you define and alerts you when something is out of compliance -- like a bucket that has become publicly readable.",
+      "Require all bucket policy changes to go through your deployment pipeline (CI/CD) with an automated check that rejects any policy containing Principal: * or overly broad permissions. This catches mistakes before they reach production."
     ]
   }
 }

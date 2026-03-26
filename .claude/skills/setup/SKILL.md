@@ -74,13 +74,13 @@ Feedback collected during play sessions via /feedback. Processed after each sim 
 
 ### 5. Create services catalog
 
-If `learning/catalog.csv` does not exist, read `services/catalog.csv` and generate `learning/catalog.csv` with player-progress columns:
+If `learning/catalog.csv` does not exist, generate it with a starter set of high-priority services extracted from `references/exam-topics.md`. Each row uses the merged format:
 
 ```csv
-service,knowledge_score,sims_completed,last_practiced,notes
+service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
 ```
 
-One row per service from `services/catalog.csv`. All values default to `0,0,,`.
+All progress columns default to `0,0,,`.
 
 If `learning/catalog.csv` already exists, leave it. Do not overwrite.
 
@@ -88,17 +88,13 @@ If `learning/catalog.csv` already exists, leave it. Do not overwrite.
 
 Read `sims/registry.json`. Count the entries. If the file is missing, warn the user: "No simulations found. The sims/ directory may be incomplete."
 
-### 7. Verify services catalog
-
-Check that `services/catalog.csv` exists. If missing, warn the user.
-
-### 8. Verify MCP configuration
+### 7. Verify MCP configuration
 
 Check that `.mcp.json` exists and contains `aws-knowledge-mcp-server`. If missing, warn the user: "The AWS Knowledge MCP server is not configured. Some features of /create-sim will be limited."
 
 This is not a blocker. The MCP server enriches sim creation but is not required for playing existing sims.
 
-### 9. Welcome
+### 8. Welcome
 
 Print the number of available sims and current profile state. Use flat, quiet tone:
 

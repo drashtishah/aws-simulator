@@ -12,8 +12,7 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 ## Prerequisites
 
 Before starting, confirm these files exist:
-- `services/catalog.csv` -- AWS service catalog (static reference)
-- `learning/catalog.csv` -- Player service progress (for gap analysis)
+- `learning/catalog.csv` -- Player service catalog and progress
 - `sims/registry.json` -- Simulation registry
 - `.claude/skills/create-sim/references/exam-topics.md` -- Exam domain reference
 - `.claude/skills/create-sim/references/sim-template.md` -- Gold-standard template
@@ -33,13 +32,12 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 
 ### Phase 1: Identify Knowledge Gaps
 
-1. Read `services/catalog.csv` for service metadata (categories, exam_priority, cert_relevance)
-2. Read `learning/catalog.csv` for player progress (knowledge_score, sims_completed)
-3. Join on `service` column
-4. Filter for services where `knowledge_score < 2` AND `exam_priority` is 1 or 2
-3. Sort by `exam_priority` ascending (highest priority first)
-4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter the gap list to that category
-5. Note which certifications each gap service appears in (`cert_relevance` column)
+1. Read `learning/catalog.csv` for service metadata and player progress
+2. Filter for services where `knowledge_score < 2`
+3. Sort by `sims_completed` ascending (least practiced first)
+4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter by `category` column
+5. Note which certifications each service appears in (`cert_relevance` column)
+6. Also consult `references/exam-topics.md` to identify services not yet in the catalog that are relevant to the player's current cert targets
 
 ### Phase 2: Research Incident Patterns
 
@@ -125,6 +123,26 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
     - `"AWS CloudWatch metrics {service}"`
     Note: SOP-based fix criteria and resolution alignment will be skipped; rely on exam-topics.md and WebSearch findings instead.
 
+#### 9c. Update Catalog with Discovered Services
+
+After completing research, check whether any services encountered are missing from `learning/catalog.csv`. This includes:
+- Services directly involved in the incident patterns found
+- Supporting services mentioned in SOPs, best practices, or failure modes
+- Less well-known or newer AWS services discovered during web search or MCP research
+
+For each missing service, append a row to `learning/catalog.csv`:
+```
+{slug},{Official AWS Name},{category},{cert_codes},0,0,,
+```
+
+Where:
+- `slug`: kebab-case (e.g., `resource-explorer`)
+- `full_name`: official AWS name (e.g., `AWS Resource Explorer`)
+- `category`: compute, storage, database, networking, security, serverless, containers, integration, management, developer-tools, analytics, ml-ai, migration
+- `cert_relevance`: semicolon-separated cert codes from `references/exam-topics.md`, or empty if not exam-relevant
+
+Report additions: "Added {N} new services to catalog: {list}."
+
 ### Phase 3: Propose Scenarios
 
 10. Present 5-6 scenario proposals to the user. For each proposal, show:
@@ -161,15 +179,17 @@ For each approved scenario, execute steps 12-19:
 - Agents: minimum 2 service consoles; one per involved AWS service
 - Every service in the `services` array MUST have a corresponding console entry
 - Fix criteria: at least 2, with at least 1 marked `required: true`
-- Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters
+- Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters. Describe each criterion in plain English so a beginner understands what action to take, then name the specific AWS API or setting.
 - Exam topics: reference real domains from `references/exam-topics.md`
 - Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS -- no MCP needed for basic definitions. Do not define common English words.
 - Narrative arc: map this sim's story to the Campbell monomyth using `references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short sentence describing what that phase looks like in THIS specific sim. Write in the Emi Yagi voice -- flat, observational, concrete.
 - System narration: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only). Source from `mcp_research.service_interactions`.
 - Hints: generate as objects with `text`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
-- SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it.
-- Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`.
-- SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`.
+- SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it. Follow the beginner-friendly writing rule below.
+- Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`. Follow the beginner-friendly writing rule below.
+- SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`. Follow the beginner-friendly writing rule below.
+
+**Beginner-friendly writing rule for all MCP-sourced content**: Every field populated from `mcp_research` data -- SOP steps, related failure modes, SOP practices, key concepts, remediation steps, system narration `failure_impact` and `what_broke` -- must be written for someone who does not yet know AWS terminology. Lead with a plain English explanation of what happens and why it matters. Then introduce the official AWS term, API action, or concept name. Never drop a term like "ACL", "presigned URL", "Origin Access Control", "PrincipalOrgID", "BucketOwnerEnforced", or any service-specific jargon without first explaining the idea in everyday language. The glossary handles definitions; these sections handle context and consequences.
 
 #### 16. Generate story.md
 
@@ -190,9 +210,11 @@ For each approved scenario, execute steps 12-19:
 
 - YAML frontmatter matching `story.md` tags
 - Sections: Root Cause, Timeline (table), Correct Remediation (numbered), Key Concepts, Other Ways This Could Break, SOP Best Practices, Learning Objectives
-- The numbered remediation steps must align with the Agent SOP retrieved in step 9b, presented in the same sequence the SOP prescribes, adapted to the sim's specific company and resources
+- All sections follow the beginner-friendly writing rule from step 15.
+- Root Cause: explain the misconfiguration in plain English first, then name the specific AWS resource, API action, or policy field.
+- Correct Remediation: the numbered steps must align with the Agent SOP retrieved in step 9b. Each step should explain what it accomplishes before naming the AWS setting or API action.
+- Key Concepts: explain 2-3 AWS concepts at the appropriate difficulty depth. Assume the reader is encountering these concepts for the first time -- lead with what the concept does and why it matters, then name the AWS feature.
 - AWS documentation links must point to real docs pages
-- Key Concepts should explain 2-3 AWS concepts at the appropriate difficulty depth
 - Learning objectives should be concrete and testable
 
 #### 18. Generate artifacts/
@@ -222,7 +244,7 @@ Situation: {one sentence, what brought you here}
 Rules for context.txt:
 - Users line includes concrete numbers, not "many users"
 - Situation line is factual, not dramatic
-- AWS Services uses official names from services/catalog.csv
+- AWS Services uses official names from learning/catalog.csv
 - No markers, no hints about the root cause
 
 **architecture-hint.txt rules:**
@@ -378,7 +400,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 - [[sim-template]] -- Complete annotated example of a simulation package
 - [[exam-topics]] -- Exam domain and incident pattern reference
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
-- [[services/catalog.csv]] -- AWS services reference; [[learning/catalog.csv]] -- player progress
+- [[learning/catalog.csv]] -- Player service catalog and progress
 - [[story-structure]] -- Campbell monomyth mapping for sim storytelling
 - [[narrative-voice]] -- Emi Yagi style guide for narrative prose
 - [[game-design]] -- Text-based game and investigation design best practices

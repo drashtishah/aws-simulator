@@ -221,36 +221,36 @@ The manifest is the machine-readable definition of the simulation. The play skil
       "Incident response workflow: detect, contain, investigate, remediate"
     ],
     "sop_steps": [
-      "Identify the affected S3 bucket and confirm public access by checking the bucket policy for Principal: * or overly broad permissions",
-      "Immediately restrict the bucket policy Principal to the intended AWS account or IAM role ARN",
-      "Enable S3 Block Public Access at the bucket level to prevent future public access regardless of policy",
-      "Review CloudTrail logs for PutBucketPolicy events to determine who changed the policy and when",
-      "Audit S3 data events to assess the blast radius -- which objects were accessed and by whom",
-      "Enable S3 Block Public Access at the account level for all non-public buckets",
-      "Add AWS Config rule s3-bucket-public-read-prohibited for continuous monitoring"
+      "Find the affected storage bucket and confirm it is publicly accessible. Check the bucket policy -- a JSON document that controls who can access the bucket. Look for a Principal field set to * (meaning anyone on the internet).",
+      "Lock down the bucket immediately. Change the Principal in the bucket policy from * to the specific account or identity (called an IAM role ARN) that should have access.",
+      "Turn on a safety switch called S3 Block Public Access at the bucket level. This overrides the bucket policy and prevents public access regardless of what the policy says.",
+      "Check the audit trail. CloudTrail logs every API call in your account. Look for PutBucketPolicy events to find out who changed the policy, when, and from where.",
+      "Assess the damage. If detailed file-level logging (called S3 data events) is enabled in CloudTrail, check which objects were accessed and by which IP addresses during the exposure window.",
+      "Expand the safety switch to the whole account. Enable S3 Block Public Access at the account level so no bucket can accidentally become public.",
+      "Set up ongoing monitoring. Add an AWS Config rule called s3-bucket-public-read-prohibited that continuously checks all buckets and alerts you if any become public."
     ],
     "related_failure_modes": [
       {
-        "scenario": "S3 bucket ACL grants public-read access",
-        "how_it_differs": "Instead of a bucket policy, the legacy ACL system grants public access. Bucket policies can override ACLs, but if Block Public Access is off, both are attack surfaces.",
-        "prevention": "Enable S3 Block Public Access (IgnorePublicAcls setting) and avoid using ACLs entirely -- use bucket policies for all access control."
+        "scenario": "An older permission system on the bucket makes files publicly readable",
+        "how_it_differs": "S3 has two ways to control who can access files: bucket policies (the newer way, used in this sim) and Access Control Lists, or ACLs (an older, simpler system). If someone sets an ACL to allow public reads, the files are exposed even if the bucket policy looks correct. Both systems can independently grant access.",
+        "prevention": "Turn off ACLs entirely by setting a feature called S3 Object Ownership to BucketOwnerEnforced -- this forces all access control through bucket policies, eliminating the second way files can become public. Also enable Block Public Access as a safety net."
       },
       {
-        "scenario": "CloudTrail logging disabled or limited to management events only",
-        "how_it_differs": "The data exposure still happens, but without S3 data events enabled, there is no forensic trail of who accessed the exposed objects.",
-        "prevention": "Enable CloudTrail S3 data event logging for sensitive buckets. Use CloudTrail log file validation to ensure integrity."
+        "scenario": "The audit log that records who accessed the exposed files is turned off",
+        "how_it_differs": "The files are still exposed the same way, but the logging service (CloudTrail) is either disabled or only recording high-level management actions, not individual file downloads. Without these detailed logs (called data events), there is no way to know which files were accessed or by whom during the breach.",
+        "prevention": "Enable CloudTrail data event logging for S3 on sensitive buckets. This records every file download and upload. Also enable log file validation so you can verify the logs themselves have not been tampered with."
       },
       {
-        "scenario": "IAM role with overly broad S3 permissions used by compromised application",
-        "how_it_differs": "Instead of a public bucket policy, an attacker compromises an application that has an IAM role with s3:* permissions, allowing them to exfiltrate data from any bucket in the account.",
-        "prevention": "Follow least-privilege: scope IAM roles to specific buckets and actions. Use IAM Access Analyzer to identify overly permissive policies."
+        "scenario": "An application's identity has permission to read every bucket in the account, and an attacker takes over that application",
+        "how_it_differs": "The bucket policy is fine, but the application running on AWS has been assigned an identity (an IAM role) with overly broad permissions -- it can read files from any S3 bucket in the account using the wildcard permission s3:*. If an attacker compromises that application, they inherit those permissions.",
+        "prevention": "Follow the principle of least privilege: give each application identity (IAM role) access only to the specific buckets and actions it needs. AWS provides a tool called IAM Access Analyzer that can scan your roles and flag ones with more permissions than they actually use."
       }
     ],
     "sop_practices": [
-      "Enable S3 Block Public Access at the account level as a default guardrail -- override only for intentionally public buckets",
-      "Use AWS Config rules (s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited) for continuous compliance monitoring",
-      "Require peer review for any changes to S3 bucket policies, especially those involving Principal or Condition changes",
-      "Separate production data buckets from integration/vendor buckets to limit blast radius of misconfigurations"
+      "Turn on S3 Block Public Access at the account level -- this is a master switch that prevents any bucket from becoming public, regardless of its individual policy. Only override it for buckets that genuinely need to be public (like a website hosting bucket).",
+      "Set up automatic compliance checks using AWS Config rules. Two rules specifically detect public buckets: s3-bucket-public-read-prohibited and s3-bucket-public-write-prohibited. These run continuously and alert you if any bucket becomes public.",
+      "Require a second person to review any change to a bucket policy before it takes effect. The most dangerous changes involve the Principal field (who can access) and Condition field (under what circumstances). A CI/CD pipeline can enforce this automatically.",
+      "Keep production data in separate buckets from integration or vendor-shared buckets. If a vendor bucket is misconfigured, the blast radius (the scope of damage) is limited to that bucket -- production customer data stays isolated."
     ]
   }
 }
@@ -258,7 +258,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 
 > [!tip] Manifest Quality Checklist
 > - `id` matches the directory name exactly
-> - `services` array uses slugs from `services/catalog.csv`
+> - `services` array uses slugs from `learning/catalog.csv`
 > - Every service in `services` has a corresponding console entry in `team.consoles`
 > - `story_beats` includes at minimum `start` and `fix_validated` triggers
 > - `hints` are objects with `text`, `relevant_services`, and `skip_if_queried` -- progressing from vague to specific
@@ -267,9 +267,9 @@ The manifest is the machine-readable definition of the simulation. The play skil
 > - `system_narration` has components with roles/connections/failure_impact, plus data_flow and what_broke
 > - `fix_criteria` has at least one `required: true` criterion
 > - `exam_topics` reference real domains from `exam-topics.md`
-> - `sop_steps` has numbered remediation steps adapted to this sim's resources
-> - `related_failure_modes` has 2-4 alternative failure scenarios for the same services
-> - `sop_practices` has 2-4 best-practice takeaways beyond the immediate fix
+> - `sop_steps` has numbered remediation steps adapted to this sim's resources, written in beginner-friendly language (plain English first, AWS terms second)
+> - `related_failure_modes` has 2-4 alternative failure scenarios for the same services, written in beginner-friendly language
+> - `sop_practices` has 2-4 best-practice takeaways beyond the immediate fix, written in beginner-friendly language
 
 ---
 
@@ -357,57 +357,59 @@ The policy was modified six days prior to detection by a junior engineer (IAM us
 
 ## Correct Remediation
 
-1. **Immediate**: Replace `Principal: *` with the vendor's specific account ARN
-2. **Containment**: Enable S3 Block Public Access at the bucket level
-3. **Prevention**: Enable S3 Block Public Access at the account level for all non-public buckets
-4. **Detection**: Add AWS Config rule `s3-bucket-public-read-prohibited` for continuous monitoring
-5. **Process**: Require peer review for any bucket policy changes via CI/CD pipeline checks
+1. **Immediate**: The bucket policy currently allows anyone on the internet to download files (the Principal field is set to *). Change it to the specific vendor account identity (their account ARN) so only they can access the bucket.
+2. **Containment**: Turn on a safety switch called S3 Block Public Access at the bucket level. This overrides whatever the policy says and blocks public access regardless.
+3. **Prevention**: Expand that safety switch to the entire AWS account. With account-level Block Public Access enabled, no bucket can accidentally become public.
+4. **Detection**: Set up an automatic rule using AWS Config (a compliance monitoring service). The rule s3-bucket-public-read-prohibited continuously checks every bucket and flags any that allow public reads.
+5. **Process**: Require a second person to approve any bucket policy change before it takes effect. An automated pipeline (CI/CD) can enforce this so no single engineer can accidentally make a bucket public.
 
 ## Key Concepts
 
 ### S3 Bucket Policies vs IAM Policies
 
-S3 bucket policies are resource-based policies attached directly to the bucket. They can grant access to any AWS principal, including anonymous users (Principal: *). IAM policies are identity-based and can only grant permissions to the IAM entity they are attached to. For cross-account or public access scenarios, bucket policies are the primary mechanism -- and the primary risk.
+AWS has two kinds of permission documents that control who can access what. Bucket policies attach to a storage bucket and say "here is who can access this bucket." They can grant access to anyone -- even anonymous users on the internet -- by setting the Principal field to *. IAM policies attach to an identity (a user, group, or role) and say "here is what this identity is allowed to do." The key difference: bucket policies can make resources publicly accessible; IAM policies cannot, because they only apply to the identity they are attached to. In this sim, it was a bucket policy that caused the exposure.
 
 ### S3 Block Public Access
 
-S3 Block Public Access is a set of four independent controls that override bucket policies and ACLs to prevent public access:
+Block Public Access is a safety net that overrides bucket policies and the older ACL system to prevent public access. Think of it as a master switch. It has four independent controls:
 
-- `BlockPublicAcls` -- rejects PUT requests that include public ACLs
-- `IgnorePublicAcls` -- ignores existing public ACLs on the bucket
-- `BlockPublicPolicy` -- rejects bucket policies that grant public access
-- `RestrictPublicBuckets` -- restricts access to bucket with public policies to authorized users only
+- BlockPublicAcls -- rejects any attempt to add a public ACL to a bucket
+- IgnorePublicAcls -- ignores existing public ACLs, even if they are already set
+- BlockPublicPolicy -- rejects any bucket policy that would make the bucket public
+- RestrictPublicBuckets -- limits access to buckets that have public policies to only authorized AWS users
 
-These can be set at the account level (applies to all buckets) or individual bucket level.
+You can enable these at the account level (protects every bucket) or at the individual bucket level. Enabling all four at the account level is the single most effective action to prevent accidental public exposure.
 
 ### CloudTrail for Forensics
 
-CloudTrail logs every S3 management API call (PutBucketPolicy, DeleteBucketPolicy, etc.) and optionally data events (GetObject, PutObject). For forensic investigation:
+CloudTrail is AWS's audit log service. It records every API call made in your account -- who did what, when, and from where. For investigating a security incident:
 
-- Management events show WHO changed the policy and WHEN
-- S3 data events (if enabled) show WHO accessed objects and from WHERE
-- CloudTrail log file validation ensures logs have not been tampered with
+- Management events (always recorded) show WHO changed a setting (like a bucket policy) and WHEN
+- Data events (optional, must be enabled) show WHO downloaded or uploaded specific files and from WHICH IP address
+- Log file validation lets you confirm the logs themselves have not been tampered with
+
+In this sim, CloudTrail management events revealed the PutBucketPolicy call that caused the exposure.
 
 ## Other Ways This Could Break
 
-### S3 bucket ACL grants public-read access
-Instead of a bucket policy, the legacy ACL system grants public access. Bucket policies can override ACLs, but if Block Public Access is off, both are attack surfaces.
-**Prevention:** Enable S3 Block Public Access (IgnorePublicAcls setting) and avoid using ACLs entirely -- use bucket policies for all access control.
+### An older permission system makes files publicly readable
+S3 has two ways to control access: bucket policies (used in this sim) and Access Control Lists, or ACLs -- an older, simpler system. If someone sets an ACL to allow public reads, the files are exposed even if the bucket policy looks correct. Both systems can independently grant access.
+**Prevention:** Turn off ACLs entirely by setting S3 Object Ownership to BucketOwnerEnforced. This forces all access control through bucket policies. Also enable Block Public Access as a safety net.
 
-### CloudTrail logging disabled or limited to management events only
-The data exposure still happens, but without S3 data events enabled, there is no forensic trail of who accessed the exposed objects.
-**Prevention:** Enable CloudTrail S3 data event logging for sensitive buckets. Use CloudTrail log file validation to ensure integrity.
+### The audit log for file downloads is turned off
+The files are still exposed the same way, but the logging service (CloudTrail) is either disabled or only recording high-level management actions -- not individual file downloads. Without these detailed logs (called data events), there is no way to know which files were accessed or by whom.
+**Prevention:** Enable CloudTrail data event logging for S3 on sensitive buckets. This records every file download and upload. Also enable log file validation so you can verify the logs have not been tampered with.
 
-### IAM role with overly broad S3 permissions used by compromised application
-Instead of a public bucket policy, an attacker compromises an application that has an IAM role with s3:* permissions, allowing them to exfiltrate data from any bucket in the account.
-**Prevention:** Follow least-privilege: scope IAM roles to specific buckets and actions. Use IAM Access Analyzer to identify overly permissive policies.
+### An application's identity has permission to read every bucket, and an attacker takes it over
+The bucket policy is fine, but the application running on AWS has an identity (an IAM role) with overly broad permissions -- it can read files from any S3 bucket using the wildcard permission s3:*. If an attacker compromises that application, they inherit those permissions.
+**Prevention:** Follow the principle of least privilege: give each application identity (IAM role) access only to the specific buckets and actions it needs. AWS provides a tool called IAM Access Analyzer that scans roles and flags ones with more permissions than they actually use.
 
 ## SOP Best Practices
 
-- Enable S3 Block Public Access at the account level as a default guardrail -- override only for intentionally public buckets
-- Use AWS Config rules (s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited) for continuous compliance monitoring
-- Require peer review for any changes to S3 bucket policies, especially those involving Principal or Condition changes
-- Separate production data buckets from integration/vendor buckets to limit blast radius of misconfigurations
+- Turn on S3 Block Public Access at the account level. This is a master switch that prevents any bucket from becoming public, regardless of its individual policy. Only override it for buckets that genuinely need to be public.
+- Set up automatic compliance checks using AWS Config rules. Two rules specifically detect public buckets: s3-bucket-public-read-prohibited and s3-bucket-public-write-prohibited. These run continuously and alert you if any bucket becomes public.
+- Require a second person to review any change to a bucket policy before it takes effect. The most dangerous changes involve the Principal field (who can access) and Condition field (under what circumstances).
+- Keep production data in separate buckets from integration or vendor-shared buckets. If a vendor bucket is misconfigured, the damage is limited to that bucket -- production customer data stays isolated.
 
 ## Learning Objectives
 
@@ -419,16 +421,16 @@ Instead of a public bucket policy, an attacker compromises an application that h
 ## Related
 
 - [[exam-topics#SAA-C03 -- Solutions Architect Associate]] -- Domain 1: Design Secure Architectures
-- [[services/catalog.csv]] -- s3, iam, cloudtrail service entries
+- [[learning/catalog.csv]] -- Player service catalog and progress
 ```
 
 > [!tip] Resolution Quality Checklist
 > - Root cause is specific and technical, not vague
 > - Timeline has UTC timestamps and references specific API calls
 > - Remediation is ordered: immediate, containment, prevention, detection, process
-> - Key concepts are explained at the right depth for the sim difficulty level
-> - "Other Ways This Could Break" has 2-4 alternative failure scenarios from `manifest.resolution.related_failure_modes`
-> - "SOP Best Practices" has 2-4 best-practice takeaways from `manifest.resolution.sop_practices`
+> - Key concepts are explained at the right depth for the sim difficulty level, written in beginner-friendly language (plain English first, AWS terms second)
+> - "Other Ways This Could Break" has 2-4 alternative failure scenarios from `manifest.resolution.related_failure_modes`, written in beginner-friendly language
+> - "SOP Best Practices" has 2-4 best-practice takeaways from `manifest.resolution.sop_practices`, written in beginner-friendly language
 > - No "AWS Documentation Links" section -- learning happens through playing, not reading docs
 > - Learning objectives are concrete and testable
 

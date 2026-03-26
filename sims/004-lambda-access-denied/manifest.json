@@ -208,43 +208,43 @@
       "When deploying code changes that interact with new AWS API actions, the execution role must be updated to match"
     ],
     "sop_steps": [
-      "Check CloudWatch Logs for the failing Lambda function to identify the exact error message and which API action was denied.",
-      "Extract the IAM execution role ARN from the Lambda function configuration using get_function_configuration.",
-      "Retrieve the IAM policies attached to the execution role using list_attached_role_policies and get_role_policy.",
-      "Compare the allowed actions in the policy against the actions the function code actually calls (PutItem, UpdateItem, GetItem, Query).",
-      "Identify the missing actions: dynamodb:PutItem and dynamodb:UpdateItem are not in the policy.",
-      "Update the IAM policy to add the missing actions scoped to the specific DynamoDB table ARN (arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats).",
-      "Remove dynamodb:BatchWriteItem from the policy since the refactored code no longer uses it.",
-      "Wait for the next scheduled invocation (or invoke manually) and confirm the function succeeds in CloudWatch Logs.",
-      "Verify the DynamoDB write count metric returns to a non-zero value in CloudWatch Metrics."
+      "Start by reading the error logs. Open CloudWatch Logs (where Lambda sends its output) for the failing function. Look for AccessDeniedException -- this error means the function tried to do something it does not have permission for. The log message will tell you exactly which action was denied.",
+      "Find out which permissions the function has. Every Lambda function runs with an IAM execution role -- a set of permissions that controls what AWS services the function can access. Use get_function_configuration to find the role's ARN (Amazon Resource Name -- the unique identifier for the role).",
+      "Look at what the role is actually allowed to do. Use list_attached_role_policies and get_role_policy to pull up the IAM policies (JSON documents that list permitted actions) attached to the execution role.",
+      "Compare the list of allowed actions in the policy to the actions the function code actually needs. The function calls PutItem and UpdateItem (to write data to DynamoDB), plus GetItem and Query (to read data). Check whether all four are listed in the policy.",
+      "Identify the gap: dynamodb:PutItem and dynamodb:UpdateItem are missing from the policy. The function is trying to write data, but the policy only allows reading. That is why every write fails with AccessDeniedException.",
+      "Add the missing permissions. Update the IAM policy to include dynamodb:PutItem and dynamodb:UpdateItem. Scope these permissions to the specific DynamoDB table by using its ARN (arn:aws:dynamodb:us-east-1:672913845210:table/packetforge-threats) -- this follows the principle of least privilege, granting access only to the exact resource needed.",
+      "Clean up old permissions. Remove dynamodb:BatchWriteItem from the policy since the refactored code no longer uses that action. Keeping unused permissions around increases security risk for no benefit.",
+      "Test the fix. Wait for the next scheduled run (or trigger the function manually) and check CloudWatch Logs to confirm the function completes without errors.",
+      "Verify end-to-end by checking that the DynamoDB write count metric in CloudWatch returns to a non-zero value. This confirms data is flowing into the table again."
     ],
     "related_failure_modes": [
       {
-        "scenario": "Lambda function has the correct IAM permissions but the DynamoDB table uses a KMS encryption key the execution role cannot access.",
-        "how_it_differs": "The error would be AccessDeniedException on kms:Decrypt or kms:GenerateDataKey rather than on the DynamoDB action itself. The IAM policy for DynamoDB looks correct, but a separate KMS key policy blocks access.",
-        "prevention": "When a DynamoDB table uses a customer-managed KMS key, include kms:Decrypt and kms:GenerateDataKey permissions in the execution role, scoped to the key ARN."
+        "scenario": "Lambda function has the correct IAM permissions but the DynamoDB table uses an encryption key the execution role cannot access",
+        "how_it_differs": "The DynamoDB permissions look correct, but the table is encrypted with a customer-managed KMS key (KMS is the Key Management Service -- it manages encryption keys). The function gets AccessDeniedException on the encryption operation (kms:Decrypt or kms:GenerateDataKey) rather than on the DynamoDB action itself. This is confusing because the error happens during a DynamoDB call but is actually a key-access problem.",
+        "prevention": "When a DynamoDB table uses a customer-managed encryption key, add kms:Decrypt and kms:GenerateDataKey permissions to the execution role, scoped to that specific key."
       },
       {
-        "scenario": "An SCP (Service Control Policy) at the AWS Organization level denies DynamoDB write actions in the production account.",
-        "how_it_differs": "The IAM execution role policy would look correct with the right actions allowed, but the SCP overrides it at the organization level. The deny comes from above the account, not from the role itself.",
-        "prevention": "Audit SCPs in AWS Organizations before deploying. Use iam:SimulatePrincipalPolicy with the production role to test effective permissions before deployment."
+        "scenario": "An organization-level policy overrides the function's permissions and blocks DynamoDB writes",
+        "how_it_differs": "The function's own permissions look correct, but a Service Control Policy (SCP) -- a rule set at the AWS Organization level that applies to all accounts -- explicitly blocks DynamoDB writes in the production account. SCPs act like a ceiling on permissions: even if a role allows an action, an SCP can deny it from above. This makes the problem invisible when you only inspect the role.",
+        "prevention": "Before deploying, review SCPs in your AWS Organization. Use iam:SimulatePrincipalPolicy (a tool that checks whether a role can actually perform an action, considering all policy layers) against the production role to test effective permissions end-to-end."
       },
       {
-        "scenario": "The Lambda function's resource-based policy restricts which principals can invoke it, and EventBridge loses invoke permission after a role change.",
-        "how_it_differs": "The function would never execute at all -- CloudWatch Logs would show no invocation, not an AccessDeniedException during execution. The problem is invocation authorization, not execution authorization.",
-        "prevention": "After changing Lambda resource policies, test that the event source (EventBridge, S3, etc.) can still invoke the function by triggering a test event."
+        "scenario": "The scheduling service loses permission to trigger the Lambda function after a policy change",
+        "how_it_differs": "The function never runs at all -- CloudWatch Logs show zero invocations, not an AccessDeniedException during execution. The issue is that EventBridge (the scheduling service) lost permission to invoke the function, which is a different kind of authorization. The function's own execution role is fine; the problem is who is allowed to start the function.",
+        "prevention": "After changing a Lambda function's resource-based policy (the policy that controls who can trigger the function), verify that the event source can still invoke it by sending a test event."
       },
       {
-        "scenario": "The IAM policy uses a condition key (e.g., aws:SourceVpc) that does not match the Lambda function's execution environment.",
-        "how_it_differs": "The actions would be listed as allowed in the policy, but a condition restricts when they apply. The deny is conditional, not a missing action. SimulatePrincipalPolicy without context keys would show Allow, masking the real issue.",
-        "prevention": "Avoid VPC or IP-based condition keys on Lambda execution roles unless the function runs in a VPC. Test policies with SimulatePrincipalPolicy using realistic context keys."
+        "scenario": "The IAM policy has a condition that does not match the Lambda execution environment",
+        "how_it_differs": "The actions are listed as allowed in the policy, but a condition limits when they apply. For example, a condition like aws:SourceVpc restricts the action to calls from a specific virtual network -- but Lambda functions do not always run inside a VPC. The policy appears to allow the action, but the condition silently blocks it. Testing with SimulatePrincipalPolicy without providing the right context would show 'Allow', hiding the real issue.",
+        "prevention": "Avoid adding VPC or IP-based conditions to Lambda execution roles unless the function actually runs inside a VPC. When testing policies, always include realistic context values so the simulation matches real-world behavior."
       }
     ],
     "sop_practices": [
-      "Run iam:SimulatePrincipalPolicy against the production execution role for every DynamoDB action the code uses before deploying. Add this as a CI/CD pipeline gate.",
-      "Use identical least-privilege IAM policies in staging and production. Never use wildcard permissions (dynamodb:*) in staging to avoid masking permission gaps.",
-      "When refactoring code that changes which AWS API actions are called, treat the IAM policy as part of the code change -- update and review it in the same pull request.",
-      "Set a CloudWatch alarm on the Lambda Errors metric with a threshold of 1 and a 1-minute evaluation period so permission failures are caught within one invocation cycle."
+      "Before deploying, test whether the production role actually has the permissions your code needs. Use iam:SimulatePrincipalPolicy -- a tool that checks whether a role is allowed to perform specific actions -- for every DynamoDB action the code calls. Add this check as a required gate in your deployment pipeline (CI/CD).",
+      "Use the same tightly scoped permissions in staging as in production. Never use wildcard permissions like dynamodb:* (meaning 'allow all DynamoDB actions') in staging, because it hides permission gaps that will only surface when you deploy to production.",
+      "When you change your code to call different AWS actions than before, update the IAM policy in the same pull request. Treat the permissions as part of the code change, not a separate task -- otherwise it is easy to forget and ship broken code.",
+      "Set up a CloudWatch alarm on the Lambda Errors metric with a threshold of 1 and a 1-minute evaluation period. This means you will be alerted within one invocation cycle if the function starts failing, whether from permission errors or anything else."
     ]
   }
 }

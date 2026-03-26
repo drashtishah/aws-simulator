@@ -32,52 +32,52 @@ The SNS topic `patchwork-guardrail-alerts` had zero subscribers, so the spike in
 
 ## Correct Remediation
 
-1. **Narrow the denied topic definition**: Change the definition from "Queries seeking medical diagnosis, treatment recommendations, or clinical advice" to "Responses that provide specific medical diagnoses, prescribe medications, or recommend treatment plans." This targets the actual prohibited behavior (the model acting as a doctor) rather than the patient describing symptoms.
+1. **Rewrite the denied topic definition so it targets the right thing.** The current definition says "Queries seeking medical diagnosis, treatment recommendations, or clinical advice" -- which describes what patients type. Change it to "Responses that provide specific medical diagnoses, prescribe medications, or recommend treatment plans." The goal is to stop the model from acting as a doctor, not to stop patients from describing their symptoms.
 
-2. **Update example phrases to match output, not input**: Replace input-matching phrases like "chest pain" and "shortness of breath" with output-matching phrases like "you likely have," "I recommend taking," "your diagnosis is," and "you should take [medication]."
+2. **Replace the example phrases so they match model output, not patient input.** Remove phrases like "chest pain" and "shortness of breath" -- those are exactly what patients need to type. Replace them with phrases the model would say if it crossed the line: "you likely have," "I recommend taking," "your diagnosis is," and "you should take [medication]."
 
-3. **Apply denied topic filter to output, not input**: Configure the guardrail to evaluate the model's response rather than the user's input for the medical advice topic. This allows patients to describe symptoms freely while still preventing the model from crossing into diagnosis or prescription.
+3. **Move the filter from input to output.** A guardrail can check two things: what the user sends in (input filtering) and what the model sends back (output filtering). Right now the denied topic is set to block user input. Flip it: set inputAction to NONE and outputAction to BLOCK. This lets patients describe symptoms freely while still catching the model if it tries to diagnose or prescribe.
 
-4. **Subscribe the operations team to the SNS alert topic**: Add the on-call clinical engineering distribution list as a subscriber to `patchwork-guardrail-alerts` so guardrail intervention spikes trigger immediate notification.
+4. **Connect someone to the alert channel.** The SNS topic `patchwork-guardrail-alerts` exists but has zero subscribers -- meaning it fires alerts into the void. SNS (Simple Notification Service) is AWS's notification system. Add the on-call clinical engineering distribution list as a subscriber so the team gets paged immediately when guardrail intervention rates spike.
 
-5. **Add a CloudWatch alarm**: Create an alarm on the `GuardrailInterventions` metric with a threshold of 50 interventions per hour, connected to the SNS alert topic.
+5. **Set up an automated alert on block rate.** Create a CloudWatch alarm -- an automated rule that watches a metric and triggers when it crosses a threshold -- on the `GuardrailInterventions` metric. Set it to fire at 50 interventions per hour and connect it to the SNS alert topic.
 
-6. **Test guardrail changes against legitimate queries**: Establish a test suite of representative patient queries (symptom descriptions, medication questions, appointment requests) alongside adversarial prompts. Run both sets against any guardrail configuration change before deployment.
+6. **Build a test suite for future guardrail changes.** Collect a set of representative patient queries (symptom descriptions, medication questions, appointment requests) alongside adversarial prompts (requests the guardrail should block). Before deploying any guardrail change, run both sets through it and verify that bad queries get blocked and legitimate queries pass through.
 
 ## Key Concepts
 
 ### Bedrock Guardrails -- Denied Topics
 
-Denied topics in Amazon Bedrock Guardrails allow you to define subjects the model should not engage with. Each topic has a name, definition, and example phrases. The guardrail evaluates text against these topics and blocks any match. Topics can be applied to user input, model output, or both. Overly broad definitions create false positives, especially in domain-specific applications where the "denied" language is the application's core vocabulary.
+A Bedrock Guardrail is a safety filter that sits between users and an AI model. One of its features is denied topics -- subjects you tell the guardrail to reject. You define each topic with a name, a plain-language definition, and a few example phrases. When the guardrail sees text that matches a denied topic, it blocks that text. You can choose to apply each topic to user input, model output, or both. The danger: if you define a topic too broadly, the guardrail will block legitimate requests. This is especially common in specialized applications where the "forbidden" vocabulary is the same vocabulary users need to use -- for example, medical symptom descriptions in a health triage app.
 
 ### Input vs Output Filtering
 
-Guardrail filters can be applied at two stages: on the user's input before it reaches the model, and on the model's output before it reaches the user. Input filtering prevents the model from seeing certain requests. Output filtering lets the model process the request but blocks the response if it violates policy. For use cases where user input naturally contains domain-specific language (medical, legal, financial), output filtering is often more appropriate for topic-based controls.
+A guardrail can check text at two points in the conversation. Input filtering evaluates the user's message before the AI model ever sees it -- if it matches a rule, the model never processes the request. Output filtering lets the model process the request normally, but checks the model's response before sending it back to the user. For applications where users naturally use domain-specific language (medical terms, legal terms, financial terms), output filtering is usually the better choice for topic-based controls. It lets users express themselves freely while still preventing the model from saying something it should not.
 
 ### Guardrail Testing Strategy
 
-Testing guardrails only against adversarial prompts creates a blind spot. A guardrail that blocks all five adversarial test cases may also block 40% of legitimate queries. Effective testing requires a representative sample of real production queries alongside adversarial ones, with pass/fail criteria for both: adversarial queries should be blocked, legitimate queries should pass through.
+If you only test your guardrail against adversarial prompts -- the tricky inputs you want to block -- you will miss a critical problem: the guardrail might also block a large percentage of perfectly legitimate queries. A guardrail that passes all five adversarial tests might still reject 40% of real user requests. Effective testing requires two sets of test cases: adversarial prompts (which should be blocked) and representative real-world queries (which should pass through). Both sets need clear pass/fail criteria, and you should run them before every guardrail configuration change.
 
 ## Other Ways This Could Break
 
 ### Content Filter Strength Blocking Clinical Language
 
-The content filter's VIOLENCE category is set to HIGH strength. Descriptions of injuries or pain -- "stabbing pain in my chest," "my child fell and hit her head" -- may be classified as violent content and blocked. The guardrail trace would show a content policy intervention rather than a topic policy intervention. The denied topic configuration looks correct, which makes this harder to diagnose. **Prevention:** Set the VIOLENCE content filter to MEDIUM for healthcare applications where injury descriptions are expected. Test with representative clinical language before deploying filter strength changes.
+Besides denied topics, guardrails also have content filters that scan for broad categories like violence, hate, and sexual content. Each category has a sensitivity level you can set from NONE to HIGH. If the VIOLENCE category is set to HIGH, descriptions of injuries or pain -- "stabbing pain in my chest," "my child fell and hit her head" -- can be misclassified as violent content and blocked. The guardrail trace (the diagnostic log) would show a content policy intervention instead of a topic policy intervention, so the root cause looks different from the denied-topic problem in this sim. The denied topic settings might look perfectly fine, which makes this harder to track down. **Prevention:** For healthcare applications where patients routinely describe injuries and pain, lower the VIOLENCE content filter sensitivity from HIGH to MEDIUM. Always test with real clinical language before changing filter levels.
 
 ### Guardrail Version Rollback Removes Legitimate Topics
 
-Rolling back from version 3 to fix the Medical Advice false positives would also remove the Insurance Fraud denied topic added in version 2 -- if the rollback targets version 1 instead of version 2. The failure is silent because intervention counts decrease rather than increase. No alerts fire. **Prevention:** Never roll back to a previous guardrail version without reviewing all topic policies it contains. Create a new version that removes only the problematic topic while preserving others.
+If you roll back from version 3 all the way to version 1 to fix the Medical Advice false positives, you also lose the Insurance Fraud denied topic that was added in version 2. The failure is silent -- no alerts fire because the number of blocked requests goes down, not up. You would only discover the gap if someone tried to commit fraud through the assistant. **Prevention:** Never roll back to an older guardrail version without reviewing every denied topic it contains. Instead of rolling back, create a new version that removes only the problematic topic while keeping the others intact.
 
 ### Denied Topic Example Phrases Too Narrow for Detection
 
-The denied topic definition is correct but the example phrases are too similar to each other. The guardrail fails to catch content it should block because the examples do not cover enough variation. This is the opposite of the current scenario -- false negatives instead of false positives. The guardrail trace would show the topic as not detected even when the content clearly matches the definition. **Prevention:** Write example phrases that cover distinct variations of the topic. AWS recommends up to five diverse examples. Test against both obvious and edge-case prompts.
+This is the mirror image of the current problem. The denied topic definition is correct, but the example phrases are all too similar to each other. The guardrail cannot recognize different ways of expressing the same forbidden topic, so it fails to block content it should catch -- false negatives instead of false positives. The guardrail trace would show the topic as "not detected" even when the message clearly matches the topic definition. **Prevention:** Write example phrases that cover distinct variations of the forbidden topic. AWS recommends providing up to five diverse examples that approach the topic from different angles. Test against both obvious violations and edge cases.
 
 ## SOP Best Practices
 
-- Test every guardrail configuration change against a representative set of legitimate production queries, not just adversarial prompts. Maintain a test suite of at least 20 real patient queries alongside 10 adversarial prompts.
-- Always check whether a denied topic should apply to input, output, or both. For domain-specific applications where user input naturally contains the denied vocabulary, apply topic filtering to model output only.
-- Subscribe at least one active endpoint to every SNS alert topic at creation time. An alert topic with zero subscribers is equivalent to no alerting.
-- Set a CloudWatch alarm on the `GuardrailInterventions` metric with a threshold based on your baseline intervention rate. A sudden increase indicates a configuration change is catching unintended content.
+- Before deploying any guardrail change, test it against real user queries -- not just the tricky prompts you want to block. Keep a test suite of at least 20 actual patient queries alongside 10 adversarial prompts, and verify that the guardrail blocks the bad ones while letting the legitimate ones through.
+- Think carefully about whether a denied topic should filter the user's input, the model's output, or both. In specialized applications like medical triage, where users naturally type words that sound like the denied topic (symptom names, medication names), apply the topic filter only to the model's output. This lets patients describe their symptoms freely while still preventing the model from diagnosing or prescribing.
+- Whenever you create an SNS alert topic (a notification channel in AWS's Simple Notification Service), subscribe at least one person or team to it right away. An alert topic with zero subscribers is the same as having no alerting at all -- events fire into the void and nobody finds out.
+- Set up a CloudWatch alarm (an automated alert rule) on the `GuardrailInterventions` metric, which counts how many requests the guardrail blocks. Base the threshold on your normal block rate. A sudden spike means a configuration change is catching content it should not be catching.
 
 ## Learning Objectives
 

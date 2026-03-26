@@ -203,45 +203,45 @@
       "Presigned URLs handle authentication and authorization but do not bypass CORS -- these are separate mechanisms"
     ],
     "sop_steps": [
-      "Confirm the symptom: browser upload fails, non-browser clients (curl, Postman, SDK) succeed with the same presigned URL.",
-      "Open browser developer tools. Check the Console and Network tabs for CORS errors and a failed OPTIONS preflight request.",
-      "Run `aws s3api get-bucket-cors --bucket pollen-docs-prod` to check whether CORS is configured on the S3 bucket.",
-      "If CORSRules is empty or missing, create a CORS configuration JSON allowing the application origin (https://app.pollen.io), the required methods (GET, PUT, POST, HEAD), AllowedHeaders [*], and ExposeHeaders [ETag, x-amz-request-id].",
-      "Apply the CORS configuration: `aws s3api put-bucket-cors --bucket pollen-docs-prod --cors-configuration file://cors.json`.",
-      "Test the browser upload. If it still fails, check CloudFront.",
-      "Inspect the CloudFront distribution's default cache behavior. Check whether an origin request policy is attached and whether it forwards Origin, Access-Control-Request-Headers, and Access-Control-Request-Method.",
-      "If no origin request policy is set, attach the AWS-managed CORS-S3Origin policy (ID: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf) to the cache behavior.",
-      "Create a CloudFront cache invalidation for /* to clear stale cached responses that lack CORS headers: `aws cloudfront create-invalidation --distribution-id EDFDVBD6EXAMPLE --paths \"/*\"`.",
-      "Verify the fix: upload a file from the browser at https://app.pollen.io. Confirm no CORS errors in the console and the file appears in the S3 bucket.",
-      "Add a checklist item to the team's S3 bucket creation runbook: if browser clients will access the bucket directly, configure CORS and the CloudFront origin request policy before the feature ships."
+      "Confirm the pattern: the upload fails in the browser, but the exact same presigned URL works perfectly from non-browser tools like curl, Postman, or a Python script. This pattern almost always means the problem is CORS -- a browser security rule, not a permissions issue.",
+      "Open the browser's developer tools (usually F12). Check the Console tab for a CORS error message and the Network tab for a failed OPTIONS request. The OPTIONS request is a 'preflight check' -- the browser asks the server 'are you willing to accept this upload from my domain?' before sending the actual file.",
+      "Check whether the S3 bucket has CORS rules configured. Run aws s3api get-bucket-cors --bucket pollen-docs-prod. CORS (Cross-Origin Resource Sharing) is a set of rules that tells the browser which websites are allowed to make requests to this bucket.",
+      "If the CORS rules are empty or missing, create a configuration file that allows your application's domain (https://app.pollen.io), the HTTP methods it needs (GET, PUT, POST, HEAD), any request headers (AllowedHeaders [*]), and headers the browser should be able to read from the response (ExposeHeaders [ETag, x-amz-request-id]).",
+      "Apply the CORS configuration to the bucket: aws s3api put-bucket-cors --bucket pollen-docs-prod --cors-configuration file://cors.json.",
+      "Test the browser upload again. If it still fails, the problem has a second layer -- CloudFront (the content delivery network sitting between the browser and S3) may be stripping important headers.",
+      "Check the CloudFront distribution's cache behavior settings. Look at whether an origin request policy is attached. The origin request policy controls which headers CloudFront forwards from the browser to S3. Without the right policy, CloudFront strips the Origin header, and S3 never sees that the request came from a browser, so it does not include CORS headers in the response.",
+      "If no origin request policy is set, attach the AWS-managed CORS-S3Origin policy (ID: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf). This tells CloudFront to forward the three headers needed for CORS: Origin, Access-Control-Request-Headers, and Access-Control-Request-Method.",
+      "Clear CloudFront's cache so stale responses without CORS headers are removed. Run aws cloudfront create-invalidation --distribution-id EDFDVBD6EXAMPLE --paths '/*'. Without this step, CloudFront may keep serving old cached responses that lack the CORS headers.",
+      "Verify the fix end-to-end: upload a file from the browser at https://app.pollen.io. Check the browser console for any remaining CORS errors and confirm the file appears in the S3 bucket.",
+      "Add a checklist item to the team's bucket creation process: whenever browser clients will access an S3 bucket directly, configure CORS rules and the CloudFront origin request policy before the feature ships."
     ],
     "related_failure_modes": [
       {
-        "scenario": "CORS configuration exists but AllowedOrigins does not include the application domain",
-        "how_it_differs": "S3 returns a 403 with the message 'This CORS request is not allowed' instead of 'CORS is not enabled for this bucket'. The fix is updating AllowedOrigins rather than adding the entire CORS configuration.",
-        "prevention": "Use explicit origin values instead of wildcards in production. Review CORS AllowedOrigins when adding new frontend domains."
+        "scenario": "CORS rules exist but the allowed website list does not include your application's domain",
+        "how_it_differs": "The bucket has CORS rules, but the list of allowed origins (websites that are permitted to make requests) does not include the application's domain. S3 returns a specific error: 'This CORS request is not allowed.' The fix is adding the missing domain to the AllowedOrigins list, not creating the entire CORS configuration from scratch.",
+        "prevention": "Use specific domain names in your AllowedOrigins list (not wildcards) so you always know which sites have access. Review the list whenever you add a new frontend domain."
       },
       {
-        "scenario": "CloudFront caches a non-CORS response and serves it to browser clients",
-        "how_it_differs": "CORS is configured correctly on S3, and direct requests to S3 succeed from the browser. But requests through CloudFront fail intermittently because CloudFront cached a response from a non-browser client that lacked CORS headers.",
-        "prevention": "Always attach an origin request policy that forwards Origin and CORS headers when S3 is the origin. Vary the cache on the Origin header."
+        "scenario": "CloudFront caches a response without CORS headers and serves it to browsers",
+        "how_it_differs": "CORS is correctly configured on S3. Direct browser requests to S3 work fine. But requests through CloudFront fail intermittently. This happens because CloudFront cached a response from a non-browser client (like a health check or curl request) that did not include CORS headers. When a browser request arrives next, CloudFront serves the cached response -- which is missing the CORS headers the browser needs.",
+        "prevention": "Always attach an origin request policy that forwards the Origin header so CloudFront caches different responses for browser and non-browser requests separately."
       },
       {
-        "scenario": "Presigned URL signature mismatch due to extra headers",
-        "how_it_differs": "The error is SignatureDoesNotMatch, not a CORS error. This happens when the browser adds headers (like Content-Type with a different value) that were not included when the presigned URL was generated.",
-        "prevention": "Include all headers the browser will send (especially Content-Type) in the SignedHeaders when generating the presigned URL."
+        "scenario": "The presigned URL's signature does not match because the browser added extra headers",
+        "how_it_differs": "The error message says 'SignatureDoesNotMatch' instead of showing a CORS error. This happens when the browser adds headers (like Content-Type with a value different from what was expected) that were not accounted for when the presigned URL was created. The URL's built-in signature only covers the headers specified at generation time.",
+        "prevention": "When generating a presigned URL, include all headers the browser will send -- especially Content-Type -- in the list of signed headers."
       },
       {
-        "scenario": "S3 bucket policy denies the OPTIONS method",
-        "how_it_differs": "CORS is configured on the bucket, but a restrictive bucket policy explicitly denies all methods except GET and PUT. The OPTIONS preflight is denied by the bucket policy before S3 evaluates the CORS configuration.",
-        "prevention": "Ensure bucket policies do not deny the OPTIONS method when CORS is required. S3 needs to receive the OPTIONS request to return CORS headers."
+        "scenario": "The bucket's access policy blocks the preflight check",
+        "how_it_differs": "CORS rules are configured on the bucket, but a separate access control document (called a bucket policy) explicitly denies all HTTP methods except GET and PUT. The browser's preflight check uses the OPTIONS method, which the bucket policy blocks before S3 even looks at the CORS rules.",
+        "prevention": "When CORS is needed, make sure the bucket policy does not block the OPTIONS method. S3 must receive the OPTIONS request to return the CORS headers the browser needs."
       }
     ],
     "sop_practices": [
-      "When enabling direct browser uploads to S3, always configure CORS on the bucket and verify it with a preflight test using curl -X OPTIONS before deploying to production.",
-      "When placing CloudFront in front of S3 and expecting browser requests, attach the managed CORS-S3Origin origin request policy (ID: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf) to forward Origin, Access-Control-Request-Headers, and Access-Control-Request-Method.",
-      "After any CORS or CloudFront policy change, create a cache invalidation for /* to ensure stale responses without CORS headers are cleared from edge locations.",
-      "Add CORS verification to the team's deployment checklist for any feature that involves browser-to-S3 direct access, including presigned URL uploads and static asset hosting."
+      "Whenever a browser will upload files directly to S3, set up CORS rules on the bucket before the feature goes live. Test with a preflight check (curl -X OPTIONS) to confirm the rules are working before users see the feature.",
+      "When CloudFront (a content delivery network) sits between the browser and S3, attach the AWS-managed CORS-S3Origin origin request policy. This tells CloudFront to forward the browser headers that S3 needs to respond with CORS permissions. Without this policy, CloudFront strips those headers and S3 does not know the request came from a browser.",
+      "After changing CORS rules or CloudFront policies, clear the CloudFront cache (called a cache invalidation) for all paths (/*). Stale cached responses without CORS headers will otherwise keep being served to browsers until they expire naturally.",
+      "Add CORS verification to the team's deployment checklist for any feature where a browser talks directly to S3 -- including presigned URL uploads and static website hosting."
     ]
   }
 }

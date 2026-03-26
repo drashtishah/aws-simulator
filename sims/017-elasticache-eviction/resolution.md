@@ -35,7 +35,7 @@ The deploy at 07:15 UTC added lab result caching, which consumed the remaining ~
 
 ## Correct Remediation
 
-1. **Immediate -- change eviction policy**:
+1. **Immediate -- tell Redis to make room instead of rejecting writes**: The core fix is changing how Redis behaves when its memory is full. Right now, the eviction policy (maxmemory-policy) is set to noeviction, which means Redis refuses all new writes with an Out of Memory error. Change it to allkeys-lru, which tells Redis to automatically remove the least recently used data to make room:
 
 ```bash
 aws elasticache modify-cache-parameter-group \
@@ -43,20 +43,20 @@ aws elasticache modify-cache-parameter-group \
   --parameter-name-values "ParameterName=maxmemory-policy,ParameterValue=allkeys-lru"
 ```
 
-After modifying the parameter group, the change takes effect on the next maintenance window or immediately if you reboot the cache node. For immediate relief in a production incident, connect to the Redis node directly and issue:
+This updates the parameter group (the saved configuration for the cache node), but it does not take effect until the next maintenance window or a manual reboot. For immediate relief during a production incident, connect to the Redis node directly and run:
 
 ```
 CONFIG SET maxmemory-policy allkeys-lru
 ```
 
-This takes effect immediately but does not persist across reboots. The parameter group change ensures persistence.
+This takes effect instantly but does not survive a reboot. Do both -- the direct command for immediate relief and the parameter group change for permanence.
 
-2. **Immediate -- flush stale keys if necessary**: If the cache contains a large volume of expired or low-value data, consider a targeted `SCAN` and `DEL` to free memory before the eviction policy begins clearing keys organically.
+2. **Immediate -- manually free memory if needed**: If the cache is packed with expired or low-value data, you can manually scan and delete keys to free space faster. Use the SCAN command (which iterates through keys without blocking Redis) and DEL to remove what you find.
 
-3. **Short-term -- add CloudWatch alarms**:
+3. **Short-term -- set up early warning alarms**: Create CloudWatch alarms so you know about memory pressure before it causes an outage. BytesUsedForCache tracks how much memory the cache is using. CacheMisses counts how many times the app asked for something that was not in the cache:
 
 ```bash
-# Alarm when BytesUsedForCache exceeds 80% of maxmemory
+# Alert when cache memory exceeds 80% of the maximum
 aws cloudwatch put-metric-alarm \
   --alarm-name trellis-redis-memory-high \
   --namespace AWS/ElastiCache \
@@ -69,7 +69,7 @@ aws cloudwatch put-metric-alarm \
   --evaluation-periods 2 \
   --alarm-actions arn:aws:sns:us-east-1:123456789012:trellis-platform-alerts
 
-# Alarm on sustained high CacheMisses
+# Alert when cache misses spike -- a sign the cache is not serving its purpose
 aws cloudwatch put-metric-alarm \
   --alarm-name trellis-redis-cache-misses-high \
   --namespace AWS/ElastiCache \
@@ -83,76 +83,76 @@ aws cloudwatch put-metric-alarm \
   --alarm-actions arn:aws:sns:us-east-1:123456789012:trellis-platform-alerts
 ```
 
-4. **Short-term -- fix application logging**: Change Redis error handling from DEBUG to WARN level. Cache write failures in a cache-aside pattern are operational signals, not debug noise.
+4. **Short-term -- make cache errors visible**: The app was catching Redis OOM errors at DEBUG level, which made them practically invisible. Change the log level to WARN. In a cache-aside pattern (check cache, fall back to database), write failures are real operational problems, not debug noise.
 
-5. **Medium-term -- scale the cache layer**: Evaluate one or more of the following:
-   - Upgrade to a larger node type (cache.r6g.xlarge: 26.32 GB)
-   - Enable cluster mode with multiple shards for horizontal scaling
-   - Add a read replica for read-heavy workloads
-   - Review TTL values on cached data to ensure natural expiration
+5. **Medium-term -- give the cache more room to grow**: Evaluate one or more of the following:
+   - Upgrade to a bigger node (cache.r6g.xlarge gives 26.32 GB instead of 13.07 GB)
+   - Turn on cluster mode, which spreads data across multiple nodes (called horizontal sharding)
+   - Add a read replica -- a second node that handles read traffic to reduce load on the primary
+   - Review TTL values (expiration timers) on cached data to ensure old data expires naturally
 
-6. **Medium-term -- audit cache key lifecycle**: Inventory all cache key patterns, their TTLs, and expected growth rates. Set TTLs explicitly on all keys. Keys without TTLs in a noeviction configuration will accumulate indefinitely.
+6. **Medium-term -- audit what is in the cache and how long it stays**: Inventory all cache key patterns, their TTLs, and expected growth rates. Set explicit TTLs on all keys. A TTL tells Redis to automatically delete a key after a set time. Without TTLs, data accumulates forever.
 
 ## Key Concepts
 
-### Redis Eviction Policies
+### What happens when the cache is full -- Redis eviction policies
 
-Redis supports several eviction policies when memory reaches the maxmemory limit:
+When Redis reaches its memory limit (maxmemory), the eviction policy (maxmemory-policy) decides what to do. Think of it as the "when the closet is full" rule -- do you throw out old clothes to make room, or refuse to buy anything new?
 
-- **noeviction**: Return OOM errors on write commands. Do not evict any keys. Reads continue to work. This is the default in some configurations and is appropriate only when data loss is unacceptable and memory is guaranteed sufficient.
-- **allkeys-lru**: Evict the least recently used key across all keys to make room for new writes. The most common general-purpose policy for caching workloads.
-- **volatile-lru**: Evict the least recently used key among keys with an expiration (TTL) set. Keys without TTL are never evicted.
-- **allkeys-random**: Evict a random key. Less optimal than LRU but lower CPU overhead.
-- **volatile-ttl**: Evict the key with the shortest remaining TTL.
-- **allkeys-lfu**: Evict the least frequently used key. Better than LRU when access patterns have strong frequency bias.
+- **noeviction**: Redis refuses all new writes and returns Out of Memory (OOM) errors. Existing data is safe, but the application cannot store anything new. Reads still work. This is only appropriate when losing cached data is unacceptable and you are certain the cache will never fill up.
+- **allkeys-lru**: Redis automatically removes the least recently used key (the one that has not been read or written in the longest time) to make room for new data. This is the standard recommendation for caching workloads.
+- **volatile-lru**: Same as allkeys-lru, but only removes keys that have an expiration timer (TTL) set. Keys without a TTL are never removed, even under memory pressure.
+- **allkeys-random**: Redis removes a random key. Less smart than LRU but uses slightly less CPU.
+- **volatile-ttl**: Redis removes the key closest to expiring.
+- **allkeys-lfu**: Redis removes the least frequently used key (the one accessed the fewest times overall). Better than LRU when some data is accessed rarely but recently.
 
-For caching workloads, `allkeys-lru` is the standard recommendation. It ensures the cache always has room for new writes by evicting the stalest data.
+For caching workloads, allkeys-lru is almost always the right choice. It ensures the cache always has room for new writes by clearing out the stalest data.
 
-### Cache-Aside Pattern Failure Modes
+### How the cache-aside pattern fails silently
 
-In a cache-aside (lazy-loading) pattern, the application checks the cache first and falls through to the database on a miss. Common failure modes:
+In a cache-aside pattern (also called lazy-loading), the application checks the cache first. If the data is there (a cache hit), it uses it. If not (a cache miss), it queries the database, stores the result in the cache for next time, and returns it. This works well until the cache breaks:
 
-- **Silent cache failure**: The application catches cache errors and falls through to the database without logging or alerting. The cache becomes invisible infrastructure -- when it fails, the database absorbs the full load with no warning.
-- **Thundering herd**: When many cache keys expire or become unavailable simultaneously, all requests hit the database at once.
-- **Connection pool exhaustion**: The database connection pool is sized for the expected mix of cache hits and misses. When the cache fails completely, the pool is undersized for 100% database traffic.
+- **Silent cache failure**: The application catches cache errors and quietly falls through to the database without logging or alerting. The cache becomes invisible infrastructure -- it can stop working entirely and nobody notices because the app keeps functioning, just slower.
+- **Thundering herd**: When many cache keys expire or become unavailable at the same time, all requests hit the database simultaneously, overwhelming it.
+- **Connection pool exhaustion**: The database has a fixed number of connections available (a connection pool). It is sized for the normal mix of cache hits and misses. When the cache fails completely, every request hits the database, and the pool runs dry.
 
-Mitigation: log cache failures at WARN or ERROR level, implement circuit breakers, size database connection pools for cache-down scenarios, and monitor cache hit ratios.
+To avoid these: log cache failures at WARN or ERROR level so they are visible, size your database connection pool for worst-case scenarios, and monitor the cache hit ratio.
 
-### ElastiCache Monitoring
+### Metrics to watch -- ElastiCache monitoring
 
-Critical CloudWatch metrics for ElastiCache Redis:
+CloudWatch collects metrics from ElastiCache automatically. These are the critical ones for detecting memory problems early:
 
-- **BytesUsedForCache**: Memory consumed by cache data. Alarm at 80% of maxmemory.
-- **CurrItems**: Number of items in the cache. Track growth rate over time.
-- **Evictions**: Number of keys evicted. Non-zero means the cache is under memory pressure (with an eviction policy that allows it). Zero with high BytesUsedForCache and noeviction means writes are failing.
-- **CacheMisses / CacheHits**: Monitor the miss ratio. A sudden spike in misses indicates cache failure or key expiration.
-- **EngineCPUUtilization**: Redis is single-threaded. High CPU indicates the node is processing at capacity.
-- **ReplicationLag**: For clusters with replicas, monitor lag to detect replication issues.
+- **BytesUsedForCache**: How much memory the cache is using. Set an alarm at 80% of maxmemory so you have warning before it fills up.
+- **CurrItems**: How many items are stored in the cache. Track the growth rate over time to predict when you will run out of space.
+- **Evictions**: How many keys Redis has removed to free space. If this is non-zero, the cache is under memory pressure (but handling it). If it is zero and BytesUsedForCache is at 100%, that means writes are failing (noeviction is active).
+- **CacheMisses / CacheHits**: The ratio of misses to hits tells you how effective the cache is. A sudden spike in misses means something is wrong -- either the cache failed or keys are expiring faster than expected.
+- **EngineCPUUtilization**: Redis processes commands on a single thread. High CPU means the node is at capacity and may need scaling.
+- **ReplicationLag**: For setups with backup nodes (replicas), this shows how far behind the replica is. High lag means the backup may not have the latest data.
 
 ## Other Ways This Could Break
 
-### Thundering herd after cache node restart
+### All requests slam the database at once after a cache restart (thundering herd)
 
-When a Redis node restarts or fails over, the cache is empty. Every request becomes a cache miss simultaneously, overwhelming the database with a sudden spike rather than a gradual increase. The eviction policy is irrelevant because the problem is an empty cache, not a full one. Enable AOF persistence or snapshot backups so the cache can warm from disk. Implement request coalescing or stampede locks in the application to prevent duplicate queries for the same key.
+When a Redis node restarts or switches to a backup, the cache starts completely empty. Every single request becomes a cache miss at the same time, flooding the database with a sudden spike instead of a gradual increase. The eviction policy does not matter here because the problem is an empty cache, not a full one. To prevent this, turn on data persistence so Redis can reload its data from disk after a restart. Redis supports two options: append-only file (AOF, which logs every write) and snapshots (which save the full dataset periodically). On the application side, use request coalescing or stampede locks -- techniques that prevent hundreds of identical database queries when many requests all miss the same cache key at once.
 
-### Volatile-lru policy with keys missing TTLs
+### The eviction policy only removes keys with expiration timers, but most keys have none
 
-The eviction policy is set to volatile-lru, which only evicts keys that have a TTL. If most keys are written without a TTL, Redis cannot evict them and returns OOM errors even though the policy appears to allow eviction. The symptom is identical to noeviction, but the root cause is a mismatch between the policy and the key lifecycle. When using volatile-lru, enforce TTLs on all keys at the application level, or switch to allkeys-lru so Redis can evict any key regardless of TTL.
+The eviction policy is set to volatile-lru, which tells Redis to only remove keys that have a TTL (a time-to-live expiration timer). If most keys were stored without a TTL, Redis cannot remove them to free space, and it returns OOM errors -- the exact same symptom as noeviction. The policy appears to allow eviction, but in practice nothing can be evicted because nothing qualifies. When using volatile-lru, make sure every key the application writes has an explicit TTL. Or switch to allkeys-lru, which lets Redis remove any key regardless of TTL.
 
-### Memory fragmentation causing premature OOM
+### Memory fragmentation makes Redis run out of system memory early
 
-Redis reports used_memory below maxmemory, but used_memory_rss (actual OS memory) is much higher due to fragmentation. The node runs out of system memory before reaching the configured limit. CloudWatch metrics may not show BytesUsedForCache at 100%, making this harder to detect. Monitor mem_fragmentation_ratio in Redis INFO output and enable activedefrag in the parameter group if it consistently exceeds 1.5.
+Redis tracks its own memory usage (used_memory), but the operating system may be using more real memory (used_memory_rss) due to fragmentation. Fragmentation happens when data of different sizes is written and deleted over time, leaving gaps in memory. The node can run out of actual system memory even though Redis thinks it has room. CloudWatch might not show BytesUsedForCache at 100%, making this harder to spot. Monitor the mem_fragmentation_ratio in the Redis INFO output. If it consistently exceeds 1.5, enable the activedefrag setting in the parameter group, which tells Redis to reorganize memory in the background.
 
-### Single-node failure with no replication
+### The cache node itself goes down, not just out of memory
 
-The Redis node itself becomes unavailable due to hardware failure or AZ disruption, not memory exhaustion. All cache operations fail with connection errors rather than OOM errors. The cascade to the database is the same, but the fix requires failover rather than configuration changes. Deploy ElastiCache with at least one read replica in a different Availability Zone and enable Multi-AZ automatic failover.
+Instead of memory exhaustion, the Redis node becomes completely unavailable -- hardware failure, network issue, or the entire Availability Zone (a physical data center section within a region) goes offline. All cache operations fail with connection errors, not OOM errors. The database cascade is the same, but the fix is failover (switching to a backup node), not configuration changes. Deploy ElastiCache with at least one read replica in a different Availability Zone and turn on Multi-AZ automatic failover so AWS switches traffic to the backup automatically.
 
 ## SOP Best Practices
 
-- Always set maxmemory-policy to allkeys-lru or allkeys-lfu for caching workloads at provisioning time. The noeviction policy should only be used when data loss is unacceptable and memory capacity is guaranteed sufficient.
-- Create CloudWatch alarms on BytesUsedForCache and CacheMisses for every ElastiCache node at provisioning time, not after the first OOM incident.
-- Log cache write failures at WARN or ERROR level in the application. Cache-aside fallbacks that swallow errors at DEBUG level create invisible infrastructure where failures produce no operational signal.
-- Set explicit TTLs on all cache keys and review TTL values quarterly to ensure natural expiration keeps pace with data growth.
+- When you first set up a cache for a caching workload, configure the eviction policy (maxmemory-policy) to allkeys-lru or allkeys-lfu. These tell Redis to automatically remove the least recently (or least frequently) used data when memory is full. The noeviction policy should only be used when losing cached data is unacceptable and you are certain the cache will never fill up.
+- Set up CloudWatch alarms on BytesUsedForCache (memory usage) and CacheMisses (requests the cache could not answer) for every ElastiCache node when you first create it -- not after the first Out of Memory incident.
+- Log cache write failures at WARN or ERROR level in the application, not DEBUG. When a cache-aside pattern (check cache, fall back to database) swallows errors at DEBUG level, the cache becomes invisible infrastructure -- it can completely stop working and nobody notices because the errors are hidden.
+- Set explicit TTLs (expiration timers) on all cache keys and review them quarterly. A TTL tells Redis to automatically delete a key after a set time. Without TTLs, data accumulates forever, and data growth will eventually fill the cache again.
 
 ## Learning Objectives
 

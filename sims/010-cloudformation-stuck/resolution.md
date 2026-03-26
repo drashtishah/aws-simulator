@@ -31,85 +31,89 @@ The CloudFormation stack `threadline-prod-stack` entered UPDATE_ROLLBACK_FAILED 
 
 ## Correct Remediation
 
-1. **Identify the stuck resource**: Review stack events to find which resource caused the rollback failure. The `ProdDatabase` (RDS instance) shows `UPDATE_ROLLBACK_FAILED` with status reason "DBInstance threadline-prod-db not found."
-2. **Check CloudTrail**: Confirm the RDS instance was manually deleted by reviewing the `DeleteDBInstance` API call in CloudTrail. The call was made by IAM user `mchen` on Friday at 4:47 PM.
-3. **Continue the rollback**: Run `aws cloudformation continue-update-rollback --stack-name threadline-prod-stack --resources-to-skip ProdDatabase` to complete the stuck rollback by skipping the missing resource.
-4. **Verify stack state**: Confirm the stack returns to `UPDATE_ROLLBACK_COMPLETE`. Deployments are now unblocked.
-5. **Recreate the RDS instance**: Update the CloudFormation template and run a stack update to recreate the RDS instance. Restore data from the most recent automated snapshot (Friday 3:00 AM).
-6. **Enable drift detection**: Schedule daily drift detection using `aws cloudformation detect-stack-drift` via EventBridge + Lambda to catch future manual modifications.
-7. **Add stack policy**: Apply a stack policy that prevents CloudFormation from deleting the RDS resource without explicit override, adding a layer of protection for critical resources.
-8. **Request SCP**: Work with the platform team to add a Service Control Policy restricting `rds:DeleteDBInstance` in the production account to specific roles (CI/CD role only).
+1. **Find the stuck resource**: Look at the stack events (the history of what CloudFormation tried to do). The resource called `ProdDatabase` (the production database) failed during rollback with the reason "DBInstance threadline-prod-db not found." CloudFormation tried to restore the database to its previous state, but the database no longer exists.
+2. **Find out who deleted it**: Check CloudTrail -- the AWS audit log that records every API call. Look for a `DeleteDBInstance` event. In this case, IAM user `mchen` deleted it from the web console on Friday at 4:47 PM.
+3. **Tell CloudFormation to finish the rollback without the missing database**: Run `aws cloudformation continue-update-rollback --stack-name threadline-prod-stack --resources-to-skip ProdDatabase`. The `--resources-to-skip` flag tells CloudFormation: "pretend this resource rolled back successfully and finish the job." This unsticks the stack.
+4. **Confirm the stack is unstuck**: Check that the stack status changes to `UPDATE_ROLLBACK_COMPLETE`. Once it reaches this status, it can accept new updates and the deployment pipeline is unblocked.
+5. **Recreate the database**: Update the CloudFormation template and run a stack update to create a new RDS instance. Restore data from the most recent automated snapshot (a backup AWS takes automatically -- in this case, Friday 3:00 AM).
+6. **Set up automatic change detection**: Schedule daily drift detection -- a CloudFormation feature that compares what the template says should exist with what actually exists in AWS. Use `aws cloudformation detect-stack-drift` triggered by an EventBridge rule (a scheduler) and a Lambda function. This catches manual changes before they cause rollback failures.
+7. **Protect the database from accidental deletion via CloudFormation**: Apply a stack policy -- a set of rules attached to the stack that restricts which resources CloudFormation itself can delete. This adds a safety check when someone changes the template in a way that would remove a critical resource.
+8. **Prevent manual deletions in the production account**: Work with the platform team to add a Service Control Policy (SCP) -- an organization-level rule that restricts who can call `rds:DeleteDBInstance` in the production account. Limit it to the CI/CD role only, so individuals cannot delete production databases from the web console.
 
 ## Key Concepts
 
-### CloudFormation State Model
+### CloudFormation Keeps Its Own Record of What Exists
 
-CloudFormation maintains an internal model of every resource it manages. It tracks logical IDs (template-level names like `ProdDatabase`) mapped to physical IDs (actual AWS resource identifiers like `threadline-prod-db`). When you modify or delete a resource outside CloudFormation, the internal model becomes stale. CloudFormation does not know the resource is gone until it tries to act on it.
+CloudFormation maintains an internal model of every resource it manages. It maps template-level names (called logical IDs, like `ProdDatabase`) to actual AWS resources (called physical IDs, like `threadline-prod-db`). This model is how CloudFormation knows what to update, what to roll back, and what to delete.
 
-### UPDATE_ROLLBACK_FAILED
+The critical point: CloudFormation only updates this model when you make changes through CloudFormation itself. If someone deletes or modifies a resource directly in the AWS console, CloudFormation has no idea. Its model still says the resource exists. The mismatch stays hidden until CloudFormation tries to act on that resource -- and then things break.
 
-This state occurs when CloudFormation starts a rollback after a failed update but cannot complete the rollback. Common causes:
+### What UPDATE_ROLLBACK_FAILED Means
 
-- A resource was manually deleted outside CloudFormation
-- A resource was manually modified to a state that conflicts with the rollback target
-- IAM permissions changed since the last successful update
+When a stack update fails (for example, a Lambda function cannot be updated), CloudFormation tries to undo the change by rolling back to the previous state. If the rollback itself fails, the stack enters a stuck state called UPDATE_ROLLBACK_FAILED. Common causes:
+
+- A resource was manually deleted outside CloudFormation, so there is nothing to roll back to
+- A resource was manually changed to a state that conflicts with what CloudFormation expects
+- The deploy role's permissions were changed, so CloudFormation cannot perform the rollback actions
 - A resource dependency was removed
 
-The stack is effectively frozen in this state. No updates, no deletions. The only way forward is `ContinueUpdateRollback` or contacting AWS Support.
+The stack is effectively frozen. It cannot accept new updates, and it cannot be deleted. The only way forward is the `continue-update-rollback` command (described below) or contacting AWS Support.
 
-### ContinueUpdateRollback
+### How to Unstick a Stack with continue-update-rollback
 
-The `aws cloudformation continue-update-rollback` API tells CloudFormation to retry the rollback. The critical parameter is `--resources-to-skip`, which accepts a list of logical resource IDs. CloudFormation will complete the rollback while treating those resources as if they successfully rolled back, regardless of their actual state.
+The command `aws cloudformation continue-update-rollback` tells CloudFormation to retry the stuck rollback. The key parameter is `--resources-to-skip`, which accepts a list of resource names (logical IDs) from the template. CloudFormation will finish the rollback while treating those resources as if they rolled back successfully -- even though they did not.
 
-After the rollback completes (stack enters `UPDATE_ROLLBACK_COMPLETE`), the skipped resources are no longer managed by the stack. You must re-add them through a subsequent stack update.
+After the rollback completes (the stack reaches UPDATE_ROLLBACK_COMPLETE), the skipped resources are no longer managed by the stack. You must re-add them through a new stack update.
 
-### Drift Detection
+### Drift Detection -- Catching Manual Changes Early
 
-CloudFormation drift detection compares the expected resource configuration (from the last successful stack operation) with the actual configuration in AWS. It reports:
+Drift detection is a CloudFormation feature that compares what the template says a resource should look like with what the resource actually looks like in AWS. It reports one of three statuses:
 
-- **IN_SYNC** -- resource matches the template
-- **MODIFIED** -- resource exists but properties differ
-- **DELETED** -- resource no longer exists
+- **IN_SYNC** -- the resource matches the template
+- **MODIFIED** -- the resource exists but someone changed its settings outside CloudFormation
+- **DELETED** -- the resource no longer exists
 
-Drift detection does not run automatically. You must trigger it via the API, the console, or a scheduled automation (EventBridge rule + Lambda).
+Drift detection does not run automatically. You must trigger it yourself -- through the API, the web console, or a scheduled automation. Running it daily catches manual changes before they cause stuck rollbacks.
 
-### Stack Policies
+### Stack Policies -- Protecting Resources from Accidental Template Changes
 
-Stack policies are JSON documents attached to a stack that control which resources can be updated or deleted through CloudFormation. They protect against accidental template changes but do not prevent manual console actions. A stack policy denying `Update:Delete` on the RDS resource would prevent a CloudFormation update from deleting it, but would not have prevented Marcus from deleting it through the console.
+A stack policy is a set of rules (a JSON document) attached to a stack that controls which resources CloudFormation is allowed to update or delete. For example, you can prevent CloudFormation from deleting the production database even if someone changes the template in a way that removes it.
 
-### Why Manual Changes Are Dangerous
+Important limitation: stack policies only protect against changes made through CloudFormation. They do not prevent someone from deleting a resource directly in the AWS console. For that, you need Service Control Policies (SCPs) or IAM policies.
 
-CloudFormation assumes it is the sole owner of the resources it manages. When a human modifies a resource outside CloudFormation:
+### Why Manual Changes to CloudFormation-Managed Resources Are Dangerous
 
-- The next stack update may fail because actual state does not match expected state
-- Rollbacks may fail because the rollback target state no longer exists
-- Drift accumulates silently until something breaks
-- The blast radius is unpredictable -- a single manual change can block the entire deployment pipeline
+CloudFormation assumes it is the sole owner of the resources it manages. When someone modifies a resource outside CloudFormation:
+
+- The next stack update may fail because the real resource does not match what CloudFormation expects
+- Rollbacks may fail because the state CloudFormation wants to restore no longer exists
+- The mismatch accumulates silently until something breaks -- sometimes weeks later
+- A single manual change can block the entire deployment pipeline for the team
 
 ## Other Ways This Could Break
 
-### Resource modified (not deleted) outside CloudFormation
+### Someone changes a resource's settings through the console instead of deleting it
 
-Instead of deleting the RDS instance, someone changes its properties directly in the console -- for example, modifying the instance class from db.r5.large to db.t3.medium, or changing parameter group settings. The stack update may succeed but produce unexpected behavior because the actual resource no longer matches what the template describes. If the mismatch is severe enough to conflict with a rollback target, the stack can still enter UPDATE_ROLLBACK_FAILED. Drift detection would catch this before it becomes a problem.
+Instead of deleting the database, someone changes its size or settings directly in the AWS web console -- for example, switching it from a large instance type to a small one, or changing its configuration parameters. CloudFormation does not know this happened. The next stack update may succeed but produce unexpected behavior because the real resource no longer matches what the template describes. If the mismatch is severe enough to conflict with a rollback, the stack can still get stuck. Running drift detection regularly would catch this before it becomes a problem.
 
-### IAM permission change breaks the rollback
+### The deploy role's permissions were changed between updates
 
-The deploy role loses a permission it had during the last successful update. When a new update fails and CloudFormation tries to roll back, it cannot perform the required API calls because the role no longer has the necessary permissions. The stack enters UPDATE_ROLLBACK_FAILED with AccessDenied errors rather than resource-not-found errors. The fix is to restore the role's permissions and then run ContinueUpdateRollback.
+The role that CloudFormation uses to make changes lost a permission it had during the last successful update. When a new update fails and CloudFormation tries to undo it, it cannot perform the required API calls because the role no longer has the right permissions. The stack gets stuck with AccessDenied errors instead of "resource not found" errors. The fix is to restore the role's permissions and then run continue-update-rollback.
 
-### Nested stack fails independently
+### A stack-within-a-stack (nested stack) gets stuck independently
 
-In architectures that use nested stacks, a child stack can enter UPDATE_ROLLBACK_FAILED while the parent is still rolling back. You must identify the failed resources in the nested stack specifically and use the format `NestedStackName.ResourceLogicalID` when specifying `--resources-to-skip`. Using the wrong format produces an error telling you that nested stack resources can only be skipped when their embedded stack is in a DELETE state.
+CloudFormation lets you organize resources into nested stacks -- a parent stack that contains child stacks. A child stack can get stuck in UPDATE_ROLLBACK_FAILED while the parent is still rolling back. You must find the failed resources in the child stack specifically and use a special naming format (`NestedStackName.ResourceLogicalID`) when telling CloudFormation which resources to skip. Using the wrong format produces an error.
 
-### Deprecated Lambda runtime blocks rollback
+### A Lambda function uses a programming language version that AWS no longer supports
 
-A Lambda function in the stack uses a runtime that AWS has deprecated (like nodejs16.x). An unrelated stack update triggers a rollback, but CloudFormation cannot restore the Lambda function to its previous configuration because the runtime is no longer valid. This is what triggered the initial update failure in this sim, but on its own it can also cause UPDATE_ROLLBACK_FAILED if the deprecated runtime was the previous configuration that CloudFormation is trying to roll back to.
+A Lambda function in the stack uses a runtime (like Node.js 16) that AWS has retired. An unrelated stack update triggers a rollback, but CloudFormation cannot restore the Lambda function to its previous settings because the old runtime is no longer valid. This is actually what triggered the initial update failure in this sim. On its own, it can also cause the stack to get stuck if the deprecated runtime was the configuration CloudFormation is trying to roll back to.
 
 ## SOP Best Practices
 
-- Manage all stack resources exclusively through CloudFormation. Never modify, delete, or create CloudFormation-managed resources directly in the console or via CLI outside of the stack workflow.
-- Run drift detection on a regular schedule (daily at minimum) and alert on any drift status other than IN_SYNC. Catching manual changes early prevents them from becoming rollback failures later.
-- Use change sets to preview all modifications before executing a stack update. Require peer review of change sets that affect stateful resources like databases, encryption keys, or networking components.
-- Apply stack policies to protect critical resources from accidental deletion through CloudFormation, and use Service Control Policies to prevent manual console-level deletions in production accounts.
+- Never modify, delete, or create resources by hand if CloudFormation manages them. CloudFormation keeps its own record of what exists, and when someone changes a resource outside of CloudFormation, that record becomes wrong. The mismatch can stay hidden for weeks and then cause a stuck rollback that blocks the entire team.
+- Run drift detection daily at minimum. Drift detection compares what CloudFormation thinks exists with what actually exists in AWS. Alert whenever a resource shows anything other than "in sync." Catching manual changes early prevents them from turning into stuck rollbacks later.
+- Preview changes before applying them. CloudFormation has a feature called change sets that shows you exactly what will be created, modified, or deleted before you execute an update. Require peer review for change sets that touch critical resources like databases, encryption keys, or networking components.
+- Protect critical resources at multiple levels. Use stack policies (rules attached to the stack) to prevent CloudFormation from accidentally deleting important resources. Use Service Control Policies (organization-level rules) to prevent individuals from deleting production resources through the web console. These two mechanisms cover different threat vectors and work best together.
 
 ## Learning Objectives
 
