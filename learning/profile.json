@@ -1,34 +1,36 @@
 {
   "current_level": 2,
-  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full", "009-credential-chain", "011-nat-gateway-cost"],
+  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full", "009-credential-chain", "011-nat-gateway-cost", "022-bedrock-guardrail-medical"],
   "unlocked_levels": [1, 2],
   "service_exposure": {
     "ec2": 2,
     "vpc": 2,
-    "cloudwatch": 4,
-    "lambda": 1,
+    "cloudwatch": 5,
+    "lambda": 2,
     "iam": 2,
     "rds": 1,
     "sts": 1,
     "secrets-manager": 1,
     "nat-gateway": 1,
-    "s3": 1
+    "s3": 1,
+    "bedrock": 1,
+    "sns": 1
   },
   "question_patterns": {
     "first_action_frequency": {
       "logs": 0,
       "permissions": 0,
-      "architecture": 3,
+      "architecture": 4,
       "metrics": 1,
       "recent_changes": 1,
       "immediate_fix": 0
     },
-    "avg_questions_before_fix": 6.0,
-    "audit_trail_check_rate": 0.50,
-    "multi_service_investigation_rate": 0.80
+    "avg_questions_before_fix": 5.2,
+    "audit_trail_check_rate": 0.42,
+    "multi_service_investigation_rate": 0.67
   },
   "weaknesses": ["sts"],
-  "strengths": ["lambda", "rds"],
-  "total_sessions": 5,
-  "last_session": "2026-03-25"
+  "strengths": ["lambda", "rds", "bedrock"],
+  "total_sessions": 6,
+  "last_session": "2026-03-26"
 }

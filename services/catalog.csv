@@ -1,6 +1,6 @@
 service,full_name,category,exam_priority,difficulty_level,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
 ec2,Amazon EC2,compute,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,001-ec2-unreachable: identified missing port 443 inbound rule on security group; understood security group deny-by-default behavior; 003-rds-storage-full: reviewed application logs on EC2 instances to confirm MySQL error 1114 across multiple tables
-lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,1,2026-03-25,006-wrong-region: identified function deployed to us-west-2 instead of us-east-1; understood regional nature of Lambda ARNs and CLI region resolution chain
+lambda,AWS Lambda,serverless,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,2,2026-03-26,006-wrong-region: identified function deployed to us-west-2 instead of us-east-1; understood regional nature of Lambda ARNs and CLI region resolution chain; 022-bedrock-guardrail-medical: did not query Lambda console
 s3,Amazon S3,storage,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,1,1,2026-03-25,011-nat-gateway-cost: understood S3 traffic pattern from private subnet but did not query S3 console directly; grasped that S3 is a public service reachable via VPC endpoint
 iam,AWS IAM,security,1,1,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,2,2026-03-25,006-wrong-region: queried aws configure list and sts get-caller-identity to trace CI/CD identity and region source; 009-credential-chain: identified deactivated user raj.patel via access key metadata and offboarding tags; understood credential resolution chain priority order and env var override of instance profile
 vpc,Amazon VPC,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,2,2,2026-03-25,001-ec2-unreachable: did not query this service; 011-nat-gateway-cost: queried VPC console; identified empty VpcEndpoints array; understood private subnet route tables and proposed S3 gateway endpoint fix
@@ -8,10 +8,10 @@ rds,Amazon RDS,database,1,2,SAA-C03;SAP-C02;DVA-C02,2,1,2026-03-25,003-rds-stora
 dynamodb,Amazon DynamoDB,database,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 cloudfront,Amazon CloudFront,networking,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 sqs,Amazon SQS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-sns,Amazon SNS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
+sns,Amazon SNS,integration,1,2,SAA-C03;SAP-C02;DVA-C02,0,1,2026-03-26,022-bedrock-guardrail-medical: did not query SNS console during investigation; asked about SNS post-sim; SNS topic had zero subscribers -- missed as part of investigation
 elb,Elastic Load Balancing,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 auto-scaling,AWS Auto Scaling,compute,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
-cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,4,2026-03-25,001-ec2-unreachable: did not query this service; 006-wrong-region: did not query this service; 003-rds-storage-full: used get_metric_data to identify FreeStorageSpace trend dropping to zero; correlated metric timeline with incident onset; 011-nat-gateway-cost: queried Cost Explorer data to identify NAT Gateway data processing charges of $907/day
+cloudwatch,Amazon CloudWatch,management,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,3,5,2026-03-26,001-ec2-unreachable: did not query this service; 006-wrong-region: did not query this service; 003-rds-storage-full: used get_metric_data to identify FreeStorageSpace trend dropping to zero; correlated metric timeline with incident onset; 011-nat-gateway-cost: queried Cost Explorer data to identify NAT Gateway data processing charges of $907/day; 022-bedrock-guardrail-medical: did not query CloudWatch console; missed GuardrailInterventions spike visible in metrics
 route53,Amazon Route 53,networking,1,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
 kms,AWS KMS,security,1,2,SAA-C03;SAP-C02;DVA-C02;SCS-C02,0,0,,
 ebs,Amazon EBS,storage,2,2,SAA-C03;SAP-C02;DVA-C02,0,0,,
@@ -87,6 +87,6 @@ vpn,AWS Site-to-Site VPN,networking,2,2,SAA-C03;SAP-C02,0,0,,
 nat-gateway,NAT Gateway,networking,2,2,SAA-C03;SAP-C02,2,1,2026-03-25,011-nat-gateway-cost: identified NAT Gateway data processing as the $907/day cost source; understood per-GB pricing model and how private subnet routing forces all S3 traffic through NAT Gateway
 lake-formation,AWS Lake Formation,analytics,4,4,SAA-C03;SAP-C02,0,0,,
 opensearch,Amazon OpenSearch Service,analytics,3,3,SAA-C03;SAP-C02,0,0,,
-bedrock,Amazon Bedrock,ml-ai,2,3,SAA-C03;SAP-C02;DVA-C02,0,0,,
+bedrock,Amazon Bedrock,ml-ai,2,3,SAA-C03;SAP-C02;DVA-C02,2,1,2026-03-26,022-bedrock-guardrail-medical: queried guardrail config; identified broad denied topic definition and example phrases as root cause; understood inputAction vs outputAction distinction for input vs output filtering
 bedrock-agents,Amazon Bedrock Agents,ml-ai,3,3,SAP-C02;DVA-C02,0,0,,
 opensearch-serverless,Amazon OpenSearch Serverless,analytics,3,3,SAA-C03;SAP-C02,0,0,,

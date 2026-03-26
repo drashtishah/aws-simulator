@@ -7,7 +7,7 @@ tags:
   - type/reference
   - domain/aws-simulator
 date: 2026-03-25
-updated: 2026-03-25
+updated: 2026-03-26
 ---
 ---
 
@@ -107,7 +107,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
 | sqs | Amazon SQS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
-| sns | Amazon SNS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
+| sns | Amazon SNS | 1 | 2 | SAA-C03; SAP-C02; DVA-C02 | In progress (0) |
 | eventbridge | Amazon EventBridge | 2 | 2 | SAA-C03; SAP-C02; DVA-C02 | Not started |
 
 ---
@@ -197,6 +197,7 @@ Reference catalog of AWS services covered across the SAA-C03, SAP-C02, DVA-C02, 
 | Service | Full Name | Priority | Difficulty | Cert Relevance | Knowledge |
 |---|---|---|---|---|---|
 | sagemaker | Amazon SageMaker | 3 | 3 | SAA-C03; SAP-C02 | Not started |
+| bedrock | Amazon Bedrock | 2 | 3 | SAA-C03; SAP-C02; DVA-C02 | In progress (2) |
 
 ---
 

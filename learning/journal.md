@@ -84,6 +84,25 @@ Audit-trail-first investigation -- went straight to CloudTrail and identified ra
 
 When you see AccessDenied on an EC2 instance, always check what identity the CLI is actually using with `aws sts get-caller-identity` and `aws configure list`. Environment variables take precedence over instance profiles in the AWS credential resolution chain, and stale credentials left by former engineers are a common source of silent authentication failures.
 
+## The Guardrail and the Doctor
+
+- **Date**: 2026-03-26
+- **Sim**: [[022-bedrock-guardrail-medical]]
+- **Difficulty**: 2
+- **Category**: reliability
+- **Services**: Bedrock, CloudWatch, Lambda, SNS
+- **Questions asked**: 1
+- **Hints used**: 0
+- **Criteria met**: 3 / 4
+
+### Coaching summary
+
+Went directly to the guardrail config and identified the root cause in one query. Recognized that the denied topic's definition and example phrases matched legitimate patient input, not prohibited model output, and correctly proposed moving the filter from input to output. Did not investigate the monitoring gap -- the SNS topic had zero subscribers and no CloudWatch alarm was configured, which allowed the intervention spike to go unnoticed for two days.
+
+### Key takeaway
+
+Bedrock Guardrail denied topics have independent `inputAction` and `outputAction` fields. For domain-specific applications where user input naturally contains the denied vocabulary, the filter belongs on model output only. Testing guardrail changes only against adversarial prompts misses the entire class of legitimate queries that share vocabulary with the prohibited topic.
+
 ## Nine Hundred Dollars for Nothing
 
 - **Date**: 2026-03-25
