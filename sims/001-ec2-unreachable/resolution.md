@@ -54,13 +54,30 @@ Security groups operate at the instance level and are stateful. Network ACLs ope
 
 EC2 instances report `StatusCheckFailed_Instance` (OS-level) and `StatusCheckFailed_System` (hardware-level) metrics. These check if the instance is running, not if the application is reachable. A custom health check or an ALB target group health check is needed to detect application-level failures.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Security Groups for Your VPC](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html)
-- [Security Group Rules Reference](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html)
-- [Network ACLs](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html)
-- [EC2 Status Checks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-system-instance-status-check.html)
-- [CloudWatch Metrics for EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html)
+### Network ACL deny rule blocks port 443
+Instead of the security group, a Network ACL deny rule with a lower rule number than the allow rule blocks HTTPS traffic at the subnet level. Because NACLs are stateless, both inbound and outbound rules must be checked. The security group would look correct in this case, making the problem harder to spot.
+**Prevention:** Audit NACL rules after changes and ensure allow rules for required ports have lower rule numbers than any broad deny rules. Use VPC Flow Logs to confirm where traffic is being rejected.
+
+### Route table missing default route to Internet Gateway
+The public subnet route table loses its 0.0.0.0/0 route pointing to the Internet Gateway. All internet traffic stops reaching the subnet entirely -- not just one port. The instance also loses outbound internet access, which distinguishes it from a security group issue.
+**Prevention:** Tag production route tables and use AWS Config rules to detect when a public subnet route table lacks a default route to an Internet Gateway.
+
+### Elastic IP or public IP disassociated from instance
+The instance loses its public IP address, so DNS resolution or direct IP access fails. Unlike a security group issue, the instance becomes unreachable on all ports, and the public IP no longer appears in describe-instances output.
+**Prevention:** Use Elastic IPs for production instances instead of auto-assigned public IPs. Set up CloudWatch alarms to alert when a production instance has no associated public IP.
+
+### Security group connection tracking limit exceeded
+The security group rules are correct, but the instance has too many concurrent tracked connections and starts dropping new ones. Symptoms appear as intermittent timeouts under high load rather than a complete outage. ENA driver metrics show conntrack_allowance_exceeded incrementing.
+**Prevention:** Monitor conntrack_allowance_available via ENA driver metrics. Scale to a larger instance type for higher connection tracking limits, or configure security group rules to avoid tracking where possible.
+
+## SOP Best Practices
+
+- Always validate security group rules against a documented list of required application ports before and after any modification -- automate this check in CI/CD pipelines.
+- Test security group changes in a staging environment that mirrors production network topology before applying them to production.
+- Enable VPC Flow Logs on production subnets to provide an audit trail of accepted and rejected traffic, which accelerates root-cause analysis during connectivity incidents.
+- Set up CloudWatch alarms on external reachability probes (not just instance status checks) so that network-level outages are detected within minutes, not hours.
 
 ## Learning Objectives
 

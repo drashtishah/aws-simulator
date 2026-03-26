@@ -64,13 +64,32 @@ Each orchestration step in a Bedrock Agent generates roughly 3,000-5,000 reasoni
 
 Standard AWS cost monitoring (monthly bills, Cost Explorer) has a lag that makes it unsuitable as the sole monitoring mechanism for generative AI workloads where per-request cost can change dramatically with prompt or agent configuration changes. Real-time monitoring requires CloudWatch metrics on token consumption, combined with budget alerts at daily and monthly granularity.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [[Amazon Bedrock Agents -- Action Groups|https://docs.aws.amazon.com/bedrock/latest/userguide/agents-action-groups.html]]
-- [[Amazon Bedrock Pricing|https://aws.amazon.com/bedrock/pricing/]]
-- [[Model Invocation Logging|https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html]]
-- [[CloudWatch Metrics for Amazon Bedrock|https://docs.aws.amazon.com/bedrock/latest/userguide/monitoring-cw.html]]
-- [[AWS Budgets|https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html]]
+### Prompt Template Inflation After Instruction Update
+
+Instead of action group loops causing excess tokens, an update to the agent's system instructions or prompt template adds verbose context that inflates every query's input token count. The cost increase is uniform across all queries rather than concentrated on comparison queries. The agent trace shows fewer orchestration steps but higher input tokens per step.
+
+**Prevention:** Track prompt template token counts as a deployment metric. Set a CloudWatch alarm on average InputTokenCount per invocation to catch instruction bloat early.
+
+### Knowledge Base Over-Retrieval Expanding Context Window
+
+A knowledge base associated with the agent returns too many document chunks per query, inflating the context window. The cost increase comes from input tokens (retrieved context) rather than output/reasoning tokens. The agent trace shows normal orchestration step counts but abnormally large input payloads at the orchestration step that queries the knowledge base.
+
+**Prevention:** Set Top K limits on knowledge base retrieval. Use metadata filters to scope retrieval to relevant document categories. Monitor InputTokenCount at the knowledge base query step.
+
+### Model Upgrade Silently Increases Per-Token Pricing
+
+The foundation model is updated to a newer, more expensive version (for example, moving from Claude 3 Haiku to Claude 3.5 Sonnet) without updating cost projections. Token counts remain the same, but the per-token rate increases. Cost Explorer shows a step increase that correlates with the model change rather than an action group deployment.
+
+**Prevention:** Pin agent foundation model versions explicitly. Review Bedrock pricing when changing models. Include per-token cost estimates in deployment checklists.
+
+## SOP Best Practices
+
+- Design Bedrock Agent action groups to return consolidated, rich responses rather than granular data that forces multi-step reasoning loops.
+- Set CloudWatch alarms on Bedrock token consumption metrics (InputTokenCount, OutputTokenCount) at the per-invocation and daily aggregate level before deploying new agent features.
+- Configure AWS Budgets alerts for Bedrock at both 80% and 100% of your monthly allocation, with daily anomaly detection enabled.
+- Enable model invocation logging to S3 and periodically sample agent traces to catch reasoning loop regressions before they appear in monthly bills.
 
 ## Learning Objectives
 

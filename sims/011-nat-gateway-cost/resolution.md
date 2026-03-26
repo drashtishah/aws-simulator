@@ -80,13 +80,32 @@ When a gateway endpoint is created and associated with a route table, AWS automa
 
 Gateway endpoints are a route table modification, not a separate piece of infrastructure. There is no elastic network interface, no hourly charge, and no data processing charge. AWS provides them at no cost because they reduce load on NAT Gateways and internet gateways, and keep traffic on the AWS backbone network.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Gateway VPC Endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-s3.html)
-- [NAT Gateway Pricing](https://aws.amazon.com/vpc/pricing/)
-- [VPC Endpoint Types](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html)
-- [Prefix Lists for AWS Services](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-aws-managed-prefix-lists.html)
-- [Cost Optimization with VPC Endpoints](https://docs.aws.amazon.com/whitepapers/latest/aws-privatelink/what-are-vpc-endpoints.html)
+### Gateway endpoint created but not associated with the correct route table
+
+The endpoint exists but the private subnet route table still has no prefix list entry for S3. Traffic continues through the NAT Gateway because the endpoint was associated with a different route table, such as the public subnet route table. This looks like the fix was applied but costs do not decrease.
+
+**Prevention:** When creating a gateway endpoint, explicitly specify `--route-table-ids` for every private subnet route table that needs the S3 route. Verify with `aws ec2 describe-route-tables` that the prefix list entry appears in each target route table.
+
+### Cross-region S3 access through NAT Gateway
+
+A gateway endpoint only routes traffic to S3 buckets in the same region as the VPC. If the pipeline writes to an S3 bucket in a different region, the traffic still goes through the NAT Gateway and incurs data processing charges plus cross-region data transfer fees. The cost reduction from the endpoint is zero.
+
+**Prevention:** Ensure S3 buckets accessed from private subnets are in the same region as the VPC. If cross-region access is required, understand that gateway endpoints will not help and budget for NAT Gateway and data transfer costs.
+
+### VPC endpoint policy blocks the application
+
+A custom endpoint policy is attached to the gateway endpoint that restricts access to specific buckets or actions. The pipeline's PutObject calls are denied by the policy, causing write failures instead of cost savings. The pipeline breaks after the supposed fix.
+
+**Prevention:** Use the default endpoint policy (full access) unless there is a specific security requirement. If a custom policy is needed, test it against the application's actual S3 API calls before applying to production.
+
+## SOP Best Practices
+
+- Include S3 and DynamoDB gateway endpoints as a standard part of any VPC design with private subnets -- they are free and eliminate unnecessary NAT Gateway charges
+- Set up billing alerts for NAT Gateway data processing charges early, before high-volume workloads go live, to catch cost anomalies within days instead of months
+- Use VPC flow logs and Cost Explorer together to identify which traffic patterns are driving NAT Gateway costs and whether they can be routed through endpoints instead
+- After creating a gateway endpoint, verify the route table entry and monitor Cost Explorer to confirm the expected cost reduction within 24 hours
 
 ## Learning Objectives
 

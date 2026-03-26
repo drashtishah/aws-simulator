@@ -65,13 +65,30 @@ CloudTrail logs S3 management events (PutBucketPolicy, DeleteBucketPolicy) by de
 - Data events (if enabled) reveal WHO accessed specific objects and from WHICH IP address
 - S3 server access logs provide a complementary view of individual object-level access
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [S3 Bucket Policies](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-policies.html)
-- [S3 Block Public Access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)
-- [CloudTrail Logging for S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/cloudtrail-logging.html)
-- [S3 Server Access Logging](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerLogs.html)
-- [IAM Policy Evaluation Logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)
+### Bucket ACL Grants Public Read Access
+
+The exposure comes from a legacy ACL setting (AllUsers READ) rather than a policy statement. Block Public Access with IgnorePublicAcls would prevent this, but the ACL itself would not appear in the bucket policy. Prevention: disable ACLs entirely by setting S3 Object Ownership to BucketOwnerEnforced.
+
+### Presigned URL with Overly Long Expiration Leaks via Shared Link
+
+The bucket policy is correctly scoped, but a presigned URL with a multi-day expiration gets shared outside the organization. The URL works for anyone who has it until it expires. Prevention: set a maximum presigned URL expiration policy via STS session duration limits and monitor for presigned URL generation in CloudTrail data events.
+
+### S3 Static Website Hosting Enabled on a Private Data Bucket
+
+Enabling static website hosting on a bucket makes objects accessible via the website endpoint, bypassing some access controls. The bucket does not need Principal: * if website hosting is on and there is no explicit deny. Prevention: never enable static website hosting on buckets containing sensitive data; use CloudFront with Origin Access Control instead.
+
+### Cross-Account Role with Overly Broad S3 Permissions
+
+The bucket policy correctly restricts the Principal to a specific vendor account, but the vendor's IAM role has s3:GetObject on * and can read all buckets shared with that account. Prevention: apply condition keys (aws:PrincipalOrgID, s3:prefix) in the bucket policy and monitor cross-account access patterns in CloudTrail.
+
+## SOP Best Practices
+
+- Enable S3 Block Public Access at the account level as a default guardrail -- override it per-bucket only when public access is an explicit, documented requirement.
+- Never use Principal: * in a bucket policy for cross-account access. Always specify the exact account ARN, role ARN, or use aws:PrincipalOrgID conditions.
+- Enable AWS Config rules (s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited) for continuous compliance monitoring across all buckets.
+- Require bucket policy changes to go through a CI/CD pipeline with automated policy validation that rejects wildcard principals and overly broad permissions.
 
 ## Learning Objectives
 

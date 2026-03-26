@@ -63,13 +63,30 @@ IAM follows an implicit deny model: if a policy does not explicitly allow an act
 
 A common failure mode: staging environments use permissive IAM policies for developer convenience, while production uses least-privilege policies. This mismatch causes code that works in staging to fail in production. The fix is to use identical IAM policies in both environments, or to add IAM policy simulation to the deployment pipeline.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Lambda Execution Role](https://docs.aws.amazon.com/lambda/latest/dg/lambda-intro-execution-role.html)
-- [IAM Policies for DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/using-identity-based-policies.html)
-- [IAM Policy Simulator](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_testing-policies.html)
-- [Troubleshooting Lambda AccessDenied](https://docs.aws.amazon.com/lambda/latest/dg/troubleshooting-execution.html)
-- [IAM Best Practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
+### KMS Key Policy Blocking DynamoDB Access
+
+The Lambda execution role has the correct DynamoDB permissions, but the DynamoDB table is encrypted with a customer-managed KMS key. The execution role does not have `kms:Decrypt` or `kms:GenerateDataKey` permissions on that key. The error is an `AccessDeniedException` on the KMS action, not on the DynamoDB action itself. This is easy to confuse with a missing DynamoDB permission because the error surfaces during a DynamoDB call. Prevention: when a table uses a customer-managed KMS key, add the required KMS actions to the execution role scoped to the key ARN.
+
+### Organization SCP Overriding Account-Level IAM
+
+The IAM execution role policy correctly allows `dynamodb:PutItem` and `dynamodb:UpdateItem`, but a Service Control Policy at the AWS Organization level explicitly denies DynamoDB write actions in the production account. The deny comes from above the account and overrides anything the role allows. The IAM policy looks fine on inspection, which makes this harder to diagnose. Prevention: audit SCPs before deploying and use `iam:SimulatePrincipalPolicy` against the production role to test effective permissions end-to-end.
+
+### EventBridge Loses Lambda Invoke Permission
+
+After a resource policy change, EventBridge can no longer invoke the Lambda function. The function never executes -- CloudWatch Logs show zero invocations rather than `AccessDeniedException` during execution. The difference from this sim's scenario is that the problem is invocation authorization (who can trigger the function), not execution authorization (what the function can do once running). Prevention: after changing Lambda resource policies, verify that the event source can still invoke the function.
+
+### IAM Condition Key Mismatch
+
+The IAM policy includes a condition key such as `aws:SourceVpc` that restricts when the allowed actions apply. The actions are listed as allowed, but the condition does not match the Lambda execution environment. `SimulatePrincipalPolicy` without context keys would show Allow, masking the real issue. Prevention: avoid VPC or IP-based condition keys on Lambda execution roles unless the function runs in a VPC, and test policies with realistic context keys.
+
+## SOP Best Practices
+
+- Run `iam:SimulatePrincipalPolicy` against the production execution role for every DynamoDB action the code uses before deploying. Add this as a CI/CD pipeline gate.
+- Use identical least-privilege IAM policies in staging and production. Never use wildcard permissions (`dynamodb:*`) in staging -- they mask permission gaps that surface in production.
+- When refactoring code that changes which AWS API actions are called, treat the IAM policy as part of the code change. Update and review it in the same pull request.
+- Set a CloudWatch alarm on the Lambda Errors metric with a threshold of 1 and a 1-minute evaluation period so permission failures are caught within one invocation cycle.
 
 ## Learning Objectives
 

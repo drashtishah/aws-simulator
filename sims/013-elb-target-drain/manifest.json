@@ -46,12 +46,79 @@
         }
       ],
       "hints": [
-        "When did the errors start relative to the deployment?",
-        "How long does it take a new instance to pass the ALB health check?",
-        "Compare the deregistration delay with the time it takes a new target to become healthy. Is there a gap?",
-        "The deregistration delay is 30 seconds but health checks need 150 seconds (interval 30s x threshold 5). Old targets drain out long before new ones are ready.",
-        "Fix: increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, and reduce deployment batch size to 25%."
+        {
+          "text": "When did the errors start relative to the deployment?",
+          "relevant_services": ["elb", "cloudwatch"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "How long does it take a new instance to pass the ALB health check?",
+          "relevant_services": ["elb"],
+          "skip_if_queried": ["describe_target_health"]
+        },
+        {
+          "text": "Compare the deregistration delay with the time it takes a new target to become healthy. Is there a gap?",
+          "relevant_services": ["elb"],
+          "skip_if_queried": ["describe_target_group_attributes"]
+        },
+        {
+          "text": "The deregistration delay is 30 seconds but health checks need 150 seconds (interval 30s x threshold 5). Old targets drain out long before new ones are ready.",
+          "relevant_services": ["elb", "auto-scaling"],
+          "skip_if_queried": ["describe_target_group_attributes", "describe_target_health"]
+        },
+        {
+          "text": "Fix: increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, and reduce deployment batch size to 25%.",
+          "relevant_services": ["elb", "auto-scaling"],
+          "skip_if_queried": []
+        }
       ],
+      "glossary": {
+        "Target group": "A logical grouping of EC2 instances (or other resources) that an Application Load Balancer sends traffic to. Each target group has its own health check settings and deregistration delay.",
+        "Deregistration delay": "The number of seconds the load balancer waits after removing a target before fully disconnecting it. During this window, in-flight requests can finish. The default is 300 seconds.",
+        "Health check": "A periodic request the load balancer sends to each target to confirm it can handle traffic. A target must pass a set number of consecutive checks (the healthy threshold) before the load balancer considers it ready.",
+        "Healthy threshold": "The number of consecutive successful health check responses a target must return before the load balancer marks it as healthy. A threshold of 5 with a 30-second interval means 150 seconds to become healthy.",
+        "Fail-open": "The ALB behavior when every target in a target group is unhealthy. Instead of returning 503 to all clients, the ALB routes requests to all targets regardless of health status. This is by design but often produces 502 errors from unready backends.",
+        "HealthyHostCount": "A CloudWatch metric that tracks how many targets in a target group are currently passing health checks. When this number drops to zero, the ALB enters fail-open mode.",
+        "Rolling deployment": "A deployment strategy that replaces instances in batches rather than all at once. Each batch of old instances is removed before (or while) new instances launch and initialize.",
+        "Connection draining": "The process of allowing in-flight requests to finish on a target that is being removed from a target group. The deregistration delay controls how long this process lasts."
+      },
+      "narrative_arc": {
+        "call": "A routine deployment starts at 6:15 AM on a Wednesday. Three dependency patches and a logging format change. The pipeline approved it. Within ninety seconds, the first support ticket arrives.",
+        "threshold": "The error rate climbs. Fourteen customers report 502 Bad Gateway. Dispatchers switch to manual planning. The platform engineer insists the code changes are harmless. He is probably right.",
+        "trials": "The deployment finished. All new instances are running. But the error rate was elevated for three minutes. The metrics show HealthyHostCount dropped to zero. The target health timeline shows a gap between old targets draining and new targets passing health checks.",
+        "revelation": "The deregistration delay is 30 seconds. The health check needs 150 seconds. Old targets leave the pool 120 seconds before new targets are ready. The ALB had no healthy targets to route to.",
+        "return": "Increase the deregistration delay to 300 seconds. Reduce the healthy threshold from 5 to 2. Cut the deployment batch size in half. Never deploy during peak hours. The math has to work before the deployment starts."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "ridgewell-prod-alb (Application Load Balancer)",
+            "role": "Internet-facing ALB that receives all dispatcher HTTP requests and distributes them across the target group.",
+            "connections": ["Routes traffic to ridgewell-web-tg target group", "Publishes HealthyHostCount and HTTPCode_ELB_5XX metrics to CloudWatch"],
+            "failure_impact": "When all targets are unhealthy, the ALB enters fail-open mode and routes requests to unready backends, producing 502 errors."
+          },
+          {
+            "name": "ridgewell-web-tg (Target Group)",
+            "role": "Groups the four EC2 instances that serve the route optimization application. Configured with a 30-second deregistration delay and health checks at 30-second intervals with a healthy threshold of 5.",
+            "connections": ["Receives traffic from ridgewell-prod-alb", "Registers and deregisters instances from ridgewell-web-asg"],
+            "failure_impact": "The 30-second deregistration delay is too short. Old targets drain and leave before new targets can pass health checks, creating a capacity gap."
+          },
+          {
+            "name": "ridgewell-web-asg (Auto Scaling Group)",
+            "role": "Maintains four c5.xlarge instances across two availability zones. Uses ELB health checks with a 300-second grace period.",
+            "connections": ["Launches instances into ridgewell-web-tg", "CodeDeploy triggers instance replacement in batches of 50%"],
+            "failure_impact": "The 50% batch size means two of four instances are replaced at once, leaving minimal capacity margin during the replacement window."
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Collects ALB metrics (HealthyHostCount, HTTPCode_ELB_5XX_Count) and application logs from the EC2 instances.",
+            "connections": ["Receives metrics from ridgewell-prod-alb", "No alarm configured for HealthyHostCount"],
+            "failure_impact": "Without a HealthyHostCount alarm, the team had no advance warning when healthy capacity dropped to zero."
+          }
+        ],
+        "data_flow": "Dispatchers send HTTP requests to ridgewell-prod-alb. The ALB forwards them to healthy targets in ridgewell-web-tg on port 8080. Each target runs the route optimization application. During deployment, CodeDeploy deregisters old instances from the target group and the ASG launches replacements. New instances must pass 5 consecutive health checks (150 seconds) before receiving traffic.",
+        "what_broke": "The deregistration delay (30 seconds) was shorter than the health check time-to-healthy (150 seconds). When the first batch of old instances drained out and the second batch began draining, HealthyHostCount dropped to zero. The ALB entered fail-open mode and routed traffic to initializing instances that returned 502 errors."
+      },
       "max_hints_before_nudge": 3
     },
     "consoles": [
@@ -135,6 +202,44 @@
       "Connection draining: deregistration delay must exceed the time new targets need to pass health checks during rolling deployments",
       "ALB fail-open behavior: when all targets are unhealthy, ALB routes to all targets rather than returning 503, producing 502 errors from unready backends",
       "Deployment safety: batch size, timing, and health check configuration interact to determine deployment risk"
+    ],
+    "sop_steps": [
+      "Confirm the incident by checking CloudWatch metrics for HealthyHostCount and HTTPCode_ELB_5XX_Count on the affected target group (ridgewell-web-tg) during the deployment window",
+      "Identify the deregistration delay on the target group using describe-target-group-attributes and compare it to the health check time-to-healthy (interval x healthy threshold)",
+      "Review the target health timeline to confirm that HealthyHostCount dropped to zero and the ALB entered fail-open mode",
+      "Increase the deregistration delay to at least 300 seconds so old targets continue serving traffic while new targets initialize: aws elbv2 modify-target-group-attributes --attributes Key=deregistration_delay.timeout_seconds,Value=300",
+      "Reduce the healthy threshold from 5 to 2 to shorten time-to-healthy from 150 seconds to 60 seconds: aws elbv2 modify-target-group --healthy-threshold-count 2",
+      "Reduce the CodeDeploy deployment batch size from 50% to 25% so at least three of four targets remain healthy during each batch",
+      "Add a CloudWatch alarm on HealthyHostCount with a threshold of 2, evaluation period of 1, and an SNS action to alert the on-call team",
+      "Establish a deployment policy that prohibits production deployments during the 5 AM to 11 AM peak window"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Health check path returns 200 before the application is fully initialized",
+        "how_it_differs": "Instead of a timing gap between deregistration and health checks, the health check endpoint responds successfully while the application is still loading caches or establishing database connections. Traffic arrives at a target that passes health checks but cannot serve requests correctly.",
+        "prevention": "Implement a readiness check that verifies all downstream dependencies (database connections, cache warmup, configuration loading) before the health check endpoint returns 200. Do not use a simple TCP or root-path check for applications with warm-up requirements."
+      },
+      {
+        "scenario": "Auto Scaling group replaces instances due to failed ELB health checks during deployment",
+        "how_it_differs": "Instead of the deployment causing a capacity gap, the ASG health check detects unhealthy new instances (still initializing) and terminates them before they finish starting up, creating a loop of launch-terminate-launch. The health check grace period is too short relative to the application startup time.",
+        "prevention": "Set the ASG health check grace period to at least the time-to-healthy plus application startup time. Monitor scaling activities for repeated launch-terminate cycles."
+      },
+      {
+        "scenario": "ALB slow start mode disabled causes new targets to receive full traffic immediately",
+        "how_it_differs": "Instead of a zero-healthy-host scenario, new targets pass health checks and immediately receive an equal share of traffic. If the application needs warm-up time (loading caches, JIT compilation), the sudden load causes latency spikes or errors even though the target is technically healthy.",
+        "prevention": "Enable slow start mode on the target group with a duration matching the application warm-up time (typically 30 to 120 seconds). This ramps traffic gradually to new targets."
+      },
+      {
+        "scenario": "Cross-zone load balancing disabled causes uneven traffic distribution during deployment",
+        "how_it_differs": "Instead of all targets going unhealthy, the deployment removes targets in one availability zone while the other zone remains healthy. Without cross-zone load balancing, the ALB node in the depleted zone has no healthy targets and enters fail-open for that zone only, while the other zone is overloaded.",
+        "prevention": "Enable cross-zone load balancing on the ALB so that each load balancer node can route to healthy targets in any availability zone during partial deployments."
+      }
+    ],
+    "sop_practices": [
+      "Always verify that the deregistration delay exceeds the health check time-to-healthy (interval multiplied by healthy threshold) before running any rolling deployment",
+      "Add a CloudWatch alarm on HealthyHostCount for every production target group -- alert when the count drops below the minimum required for safe operation",
+      "Use deployment batch sizes small enough that the remaining healthy targets can absorb the full traffic load while replacements initialize",
+      "Schedule production deployments outside peak traffic windows and document the policy in the team runbook"
     ]
   }
 }

@@ -46,11 +46,88 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "Bedrock Agent": "An Amazon Bedrock resource that uses a foundation model to have conversations and take actions on behalf of users. It follows instructions you define and can call external tools through action groups.",
+        "action group": "A set of actions a Bedrock Agent can perform. Each action group is backed by a Lambda function or API endpoint that the agent calls when it needs external data or capabilities.",
+        "resource-based policy": "A JSON policy document attached directly to an AWS resource (like a Lambda function) that controls which other services or accounts are allowed to interact with it. Separate from IAM role policies.",
+        "aws:SourceArn": "A condition key used in resource-based policies to restrict access based on the ARN of the resource that is making the request. Must match the actual caller's ARN exactly.",
+        "foundation model": "A large pre-trained AI model (like Claude) hosted on Bedrock. The model generates text responses but has no access to your live data unless it calls an action group.",
+        "Lambda invocation": "The act of calling (triggering) a Lambda function to run its code. A service like Bedrock must have permission granted through the function's resource-based policy before Lambda will accept the call.",
+        "silent fallback": "A Bedrock Agent behavior where, if an action group call fails, the agent generates an answer from the foundation model alone instead of returning an error. The user sees a confident response with no indication that real data was never fetched.",
+        "IAM execution role": "The IAM role that a Bedrock Agent assumes to interact with AWS services on its behalf. Its ARN is different from the agent ARN -- they identify different things.",
+        "agent ARN": "The Amazon Resource Name that uniquely identifies a Bedrock Agent as a resource, in the format arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT-ID. This is what Lambda expects in the SourceArn condition, not the IAM role ARN.",
+        "CloudWatch metric": "A time-series data point published to Amazon CloudWatch. Metrics like Lambda Invocations or Bedrock InvokeAgent let you monitor whether services are actually being called."
+      },
+      "narrative_arc": {
+        "call": "Enterprise customers report that the AI assistant is returning fabricated metrics. The numbers look plausible but do not match their dashboards.",
+        "threshold": "CloudWatch metrics show the Lambda function has received zero invocations since Friday afternoon. The Bedrock Agent is still responding to every query, but without calling the action group.",
+        "trials": "The Lambda function works when tested directly. The agent's IAM execution role has lambda:InvokeFunction permission. The action group is enabled and the API schema is valid. The failure is not in the function code or the agent configuration.",
+        "revelation": "The Lambda resource-based policy uses the IAM execution role ARN as the SourceArn condition instead of the Bedrock agent ARN. Lambda silently rejects every invocation from Bedrock because the source ARN does not match.",
+        "return": "Updating the SourceArn condition to the correct agent ARN restores invocations immediately. Adding CloudWatch alarms on invocation count and action group metrics prevents future silent failures."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "API Gateway (REST API)",
+            "role": "Receives user queries from the SaaS frontend and routes them to the Bedrock Agent",
+            "connections": ["Bedrock Agent (clairvue-bi-assistant)"],
+            "failure_impact": "If the API Gateway fails, users cannot reach the AI assistant"
+          },
+          {
+            "name": "Bedrock Agent (clairvue-bi-assistant, ABCDE12345)",
+            "role": "Orchestrates conversations using Claude 3 Sonnet and the QueryDashboard action group to answer business intelligence questions",
+            "connections": ["API Gateway (REST API)", "Lambda function (clairvue-dashboard-query)"],
+            "failure_impact": "If the action group invocation fails silently, the agent falls back to hallucinated responses with no error signal"
+          },
+          {
+            "name": "Lambda function (clairvue-dashboard-query, Python 3.12, arm64)",
+            "role": "Handles action group requests by querying the internal dashboard API and returning real metrics",
+            "connections": ["Bedrock Agent (clairvue-bi-assistant)", "Lambda resource-based policy"],
+            "failure_impact": "If Lambda rejects the invocation due to a policy mismatch, the agent generates fabricated metrics instead of real data"
+          },
+          {
+            "name": "IAM execution role (AmazonBedrockExecutionRoleForAgents_clairvue)",
+            "role": "Grants the Bedrock Agent permission to invoke the foundation model and call Lambda, but its ARN is not the SourceArn Lambda expects",
+            "connections": ["Bedrock Agent (clairvue-bi-assistant)"],
+            "failure_impact": "If confused with the agent ARN in the Lambda policy, invocations are silently rejected"
+          },
+          {
+            "name": "Lambda resource-based policy",
+            "role": "Controls which services and source ARNs are allowed to invoke the Lambda function",
+            "connections": ["Lambda function (clairvue-dashboard-query)"],
+            "failure_impact": "If the SourceArn condition references the IAM role ARN instead of the agent ARN, all Bedrock invocations are rejected"
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Collects Lambda invocation metrics and Bedrock agent invocation metrics for monitoring",
+            "connections": ["Lambda function (clairvue-dashboard-query)", "Bedrock Agent (clairvue-bi-assistant)"],
+            "failure_impact": "Without alarms on zero-invocation conditions, silent failures go undetected for days"
+          }
+        ],
+        "data_flow": "User query -> API Gateway -> Bedrock Agent -> (orchestration) -> action group invocation -> Lambda function -> internal dashboard API -> real metrics returned to agent -> agent formats response for user",
+        "what_broke": "The Lambda resource-based policy's SourceArn condition was set to the IAM execution role ARN (arn:aws:iam::847291034651:role/AmazonBedrockExecutionRoleForAgents_clairvue) instead of the agent ARN (arn:aws:bedrock:us-east-1:847291034651:agent/ABCDE12345). Lambda rejected every invocation from Bedrock silently. The agent fell back to generating answers from the foundation model alone, producing confident hallucinated metrics for 63 hours."
+      },
       "hints": [
-        "The agent is responding, but without calling the action group. What would cause Bedrock to skip the Lambda invocation entirely?",
-        "Lambda functions require a resource-based policy to allow external services to invoke them. Have you checked who is allowed to call this function?",
-        "Compare the SourceArn in the Lambda resource policy to the actual Bedrock agent ARN. Are they the same?",
-        "The policy references an IAM role ARN, but Bedrock expects the agent ARN as the source. The function is rejecting the invocation silently."
+        {
+          "text": "The agent is responding to every query, but the answers are wrong. The Lambda function has zero invocations since Friday. What would cause Bedrock to skip the Lambda call entirely?",
+          "relevant_services": ["bedrock", "lambda"],
+          "skip_if_queried": ["lambda"]
+        },
+        {
+          "text": "Lambda functions require a resource-based policy to allow external services to invoke them. Have you checked who is allowed to call this function and under what conditions?",
+          "relevant_services": ["lambda", "iam"],
+          "skip_if_queried": ["lambda"]
+        },
+        {
+          "text": "Compare the aws:SourceArn value in the Lambda resource-based policy to the actual Bedrock agent ARN in the agent configuration. Are they the same resource?",
+          "relevant_services": ["lambda", "bedrock"],
+          "skip_if_queried": ["lambda", "bedrock"]
+        },
+        {
+          "text": "The policy references an IAM role ARN, but Bedrock presents the agent ARN as the source when invoking Lambda. These are different identifiers. The function is rejecting the invocation silently, and the agent falls back to hallucinating.",
+          "relevant_services": ["lambda", "iam", "bedrock"],
+          "skip_if_queried": ["lambda", "iam"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -138,6 +215,46 @@
       "How Lambda resource-based policies control which services can invoke a function",
       "Bedrock Agents silent fallback behavior when action groups fail",
       "Importance of monitoring action group invocation metrics to detect silent failures"
+    ],
+    "sop_steps": [
+      "Confirm the Bedrock Agent is responding to queries by invoking the agent via the console or CLI and reviewing the trace output for actionGroupInvocationOutput presence or absence",
+      "Check CloudWatch Lambda Invocations metric for the action group function to determine whether it is being called at all",
+      "Retrieve the Lambda resource-based policy using aws lambda get-policy and inspect the aws:SourceArn condition value",
+      "Retrieve the Bedrock agent configuration using aws bedrock get-agent to obtain the correct agent ARN (arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT-ID)",
+      "Compare the SourceArn in the Lambda policy to the agent ARN -- if they differ, the policy is rejecting invocations",
+      "Update the Lambda resource-based policy: remove the incorrect statement with aws lambda remove-permission, then add a new statement with the correct agent ARN using aws lambda add-permission",
+      "Test the fix by invoking the Bedrock Agent and confirming the trace shows actionGroupInvocationOutput with real data from the Lambda function",
+      "Add a CloudWatch alarm on the Lambda function's Invocations metric to trigger when the sum is zero for one hour during business hours",
+      "Add a CloudWatch alarm on Bedrock agent action group invocation metrics to detect when action groups stop being called",
+      "Add a post-deployment integration test to the CI pipeline that invokes the agent after policy changes and verifies the action group trace output"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Lambda resource-based policy missing entirely for Bedrock Agent",
+        "how_it_differs": "Instead of a wrong SourceArn, the function has no resource-based policy statement for bedrock.amazonaws.com at all. The symptom is identical -- silent fallback to hallucinated responses -- but the fix is adding a new policy statement rather than correcting an existing one.",
+        "prevention": "Include the Lambda resource-based policy as part of the infrastructure-as-code template that creates the Bedrock Agent. Validate the policy exists in CI before deployment completes."
+      },
+      {
+        "scenario": "Bedrock Agent action group disabled or API schema misconfigured",
+        "how_it_differs": "The Lambda function has correct permissions and would work if called, but the action group is in a DISABLED state or its OpenAPI schema has validation errors. The agent cannot determine which API to call, so it skips the action group entirely. CloudWatch shows zero Lambda invocations, same as this sim.",
+        "prevention": "Check actionGroupState is ENABLED after every agent update. Include schema validation in the CI pipeline using the OpenAPI specification linter."
+      },
+      {
+        "scenario": "Lambda function timeout or runtime error causing action group failure",
+        "how_it_differs": "The function is invoked successfully but fails during execution (timeout, unhandled exception, or downstream API error). Lambda Invocations count is non-zero but Errors count is elevated. The agent may still fall back to hallucinated responses, but CloudWatch error metrics provide a signal.",
+        "prevention": "Set Lambda timeout appropriately for downstream API latency. Add structured error handling in the function code. Create CloudWatch alarms on both Invocations (zero) and Errors (non-zero)."
+      },
+      {
+        "scenario": "Bedrock Agent version or alias pointing to outdated agent configuration",
+        "how_it_differs": "The agent's draft version has the correct action group, but the production alias points to an older version that does not include the action group or references a different Lambda function. The resource-based policy is correct, but the alias routes to the wrong agent version.",
+        "prevention": "Always update the agent alias routing configuration after preparing a new agent version. Include alias version verification in deployment checklists."
+      }
+    ],
+    "sop_practices": [
+      "Always use the Bedrock agent ARN (arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT-ID) as the SourceArn in Lambda resource-based policies, never the IAM execution role ARN",
+      "Treat Lambda resource-based policy updates as high-risk changes that require post-deployment verification of end-to-end invocation, not just CI pipeline green status",
+      "Monitor both sides of every service integration: Lambda Invocations for the function being called and Bedrock action group metrics for the agent successfully using the action group",
+      "Include the aws:SourceAccount condition alongside SourceArn in Lambda resource-based policies to prevent confused deputy scenarios across accounts"
     ]
   }
 }

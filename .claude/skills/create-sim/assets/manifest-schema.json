@@ -113,7 +113,7 @@
       "properties": {
         "narrator": {
           "type": "object",
-          "required": ["personality", "story_beats", "hints", "max_hints_before_nudge"],
+          "required": ["personality", "story_beats", "hints", "max_hints_before_nudge", "glossary", "narrative_arc", "system_narration"],
           "properties": {
             "personality": {
               "type": "string",
@@ -294,7 +294,7 @@
     },
     "resolution": {
       "type": "object",
-      "required": ["root_cause", "fix_criteria", "learning_objectives"],
+      "required": ["root_cause", "fix_criteria", "learning_objectives", "sop_steps", "related_failure_modes", "sop_practices"],
       "properties": {
         "root_cause": {
           "type": "string",

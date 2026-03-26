@@ -69,13 +69,30 @@ Auto Scaling can use EC2 status checks or ELB health checks to determine instanc
 - If the health check itself is misconfigured, this creates a launch-terminate cycle that wastes resources without restoring service
 - The cycle continues until the health check is fixed or Auto Scaling reaches its maximum retry limit
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [ALB Health Checks](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html)
-- [ALB Troubleshooting 502 Errors](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-502-issues)
-- [Auto Scaling Health Checks](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-health-checks.html)
-- [Target Groups for ALBs](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html)
-- [CloudWatch Metrics for ALB](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html)
+### Health check path returns non-200 status
+
+The port is correct but the health check path (e.g., `/health`) returns a 500 or 404 because the application's health endpoint is broken or does not exist at that path. The ALB marks targets unhealthy for a different reason code (`Target.ResponseCodeMismatch` instead of `Target.Timeout`). To prevent this, always deploy the health check endpoint before updating the target group to reference it, and test the endpoint manually after deployment.
+
+### Security group blocks health check traffic
+
+The health check port and path are correct, but the instance security group does not allow inbound traffic from the ALB's security group on the health check port. Checks fail with a timeout, identical to a port mismatch, but the fix is a security group rule change rather than a target group setting change. Ensure the instance security group allows inbound traffic from the ALB security group on both the application port and the health check port.
+
+### Health check timeout shorter than application startup time
+
+The port and path are correct, but the application takes longer to start than the health check grace period allows. New instances are marked unhealthy before they finish booting. Unlike a port mismatch, the instances eventually become healthy if the thresholds are adjusted. Set the Auto Scaling health check grace period longer than the application's worst-case startup time, and increase the unhealthy threshold count to tolerate slow starts.
+
+### Target group registered on wrong port
+
+The health check is configured to use `traffic-port`, but the instances were registered on the wrong port (e.g., 8080 instead of 3000). Both traffic forwarding and health checks fail. The symptom is similar to this sim's scenario, but the fix is re-registering targets on the correct port rather than changing the health check configuration.
+
+## SOP Best Practices
+
+- Always use `traffic-port` for health checks unless you have a dedicated health check endpoint on a separate port that is confirmed to be listening.
+- Treat health check configuration changes as high-risk deployments: validate in staging, deploy with a canary, and monitor HealthyHostCount immediately after rollout.
+- Set a CloudWatch alarm on HealthyHostCount dropping below your minimum acceptable threshold, not just on 502 error counts, so you catch health check regressions before they cause user-facing errors.
+- When using Auto Scaling with ELB health checks, set the health check grace period long enough for the application to fully start and pass its first health check, or the ASG will terminate instances before they have a chance to become healthy.
 
 ## Learning Objectives
 

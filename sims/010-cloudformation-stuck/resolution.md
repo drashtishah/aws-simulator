@@ -86,14 +86,30 @@ CloudFormation assumes it is the sole owner of the resources it manages. When a 
 - Drift accumulates silently until something breaks
 - The blast radius is unpredictable -- a single manual change can block the entire deployment pipeline
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Troubleshooting CloudFormation -- Update Rollback Failed](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#troubleshooting-errors-update-rollback-failed)
-- [ContinueUpdateRollback API Reference](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ContinueUpdateRollback.html)
-- [Detecting Unmanaged Configuration Changes with Drift Detection](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-stack-drift.html)
-- [Prevent Updates to Stack Resources with Stack Policies](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html)
-- [CloudFormation Stack Statuses](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-view-stack-data-resources.html)
-- [Service Control Policies (SCPs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html)
+### Resource modified (not deleted) outside CloudFormation
+
+Instead of deleting the RDS instance, someone changes its properties directly in the console -- for example, modifying the instance class from db.r5.large to db.t3.medium, or changing parameter group settings. The stack update may succeed but produce unexpected behavior because the actual resource no longer matches what the template describes. If the mismatch is severe enough to conflict with a rollback target, the stack can still enter UPDATE_ROLLBACK_FAILED. Drift detection would catch this before it becomes a problem.
+
+### IAM permission change breaks the rollback
+
+The deploy role loses a permission it had during the last successful update. When a new update fails and CloudFormation tries to roll back, it cannot perform the required API calls because the role no longer has the necessary permissions. The stack enters UPDATE_ROLLBACK_FAILED with AccessDenied errors rather than resource-not-found errors. The fix is to restore the role's permissions and then run ContinueUpdateRollback.
+
+### Nested stack fails independently
+
+In architectures that use nested stacks, a child stack can enter UPDATE_ROLLBACK_FAILED while the parent is still rolling back. You must identify the failed resources in the nested stack specifically and use the format `NestedStackName.ResourceLogicalID` when specifying `--resources-to-skip`. Using the wrong format produces an error telling you that nested stack resources can only be skipped when their embedded stack is in a DELETE state.
+
+### Deprecated Lambda runtime blocks rollback
+
+A Lambda function in the stack uses a runtime that AWS has deprecated (like nodejs16.x). An unrelated stack update triggers a rollback, but CloudFormation cannot restore the Lambda function to its previous configuration because the runtime is no longer valid. This is what triggered the initial update failure in this sim, but on its own it can also cause UPDATE_ROLLBACK_FAILED if the deprecated runtime was the previous configuration that CloudFormation is trying to roll back to.
+
+## SOP Best Practices
+
+- Manage all stack resources exclusively through CloudFormation. Never modify, delete, or create CloudFormation-managed resources directly in the console or via CLI outside of the stack workflow.
+- Run drift detection on a regular schedule (daily at minimum) and alert on any drift status other than IN_SYNC. Catching manual changes early prevents them from becoming rollback failures later.
+- Use change sets to preview all modifications before executing a stack update. Require peer review of change sets that affect stateful resources like databases, encryption keys, or networking components.
+- Apply stack policies to protect critical resources from accidental deletion through CloudFormation, and use Service Control Policies to prevent manual console-level deletions in production accounts.
 
 ## Learning Objectives
 

@@ -29,6 +29,61 @@
   "team": {
     "narrator": {
       "personality": "Platform reliability engineer. Calm, clinical. Measures impact in patient appointments affected and provider schedule accuracy. Notes the deploy red herring without leading.",
+      "glossary": {
+        "ElastiCache": "A managed in-memory data store service from AWS. It runs Redis or Memcached so your application can read frequently-accessed data from memory instead of querying a database every time.",
+        "Redis": "An open-source, in-memory key-value store used for caching, session management, and real-time data. ElastiCache runs Redis as a managed service.",
+        "maxmemory-policy": "A Redis configuration setting that controls what happens when the cache reaches its memory limit. It determines whether Redis evicts old keys to make room or rejects new writes entirely.",
+        "noeviction": "A maxmemory-policy value where Redis refuses to accept any new write commands once memory is full. Existing data is preserved, but the application receives OOM errors on every write attempt.",
+        "allkeys-lru": "A maxmemory-policy value where Redis automatically removes the least recently used keys across all keys to free memory for new writes. The standard recommendation for caching workloads.",
+        "OOM": "Out of Memory. An error Redis returns when it cannot allocate more memory for a write command. With noeviction, this happens as soon as used_memory reaches maxmemory.",
+        "cache-aside pattern": "A caching strategy where the application checks the cache first. On a hit, it returns cached data. On a miss, it queries the database, stores the result in the cache, and then returns it.",
+        "BytesUsedForCache": "A CloudWatch metric that reports how many bytes of memory the ElastiCache node is using for cached data. Used to detect when the cache is approaching its memory ceiling.",
+        "connection pool": "A fixed set of pre-opened database connections shared by application threads. When all connections are in use, new requests must wait. The pool size is a hard limit on concurrent database access.",
+        "TTL": "Time to Live. A value set on a cache key that tells Redis to automatically delete the key after a specified number of seconds. Keys without a TTL persist until manually deleted or evicted."
+      },
+      "narrative_arc": {
+        "call": "Appointment booking pages are loading slowly. Provider offices are calling support about missing availability slots. The booking success rate dropped from 99.2% to 61%.",
+        "threshold": "The product team points to the deploy from two hours ago. They want a rollback. But the symptoms started gradually, not in a single moment.",
+        "trials": "A deploy went out at 07:15 that added lab result caching. The targets are healthy. The application code is correct. The failure is somewhere between the application and its data layer.",
+        "revelation": "Redis memory is at 100%. The maxmemory-policy is noeviction. Every write returns an OOM error, logged at DEBUG. The cache-aside pattern silently falls through to PostgreSQL for every request, saturating the connection pool.",
+        "return": "Changing maxmemory-policy to allkeys-lru restores cache writes immediately. Adding CloudWatch alarms on BytesUsedForCache and CacheMisses prevents the blind spot from recurring."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "ALB (trellis-prod-alb)",
+            "role": "Receives HTTPS traffic from patients and provider offices and distributes it to the ECS cluster",
+            "connections": ["ECS cluster (trellis-prod)"],
+            "failure_impact": "If the ALB is unhealthy, patients and providers cannot access the appointment booking system"
+          },
+          {
+            "name": "ECS cluster (trellis-prod)",
+            "role": "Runs three tasks of the appointment-service container that implement the cache-aside pattern",
+            "connections": ["ALB (trellis-prod-alb)", "ElastiCache Redis (trellis-redis-prod)", "RDS PostgreSQL (trellis-prod-db)"],
+            "failure_impact": "If tasks fail, appointment booking and provider schedule queries are unavailable"
+          },
+          {
+            "name": "ElastiCache Redis node (trellis-redis-prod, cache.r6g.large, 13.07 GB maxmemory)",
+            "role": "Stores hot data including doctor availability, session tokens, and appointment slot computations with noeviction policy",
+            "connections": ["ECS cluster (trellis-prod)", "CloudWatch"],
+            "failure_impact": "When memory is full with noeviction, all writes return OOM errors and the application falls through to the database for every request"
+          },
+          {
+            "name": "RDS PostgreSQL (trellis-prod-db, db.r6g.xlarge, connection pool max 200)",
+            "role": "Serves as the persistent data store for appointments, provider schedules, and patient data",
+            "connections": ["ECS cluster (trellis-prod)", "CloudWatch"],
+            "failure_impact": "When all 200 connections are saturated by cache-miss fallback traffic, query latency spikes and new requests are queued"
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Collects ElastiCache metrics (BytesUsedForCache, CacheHits, CacheMisses, Evictions) and RDS metrics (DatabaseConnections, CPUUtilization)",
+            "connections": ["ElastiCache Redis (trellis-redis-prod)", "RDS PostgreSQL (trellis-prod-db)"],
+            "failure_impact": "Without alarms on BytesUsedForCache and CacheMisses, memory exhaustion goes undetected until users report slow bookings"
+          }
+        ],
+        "data_flow": "Patients and providers send requests through the ALB to the ECS appointment-service. The service uses a cache-aside pattern: it checks Redis first, returns on a hit, and falls through to PostgreSQL on a miss. After a database read, the result is written back to Redis for future requests. CloudWatch collects metrics from both ElastiCache and RDS every 60 seconds.",
+        "what_broke": "The Redis node exhausted its 13.07 GB of maxmemory. With maxmemory-policy set to noeviction, Redis returned OOM errors on all write commands (SET, HSET, LPUSH). The application caught these errors at DEBUG level and silently fell through to PostgreSQL for every request. The RDS connection pool (200) saturated. Query latency went from 5ms to 800ms. ALB TargetResponseTime climbed to 8.2 seconds. The deploy at 07:15 consumed the last 400 MB of headroom but did not introduce the vulnerability."
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -56,11 +111,31 @@
         }
       ],
       "hints": [
-        "The application is slower than usual. Where does it normally get its data from?",
-        "What is the current state of the Redis cache? Is it serving requests normally?",
-        "Check the ElastiCache memory metrics. How much memory is in use versus available?",
-        "Redis memory is at 100%. The maxmemory-policy is set to 'noeviction'. When memory is full with noeviction, Redis returns OOM errors on write commands. The application falls through to the database for every read.",
-        "Fix: change maxmemory-policy to 'allkeys-lru' to allow Redis to evict least-recently-used keys. Then add CloudWatch alarms on BytesUsedForCache and Evictions metrics. Consider scaling to a larger node or enabling cluster mode."
+        {
+          "text": "The application is slower than usual. Where does it normally get its data from?",
+          "relevant_services": ["elasticache", "rds"],
+          "skip_if_queried": ["elasticache"]
+        },
+        {
+          "text": "What is the current state of the Redis cache? Is it serving requests normally?",
+          "relevant_services": ["elasticache"],
+          "skip_if_queried": ["elasticache"]
+        },
+        {
+          "text": "Check the ElastiCache memory metrics. How much memory is in use versus available?",
+          "relevant_services": ["cloudwatch", "elasticache"],
+          "skip_if_queried": ["cloudwatch"]
+        },
+        {
+          "text": "Redis memory is at 100%. The maxmemory-policy is set to noeviction. When memory is full with noeviction, Redis returns OOM errors on write commands. The application falls through to the database for every read.",
+          "relevant_services": ["elasticache"],
+          "skip_if_queried": ["elasticache", "cloudwatch"]
+        },
+        {
+          "text": "Fix: change maxmemory-policy to allkeys-lru to allow Redis to evict least-recently-used keys. Then add CloudWatch alarms on BytesUsedForCache and Evictions metrics. Consider scaling to a larger node or enabling cluster mode.",
+          "relevant_services": ["elasticache", "cloudwatch"],
+          "skip_if_queried": ["elasticache", "cloudwatch"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -134,6 +209,45 @@
       "Redis eviction policies: 'noeviction' rejects writes when memory is full; 'allkeys-lru' evicts least-recently-used keys to make room for new writes",
       "Cache-aside pattern failure modes: when the cache layer fails, applications must handle the fallback gracefully and log cache failures at an appropriate level",
       "ElastiCache monitoring: BytesUsedForCache, CurrItems, Evictions, CacheMisses, and EngineCPUUtilization are critical metrics for early detection"
+    ],
+    "sop_steps": [
+      "Confirm Redis memory saturation by checking the BytesUsedForCache CloudWatch metric or running INFO MEMORY on the Redis node -- compare used_memory against maxmemory",
+      "Identify the current eviction policy by inspecting the ElastiCache parameter group for the maxmemory-policy value (in this case, noeviction)",
+      "Apply an immediate fix by connecting to the Redis node and running CONFIG SET maxmemory-policy allkeys-lru -- this takes effect instantly but does not persist across reboots",
+      "Persist the fix by modifying the ElastiCache parameter group: aws elasticache modify-cache-parameter-group --cache-parameter-group-name trellis-redis-params --parameter-name-values ParameterName=maxmemory-policy,ParameterValue=allkeys-lru",
+      "Verify recovery by monitoring CacheHits, CacheMisses, and BytesUsedForCache metrics for 10-15 minutes to confirm the eviction policy is freeing memory and cache hit rate is recovering",
+      "Fix application logging: change Redis error handling from DEBUG to WARN level so OOM errors produce visible operational signals",
+      "Create CloudWatch alarms on BytesUsedForCache at 80% of maxmemory and on CacheMisses with a sustained spike threshold, both sending to an SNS topic",
+      "Evaluate scaling: consider upgrading to cache.r6g.xlarge (26.32 GB), enabling cluster mode for horizontal sharding, or adding a read replica for read-heavy workloads",
+      "Audit all cache key patterns for explicit TTL values -- keys without TTLs in any eviction configuration accumulate indefinitely and should have bounded lifetimes"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Thundering herd after cache node restart",
+        "how_it_differs": "When a Redis node restarts or fails over, the cache is empty. Every request becomes a cache miss simultaneously, overwhelming the database with a sudden spike rather than a gradual increase. The eviction policy is irrelevant because the problem is an empty cache, not a full one.",
+        "prevention": "Enable Redis append-only file (AOF) persistence or snapshot backups so the cache can warm from disk after a restart. Implement request coalescing or cache stampede locks in the application to prevent duplicate database queries for the same key."
+      },
+      {
+        "scenario": "Volatile-lru policy with keys missing TTLs",
+        "how_it_differs": "The eviction policy is set to volatile-lru, which only evicts keys that have a TTL set. If most keys are written without a TTL, Redis cannot evict them and returns OOM errors even though the policy appears to allow eviction. The symptom is identical to noeviction but the root cause is a mismatch between the policy and the key lifecycle.",
+        "prevention": "When using volatile-lru, enforce TTLs on all cache keys at the application level. Alternatively, use allkeys-lru so Redis can evict any key regardless of TTL status."
+      },
+      {
+        "scenario": "Memory fragmentation causing premature OOM",
+        "how_it_differs": "Redis reports used_memory below maxmemory, but used_memory_rss (actual OS memory) is much higher due to fragmentation. The node runs out of system memory before reaching the configured maxmemory limit. CloudWatch metrics may not show BytesUsedForCache at 100%, making the issue harder to detect.",
+        "prevention": "Monitor the mem_fragmentation_ratio in Redis INFO output. Enable activedefrag in the parameter group if fragmentation ratio consistently exceeds 1.5. Consider using jemalloc tuning or scheduling periodic restarts during maintenance windows."
+      },
+      {
+        "scenario": "Single-node failure with no replication",
+        "how_it_differs": "The Redis node itself becomes unavailable due to hardware failure or AZ disruption, not memory exhaustion. All cache operations fail with connection errors rather than OOM errors. The cascade to the database is the same, but the fix requires failover rather than configuration changes.",
+        "prevention": "Deploy ElastiCache with at least one read replica in a different Availability Zone and enable Multi-AZ automatic failover. This eliminates the single point of failure at the cache layer."
+      }
+    ],
+    "sop_practices": [
+      "Always set maxmemory-policy to allkeys-lru or allkeys-lfu for caching workloads at provisioning time -- noeviction should only be used when data loss is unacceptable and memory capacity is guaranteed sufficient",
+      "Create CloudWatch alarms on BytesUsedForCache and CacheMisses for every ElastiCache node at provisioning time, not after the first OOM incident",
+      "Log cache write failures at WARN or ERROR level in the application -- cache-aside fallbacks that swallow errors at DEBUG level create invisible infrastructure where failures have no operational signal",
+      "Set explicit TTLs on all cache keys and review TTL values quarterly to ensure natural expiration keeps pace with data growth"
     ]
   }
 }

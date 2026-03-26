@@ -46,11 +46,88 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "SageMaker Endpoint": "A hosted URL where your trained machine learning model runs and accepts prediction requests. It provisions one or more instances behind the scenes to serve inference traffic.",
+        "Production Variant": "A specific version of a model deployed to a SageMaker endpoint, with its own instance type and count. An endpoint can host multiple variants for A/B testing or blue-green deployments. Each variant has a unique name used in metrics and scaling configuration.",
+        "Application Auto Scaling": "An AWS service that automatically adjusts the number of instances behind a SageMaker endpoint (or other AWS resources) based on demand. It uses CloudWatch alarms to decide when to add or remove instances.",
+        "CloudWatch Alarm": "A rule that watches a single CloudWatch metric and changes state -- OK, ALARM, or INSUFFICIENT_DATA -- based on whether the metric crosses a threshold. Alarms can trigger automated actions like scaling policies.",
+        "INSUFFICIENT_DATA": "A CloudWatch alarm state that means the alarm is not receiving enough metric data points to evaluate. This can happen when the metric dimensions do not match any active resource, so no data is published to that combination.",
+        "Metric Dimension": "A name-value pair that narrows down which specific resource a CloudWatch metric applies to. For SageMaker, dimensions include EndpointName and VariantName. If the dimension value does not match an active resource, no data appears for that metric.",
+        "Blue-Green Deployment": "A release strategy where a new version of a service (green) is deployed alongside the old version (blue). Once the new version is verified, traffic shifts from blue to green and the old version is retired.",
+        "Target Tracking Policy": "A type of auto-scaling policy that adjusts capacity to keep a specified metric at a target value. For SageMaker, this typically tracks InvocationsPerInstance and adds instances when the value exceeds the target.",
+        "InvocationsPerInstance": "A CloudWatch metric in the AWS/SageMaker namespace that reports the average number of inference requests received per instance on an endpoint variant, per minute. Used as the standard metric for SageMaker auto-scaling decisions.",
+        "503 Error": "An HTTP status code meaning the server is too busy to handle the request. For SageMaker endpoints, this typically means the model server's request queue is full because the instance is overloaded."
+      },
+      "narrative_arc": {
+        "call": "The first 503 arrives at 6:14 AM. By 6:30 there are eighty. The dispatch team already knows something is wrong before the pager fires. Routes are not coming back.",
+        "threshold": "The engineer opens the CloudWatch console and sees the auto-scaling policy sitting idle. The endpoint has been running on one instance for three weeks. Every morning spike has gone unscaled.",
+        "trials": "The scaling policy exists. The thresholds are reasonable. The alarm configuration looks correct at first glance. The engineer checks instance status, scaling activities, cooldown periods. Nothing explains why scaling never fires.",
+        "revelation": "The CloudWatch alarm is in INSUFFICIENT_DATA state. It references VariantName=AllTraffic, but the current production variant is optimized-v3. The blue-green deployment three weeks ago changed the variant name. The alarm has been watching a metric that no longer exists.",
+        "return": "The alarm dimension is updated to optimized-v3. Within minutes, the alarm evaluates, transitions to ALARM, and scaling triggers. A second instance reaches InService. The 503 errors stop. The deployment pipeline gets a new post-deployment validation step."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "API Gateway (api.arcline.io/v2/route)",
+            "role": "Receives route optimization requests from driver mobile apps and forwards them to the Lambda function",
+            "connections": ["Lambda Function"],
+            "failure_impact": "If the API Gateway is misconfigured or throttled, no requests reach the Lambda function"
+          },
+          {
+            "name": "Lambda Function (arcline-route-handler)",
+            "role": "Invokes the SageMaker endpoint with route parameters, retries on failure, and falls back to manual routing notifications via SNS",
+            "connections": ["API Gateway", "SageMaker Endpoint", "SNS Topic"],
+            "failure_impact": "If the Lambda function times out or errors, drivers receive no route and no manual routing notification is sent"
+          },
+          {
+            "name": "SageMaker Endpoint (arcline-route-optimizer)",
+            "role": "Hosts the route optimization model on ml.g4dn.xlarge instances and serves real-time predictions through the optimized-v3 production variant",
+            "connections": ["Lambda Function", "CloudWatch Metrics"],
+            "failure_impact": "If the single instance is overwhelmed, the model server queue fills and requests return 503 ModelError responses"
+          },
+          {
+            "name": "CloudWatch Alarm (arcline-sagemaker-high-invocations)",
+            "role": "Monitors InvocationsPerInstance metric and triggers the scaling policy when the value exceeds 100 for three consecutive periods",
+            "connections": ["CloudWatch Metrics", "Application Auto Scaling"],
+            "failure_impact": "If the alarm dimensions do not match the active variant, it enters INSUFFICIENT_DATA and never triggers scaling"
+          },
+          {
+            "name": "Application Auto Scaling Policy (arcline-route-scaling-policy)",
+            "role": "Scales the SageMaker endpoint between 1 and 6 instances using target tracking on InvocationsPerInstance",
+            "connections": ["CloudWatch Alarm", "SageMaker Endpoint"],
+            "failure_impact": "If the alarm never fires, the policy never activates and the endpoint stays at minimum capacity regardless of load"
+          },
+          {
+            "name": "CloudWatch Metrics (AWS/SageMaker namespace)",
+            "role": "Publishes per-variant metrics including InvocationsPerInstance, ModelLatency, and Invocation5XXErrors, dimensioned by EndpointName and VariantName",
+            "connections": ["SageMaker Endpoint", "CloudWatch Alarm"],
+            "failure_impact": "Metrics are published only for active variants. Retired variant names receive no new data points, causing any alarm referencing them to lose data"
+          }
+        ],
+        "data_flow": "Driver mobile apps send route requests through API Gateway to the arcline-route-handler Lambda function. Lambda invokes the SageMaker endpoint arcline-route-optimizer, which runs the optimized-v3 production variant on a single ml.g4dn.xlarge instance. CloudWatch publishes InvocationsPerInstance metrics dimensioned by EndpointName and VariantName. The arcline-sagemaker-high-invocations alarm evaluates this metric and triggers Application Auto Scaling when the threshold is crossed. The scaling policy adds instances to the endpoint variant.",
+        "what_broke": "On 2026-03-04, the ML team performed a blue-green deployment that replaced the AllTraffic variant with optimized-v3. CloudWatch metrics began publishing under the new VariantName dimension. The CloudWatch alarm still references VariantName=AllTraffic, a dimension that no longer receives data. The alarm entered INSUFFICIENT_DATA state immediately after the deployment. Without the alarm firing, the scaling policy never triggered. The endpoint remained at one instance through three weeks of morning traffic spikes, returning 503 errors every day during the 6-9 AM rush."
+      },
       "hints": [
-        "Auto-scaling is configured but has never triggered. What drives the scaling decision?",
-        "The CloudWatch alarm for scaling is in INSUFFICIENT_DATA state. That means it is not receiving the metric it expects.",
-        "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension. Compare the alarm's dimension to the actual endpoint variant.",
-        "The alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3'. The metric namespace does not match, so the alarm never evaluates."
+        {
+          "text": "Auto-scaling is configured but has never triggered. What drives the scaling decision?",
+          "relevant_services": ["auto-scaling", "cloudwatch"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "The CloudWatch alarm for scaling is in INSUFFICIENT_DATA state. That means it is not receiving the metric it expects.",
+          "relevant_services": ["cloudwatch"],
+          "skip_if_queried": ["cloudwatch"]
+        },
+        {
+          "text": "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension. Compare the alarm's dimension to the actual endpoint variant.",
+          "relevant_services": ["cloudwatch", "sagemaker"],
+          "skip_if_queried": ["cloudwatch", "sagemaker"]
+        },
+        {
+          "text": "The alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3'. The metric namespace does not match, so the alarm never evaluates.",
+          "relevant_services": ["cloudwatch", "sagemaker", "auto-scaling"],
+          "skip_if_queried": ["cloudwatch", "sagemaker"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -134,6 +211,44 @@
       "Application Auto Scaling configuration for SageMaker endpoints and the dependency on CloudWatch metric dimensions",
       "Debugging INSUFFICIENT_DATA alarm states by examining metric dimension mismatches",
       "Ensuring deployment processes update all dependent configurations including monitoring and scaling"
+    ],
+    "sop_steps": [
+      "1. Acknowledge the alert and confirm that the SageMaker endpoint arcline-route-optimizer is in InService state using describe-endpoint.",
+      "2. Check the endpoint's production variants -- note that the active variant is optimized-v3 with a single ml.g4dn.xlarge instance.",
+      "3. Review CloudWatch metrics for the endpoint: confirm InvocationsPerInstance on the optimized-v3 variant is far above the 100 threshold during morning rush.",
+      "4. Describe the scaling policy using describe-scaling-policies with service-namespace sagemaker -- note the ResourceId references variant/AllTraffic.",
+      "5. Describe the CloudWatch alarm arcline-sagemaker-high-invocations using describe-alarms -- confirm it is in INSUFFICIENT_DATA state.",
+      "6. Examine the alarm dimensions: EndpointName=arcline-route-optimizer, VariantName=AllTraffic. Compare to the active variant name optimized-v3.",
+      "7. Identify the root cause: the blue-green deployment on 2026-03-04 renamed the variant from AllTraffic to optimized-v3, but the alarm and scaling policy resource ID were not updated.",
+      "8. Update the CloudWatch alarm dimensions to VariantName=optimized-v3 using put-metric-alarm with all existing parameters plus the corrected dimension.",
+      "9. Deregister the old scalable target (variant/AllTraffic) and re-register with the correct resource ID endpoint/arcline-route-optimizer/variant/optimized-v3.",
+      "10. Reapply the target tracking scaling policy to the new scalable target.",
+      "11. Verify the alarm transitions from INSUFFICIENT_DATA to either OK or ALARM within a few minutes as it receives metric data.",
+      "12. Confirm a scaling action triggers and additional instances reach InService -- 503 errors should stop.",
+      "13. Add a post-deployment validation step to the blue-green deployment pipeline that checks all CloudWatch alarm dimensions match the active variant name."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Scaling policy resource ID references a retired variant",
+        "how_it_differs": "The CloudWatch alarm dimensions could be correct, but the Application Auto Scaling scalable target and policy still reference the old variant name in their ResourceId (endpoint/arcline-route-optimizer/variant/AllTraffic). The alarm fires correctly, but the scaling action targets a variant that no longer exists, so no instances are added. The describe-scaling-activities output would show failed activities rather than an empty list.",
+        "prevention": "After any blue-green deployment, verify the scalable target resource ID matches the active variant by running describe-scalable-targets. Automate this check as a post-deployment step in the pipeline."
+      },
+      {
+        "scenario": "Service quota blocks scale-out despite alarm firing",
+        "how_it_differs": "The alarm and scaling policy are configured correctly. The alarm transitions to ALARM state and triggers a scaling action. However, the account has reached its service quota for the ml.g4dn.xlarge instance type. The scaling activity fails with a 'resource limit exceeded' error. The endpoint stays at one instance. The symptoms look similar -- 503 errors during peak -- but describe-scaling-activities shows a failed activity with a quota error message.",
+        "prevention": "Before deploying to production, check your service quotas for the endpoint's instance type using the Service Quotas console. Request quota increases proactively when planning for expected traffic growth. Set up a CloudWatch alarm on failed scaling activities."
+      },
+      {
+        "scenario": "Cooldown period prevents repeated scale-out",
+        "how_it_differs": "The scaling policy and alarm are correct. The first scale-out triggers successfully. But traffic continues to climb and a second scale-out is needed. The ScaleOutCooldown period (set to 60 seconds in this sim) prevents additional scaling actions during the cooldown window. If the cooldown is set too high, the endpoint remains under-provisioned during rapid traffic ramps. The alarm stays in ALARM state but no new scaling actions occur until the cooldown expires.",
+        "prevention": "Set ScaleOutCooldown to a value that balances responsiveness against thrashing. For traffic patterns with sharp ramps like morning rush, keep cooldown at 60-120 seconds. Monitor scaling activities during peak windows to confirm multiple scale-out steps complete."
+      }
+    ],
+    "sop_practices": [
+      "After any blue-green or rolling deployment that changes a SageMaker endpoint variant name, verify that all CloudWatch alarm dimensions and Application Auto Scaling resource IDs reference the new variant name.",
+      "Add a post-deployment validation step that checks the state of all CloudWatch alarms associated with the endpoint -- any alarm in INSUFFICIENT_DATA state immediately after deployment is a sign of a dimension mismatch.",
+      "Use Infrastructure as Code (CloudFormation, CDK, or Terraform) to define the endpoint, scaling policy, and alarms together so that variant name changes propagate automatically to all dependent resources.",
+      "Set up a CloudWatch alarm on describe-scaling-activities failures and on INSUFFICIENT_DATA state transitions so that broken scaling configurations are detected within minutes, not weeks."
     ]
   }
 }

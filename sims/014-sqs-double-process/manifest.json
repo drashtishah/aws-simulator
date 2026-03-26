@@ -52,13 +52,105 @@
         }
       ],
       "hints": [
-        "How long does the Lambda function take to process a large order?",
-        "What happens to an SQS message if the consumer does not delete it within the visibility timeout?",
-        "Compare the SQS visibility timeout with the Lambda function timeout. What do you notice?",
-        "The visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. For large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it.",
-        "Fix: set visibility timeout to at least 6x the Lambda timeout (540 seconds recommended by AWS), configure a dead-letter queue, and add idempotency checks using the order ID."
+        {
+          "text": "How long does the Lambda function take to process a large order?",
+          "relevant_services": ["lambda", "cloudwatch"],
+          "skip_if_queried": ["get_function_configuration", "get_log_events"]
+        },
+        {
+          "text": "What happens to an SQS message if the consumer does not delete it within the visibility timeout?",
+          "relevant_services": ["sqs"],
+          "skip_if_queried": ["get_queue_attributes"]
+        },
+        {
+          "text": "Compare the SQS visibility timeout with the Lambda function timeout. What do you notice?",
+          "relevant_services": ["sqs", "lambda"],
+          "skip_if_queried": ["get_queue_attributes", "get_function_configuration"]
+        },
+        {
+          "text": "The visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. For large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it.",
+          "relevant_services": ["sqs", "lambda"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "Fix: set visibility timeout to at least 6x the Lambda timeout (540 seconds recommended by AWS), configure a dead-letter queue, and add idempotency checks using the order ID.",
+          "relevant_services": ["sqs", "lambda"],
+          "skip_if_queried": []
+        }
       ],
-      "max_hints_before_nudge": 3
+      "max_hints_before_nudge": 3,
+      "glossary": {
+        "SQS (Simple Queue Service)": "A managed message queue. One part of your system puts messages in; another part reads them out and acts on them. The queue holds messages until they are processed.",
+        "visibility timeout": "The number of seconds a message stays hidden after a consumer picks it up. If the consumer does not delete the message before the timeout expires, SQS assumes processing failed and makes the message visible again for another consumer.",
+        "dead-letter queue (DLQ)": "A separate queue that catches messages which failed processing too many times. Instead of retrying forever, the message gets moved here so an engineer can inspect it.",
+        "Lambda function timeout": "The maximum number of seconds AWS allows a Lambda function to run before forcefully stopping it. If the function finishes before this limit, it returns normally.",
+        "idempotency": "A property of an operation meaning that running it more than once produces the same result as running it once. For example, charging a customer only once even if the charge request arrives twice.",
+        "at-least-once delivery": "SQS standard queues guarantee every message is delivered at least once, but the same message may be delivered more than once. Your code must handle duplicates.",
+        "maxReceiveCount": "A setting on the redrive policy that controls how many times a message can be received from the source queue before SQS moves it to the dead-letter queue.",
+        "event source mapping": "The connection between an SQS queue and a Lambda function. AWS polls the queue on your behalf and invokes the Lambda function with new messages.",
+        "batch size": "The number of messages Lambda pulls from the queue in a single invocation. A batch size of 1 means Lambda processes one message per invocation."
+      },
+      "narrative_arc": {
+        "call": "Customers report duplicate charges at 7:42 AM. Eleven reports by 8:15 AM. The pattern is the same each time: two Stripe charges for one order, seconds apart.",
+        "threshold": "The co-founder pulls up CloudWatch. Lambda concurrent executions are spiking beyond what the order volume explains. The invocation count is higher than the number of orders placed.",
+        "trials": "The player examines queue configuration, Lambda configuration, and CloudWatch logs. The queue visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. Large orders take 60 to 90 seconds to process. The numbers do not add up.",
+        "revelation": "At the 30-second mark, SQS assumes the message was lost and makes it visible again. A second Lambda picks it up. Both complete. Both charge the customer. The function has no idempotency check.",
+        "return": "Visibility timeout increased to 540 seconds. Dead-letter queue configured. Idempotency check added. The system stops double-processing. Refunds go out to affected customers."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "API Gateway",
+            "role": "Receives orders from mobile and web clients and routes them to the validation Lambda",
+            "connections": ["canopy-api Lambda"],
+            "failure_impact": "If the API Gateway fails, no new orders can be placed"
+          },
+          {
+            "name": "canopy-api Lambda",
+            "role": "Validates incoming orders and sends a message to the SQS queue for asynchronous processing",
+            "connections": ["API Gateway", "canopy-order-queue (SQS)"],
+            "failure_impact": "If validation fails, the order is rejected before entering the queue"
+          },
+          {
+            "name": "canopy-order-queue (SQS standard queue)",
+            "role": "Holds order messages with a 30-second visibility timeout, decoupling order submission from processing",
+            "connections": ["canopy-api Lambda", "canopy-process-order Lambda"],
+            "failure_impact": "If visibility timeout is shorter than processing time, messages become visible again and are processed a second time"
+          },
+          {
+            "name": "canopy-process-order Lambda",
+            "role": "Polls the queue (batch size 1) and processes each order: inventory check, Stripe payment, delivery slot reservation, confirmation email",
+            "connections": ["canopy-order-queue (SQS)", "DynamoDB", "Stripe API", "Internal delivery service", "SES"],
+            "failure_impact": "If invoked twice for the same message, it produces duplicate charges, duplicate delivery slots, and negative inventory"
+          },
+          {
+            "name": "DynamoDB",
+            "role": "Stores order records for tracking and fulfillment",
+            "connections": ["canopy-process-order Lambda"],
+            "failure_impact": "If DynamoDB writes fail, order state is lost and fulfillment cannot proceed"
+          },
+          {
+            "name": "Stripe API",
+            "role": "Handles payment charges for confirmed orders",
+            "connections": ["canopy-process-order Lambda"],
+            "failure_impact": "If charged twice for the same order, customers see duplicate charges and request refunds"
+          },
+          {
+            "name": "Internal delivery service",
+            "role": "Reserves driver time slots for order delivery",
+            "connections": ["canopy-process-order Lambda"],
+            "failure_impact": "If reserved twice, multiple drivers are assigned the same order"
+          },
+          {
+            "name": "SES",
+            "role": "Sends order confirmation emails to customers",
+            "connections": ["canopy-process-order Lambda"],
+            "failure_impact": "If triggered twice, customers receive duplicate confirmation emails"
+          }
+        ],
+        "data_flow": "Order enters through API Gateway, is validated by canopy-api, placed in SQS queue, picked up by canopy-process-order Lambda (batch size 1), which sequentially checks inventory in DynamoDB, charges the customer via Stripe, reserves a delivery slot, and sends a confirmation email via SES.",
+        "what_broke": "The SQS visibility timeout (30 seconds) was shorter than the Lambda processing time for large orders (60-90 seconds). When the timeout expired, SQS made the message visible again while the first invocation was still running. A second invocation picked up the same message. Both ran to completion, producing duplicate charges, duplicate delivery slots, and negative inventory counts. No dead-letter queue existed to catch repeatedly failing messages. No idempotency logic existed to detect that an order had already been processed."
+      }
     },
     "consoles": [
       {
@@ -129,6 +221,45 @@
       "SQS visibility timeout must be at least 6x the consumer's processing time (AWS recommendation) to prevent duplicate delivery",
       "Dead-letter queues capture messages that fail processing after maxReceiveCount attempts, preventing infinite retry loops",
       "Idempotency in message consumers: use a unique identifier (order ID) to detect and skip duplicate processing"
+    ],
+    "sop_steps": [
+      "Identify the SQS queue feeding the affected Lambda function using the event source mapping.",
+      "Compare the queue VisibilityTimeout attribute against the Lambda function Timeout. If VisibilityTimeout is less than 6x the Lambda timeout, it is misconfigured.",
+      "Check CloudWatch metrics: compare NumberOfMessagesReceived to NumberOfMessagesSent. A ratio greater than 1 indicates redelivery.",
+      "Review CloudWatch Logs for the Lambda function. Search for the same order ID appearing in multiple invocations with different request IDs.",
+      "Increase the visibility timeout to at least 6x the Lambda timeout using aws sqs set-queue-attributes.",
+      "Create a dead-letter queue with the same queue type as the source. Configure a redrive policy with maxReceiveCount of 3.",
+      "Add a CloudWatch alarm on the DLQ ApproximateNumberOfMessagesVisible metric to alert when messages land in the DLQ.",
+      "Add idempotency logic to the Lambda function: check DynamoDB for the order ID before processing side effects.",
+      "Verify the fix by monitoring NumberOfMessagesReceived vs NumberOfMessagesSent -- the ratio should return to 1:1."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Lambda timeout shorter than processing time causes function to be killed mid-execution",
+        "how_it_differs": "In this sim, the Lambda timeout (90s) was long enough. The problem was the SQS visibility timeout (30s) expiring first. If the Lambda timeout were too short instead, the function would be killed before finishing, the message would return to the queue, and a DLQ would eventually catch it. The symptom would be failed orders, not duplicate orders.",
+        "prevention": "Set Lambda timeout to at least the p99 execution duration. Monitor the Duration metric against the configured timeout."
+      },
+      {
+        "scenario": "SQS FIFO queue throttling due to message group ID contention",
+        "how_it_differs": "A FIFO queue processes messages in order within a message group. If all orders share one group ID, throughput is limited to 300 messages per second per group. The symptom is increased queue depth and latency, not duplicate processing. FIFO queues also provide exactly-once processing, which would have prevented the double-charge problem in this sim.",
+        "prevention": "Use distinct message group IDs (e.g., per-customer or per-region) to parallelize processing. Monitor ApproximateAgeOfOldestMessage for growing delays."
+      },
+      {
+        "scenario": "No dead-letter queue causes poison-pill messages to retry indefinitely",
+        "how_it_differs": "In this sim, messages were processed successfully -- the problem was they were processed twice. A poison-pill message is one that always fails (e.g., malformed payload). Without a DLQ, it stays in the queue and gets retried forever, consuming Lambda concurrency and blocking other messages. The symptom is a growing ApproximateAgeOfOldestMessage and elevated Lambda errors, not duplicate side effects.",
+        "prevention": "Always configure a DLQ with a maxReceiveCount between 3 and 5. Set a CloudWatch alarm on the DLQ message count."
+      },
+      {
+        "scenario": "Lambda reserved concurrency set too low causes throttling under load",
+        "how_it_differs": "If the Lambda function has reserved concurrency of 5 but the queue has 50 messages, Lambda throttles and SQS backs off polling. Messages stay in the queue longer but are not duplicated. The symptom is high ApproximateAgeOfOldestMessage and Lambda Throttles metric spikes, not duplicate charges.",
+        "prevention": "Set reserved concurrency proportional to expected queue throughput. Monitor the Throttles metric and SQS age-of-oldest-message."
+      }
+    ],
+    "sop_practices": [
+      "Always set SQS visibility timeout to at least 6x the consumer function timeout when using Lambda event source mappings.",
+      "Configure a dead-letter queue on every SQS queue, with a maxReceiveCount between 3 and 5, and set a CloudWatch alarm on the DLQ message count.",
+      "Design all SQS consumers to be idempotent: use a unique message identifier to check for prior processing before executing side effects like payments or inventory changes.",
+      "Monitor the ratio of NumberOfMessagesReceived to NumberOfMessagesSent in CloudWatch -- a ratio above 1 indicates message redelivery and possible duplicate processing."
     ]
   }
 }

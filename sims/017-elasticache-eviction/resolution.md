@@ -129,13 +129,30 @@ Critical CloudWatch metrics for ElastiCache Redis:
 - **EngineCPUUtilization**: Redis is single-threaded. High CPU indicates the node is processing at capacity.
 - **ReplicationLag**: For clusters with replicas, monitor lag to detect replication issues.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [ElastiCache for Redis Eviction Policies](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/ParameterGroups.Redis.html)
-- [ElastiCache Monitoring with CloudWatch](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheMetrics.html)
-- [ElastiCache Best Practices](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/BestPractices.html)
-- [Modifying ElastiCache Parameter Groups](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/ParameterGroups.Modifying.html)
-- [Caching Strategies (AWS Whitepaper)](https://docs.aws.amazon.com/whitepapers/latest/database-caching-strategies-using-redis/caching-patterns.html)
+### Thundering herd after cache node restart
+
+When a Redis node restarts or fails over, the cache is empty. Every request becomes a cache miss simultaneously, overwhelming the database with a sudden spike rather than a gradual increase. The eviction policy is irrelevant because the problem is an empty cache, not a full one. Enable AOF persistence or snapshot backups so the cache can warm from disk. Implement request coalescing or stampede locks in the application to prevent duplicate queries for the same key.
+
+### Volatile-lru policy with keys missing TTLs
+
+The eviction policy is set to volatile-lru, which only evicts keys that have a TTL. If most keys are written without a TTL, Redis cannot evict them and returns OOM errors even though the policy appears to allow eviction. The symptom is identical to noeviction, but the root cause is a mismatch between the policy and the key lifecycle. When using volatile-lru, enforce TTLs on all keys at the application level, or switch to allkeys-lru so Redis can evict any key regardless of TTL.
+
+### Memory fragmentation causing premature OOM
+
+Redis reports used_memory below maxmemory, but used_memory_rss (actual OS memory) is much higher due to fragmentation. The node runs out of system memory before reaching the configured limit. CloudWatch metrics may not show BytesUsedForCache at 100%, making this harder to detect. Monitor mem_fragmentation_ratio in Redis INFO output and enable activedefrag in the parameter group if it consistently exceeds 1.5.
+
+### Single-node failure with no replication
+
+The Redis node itself becomes unavailable due to hardware failure or AZ disruption, not memory exhaustion. All cache operations fail with connection errors rather than OOM errors. The cascade to the database is the same, but the fix requires failover rather than configuration changes. Deploy ElastiCache with at least one read replica in a different Availability Zone and enable Multi-AZ automatic failover.
+
+## SOP Best Practices
+
+- Always set maxmemory-policy to allkeys-lru or allkeys-lfu for caching workloads at provisioning time. The noeviction policy should only be used when data loss is unacceptable and memory capacity is guaranteed sufficient.
+- Create CloudWatch alarms on BytesUsedForCache and CacheMisses for every ElastiCache node at provisioning time, not after the first OOM incident.
+- Log cache write failures at WARN or ERROR level in the application. Cache-aside fallbacks that swallow errors at DEBUG level create invisible infrastructure where failures produce no operational signal.
+- Set explicit TTLs on all cache keys and review TTL values quarterly to ensure natural expiration keeps pace with data growth.
 
 ## Learning Objectives
 

@@ -58,12 +58,89 @@
         }
       ],
       "hints": [
-        "The ALB is returning 502 errors, which means it cannot get a valid response from the backend instances. Why would healthy instances fail the load balancer's health check?",
-        "ALB health checks are configured in the target group. What path is the health check hitting, and what response does it expect?",
-        "Look at the health check configuration: the path, port, expected status code, and thresholds. Compare those settings to what the application actually serves.",
-        "The health check is configured for port 8080 but the application listens on port 3000. Every health check fails because nothing is listening on port 8080, so the ALB deregisters every instance as unhealthy."
+        {
+          "text": "The ALB is returning 502 errors, which means it cannot get a valid response from the backend instances. Why would healthy instances fail the load balancer's health check?",
+          "relevant_services": ["elb"],
+          "skip_if_queried": ["target-group-config.json"]
+        },
+        {
+          "text": "ALB health checks are configured in the target group. What path is the health check hitting, and what response does it expect?",
+          "relevant_services": ["elb"],
+          "skip_if_queried": ["target-group-config.json", "target-health.json"]
+        },
+        {
+          "text": "Look at the health check configuration: the path, port, expected status code, and thresholds. Compare those settings to what the application actually serves.",
+          "relevant_services": ["elb", "ec2"],
+          "skip_if_queried": ["cloudwatch-logs.txt"]
+        },
+        {
+          "text": "The health check is configured for port 8080 but the application listens on port 3000. Every health check fails because nothing is listening on port 8080, so the ALB deregisters every instance as unhealthy.",
+          "relevant_services": ["elb", "ec2"],
+          "skip_if_queried": []
+        }
       ],
-      "max_hints_before_nudge": 3
+      "max_hints_before_nudge": 3,
+      "glossary": {
+        "ALB (Application Load Balancer)": "A load balancer that distributes incoming HTTP/HTTPS requests across multiple EC2 instances. It sits between users and your servers so no single server gets overwhelmed.",
+        "Target Group": "A named set of EC2 instances (or other resources) that an ALB sends traffic to. You register instances into a target group and the ALB checks their health before routing requests.",
+        "Health Check": "A periodic test the ALB runs against each registered instance to decide whether that instance is working. If an instance fails enough consecutive checks, the ALB stops sending it traffic.",
+        "502 Bad Gateway": "An HTTP error code the ALB returns when it has no healthy backend instance to forward a request to, or the backend sent an invalid response.",
+        "Deregistration": "The process of removing an instance from a target group. When an instance fails health checks, the ALB deregisters it so it no longer receives traffic.",
+        "Auto Scaling Group": "A collection of EC2 instances that AWS can automatically grow or shrink based on demand or health status. It launches replacements when instances are terminated.",
+        "traffic-port": "A special value for the health check port setting that tells the ALB to check the same port the instance is registered on, rather than a hard-coded port number.",
+        "Health Check Threshold": "The number of consecutive successful (or failed) health checks required before the ALB changes an instance's status from unhealthy to healthy, or vice versa.",
+        "CloudWatch Metric": "A time-series data point published by AWS services. For ALBs, metrics like HTTPCode_ELB_502_Count and HealthyHostCount track error rates and target health over time.",
+        "Infrastructure as Code (IaC)": "Managing server and service configuration through code files (like Terraform or CloudFormation) instead of clicking through the AWS console by hand."
+      },
+      "narrative_arc": {
+        "call": "Friday rush hour. The dispatch dashboard returns 502 errors, stranding 1,200 delivery drivers mid-route with no instructions.",
+        "threshold": "The ALB is online and receiving requests, but every response is a 502. The target group shows zero healthy instances even though EC2 status checks pass.",
+        "trials": "New instances launched by Auto Scaling also fail within seconds. The health check port in the target group does not match the port the application actually listens on.",
+        "revelation": "The health check was changed to port 8080 by an IaC update, but the application still listens on port 3000. Every check times out, so the ALB deregisters every instance.",
+        "return": "Updating the health check port back to traffic-port restores all instances within 10 seconds. The team adds a dedicated /health endpoint and a pre-deployment port-match validation."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "Application Load Balancer (urbanfleet-prod)",
+            "role": "Receives all inbound HTTPS traffic on port 443 and forwards requests to healthy targets in the target group",
+            "connections": ["Target Group (urbanfleet-dispatch-tg)"],
+            "failure_impact": "If the ALB has no healthy targets, all requests return 502 Bad Gateway errors"
+          },
+          {
+            "name": "Target Group (urbanfleet-dispatch-tg)",
+            "role": "Registers EC2 instances on port 3000 and runs health checks on port 8080 to determine target health",
+            "connections": ["Application Load Balancer (urbanfleet-prod)", "EC2 Instances"],
+            "failure_impact": "If health checks fail, instances are deregistered and the ALB has no targets to forward traffic to"
+          },
+          {
+            "name": "EC2 Instances (t3.large, 4 instances across us-east-1a and us-east-1b)",
+            "role": "Run the dispatch application on port 3000, serving driver routing and delivery manifest requests",
+            "connections": ["Target Group (urbanfleet-dispatch-tg)", "RDS PostgreSQL (urbanfleet-db)"],
+            "failure_impact": "If instances are deregistered due to failed health checks, drivers cannot receive updated delivery manifests"
+          },
+          {
+            "name": "Auto Scaling Group (urbanfleet-dispatch-asg)",
+            "role": "Maintains desired capacity of 4 instances (min 2, max 8) with ELB health check type",
+            "connections": ["EC2 Instances", "Target Group (urbanfleet-dispatch-tg)"],
+            "failure_impact": "If ASG detects ELB-unhealthy instances, it terminates and replaces them, creating a churn cycle when health checks are misconfigured"
+          },
+          {
+            "name": "RDS PostgreSQL (urbanfleet-db, Multi-AZ)",
+            "role": "Backend database storing dispatch data, driver routes, and delivery manifests",
+            "connections": ["EC2 Instances"],
+            "failure_impact": "If the database is unreachable, the dispatch application cannot serve any data"
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Collects metrics for HTTPCode_ELB_502_Count, HealthyHostCount, and UnHealthyHostCount",
+            "connections": ["Application Load Balancer (urbanfleet-prod)", "Auto Scaling Group (urbanfleet-dispatch-asg)"],
+            "failure_impact": "If metrics are not monitored, health check misconfigurations go undetected until users report errors"
+          }
+        ],
+        "data_flow": "Driver apps and the dispatch dashboard send HTTPS requests to the ALB on port 443. The ALB forwards requests to healthy instances in the target group on port 3000. Each instance runs the dispatch service, which reads and writes to the RDS database. The ALB health-checks each instance every 10 seconds on the configured health check port. If 3 consecutive checks fail, the instance is marked unhealthy and removed from rotation.",
+        "what_broke": "An IaC update changed the target group health check port from traffic-port (3000) to 8080. Nothing listens on port 8080, so every health check times out after 5 seconds. After 3 consecutive failures (30 seconds), each instance is deregistered. With zero healthy targets, the ALB returns 502 for every request. Auto Scaling detects the ELB-unhealthy instances, terminates them, and launches replacements -- which also fail the same health check, creating a continuous churn cycle."
+      }
     },
     "consoles": [
       {
@@ -143,6 +220,47 @@
       "ALB health checks determine which instances receive traffic -- misconfigured health checks cause healthy instances to be deregistered",
       "502 Bad Gateway from an ALB means it has no healthy targets to forward the request to",
       "Target group health check settings (port, path, thresholds) must match the actual application configuration"
+    ],
+    "sop_steps": [
+      "Open the EC2 console and navigate to Target Groups. Select urbanfleet-dispatch-tg.",
+      "Check the Health checks tab. Note the health check port (8080) and path (/health).",
+      "Compare the health check port to the registered target port (3000). Identify the mismatch.",
+      "Click Edit health check settings. Change the health check port from 8080 to traffic-port.",
+      "Save the change. Wait 10-30 seconds for the ALB to re-evaluate target health.",
+      "Verify all registered instances transition from unhealthy to healthy in the Targets tab.",
+      "Confirm 502 errors stop by checking the ALB access logs or the HTTPCode_ELB_502_Count CloudWatch metric.",
+      "Review the IaC template that introduced the port change. Revert the health check port to traffic-port in code.",
+      "Add a pre-deployment validation step to the CI/CD pipeline that checks the health check port matches the application listening port.",
+      "Create a dedicated /health endpoint in the application that checks downstream dependencies (database, cache) and deploy it.",
+      "Set up a CloudWatch alarm on HTTPCode_ELB_502_Count with a threshold of 10 per minute and a 1-minute evaluation period."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Health check path returns non-200 status",
+        "how_it_differs": "The port is correct but the health check path (e.g., /health) returns a 500 or 404 because the application's health endpoint is broken or does not exist at that path. The ALB marks targets unhealthy for a different reason code (Target.ResponseCodeMismatch instead of Target.Timeout).",
+        "prevention": "Always deploy the health check endpoint before updating the target group to reference it. Test the endpoint manually after deployment."
+      },
+      {
+        "scenario": "Security group blocks health check traffic",
+        "how_it_differs": "The health check port and path are correct, but the instance security group does not allow inbound traffic from the ALB's security group on the health check port. Checks fail with a timeout, identical to a port mismatch, but the fix is a security group rule change rather than a target group setting change.",
+        "prevention": "Ensure the instance security group allows inbound traffic from the ALB security group on both the application port and the health check port."
+      },
+      {
+        "scenario": "Health check timeout shorter than application startup time",
+        "how_it_differs": "The port and path are correct, but the application takes longer to start than the health check grace period allows. New instances are marked unhealthy before they finish booting. Unlike a port mismatch, the instances eventually become healthy if the thresholds are adjusted.",
+        "prevention": "Set the Auto Scaling health check grace period longer than the application's worst-case startup time. Increase the unhealthy threshold count to tolerate slow starts."
+      },
+      {
+        "scenario": "Target group registered on wrong port",
+        "how_it_differs": "The health check is configured to use traffic-port, but the instances were registered on the wrong port (e.g., 8080 instead of 3000). Both traffic forwarding and health checks fail. The symptom is similar, but the fix is re-registering targets on the correct port.",
+        "prevention": "Validate that the target group registration port matches the application listening port in the launch template or IaC configuration."
+      }
+    ],
+    "sop_practices": [
+      "Always use traffic-port for health checks unless you have a dedicated health check endpoint on a separate port that is confirmed to be listening.",
+      "Treat health check configuration changes as high-risk deployments: validate in staging, deploy with a canary, and monitor HealthyHostCount immediately after rollout.",
+      "Set a CloudWatch alarm on HealthyHostCount dropping below your minimum acceptable threshold, not just on 502 error counts, so you catch health check regressions before they cause user-facing errors.",
+      "When using Auto Scaling with ELB health checks, set the health check grace period long enough for the application to fully start and pass its first health check, or the ASG will terminate instances before they have a chance to become healthy."
     ]
   }
 }

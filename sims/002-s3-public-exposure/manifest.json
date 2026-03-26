@@ -56,11 +56,82 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "S3 bucket policy": "A JSON document attached directly to an S3 bucket that defines who can do what with the bucket and its objects. Unlike IAM policies, bucket policies can grant access to anyone, including anonymous internet users.",
+        "Principal": "The entity (user, account, service, or anonymous caller) that a policy statement applies to. Setting Principal to * means the statement applies to everyone, including people with no AWS account.",
+        "Block Public Access": "A set of four S3 safety switches that override bucket policies and ACLs to prevent public access. They can be turned on per-bucket or for an entire AWS account, and they win over any policy that tries to grant public access.",
+        "CloudTrail": "An AWS service that logs every API call made in your account -- who did what, when, and from where. Think of it as a security camera for your AWS environment.",
+        "IAM role": "An AWS identity with specific permissions that can be assumed by users, applications, or services. Unlike a user account, a role has no permanent credentials -- it issues temporary ones each time something assumes it.",
+        "ACL (Access Control List)": "An older S3 access-control mechanism that grants basic read/write permissions to specific AWS accounts or to the public. AWS now recommends using bucket policies instead of ACLs for most use cases.",
+        "PHI (Protected Health Information)": "Any health-related data that can identify a specific person -- names, dates of birth, insurance IDs, medical records. HIPAA requires strict controls over who can access PHI.",
+        "HIPAA": "The Health Insurance Portability and Accountability Act. A US law that sets rules for how healthcare data must be stored, transmitted, and accessed. Violations can result in fines from $100 to $50,000 per incident.",
+        "resource-based policy": "A policy attached to an AWS resource (like an S3 bucket or SQS queue) rather than to a user or role. It specifies who can access that specific resource and what they can do with it.",
+        "PutBucketPolicy": "The S3 API call that sets or replaces the bucket policy on a bucket. CloudTrail logs this event, so you can always trace who changed a bucket's access rules and when."
+      },
+      "narrative_arc": {
+        "call": "A responsible-disclosure email arrives at 6:22 AM on a Monday. Patient documents are downloadable from S3 without credentials. The security team opens an incognito browser and confirms it.",
+        "threshold": "The player enters the investigation. CloudTrail logs, bucket policies, and access logs are available. The bucket has been public for four days and 187 external IPs have accessed it.",
+        "trials": "The player must distinguish between IAM policies and bucket policies, identify the wildcard Principal, trace the PutBucketPolicy event in CloudTrail, and assess how many patients were exposed.",
+        "revelation": "The root cause is a single line in a bucket policy: Principal set to * instead of the vendor's account ARN. A backend engineer made the change four days ago during a third-party integration.",
+        "return": "The player proposes restricting the Principal, enabling Block Public Access, and adding continuous monitoring. The HIPAA breach notification process begins for 48,000 affected patients."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "meridian-patient-documents",
+            "role": "S3 bucket storing patient intake form PDFs uploaded daily by the intake service",
+            "connections": ["meridian-intake-service", "MedRecords vendor account"],
+            "failure_impact": "Public read access to all objects exposes PHI for every patient whose form is in the bucket"
+          },
+          {
+            "name": "meridian-intake-service",
+            "role": "ECS Fargate service that processes patient intake forms and uploads PDFs to S3",
+            "connections": ["meridian-patient-documents", "meridian-prod-db", "meridian-prod-lb"],
+            "failure_impact": "Service itself kept running normally -- the upload path was unaffected by the policy change"
+          },
+          {
+            "name": "meridian-ecs-task-role",
+            "role": "IAM role assumed by the ECS task, granting PutObject on the bucket and access to RDS",
+            "connections": ["meridian-intake-service", "meridian-patient-documents"],
+            "failure_impact": "Role permissions were correctly scoped; the exposure came from the bucket policy, not this role"
+          },
+          {
+            "name": "meridian-prod-trail",
+            "role": "CloudTrail trail logging management and S3 data events for the patient documents bucket",
+            "connections": ["meridian-patient-documents"],
+            "failure_impact": "Without this trail, there would be no record of who changed the policy or who accessed the files"
+          },
+          {
+            "name": "meridian-deploy-svc",
+            "role": "IAM service account used by CI/CD pipelines to deploy infrastructure changes",
+            "connections": ["meridian-patient-documents"],
+            "failure_impact": "This account executed the PutBucketPolicy call that introduced the wildcard Principal"
+          }
+        ],
+        "data_flow": "Patients submit intake forms through the Meridian web portal. The portal sends form data to the ALB, which routes to the ECS Fargate intake service. The service generates a PDF, uploads it to the meridian-patient-documents S3 bucket via PutObject, and writes metadata to the RDS database. Clinic staff access forms through the Meridian dashboard, which generates presigned S3 URLs.",
+        "what_broke": "The meridian-deploy-svc account called PutBucketPolicy and set the Principal to * in the AllowVendorReadAccess statement. This turned a cross-account vendor grant into a public-internet grant. Every object in the bucket became downloadable by anyone with the URL, with no authentication required."
+      },
       "hints": [
-        "The data is accessible without any AWS credentials. What kind of policy could allow unauthenticated access to an S3 bucket?",
-        "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based). Have you checked the bucket policy?",
-        "Look at the Principal field in the bucket policy. Who is granted access?",
-        "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions. That is your root cause."
+        {
+          "text": "The data is accessible without any AWS credentials. What kind of policy could allow unauthenticated access to an S3 bucket?",
+          "relevant_services": ["s3"],
+          "skip_if_queried": ["s3"]
+        },
+        {
+          "text": "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based). Have you checked the bucket policy?",
+          "relevant_services": ["s3", "iam"],
+          "skip_if_queried": ["s3"]
+        },
+        {
+          "text": "Look at the Principal field in the bucket policy. Who is granted access?",
+          "relevant_services": ["s3"],
+          "skip_if_queried": ["s3"]
+        },
+        {
+          "text": "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions. That is your root cause.",
+          "relevant_services": ["s3"],
+          "skip_if_queried": ["s3"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -134,6 +205,46 @@
       "Using CloudTrail to investigate who made API-level changes and when",
       "S3 Block Public Access as an account-level and bucket-level guardrail against misconfigurations",
       "Incident response workflow: detect, contain, investigate, remediate"
+    ],
+    "sop_steps": [
+      "1. Confirm public access: run GetBucketPolicyStatus on meridian-patient-documents to verify the bucket policy grants public access.",
+      "2. Identify the offending statement: retrieve the bucket policy and locate the statement with Principal: * (AllowVendorReadAccess).",
+      "3. Contain immediately: replace Principal: * with the vendor's specific account ARN (arn:aws:iam::887766554433:root) in the AllowVendorReadAccess statement using PutBucketPolicy.",
+      "4. Enable S3 Block Public Access on meridian-patient-documents: set BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets to true.",
+      "5. Enable S3 Block Public Access at the Meridian Health account level for all buckets that should not be public.",
+      "6. Determine blast radius: query CloudTrail for all GetObject events on meridian-patient-documents during the four-day exposure window. Cross-reference with S3 server access logs to identify the 187 external IP addresses.",
+      "7. Trace the root cause: look up the PutBucketPolicy event in CloudTrail to confirm meridian-deploy-svc made the change four days prior from IP 10.0.3.91 using aws-cli.",
+      "8. Enable detective controls: activate AWS Config rule s3-bucket-public-read-prohibited to continuously monitor all buckets for public read access.",
+      "9. Add preventive controls: add a CI/CD pipeline check that rejects any bucket policy containing Principal: * before deployment.",
+      "10. Notify compliance: provide the exposure timeline, affected patient count (48,000), and list of external accessor IPs to the compliance team for HIPAA breach notification."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Bucket ACL grants public read access instead of bucket policy",
+        "how_it_differs": "The exposure comes from a legacy ACL setting (AllUsers READ) rather than a policy statement. Block Public Access with IgnorePublicAcls would prevent this, but the ACL itself would not appear in the bucket policy.",
+        "prevention": "Disable ACLs entirely by setting S3 Object Ownership to BucketOwnerEnforced. This makes ACL-based public access impossible."
+      },
+      {
+        "scenario": "Presigned URL generated with overly long expiration leaks via shared link",
+        "how_it_differs": "The bucket policy is correctly scoped, but a presigned URL with a multi-day expiration gets shared outside the organization. The URL works for anyone who has it until it expires.",
+        "prevention": "Set a maximum presigned URL expiration policy via STS session duration limits. Monitor for presigned URL generation in CloudTrail data events."
+      },
+      {
+        "scenario": "S3 static website hosting enabled on a bucket containing private data",
+        "how_it_differs": "Enabling static website hosting on a bucket makes objects accessible via the website endpoint, bypassing some access controls. The bucket does not need Principal: * if website hosting is on and there is no explicit deny.",
+        "prevention": "Never enable static website hosting on buckets containing sensitive data. Use CloudFront with Origin Access Control for any content that must be served over HTTP."
+      },
+      {
+        "scenario": "Cross-account role with overly broad S3 permissions exfiltrates data",
+        "how_it_differs": "The bucket policy correctly restricts the Principal to a specific vendor account, but the vendor's IAM role has s3:GetObject on * and can read all buckets shared with that account, not just the intended one.",
+        "prevention": "Apply condition keys (aws:PrincipalOrgID, s3:prefix) in the bucket policy to restrict which objects the cross-account role can access. Monitor cross-account access patterns in CloudTrail."
+      }
+    ],
+    "sop_practices": [
+      "Enable S3 Block Public Access at the account level as a default guardrail -- override it per-bucket only when public access is an explicit, documented requirement.",
+      "Never use Principal: * in a bucket policy for cross-account access. Always specify the exact account ARN, role ARN, or use aws:PrincipalOrgID conditions.",
+      "Enable AWS Config rules (s3-bucket-public-read-prohibited, s3-bucket-public-write-prohibited) for continuous compliance monitoring across all buckets.",
+      "Require bucket policy changes to go through a CI/CD pipeline with automated policy validation that rejects wildcard principals and overly broad permissions."
     ]
   }
 }

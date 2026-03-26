@@ -66,13 +66,26 @@ Critical RDS metrics for operational monitoring:
 - `ReadIOPS` / `WriteIOPS` -- read and write operations per second
 - `FreeableMemory` -- available RAM on the instance
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [RDS Storage](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Storage.html)
-- [RDS Storage Auto-Scaling](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.StorageTypes.html#USER_PIOPS.Autoscaling)
-- [Modifying an RDS DB Instance](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.DBInstance.Modifying.html)
-- [CloudWatch Metrics for RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/monitoring-cloudwatch.html)
-- [RDS Best Practices](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_BestPractices.html)
+### InnoDB temporary tablespace exhaustion
+
+The ibtmp1 file grows unbounded during long-running queries or large sorts. The error message references `/rdsdbdata/tmp/` paths instead of user tables. A restart reclaims the space, but the root fix is optimizing queries or increasing `temptable_max_mmap`. To prevent this, monitor FreeStorageSpace alongside query duration and set `temptable_max_ram` and `temptable_max_mmap` to bounded values in the parameter group.
+
+### RDS instance reaches maximum allocated storage limit
+
+Storage auto-scaling is enabled but the maximum storage threshold is set too low, so auto-scaling stops before the workload stops growing. The alarm may not fire because the condition appeared to be handled. Set the maximum storage threshold to at least 26 percent above current allocation and review the threshold quarterly as data grows.
+
+### Binary log replication lag filling storage on a read replica
+
+The primary instance has space, but the read replica falls behind on applying relay logs, which accumulate and fill the replica's storage. Write failures appear only on the replica, not the primary. Monitor FreeStorageSpace on every replica separately, set binlog retention hours to the minimum acceptable window, and alert on ReplicaLag.
+
+## SOP Best Practices
+
+- Always enable storage auto-scaling on production RDS instances and set a maximum storage threshold that accounts for at least 6 months of projected growth
+- Create CloudWatch alarms on FreeStorageSpace for every RDS instance at provisioning time, not after the first incident
+- Treat binary log retention and slow query log settings as infrastructure configuration, not developer debugging toggles -- review them in your parameter group baseline
+- Include RDS storage utilization trends in monthly capacity planning reviews so growth is visible before it becomes an emergency
 
 ## Learning Objectives
 

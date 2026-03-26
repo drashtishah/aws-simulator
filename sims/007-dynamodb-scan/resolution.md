@@ -68,15 +68,30 @@ DynamoDB operations can return capacity consumption data when `ReturnConsumedCap
 
 `KeyConditionExpression` is used with Query and defines which items to read based on the key. It reduces the data DynamoDB reads from storage. `FilterExpression` is applied after the data is read and only reduces what is returned to the caller. It does not save any RCUs.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [DynamoDB Scan](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html)
-- [DynamoDB Query](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html)
-- [Global Secondary Indexes](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html)
-- [Read/Write Capacity Mode](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html)
-- [Best Practices for DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices.html)
-- [DynamoDB Throttling and Burst Capacity](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html)
-- [CloudWatch Metrics for DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html)
+### Hot partition key causes throttling even with adequate total capacity
+
+A hot partition issue occurs when one partition key receives disproportionate traffic, throttling that partition even if overall provisioned capacity is not saturated. Unlike this sim -- where a Scan exhausts total table-level RCUs -- the CloudWatch metric ThrottledRequests rises but ConsumedReadCapacityUnits may stay below the provisioned limit. Prevention: choose high-cardinality partition keys, use CloudWatch Contributor Insights to detect hot keys, and consider write sharding for frequently accessed keys.
+
+### GSI write throttling causes back-pressure on the base table
+
+When a GSI has insufficient write capacity, DynamoDB throttles writes to the base table to maintain index consistency. In this sim, no GSI exists and reads are the problem. With GSI back-pressure, write operations fail even though the base table itself has capacity. Prevention: provision GSI write capacity proportional to the base table write rate, monitor IndexWriteProvisionedThroughputExceeded, and use on-demand mode if write patterns are unpredictable.
+
+### On-demand table throttled by exceeding double the previous peak within 30 minutes
+
+On-demand tables scale automatically but still have a limit: traffic cannot exceed double the previous peak within a 30-minute window. This sim uses provisioned mode with a hard RCU ceiling. A sudden burst from a new feature can hit the on-demand ceiling even when there is no fixed provisioned limit. Prevention: pre-warm on-demand tables by gradually increasing traffic before launch, set maximum throughput limits as a cost safeguard, and monitor for MaxOnDemandThroughputExceeded throttling reasons.
+
+### Paginated Scan with no rate limiting starves other operations during batch jobs
+
+A batch-processing Scan (for analytics, exports, or backfills) causes the same capacity exhaustion as this sim but happens during scheduled jobs rather than on-demand API calls. The symptoms appear periodically rather than suddenly after a deployment. Prevention: use a smaller page size (Limit parameter) on batch Scans, add deliberate pauses between pages, and run batch Scans on a read replica or isolated shadow table.
+
+## SOP Best Practices
+
+- Design tables for Query access from the start. Treat Scan as a last resort for administrative or one-time operations, never for user-facing read paths.
+- Load-test every new Lambda against production-scale data volumes before deployment, especially when the Lambda reads from a shared DynamoDB table.
+- Set CloudWatch alarms on both ConsumedReadCapacityUnits and ThrottledRequests so that capacity exhaustion is detected within minutes, not after customer complaints.
+- Review FilterExpression usage in code reviews. A FilterExpression on a Scan is almost always a sign that a GSI or a redesigned key schema is needed.
 
 ## Learning Objectives
 

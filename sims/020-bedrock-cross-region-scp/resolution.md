@@ -57,12 +57,30 @@ Service Control Policies set the maximum permissions for accounts within an orga
 
 Intermittent failures with identical inputs typically indicate a variable outside the application layer. Common sources include DNS round-robin, load balancer routing, cache hit/miss patterns, and cross-region service routing. When the failure rate is stable and non-trivial (not near 0% or 100%), the variable is likely binary or categorical -- a fixed fraction of some routing destination is failing consistently.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [[Amazon Bedrock cross-region inference|https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html]]
-- [[Service Control Policies|https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html]]
-- [[aws:RequestedRegion condition key|https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-requestedregion]]
-- [[Application inference profiles|https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-create.html]]
+### SCP Blocks All Regions (100% Failure)
+
+If the SCP denied bedrock:InvokeModel in every region -- including the source region -- the result would be a total outage, not an intermittent one. Every request fails. The error rate is 100%. This is easier to diagnose because the pattern is obvious and the timeline correlates directly with the SCP change. The intermittent nature of the actual incident (31.2%) is what makes it deceptive: it looks like a service defect rather than a policy conflict.
+
+### IAM Policy Missing One Destination Region
+
+If the IAM policy on the Lambda execution role only granted bedrock:InvokeModel for models in us-east-1 and us-west-2 but omitted us-east-2, the symptom would be similar -- intermittent AccessDeniedException at roughly one-third of requests. The difference is in the error message: it would say "not authorized to perform" without the phrase "explicit deny in a service control policy." The fix is updating the IAM policy resource ARNs, not the SCP or inference profile.
+
+### Opt-In Region Not Enabled
+
+Some AWS regions require explicit opt-in at the account level before any services can be used there. If a cross-region inference profile includes an opt-in region that the account never enabled, requests routed to that region fail. The error may differ from an SCP deny. The fix is enabling the region in account settings rather than changing policies.
+
+### AWS Control Tower Region Deny Control
+
+Organizations using AWS Control Tower may have a managed region deny control that operates like an SCP but is governed by Control Tower. The symptoms are identical to this incident, but you cannot edit the control directly. Instead, you must modify the Control Tower configuration or layer a targeted SCP exception on top of it.
+
+## SOP Best Practices
+
+- Before applying SCP region restrictions, inventory all cross-region AWS features in active use (inference profiles, S3 cross-region replication, DynamoDB global tables, Aurora global databases) and verify every destination region remains in the approved list.
+- Use application inference profiles instead of system-defined profiles when operating under SCPs, so you control exactly which regions are included and can align them with organizational policy.
+- Add a pre-deployment validation step to the governance pipeline that cross-references proposed SCP region changes against active cross-region service configurations in affected accounts.
+- Monitor Bedrock InvocationErrors as a percentage of InvocationCount with a CloudWatch alarm. A stable, non-trivial error rate (not near 0% or 100%) is a strong signal of a routing or policy conflict rather than an application bug.
 
 ## Learning Objectives
 

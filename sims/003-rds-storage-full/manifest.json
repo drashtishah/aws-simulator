@@ -51,11 +51,74 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "RDS": "Amazon Relational Database Service. A managed service that runs database engines like MySQL, PostgreSQL, and others so you do not have to install or maintain the software yourself.",
+        "allocated storage": "The total disk space assigned to an RDS instance when you create or modify it. Once set, it can be increased but never decreased.",
+        "FreeStorageSpace": "A CloudWatch metric that reports how many bytes of disk space remain on an RDS instance. When it reaches zero, the database can no longer write data.",
+        "storage auto-scaling": "An RDS feature that automatically increases allocated storage when free space drops below 10 percent of the total. You set a maximum limit to control costs.",
+        "binary logs": "Files that MySQL writes to record every change made to the database. Used for replication and point-in-time recovery, but they consume disk space until purged.",
+        "gp3": "A general-purpose SSD storage type backed by Amazon EBS. Offers baseline performance of 3,000 IOPS and 125 MiB/s throughput regardless of volume size.",
+        "CloudWatch alarm": "A rule that watches a metric and changes state (OK, ALARM, INSUFFICIENT_DATA) when the metric crosses a threshold you define. Can trigger notifications or automated actions.",
+        "Multi-AZ": "A deployment option that maintains a standby replica of your RDS instance in a different Availability Zone for automatic failover during outages."
+      },
+      "narrative_arc": {
+        "call": "API write operations begin failing during peak harvest season. Farmers cannot save irrigation schedules before a critical rain window.",
+        "threshold": "The CloudWatch console shows the RDS instance in a storage-full state. FreeStorageSpace is zero. The database is rejecting every INSERT and UPDATE.",
+        "trials": "EC2 instances are healthy, application code has not changed, and SELECT queries still work. The failure is isolated to write operations at the database layer.",
+        "revelation": "The 20GB storage allocation was consumed by rapid IoT data growth, accumulated binary logs, and verbose slow query logging that was never turned off.",
+        "return": "Increasing allocated storage to 50GB restores writes immediately. Enabling storage auto-scaling and adding a FreeStorageSpace alarm prevents recurrence."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "ALB (cropsync-prod-lb)",
+            "role": "Receives traffic from farmers and IoT sensors and distributes it to the API instances",
+            "connections": ["EC2 instances (cropsync-api-01, cropsync-api-02)"],
+            "failure_impact": "If the ALB fails, no traffic reaches the API and all farmer-facing operations stop"
+          },
+          {
+            "name": "EC2 instances (cropsync-api-01, cropsync-api-02, t3.medium)",
+            "role": "Run the CropSync API that handles sensor data ingestion and irrigation schedule management",
+            "connections": ["ALB (cropsync-prod-lb)", "RDS MySQL (cropsync-prod-db)"],
+            "failure_impact": "If instances fail, API requests return errors and farmers cannot log irrigation schedules"
+          },
+          {
+            "name": "RDS MySQL 8.0 (cropsync-prod-db, db.t3.medium, 20GB gp3)",
+            "role": "Stores sensor readings and irrigation schedules as the primary data store",
+            "connections": ["EC2 instances (cropsync-api-01, cropsync-api-02)", "CloudWatch"],
+            "failure_impact": "If storage is exhausted, all INSERT and UPDATE operations fail and the platform becomes read-only"
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Monitors RDS metrics including FreeStorageSpace, DatabaseConnections, and WriteIOPS",
+            "connections": ["RDS MySQL (cropsync-prod-db)"],
+            "failure_impact": "If monitoring is absent, storage exhaustion goes undetected until write failures begin"
+          }
+        ],
+        "data_flow": "IoT sensors and farmer browsers send requests through the ALB to the EC2 API servers, which read from and write to the RDS MySQL instance. CloudWatch collects RDS metrics every 60 seconds.",
+        "what_broke": "The RDS instance exhausted its 20GB of allocated storage. Data growth (14.8GB), binary logs (3.2GB), and slow query logs (1.8GB) filled the disk. MySQL cannot write when storage is zero, so all INSERT, UPDATE, and DELETE operations fail with error 1114."
+      },
       "hints": [
-        "The application is timing out on database writes. What could cause a database to reject write operations?",
-        "Check the RDS instance metrics in CloudWatch. Storage-related metrics can tell you a lot about database health.",
-        "The FreeStorageSpace metric is at zero. The RDS instance has run out of disk space, which causes all write operations to fail.",
-        "You need to increase the allocated storage for the RDS instance. RDS supports storage auto-scaling -- that would prevent this from happening again."
+        {
+          "text": "The application is timing out on database writes. What could cause a database to reject write operations?",
+          "relevant_services": ["rds"],
+          "skip_if_queried": ["rds"]
+        },
+        {
+          "text": "Check the RDS instance metrics in CloudWatch. Storage-related metrics can tell you a lot about database health.",
+          "relevant_services": ["cloudwatch", "rds"],
+          "skip_if_queried": ["cloudwatch"]
+        },
+        {
+          "text": "The FreeStorageSpace metric is at zero. The RDS instance has run out of disk space, which causes all write operations to fail.",
+          "relevant_services": ["cloudwatch", "rds"],
+          "skip_if_queried": ["rds"]
+        },
+        {
+          "text": "You need to increase the allocated storage for the RDS instance. RDS supports storage auto-scaling -- that would prevent this from happening again.",
+          "relevant_services": ["rds"],
+          "skip_if_queried": ["rds"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -123,6 +186,40 @@
       "RDS instances have a fixed storage allocation that can be exhausted by data growth, logs, or temporary files",
       "CloudWatch FreeStorageSpace metric is critical for monitoring RDS health and should always have an alarm",
       "RDS storage auto-scaling can automatically increase storage when free space drops below a threshold"
+    ],
+    "sop_steps": [
+      "Confirm the RDS instance status is storage-full by running describe-db-instances and checking DBInstanceStatus",
+      "Check CloudWatch FreeStorageSpace metric to verify storage is at zero bytes",
+      "Identify storage consumers: query information_schema.tables for database sizes, check binary log retention with mysql.rds_show_configuration, and review slow query log and general log settings in the parameter group",
+      "Increase allocated storage via modify-db-instance with --allocated-storage and --apply-immediately (no downtime required for most engines)",
+      "Purge accumulated binary logs by calling mysql.rds_set_configuration to reduce binlog retention hours",
+      "Disable verbose logging: set slow_query_log and general_log parameters back to appropriate levels in the DB parameter group",
+      "Enable storage auto-scaling via modify-db-instance with --max-allocated-storage set to a safe ceiling",
+      "Create a CloudWatch alarm on FreeStorageSpace with a warning threshold at 4GB and critical at 2GB, sending to an SNS topic",
+      "Add storage capacity review to monthly operations checklist to catch growth trends before they become incidents"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "InnoDB temporary tablespace exhaustion",
+        "how_it_differs": "The ibtmp1 file grows unbounded during long-running queries or large sorts. The error message references /rdsdbdata/tmp/ paths instead of user tables. A restart reclaims the space, but the root fix is optimizing queries or increasing temptable_max_mmap.",
+        "prevention": "Monitor FreeStorageSpace alongside query duration. Set temptable_max_ram and temptable_max_mmap to bounded values in the parameter group."
+      },
+      {
+        "scenario": "RDS instance reaches maximum allocated storage limit",
+        "how_it_differs": "Storage auto-scaling is enabled but the maximum storage threshold is set too low, so auto-scaling stops before the workload stops growing. The alarm may not fire because the condition appeared to be handled.",
+        "prevention": "Set the maximum storage threshold to at least 26 percent above current allocation. Review the threshold quarterly as data grows."
+      },
+      {
+        "scenario": "Binary log replication lag filling storage on a read replica",
+        "how_it_differs": "The primary instance has space, but the read replica falls behind on applying relay logs, which accumulate and fill the replica's storage. Write failures appear only on the replica, not the primary.",
+        "prevention": "Monitor FreeStorageSpace on every replica separately. Set binlog retention hours to the minimum acceptable window and alert on ReplicaLag."
+      }
+    ],
+    "sop_practices": [
+      "Always enable storage auto-scaling on production RDS instances and set a maximum storage threshold that accounts for at least 6 months of projected growth",
+      "Create CloudWatch alarms on FreeStorageSpace for every RDS instance at provisioning time, not after the first incident",
+      "Treat binary log retention and slow query log settings as infrastructure configuration, not developer debugging toggles -- review them in your parameter group baseline",
+      "Include RDS storage utilization trends in monthly capacity planning reviews so growth is visible before it becomes an emergency"
     ]
   }
 }

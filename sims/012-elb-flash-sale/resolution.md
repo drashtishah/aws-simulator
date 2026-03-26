@@ -102,14 +102,30 @@ The default cooldown in Auto Scaling prevents the group from launching or termin
 
 Pre-warming is not self-service. It requires a support ticket to the AWS ELB team. The information needed includes: expected peak requests per second, expected duration, average request size, average response size, percentage of HTTPS traffic, and whether the traffic pattern is sustained or bursty. AWS recommends submitting the request at least 48 hours before the event. LCU reservation is the newer programmatic alternative that does not require a support ticket.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Application Load Balancer Scaling](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html)
-- [Target Tracking Scaling Policies](https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html)
-- [ALBRequestCountPerTarget Metric](https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html#predefined-metrics)
-- [Scaling Cooldowns](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-scaling-cooldowns.html)
-- [Scheduled Scaling](https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-scheduled-scaling.html)
-- [ELB Pre-Warming (AWS Knowledge Center)](https://repost.aws/knowledge-center/elb-capacity-troubleshooting)
+### ALB Target Health Check Misconfiguration Causes Cascading 502 Errors
+
+In this incident, the ALB itself ran out of internal capacity and returned 503 errors. A different failure occurs when the ALB has sufficient capacity but the health check configuration is wrong. If the health check interval is too aggressive or the healthy threshold count is too high, the ALB may mark targets as unhealthy during normal startup or brief latency spikes. The ALB then stops routing to those targets, concentrating load on the remaining ones, which also fail their health checks. The result is 502 errors (bad gateway) rather than 503s (service unavailable). The fix is to set health check intervals and thresholds that account for actual application startup time and to use a dedicated /health endpoint that verifies downstream dependencies.
+
+### Auto Scaling Group Hits MaxSize During a Sustained Traffic Event
+
+In this sim, the ASG never reached its MaxSize of 20 because traffic dropped before scaling caught up. If the flash sale had generated sustained traffic for 30 minutes instead of a brief spike, the ASG could have scaled to its maximum and stopped. At that point, no further scale-out occurs regardless of alarm state. The bottleneck shifts from scaling speed to scaling ceiling. The fix is to set MaxSize with headroom above expected peak demand and to create a CloudWatch alarm on GroupMaxSize that alerts before the ceiling is reached.
+
+### T3 Instance CPU Credit Exhaustion Under Sustained Load
+
+The two t3.large instances in this sim were overwhelmed by request volume in under a minute, before CPU credit depletion became a factor. Under a slower but sustained traffic increase -- say a 3x rise sustained for two hours -- t3 instances could exhaust their CPU credit balance and become throttled to baseline performance. The application would slow down without any alarm firing if the alarm threshold is above the baseline CPU. The fix is to enable unlimited mode for t3 instances in production workloads, or to use non-burstable instance types (m5, c5) for applications with sustained high CPU requirements.
+
+### Connection Draining Delay Prevents New Instances From Receiving Traffic
+
+When targets are deregistered from a target group, the ALB waits for the deregistration delay (connection draining) to complete before fully removing them. If this delay is set to the default 300 seconds and unhealthy targets are being replaced, new instances may be ready but the ALB continues holding connections to the old ones. This delays recovery even when new capacity is available. The fix is to set the deregistration delay to match the application's typical connection lifetime -- 30 to 60 seconds for stateless web applications instead of the default 300 seconds.
+
+## SOP Best Practices
+
+- For any planned traffic event, pre-scale both the ALB (via LCU reservation or a support ticket submitted at least 48 hours in advance) and the ASG (via scheduled scaling or a manual desired capacity increase). The ALB can only double its capacity every five minutes on its own.
+- Use target tracking policies on request-based metrics (ALBRequestCountPerTarget) instead of simple scaling policies on CPU for web applications behind an ALB. CPU is a lagging indicator for request-driven workloads; by the time CPU saturates, requests have already been queuing.
+- Set cooldown periods based on workload pattern: 60 to 120 seconds for bursty or spiky traffic, 300 seconds only for gradual organic growth. Target tracking and step scaling policies manage their own warmup periods and do not use the default cooldown, which is another reason to prefer them over simple scaling policies.
+- Create CloudWatch alarms on HTTPCode_ELB_5XX_Count, RejectedConnectionCount, and TargetResponseTime in addition to CPU. These metrics detect load balancer capacity issues that CPU-based alarms miss entirely. A spike in RejectedConnectionCount is the earliest signal that the ALB itself is capacity-constrained.
 
 ## Learning Objectives
 

@@ -46,11 +46,82 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "Bedrock Agent": "An AI assistant built on Amazon Bedrock that can call external tools and APIs to complete tasks. It uses a foundation model to reason through multi-step workflows automatically.",
+        "Action Group": "A set of actions (API calls) that a Bedrock Agent can perform. Each action group has a schema defining its parameters and a Lambda function that executes the actual logic.",
+        "Chain-of-Thought Reasoning": "The internal step-by-step thinking a Bedrock Agent generates at each orchestration step to decide what to do next. These tokens are invisible to the end user but are billed at the standard output token rate.",
+        "Orchestration Step": "One cycle of the agent's reasoning loop: the agent thinks about what to do, calls an action group or knowledge base, observes the result, then decides whether to continue or respond to the user.",
+        "Token": "The smallest unit of text that a language model processes. Words are split into one or more tokens. AWS bills Bedrock usage based on the number of input and output tokens consumed.",
+        "Reasoning Token": "A token generated during chain-of-thought reasoning inside a Bedrock Agent. These tokens are internal -- the user never sees them -- but they count toward your bill at the output token rate.",
+        "InvokeModel API": "The Bedrock API that sends a prompt to a foundation model and returns a response. Each orchestration step in an agent triggers an InvokeModel call, consuming tokens.",
+        "Cost Explorer": "An AWS tool that lets you view and analyze your AWS spending over time. You can filter by service, account, or tag to identify cost trends and anomalies.",
+        "CloudWatch Alarm": "A rule you configure in Amazon CloudWatch that watches a metric and triggers a notification or action when the metric crosses a threshold you define.",
+        "AWS Budgets": "A service that lets you set custom cost and usage budgets for your AWS account. It sends alerts when your actual or forecasted spending exceeds the thresholds you set."
+      },
+      "narrative_arc": {
+        "call": "The weekly cost report arrives on Monday morning. The Bedrock line item reads $12,147.83. The previous week it was $812.40. Nobody changed the pricing tier. Nobody launched a campaign. The query volume is flat.",
+        "threshold": "The finance operations lead opens Cost Explorer and sees a vertical step on March 17th. Daily cost went from $116 to $1,714. Something changed eight days ago that made each query ten times more expensive.",
+        "trials": "The platform engineer reviews agent traces, token consumption metrics, and Lambda invocation counts. The model pricing is unchanged. The query volume is unchanged. The cost increase is invisible from the outside -- it lives inside the agent's internal reasoning loop.",
+        "revelation": "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates roughly 4,000 chain-of-thought reasoning tokens that are billed at the output token rate. Per-query cost went from $0.02 to $0.20. Forty percent of queries hit this action group.",
+        "return": "The action group is refactored to return consolidated data in fewer invocations. CloudWatch alarms are set on token consumption. AWS Budgets alerts are configured. The weekly cost drops from $12,147 to $1,260."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "Bedrock Agent (camber-support-agent)",
+            "role": "Orchestrates patient queries by reasoning through which action groups to call and in what order. Uses Claude 3.5 Sonnet as the foundation model.",
+            "connections": ["eligibility-check Lambda", "appointment-schedule Lambda", "comprehensive-benefits Lambda", "CloudWatch (metrics)"],
+            "failure_impact": "When the agent enters a multi-step reasoning loop, it generates thousands of internal tokens per query. These tokens are invisible to the user but billed at the output rate."
+          },
+          {
+            "name": "comprehensive-benefits Action Group",
+            "role": "Exposes granular API endpoints for plan details, copay breakdowns, deductible info, and network providers. Each endpoint returns a narrow slice of data.",
+            "connections": ["camber-benefits-handler Lambda", "Bedrock Agent orchestration loop"],
+            "failure_impact": "The granular API design forces the agent to call the action group 5-7 times per comparison query, triggering a full reasoning cycle at each step."
+          },
+          {
+            "name": "camber-benefits-handler Lambda",
+            "role": "Executes the comprehensive-benefits action group logic. Calls internal Camber Health APIs for plan data, copay data, and network data.",
+            "connections": ["Camber internal APIs", "Bedrock Agent"],
+            "failure_impact": "Each invocation succeeds and returns correct data, but the volume of invocations per query drives Lambda costs up alongside the Bedrock token costs."
+          },
+          {
+            "name": "CloudWatch",
+            "role": "Collects Bedrock runtime metrics including InputTokenCount, OutputTokenCount, and InvocationLatency. No alarms were configured on these metrics.",
+            "connections": ["Bedrock Agent", "Cost Explorer"],
+            "failure_impact": "Without alarms on token consumption or daily cost, the 14.9x cost increase ran for eight days before the weekly cost report surfaced it."
+          },
+          {
+            "name": "Cost Explorer",
+            "role": "Provides daily and monthly cost breakdowns by service. The finance lead uses it to review weekly spending.",
+            "connections": ["AWS Billing", "CloudWatch"],
+            "failure_impact": "Cost Explorer data has a lag of up to 24 hours. It surfaced the problem only when the weekly report was generated, eight days after deployment."
+          }
+        ],
+        "data_flow": "User query enters via API Gateway, hits the camber-api-router Lambda, which invokes the Bedrock Agent. The agent reasons about the query, calls action group Lambdas, observes results, and repeats until it has enough data to respond. For comparison queries, the agent calls comprehensive-benefits 5-7 times, generating ~27,800 reasoning tokens per query.",
+        "what_broke": "The comprehensive-benefits action group exposed granular endpoints that forced the agent into a multi-step reasoning loop. Each orchestration step generated ~4,000 chain-of-thought tokens billed at the output rate. No CloudWatch alarms or budget alerts existed to catch the 14.9x cost increase before the weekly report."
+      },
       "hints": [
-        "The cost increase correlates with a specific date. What changed in the agent configuration around that time?",
-        "Look at the agent trace for a single query. How many action group invocations does the agent make per user question?",
-        "Each action group invocation triggers a full reasoning cycle with chain-of-thought tokens. Those internal tokens are billed. Count the total tokens per query.",
-        "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates ~4,000 reasoning tokens. The per-query cost went from $0.02 to $0.20."
+        {
+          "text": "The cost increase correlates with a specific date. What changed in the agent configuration around that time?",
+          "relevant_services": ["bedrock", "cost-explorer"],
+          "skip_if_queried": ["agent-config.json", "cost-explorer.json"]
+        },
+        {
+          "text": "Look at the agent trace for a single query. How many action group invocations does the agent make per user question?",
+          "relevant_services": ["bedrock"],
+          "skip_if_queried": ["agent-trace.json"]
+        },
+        {
+          "text": "Each action group invocation triggers a full reasoning cycle with chain-of-thought tokens. Those internal tokens are billed. Count the total tokens per query.",
+          "relevant_services": ["bedrock", "cloudwatch"],
+          "skip_if_queried": ["invocation-logs.json", "metrics.csv"]
+        },
+        {
+          "text": "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates ~4,000 reasoning tokens. The per-query cost went from $0.02 to $0.20.",
+          "relevant_services": ["bedrock", "lambda"],
+          "skip_if_queried": ["agent-trace.json", "invocation-logs.json", "cloudwatch-logs.txt"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -125,6 +196,41 @@
       "The cost multiplier effect of chain-of-thought reasoning in agentic AI architectures",
       "Setting up token-level and cost-level monitoring for generative AI workloads",
       "Designing action groups to minimize unnecessary reasoning iterations"
+    ],
+    "sop_steps": [
+      "1. Open Cost Explorer and filter by Amazon Bedrock service. Identify the date when daily cost stepped from ~$116 to ~$1,714.",
+      "2. Cross-reference the cost step date (March 17) with recent Bedrock Agent deployments using get_agent and list_agent_action_groups. Identify the comprehensive-benefits action group deployed on that date.",
+      "3. Retrieve a Bedrock Agent trace for a comparison query using the agent trace logs. Count the number of orchestration steps and action group invocations per query.",
+      "4. Review invocation-level token metrics in the invocation logs. Compare pre-deployment (~2,800 tokens/query) to post-deployment (~30,600 tokens/query for comparison queries). Identify that reasoning tokens account for ~90% of the increase.",
+      "5. Calculate the cost impact: ~24,000 queries/week hitting comprehensive-benefits x $0.20/query = ~$4,800/week in excess cost above the $0.02/query baseline.",
+      "6. Refactor the comprehensive-benefits action group to expose a single compare-plans endpoint that returns consolidated plan comparison data, reducing orchestration steps from 6-8 to 2.",
+      "7. Deploy the refactored action group to staging. Verify per-query token count drops from ~30,600 to ~5,200 using agent traces.",
+      "8. Deploy to production. Confirm daily Bedrock cost returns to an acceptable range within 24 hours using Cost Explorer.",
+      "9. Create a CloudWatch alarm on the AWS/Bedrock InputTokenCount and OutputTokenCount metrics with a threshold of 5,000 tokens per invocation.",
+      "10. Create an AWS Budgets monthly budget of $3,500 for the Bedrock service with alerts at 80% and 100% thresholds. Enable daily cost anomaly detection."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Prompt template inflation after instruction update",
+        "how_it_differs": "Instead of action group loops causing excess tokens, an update to the agent's system instructions or prompt template adds verbose context that inflates every query's input token count. The cost increase is uniform across all queries rather than concentrated on comparison queries. The agent trace shows fewer orchestration steps but higher input tokens per step.",
+        "prevention": "Track prompt template token counts as a deployment metric. Set a CloudWatch alarm on average InputTokenCount per invocation to catch instruction bloat early."
+      },
+      {
+        "scenario": "Knowledge base over-retrieval expanding context window",
+        "how_it_differs": "A knowledge base associated with the agent returns too many document chunks per query, inflating the context window. The cost increase comes from input tokens (retrieved context) rather than output/reasoning tokens. The agent trace shows normal orchestration step counts but abnormally large input payloads at the orchestration step that queries the knowledge base.",
+        "prevention": "Set Top K limits on knowledge base retrieval. Use metadata filters to scope retrieval to relevant document categories. Monitor InputTokenCount at the knowledge base query step."
+      },
+      {
+        "scenario": "Model upgrade silently increases per-token pricing",
+        "how_it_differs": "The foundation model is updated to a newer, more expensive version (for example, moving from Claude 3 Haiku to Claude 3.5 Sonnet) without updating cost projections. Token counts remain the same, but the per-token rate increases. Cost Explorer shows a step increase that correlates with the model change rather than an action group deployment.",
+        "prevention": "Pin agent foundation model versions explicitly. Review Bedrock pricing when changing models. Include per-token cost estimates in deployment checklists."
+      }
+    ],
+    "sop_practices": [
+      "Design Bedrock Agent action groups to return consolidated, rich responses rather than granular data that forces multi-step reasoning loops.",
+      "Set CloudWatch alarms on Bedrock token consumption metrics (InputTokenCount, OutputTokenCount) at the per-invocation and daily aggregate level before deploying new agent features.",
+      "Configure AWS Budgets alerts for Bedrock at both 80% and 100% of your monthly allocation, with daily anomaly detection enabled.",
+      "Enable model invocation logging to S3 and periodically sample agent traces to catch reasoning loop regressions before they appear in monthly bills."
     ]
   }
 }

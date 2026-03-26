@@ -58,13 +58,26 @@ Guardrail filters can be applied at two stages: on the user's input before it re
 
 Testing guardrails only against adversarial prompts creates a blind spot. A guardrail that blocks all five adversarial test cases may also block 40% of legitimate queries. Effective testing requires a representative sample of real production queries alongside adversarial ones, with pass/fail criteria for both: adversarial queries should be blocked, legitimate queries should pass through.
 
-## AWS Docs Links
+## Other Ways This Could Break
 
-- [Amazon Bedrock Guardrails -- Denied Topics](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-denied-topics.html)
-- [Amazon Bedrock Guardrails -- How It Works](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-how.html)
-- [Amazon Bedrock Guardrails -- Testing](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-test.html)
-- [Amazon CloudWatch Metrics for Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/monitoring-cw.html)
-- [Amazon SNS -- Subscribing to a Topic](https://docs.aws.amazon.com/sns/latest/dg/sns-create-subscribe-endpoint-to-topic.html)
+### Content Filter Strength Blocking Clinical Language
+
+The content filter's VIOLENCE category is set to HIGH strength. Descriptions of injuries or pain -- "stabbing pain in my chest," "my child fell and hit her head" -- may be classified as violent content and blocked. The guardrail trace would show a content policy intervention rather than a topic policy intervention. The denied topic configuration looks correct, which makes this harder to diagnose. **Prevention:** Set the VIOLENCE content filter to MEDIUM for healthcare applications where injury descriptions are expected. Test with representative clinical language before deploying filter strength changes.
+
+### Guardrail Version Rollback Removes Legitimate Topics
+
+Rolling back from version 3 to fix the Medical Advice false positives would also remove the Insurance Fraud denied topic added in version 2 -- if the rollback targets version 1 instead of version 2. The failure is silent because intervention counts decrease rather than increase. No alerts fire. **Prevention:** Never roll back to a previous guardrail version without reviewing all topic policies it contains. Create a new version that removes only the problematic topic while preserving others.
+
+### Denied Topic Example Phrases Too Narrow for Detection
+
+The denied topic definition is correct but the example phrases are too similar to each other. The guardrail fails to catch content it should block because the examples do not cover enough variation. This is the opposite of the current scenario -- false negatives instead of false positives. The guardrail trace would show the topic as not detected even when the content clearly matches the definition. **Prevention:** Write example phrases that cover distinct variations of the topic. AWS recommends up to five diverse examples. Test against both obvious and edge-case prompts.
+
+## SOP Best Practices
+
+- Test every guardrail configuration change against a representative set of legitimate production queries, not just adversarial prompts. Maintain a test suite of at least 20 real patient queries alongside 10 adversarial prompts.
+- Always check whether a denied topic should apply to input, output, or both. For domain-specific applications where user input naturally contains the denied vocabulary, apply topic filtering to model output only.
+- Subscribe at least one active endpoint to every SNS alert topic at creation time. An alert topic with zero subscribers is equivalent to no alerting.
+- Set a CloudWatch alarm on the `GuardrailInterventions` metric with a threshold based on your baseline intervention rate. A sudden increase indicates a configuration change is catching unintended content.
 
 ## Learning Objectives
 

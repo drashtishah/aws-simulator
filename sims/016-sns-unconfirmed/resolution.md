@@ -102,13 +102,30 @@ Every AWS account has a default SMS spending limit of $1.00 per month for SNS. O
 
 A notification pipeline that is not itself monitored is a single point of failure. SNS publishes delivery metrics to CloudWatch: `NumberOfMessagesPublished`, `NumberOfNotificationsDelivered`, `NumberOfNotificationsFailed`, and `NumberOfNotificationsFilteredOut`. An alarm on `NumberOfNotificationsFailed` routed to a separate, verified path (different topic, different protocol, different team) creates a feedback loop that detects delivery failures. Without this, a broken notification pipeline fails silently -- which is precisely what happened here.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [SNS Subscription Confirmation](https://docs.aws.amazon.com/sns/latest/dg/SendMessageToHttp.confirm.html)
-- [SNS SMS Preferences and Spending Limits](https://docs.aws.amazon.com/sns/latest/dg/sms_preferences.html)
-- [SNS Delivery Status Logging](https://docs.aws.amazon.com/sns/latest/dg/sns-topic-attributes.html)
-- [SNS CloudWatch Metrics](https://docs.aws.amazon.com/sns/latest/dg/sns-monitoring-using-cloudwatch.html)
-- [Lambda Dead-Letter Queues](https://docs.aws.amazon.com/lambda/latest/dg/invocation-async.html#invocation-dlq)
+### SNS subscription filter policy silently drops messages
+The subscription is confirmed and the endpoint is healthy, but a filter policy on the subscription does not match the message attributes. SNS increments NumberOfNotificationsFilteredOut instead of NumberOfNotificationsFailed. The message is intentionally dropped, not failed, so delivery status logging does not capture it as an error.
+**Prevention:** Audit subscription filter policies when changing message attribute schemas. Monitor the NumberOfNotificationsFilteredOut metric alongside NumberOfNotificationsFailed to detect unexpected filtering.
+
+### SNS topic policy blocks the publishing service
+The publish itself fails instead of the delivery. If the topic policy does not grant sns:Publish permission to the cloudwatch.amazonaws.com service principal, the CloudWatch alarm action returns AccessDenied and no message reaches the topic at all. The alarm shows ActionsExecutionState as FAILED.
+**Prevention:** Include a Condition with ArnLike on aws:SourceArn in the topic policy to allow CloudWatch alarms. Test alarm actions in staging by manually setting the alarm state with set-alarm-state.
+
+### Lambda destination or DLQ misconfigured, failures vanish
+The Lambda subscription is confirmed and SNS invokes the function successfully, but the function fails internally. Without a dead-letter queue or on-failure destination, the failed invocation is retried and then discarded. The failure is only visible in CloudWatch Logs for the function, which nobody monitors.
+**Prevention:** Always configure a dead-letter queue or on-failure destination on Lambda functions triggered by SNS. Set a CloudWatch alarm on the DLQ ApproximateNumberOfMessagesVisible metric.
+
+### SNS delivery retry exhaustion for HTTPS endpoints
+An HTTPS subscription endpoint is temporarily unavailable. SNS retries according to the delivery policy (default: 3 retries over 20 seconds for HTTP). If all retries fail, the message is discarded unless a DLQ is configured on the subscription itself. Unlike Lambda, SNS subscriptions support their own redrive policy.
+**Prevention:** Configure a subscription-level redrive policy pointing to an SQS dead-letter queue. Monitor the NumberOfNotificationsFailed metric and the DLQ depth.
+
+## SOP Best Practices
+
+- After creating any SNS email subscription, immediately verify it reaches Confirmed status -- do not assume the confirmation email was received. Check spam folders and set a calendar reminder to verify within 24 hours.
+- Set the SNS SMS MonthlySpendLimit to a value that accommodates peak alert volume with headroom, and create a CloudWatch alarm on SMSMonthToDateSpentUSD that fires at 80% of the limit.
+- Configure dead-letter queues on every Lambda function invoked by SNS, and on every HTTPS subscription, so that delivery failures are captured rather than silently discarded.
+- Monitor the notification pipeline itself: create a CloudWatch alarm on NumberOfNotificationsFailed for every critical SNS topic and route it to a separate, independently verified notification path.
 
 ## Learning Objectives
 

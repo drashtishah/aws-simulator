@@ -53,12 +53,93 @@
         }
       ],
       "hints": [
-        "Who does the pipeline think it is?",
-        "Run `aws sts get-caller-identity` on the CI machine.",
-        "Check if there are AWS credential environment variables set.",
-        "Environment variables take precedence over instance profiles in the credential chain."
+        {
+          "text": "Who does the pipeline think it is?",
+          "relevant_services": ["sts"],
+          "skip_if_queried": ["aws sts get-caller-identity"]
+        },
+        {
+          "text": "Run `aws sts get-caller-identity` on the CI machine.",
+          "relevant_services": ["sts"],
+          "skip_if_queried": ["get-caller-identity", "caller identity"]
+        },
+        {
+          "text": "Check if there are AWS credential environment variables set.",
+          "relevant_services": ["iam"],
+          "skip_if_queried": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "environment variable", "/etc/environment"]
+        },
+        {
+          "text": "Environment variables take precedence over instance profiles in the credential chain.",
+          "relevant_services": ["iam", "sts"],
+          "skip_if_queried": ["credential chain", "credential provider chain", "precedence", "priority"]
+        }
       ],
-      "max_hints_before_nudge": 3
+      "max_hints_before_nudge": 3,
+      "glossary": {
+        "IAM (Identity and Access Management)": "The AWS service that controls who can do what. You create users, roles, and policies here to grant or deny access to other AWS services.",
+        "IAM Role": "A set of permissions that can be assumed by a user, service, or application. Unlike a user, a role has no permanent credentials -- it issues temporary ones.",
+        "Instance Profile": "A wrapper that lets an EC2 instance assume an IAM role. When attached, the instance can call AWS APIs using temporary credentials without any hardcoded keys.",
+        "Access Key": "A pair of values (an access key ID and a secret access key) that identify an IAM user or role for programmatic access. Long-lived access keys are a security risk if not rotated.",
+        "STS (Security Token Service)": "The AWS service that issues temporary, limited-privilege credentials. Used behind the scenes when you assume a role or use an instance profile.",
+        "Credential Provider Chain": "The fixed order in which the AWS CLI and SDKs look for credentials. The first source found wins. Environment variables come before instance profiles in this order.",
+        "Environment Variable": "A key-value pair set in the operating system shell. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are environment variables the CLI checks early in the credential chain.",
+        "GetCallerIdentity": "An STS API call that returns the IAM principal (user or role) the CLI is currently authenticating as. It works even when the principal lacks permissions for anything else."
+      },
+      "narrative_arc": {
+        "call": "The deploy script stopped working on Tuesday after eleven months without incident. Every AWS API call returns AccessDenied. The instance profile has the right permissions. Nothing changed in the script.",
+        "threshold": "The permissions are correct. The role is correct. The instance is healthy. The problem is not where you would normally look.",
+        "trials": "Checking the instance profile, reviewing IAM policies, verifying the role -- all confirm the permissions are there. The failure persists. Something outside the usual configuration is interfering.",
+        "revelation": "The CLI is not authenticating as the instance profile role. It is authenticating as a former employee. Environment variables containing his access keys were set eight months ago and never removed. They take precedence over the instance profile.",
+        "return": "Remove the environment variables. The instance profile credentials take over. The deploy runs. Add a step to the offboarding checklist to search shared infrastructure for leftover credentials."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "EC2 instance fenwick-ci-01",
+            "role": "Runs the CI/CD deploy script that calls S3, Secrets Manager, and Lambda APIs",
+            "connections": ["Instance profile fenwick-ci-deploy", "Environment variables in /etc/environment", "S3 bucket fenwick-deploy-artifacts", "Secrets Manager secret /prod/db-credentials", "Lambda function fenwick-invoice-processor"],
+            "failure_impact": "If credentials resolve to an inactive user, every AWS API call returns AccessDenied and deploys fail"
+          },
+          {
+            "name": "Instance profile fenwick-ci-deploy",
+            "role": "Provides temporary credentials via IAM role fenwick-ci-deploy-role with correct permissions for the deploy pipeline",
+            "connections": ["EC2 instance fenwick-ci-01"],
+            "failure_impact": "If overridden by higher-priority credentials in the chain, the instance profile is never used"
+          },
+          {
+            "name": "Environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in /etc/environment",
+            "role": "Hardcoded credentials set eight months ago by a former engineer, taking priority over the instance profile in the credential chain",
+            "connections": ["EC2 instance fenwick-ci-01", "IAM user raj.patel"],
+            "failure_impact": "These deactivated credentials override the valid instance profile, causing all API calls to fail with AccessDenied"
+          },
+          {
+            "name": "IAM user raj.patel (deactivated, access key inactive)",
+            "role": "Former employee whose access keys were deactivated during offboarding",
+            "connections": ["Environment variables in /etc/environment"],
+            "failure_impact": "Deactivated keys cause AccessDenied for any API call authenticated with them"
+          },
+          {
+            "name": "S3 bucket fenwick-deploy-artifacts",
+            "role": "Stores deployment artifacts uploaded by the CI/CD pipeline",
+            "connections": ["EC2 instance fenwick-ci-01"],
+            "failure_impact": "If the deploy script cannot authenticate, artifact uploads fail and the release is blocked"
+          },
+          {
+            "name": "Secrets Manager secret /prod/db-credentials",
+            "role": "Stores production database credentials retrieved during deployment",
+            "connections": ["EC2 instance fenwick-ci-01"],
+            "failure_impact": "If GetSecretValue fails, the deploy cannot configure database access for the application"
+          },
+          {
+            "name": "Lambda function fenwick-invoice-processor",
+            "role": "Invoice processing function updated by the CI/CD deploy pipeline",
+            "connections": ["EC2 instance fenwick-ci-01"],
+            "failure_impact": "If UpdateFunctionCode fails, the invoice processor runs stale code"
+          }
+        ],
+        "data_flow": "Deploy script runs on EC2 instance. CLI checks credential chain: finds environment variables (priority 2) before instance profile (priority 6). Environment variables point to raj.patel's inactive access key. Every API call (S3 PutObject, Secrets Manager GetSecretValue, Lambda UpdateFunctionCode) authenticates as raj.patel and returns AccessDenied.",
+        "what_broke": "Environment variables containing a former employee's access keys were set on the CI machine eight months ago and never cleaned up. The keys were deactivated during offboarding. Because environment variables outrank instance profiles in the credential chain, the CLI never reaches the valid instance profile. A recent CLI update changed how the credential chain resolved, making the environment variables consistently take precedence."
+      }
     },
     "consoles": [
       {
@@ -129,6 +210,46 @@
       "Environment variables override instance profiles -- hardcoded credentials left on a machine can silently take precedence over IAM roles",
       "`aws sts get-caller-identity` reveals which principal the CLI is actually authenticating as, regardless of what you expect",
       "`aws configure list` shows the source of each credential component, making it easy to spot when env vars are active"
+    ],
+    "sop_steps": [
+      "Run `aws sts get-caller-identity` on the affected machine to determine which IAM principal the CLI is authenticating as",
+      "Run `aws configure list` to identify the credential source -- check the Type column for 'env' (environment variables), 'iam-role' (instance profile), or 'shared-credentials-file'",
+      "If Type shows 'env', search for AWS credential environment variables: check /etc/environment, ~/.bashrc, ~/.bash_profile, ~/.profile, and any cron job definitions",
+      "Remove or unset the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables from the source file",
+      "Start a new shell session or reboot the instance to clear the variables from the running environment",
+      "Run `aws sts get-caller-identity` again to confirm the CLI now resolves to the expected instance profile role ARN",
+      "Run the deploy script manually to verify it succeeds with the instance profile credentials",
+      "Audit all other EC2 instances and shared infrastructure for hardcoded AWS credentials in environment variables or config files",
+      "Add a step to the offboarding checklist: search all shared infrastructure for credentials belonging to the departing engineer",
+      "Configure CloudTrail alerts for AccessDenied events from IAM users that are inactive or do not match expected principals for a given source IP"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Credentials file override -- ~/.aws/credentials on the instance contains long-lived access keys from a previous setup, overriding the instance profile",
+        "how_it_differs": "The credential source is the shared credentials file (priority 3) rather than environment variables (priority 2). `aws configure list` shows Type as 'shared-credentials-file' instead of 'env'.",
+        "prevention": "Remove ~/.aws/credentials from shared infrastructure. Use instance profiles exclusively for EC2 workloads."
+      },
+      {
+        "scenario": "Expired STS session token -- an engineer ran `aws sts get-session-token` and exported AWS_SESSION_TOKEN alongside the access key variables, but the token expired",
+        "how_it_differs": "The error is 'ExpiredToken' rather than 'AccessDenied'. The access key itself may still be valid, but the session token has a fixed expiration time.",
+        "prevention": "Never export temporary session tokens into persistent environment files. Use instance profiles or role assumption for automated workloads."
+      },
+      {
+        "scenario": "Wrong instance profile attached -- the EC2 instance has an instance profile, but it is associated with a role that lacks the required permissions",
+        "how_it_differs": "The CLI does authenticate as the role (get-caller-identity returns a role ARN), but the role's policies do not include the needed actions. The fix is updating the role's policies, not removing credential overrides.",
+        "prevention": "Use infrastructure-as-code to define instance profile roles and their policies. Review role permissions when changing deploy requirements."
+      },
+      {
+        "scenario": "IMDSv2 enforcement blocks credential retrieval -- the instance requires IMDSv2 (token-based) but the CLI or SDK version does not support it, so the instance profile credentials cannot be fetched",
+        "how_it_differs": "The error is 'Unable to locate credentials' rather than 'AccessDenied'. The credential chain reaches the instance profile step but fails to retrieve credentials from the metadata service.",
+        "prevention": "Update the AWS CLI and SDKs to versions that support IMDSv2. Test credential retrieval after enabling IMDSv2 enforcement on instances."
+      }
+    ],
+    "sop_practices": [
+      "Use instance profiles instead of long-lived access keys for any workload running on EC2 -- instance profiles provide automatic credential rotation and do not require manual key management",
+      "Run `aws sts get-caller-identity` as the first diagnostic step for any AccessDenied error -- it reveals the actual authenticating principal regardless of what you expect",
+      "Include a credential sweep in your offboarding checklist: search all shared infrastructure (CI machines, jump boxes, dev servers) for environment variables, credentials files, and config files belonging to the departing engineer",
+      "Configure CloudTrail to alert on AccessDenied events from inactive or unexpected IAM principals to catch credential override issues before they cause extended outages"
     ]
   }
 }

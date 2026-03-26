@@ -60,13 +60,30 @@ A health check that has been UNHEALTHY since creation indicates a configuration 
 
 The `EvaluateTargetHealth` property on a Route 53 alias record set controls whether Route 53 checks the health of the resource that the alias points to. When set to `false`, Route 53 always considers the record healthy regardless of the actual state of the target resource or any associated health check. For failover routing policies, this property must be `true` on the primary record for Route 53 to fail over to the secondary when the primary endpoint is unhealthy.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Route 53 Failover Routing](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-failover.html)
-- [Route 53 Health Checks](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating.html)
-- [Route 53 Health Check Types](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-types.html)
-- [EvaluateTargetHealth for Alias Records](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-values-alias.html#rrsets-values-alias-evaluate-target-health)
-- [CloudWatch Metrics for Route 53 Health Checks](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/monitoring-health-checks.html)
+### Health check passes but EvaluateTargetHealth is false
+
+The health check is correctly configured and reports HEALTHY when the primary is up. But because EvaluateTargetHealth is false on the alias record, Route 53 ignores the health check entirely. When the primary goes down, the health check transitions to UNHEALTHY but Route 53 never reads that value. The symptoms during an outage are identical, but the health check history looks normal until the actual failure. Prevention: always set EvaluateTargetHealth to true on failover alias records and use AWS Config rules to detect records with it set to false.
+
+### DNS TTL caching delays failover
+
+Route 53 correctly detects the primary is unhealthy and starts returning the secondary in DNS responses. But recursive resolvers and client-side DNS caches hold the old primary IP address until the TTL expires. Users continue hitting the dead primary for the duration of the TTL. The root cause is not a failover misconfiguration but an excessively high TTL on the failover record. Prevention: set failover record TTL to 60 seconds or less and test failover end-to-end including DNS propagation delay.
+
+### Health check region selection causes false positives
+
+The health check is configured with a limited set of checker regions. If the primary ALB is experiencing a regional network partition, health checkers in unaffected regions may still reach the ALB and report HEALTHY while actual users cannot. Failover does not trigger because the majority of checkers see the endpoint as healthy. Prevention: use the default set of health check regions (all available) rather than restricting to a few, and monitor HealthCheckPercentageHealthy in CloudWatch to detect partial reachability.
+
+### Secondary region is unhealthy when failover triggers
+
+Route 53 correctly detects the primary is down and fails over. But the secondary region has its own issues -- stale deployment, expired TLS certificate, or cold-start database replica lag. Traffic moves to the secondary but users still get errors. DNS failover worked, but the standby was not actually ready to serve production traffic. Prevention: run continuous health checks against the secondary endpoint, include the secondary in regular deployments and load testing, and add a health check to the secondary failover record set.
+
+## SOP Best Practices
+
+- Route 53 health checks must match the target's actual listener configuration: correct protocol (HTTP vs HTTPS), correct port, and a path that returns HTTP 200 -- not a redirect.
+- Always set EvaluateTargetHealth to true on failover alias records. Without it, Route 53 treats the primary as permanently healthy and failover can never trigger.
+- Every CloudWatch alarm must have at least one action (SNS topic) that reaches a human. An alarm with no subscribers is invisible.
+- Test disaster recovery end-to-end on a regular schedule. Simulate a primary region failure and verify that DNS failover completes, the secondary serves traffic, and the on-call team is notified.
 
 ## Learning Objectives
 

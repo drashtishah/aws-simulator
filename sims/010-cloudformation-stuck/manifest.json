@@ -55,12 +55,92 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "CloudFormation stack": "A collection of AWS resources that CloudFormation creates and manages as a single unit based on a template file. When you update the template, CloudFormation figures out what changed and modifies only those resources.",
+        "Stack status": "A label that tells you what CloudFormation is currently doing with a stack. Common statuses include CREATE_COMPLETE (stack built successfully), UPDATE_IN_PROGRESS (changes being applied), and UPDATE_ROLLBACK_FAILED (a rollback that could not finish).",
+        "UPDATE_ROLLBACK_FAILED": "A stuck state. CloudFormation tried to undo a failed update but could not restore one or more resources to their previous state. The stack cannot accept new updates until you resolve the stuck rollback.",
+        "Logical ID": "The name you give a resource inside a CloudFormation template, like ProdDatabase. CloudFormation maps this to the actual AWS resource (the physical ID) it created.",
+        "Drift detection": "A CloudFormation feature that compares what the template says a resource should look like with what the resource actually looks like in AWS. If someone changed the resource outside CloudFormation, drift detection reports the difference.",
+        "Stack policy": "A JSON document attached to a stack that restricts which resources CloudFormation itself can update or delete. It protects against accidental template changes but does not prevent someone from modifying resources directly in the AWS Console.",
+        "ContinueUpdateRollback": "An API call that tells CloudFormation to retry a stuck rollback. The key parameter is --resources-to-skip, which lets CloudFormation finish the rollback by ignoring resources that no longer exist or cannot be restored.",
+        "Service Control Policy (SCP)": "An organization-level policy that sets permission guardrails for all accounts underneath it. An SCP can prevent specific API calls (like deleting an RDS instance) for all users in an account, regardless of their individual IAM permissions.",
+        "CloudTrail": "A service that records every API call made in your AWS account -- who did what, when, and from where. It is the audit trail you check when something was changed and you need to find out who changed it."
+      },
+      "narrative_arc": {
+        "call": "The CI/CD pipeline has been red for three days. Four pull requests are queued. One fixes a billing bug that has been overcharging enterprise customers since Tuesday. The engineering lead has been restarting the pipeline each morning. The stack status reads UPDATE_ROLLBACK_FAILED.",
+        "threshold": "The player opens the stack events and enters the gap between what the template says should exist and what actually exists in the account. The usual deployment troubleshooting does not apply here. The stack is not failing on code or permissions. It is failing on reality.",
+        "trials": "The IAM permissions on the deploy role were tightened last month, and the team suspects that is the issue. It is not. The stack events point to ProdDatabase. The CloudTrail log shows a DeleteDBInstance call made from the console by mchen on Friday at 4:47 PM. The developer is on PTO in Patagonia.",
+        "revelation": "CloudFormation maintains its own model of the world. When Marcus deleted the RDS instance through the console, CloudFormation did not know. On Monday, when the rollback tried to restore a resource that no longer existed, it had nowhere to go. The stack froze.",
+        "return": "The player runs continue-update-rollback with --resources-to-skip ProdDatabase. The stack returns to UPDATE_ROLLBACK_COMPLETE. Deployments resume. The team adds drift detection, a stack policy, and an SCP to prevent the same class of failure."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "CodePipeline (threadline-prod-pipeline)",
+            "role": "Watches the main branch on GitHub, runs CodeBuild, then triggers a CloudFormation UpdateStack on threadline-prod-stack",
+            "connections": ["CodeBuild", "CloudFormation Stack"],
+            "failure_impact": "If the stack is in a non-updatable state, every pipeline execution fails immediately at the deploy stage"
+          },
+          {
+            "name": "CloudFormation Stack (threadline-prod-stack)",
+            "role": "Manages all production resources as a single unit: EC2 auto-scaling group, RDS instance, three Lambda functions, SQS queue, and IAM roles",
+            "connections": ["CodePipeline", "ProdDatabase", "Lambda Functions", "EC2 ASG", "SQS Queue"],
+            "failure_impact": "If the stack enters UPDATE_ROLLBACK_FAILED, no resource in the stack can be updated through the pipeline until the rollback is resolved"
+          },
+          {
+            "name": "RDS PostgreSQL (threadline-prod-db / ProdDatabase)",
+            "role": "Production database storing all Threadline application data, managed by CloudFormation under logical ID ProdDatabase",
+            "connections": ["CloudFormation Stack", "EC2 ASG", "Lambda Functions"],
+            "failure_impact": "If deleted outside CloudFormation, the stack's internal state model becomes stale. The next rollback that references this resource will fail."
+          },
+          {
+            "name": "IAM Deploy Role (threadline-deploy-role)",
+            "role": "Assumed by CodePipeline during the deploy stage to execute CloudFormation operations",
+            "connections": ["CodePipeline", "CloudFormation Stack"],
+            "failure_impact": "If the role lacks permissions, stack updates fail with AccessDenied. In this incident, the role had full permissions -- it was a red herring."
+          },
+          {
+            "name": "Lambda Functions (webhook, processor, notifier)",
+            "role": "Three application functions managed by the stack. The webhook function update triggered the original failure due to a deprecated nodejs16.x runtime.",
+            "connections": ["CloudFormation Stack", "SQS Queue"],
+            "failure_impact": "The Lambda update failure was the trigger for the rollback, but not the root cause of the stuck state"
+          },
+          {
+            "name": "CloudTrail",
+            "role": "Records all API calls in the account, including the DeleteDBInstance call that caused the incident",
+            "connections": ["All AWS services"],
+            "failure_impact": "Without CloudTrail, there would be no way to determine who deleted the RDS instance or when"
+          }
+        ],
+        "data_flow": "A merged pull request triggers CodePipeline, which builds artifacts in CodeBuild and uploads a new template to S3. CodePipeline then calls CloudFormation UpdateStack using threadline-deploy-role. CloudFormation compares the new template with its internal state, computes a changeset, and begins updating resources in dependency order. If any resource update fails, CloudFormation initiates a rollback, restoring each resource to its prior state. During rollback, CloudFormation reads its state model to determine what each resource should look like and issues the necessary API calls to restore it.",
+        "what_broke": "On Friday at 4:47 PM, IAM user mchen deleted the RDS instance threadline-prod-db directly from the AWS Console. CloudFormation was not involved and did not update its state model. On Monday at 9:12 AM, a routine pipeline execution triggered a stack update. The Lambda webhook function failed to update due to a deprecated runtime, and CloudFormation initiated a rollback. During rollback, CloudFormation attempted to restore ProdDatabase to its previous configuration, but the underlying RDS instance no longer existed. The rollback failed on that resource, and the stack entered UPDATE_ROLLBACK_FAILED. Every subsequent deployment attempt was rejected immediately because the stack cannot accept updates in this state."
+      },
       "hints": [
-        "Look at the stack events. Which resource failed during rollback?",
-        "Does that resource still exist? Check if it was modified outside CloudFormation.",
-        "CloudFormation tried to roll back to the previous state, but the resource it expected to find was gone.",
-        "aws cloudformation continue-update-rollback can skip resources that no longer exist.",
-        "Use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback."
+        {
+          "text": "Look at the stack events. Which resource failed during rollback?",
+          "relevant_services": ["cloudformation"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "Does that resource still exist? Check if it was modified outside CloudFormation.",
+          "relevant_services": ["cloudformation", "iam"],
+          "skip_if_queried": ["cloudformation"]
+        },
+        {
+          "text": "CloudFormation tried to roll back to the previous state, but the resource it expected to find was gone.",
+          "relevant_services": ["cloudformation"],
+          "skip_if_queried": ["cloudformation", "iam"]
+        },
+        {
+          "text": "aws cloudformation continue-update-rollback can skip resources that no longer exist.",
+          "relevant_services": ["cloudformation"],
+          "skip_if_queried": ["cloudformation"]
+        },
+        {
+          "text": "Use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback.",
+          "relevant_services": ["cloudformation"],
+          "skip_if_queried": []
+        }
       ],
       "max_hints_before_nudge": 4
     },
@@ -138,6 +218,48 @@
       "ContinueUpdateRollback with --resources-to-skip allows CloudFormation to complete a stuck rollback by skipping resources that cannot be restored.",
       "Drift detection identifies differences between the expected and actual configuration of stack resources.",
       "Stack policies can protect critical resources from accidental updates or deletions through CloudFormation itself, but cannot prevent console-level manual changes."
+    ],
+    "sop_steps": [
+      "1. Confirm the stack threadline-prod-stack is in UPDATE_ROLLBACK_FAILED by running aws cloudformation describe-stacks --stack-name threadline-prod-stack and checking the StackStatus field.",
+      "2. Review stack events with aws cloudformation describe-stack-events --stack-name threadline-prod-stack. Locate the most recent UPDATE_ROLLBACK_IN_PROGRESS event and identify all resources with UPDATE_FAILED status between that event and the UPDATE_ROLLBACK_FAILED event.",
+      "3. Note the failed resource: ProdDatabase (physical ID threadline-prod-db, type AWS::RDS::DBInstance) with status reason 'DBInstance threadline-prod-db not found.'",
+      "4. Check CloudTrail for the DeleteDBInstance event to confirm who deleted the RDS instance, when, and how (console vs CLI). Verify the event was made by IAM user mchen on Friday at 4:47 PM via console.amazonaws.com.",
+      "5. Verify the RDS instance is truly gone by running aws rds describe-db-instances --db-instance-identifier threadline-prod-db. Expect a DBInstanceNotFound error.",
+      "6. Run aws cloudformation continue-update-rollback --stack-name threadline-prod-stack --resources-to-skip ProdDatabase to complete the stuck rollback while ignoring the missing RDS instance.",
+      "7. Wait for the stack to reach UPDATE_ROLLBACK_COMPLETE. Confirm with aws cloudformation describe-stacks --stack-name threadline-prod-stack.",
+      "8. Verify the pipeline is unblocked by triggering a test deployment or confirming the stack accepts updates.",
+      "9. Recreate the RDS instance by updating the CloudFormation template and running a stack update. Restore data from the most recent automated snapshot.",
+      "10. Enable drift detection on a daily schedule using an EventBridge rule that triggers a Lambda function calling aws cloudformation detect-stack-drift.",
+      "11. Apply a stack policy that prevents CloudFormation from deleting the ProdDatabase resource without an explicit override.",
+      "12. Request an SCP from the platform team to restrict rds:DeleteDBInstance in the production account to the CI/CD role only."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Stack resource manually modified (not deleted) outside CloudFormation",
+        "how_it_differs": "Instead of deleting a resource, someone changes its properties directly in the console (for example, modifying the RDS instance class from db.r5.large to db.t3.medium). The stack update may succeed but produce unexpected behavior because the actual resource does not match the template. Drift detection would catch this, but the stack would not enter UPDATE_ROLLBACK_FAILED unless the modification causes a rollback conflict.",
+        "prevention": "Schedule daily drift detection and alert on any MODIFIED or DELETED drift status. Use SCPs to restrict manual modification of CloudFormation-managed resources."
+      },
+      {
+        "scenario": "IAM permissions changed between stack updates, causing rollback failure",
+        "how_it_differs": "The deploy role loses a permission it had during the last successful update. When a new update fails and CloudFormation tries to roll back, it cannot perform the rollback actions because the role no longer has the required permissions. The stack enters UPDATE_ROLLBACK_FAILED due to AccessDenied rather than a missing resource.",
+        "prevention": "Audit IAM policy changes to the CloudFormation execution role using CloudTrail. Use a separate, tightly scoped role for CloudFormation operations and avoid modifying it outside of the infrastructure-as-code pipeline."
+      },
+      {
+        "scenario": "Nested stack enters UPDATE_ROLLBACK_FAILED independently",
+        "how_it_differs": "In a nested stack architecture, a child stack can enter UPDATE_ROLLBACK_FAILED while the parent stack is still rolling back. You must identify the failed resources in the nested stack specifically and use the format NestedStackName.ResourceLogicalID when specifying --resources-to-skip. Skipping the wrong resource or using the wrong format produces an error.",
+        "prevention": "Organize stacks by lifecycle and ownership to limit blast radius. Test nested stack updates in a staging environment that mirrors the production stack hierarchy."
+      },
+      {
+        "scenario": "Stack update fails due to deprecated Lambda runtime during rollback",
+        "how_it_differs": "A Lambda function uses a runtime that AWS has deprecated (like nodejs16.x). A stack update that modifies other resources triggers a rollback, but the rollback itself fails because CloudFormation cannot restore the Lambda function to its previous configuration using the deprecated runtime. This is the trigger that exposed the root cause in this sim, but on its own it can also cause UPDATE_ROLLBACK_FAILED.",
+        "prevention": "Proactively update Lambda runtimes before AWS deprecates them. Use CloudFormation Hooks or cfn-lint to validate templates against supported runtimes before deployment."
+      }
+    ],
+    "sop_practices": [
+      "Manage all stack resources exclusively through CloudFormation. Never modify, delete, or create resources manually that are part of a managed stack.",
+      "Run drift detection on a regular schedule (daily at minimum) and alert on any drift status other than IN_SYNC so that manual changes are caught before they cause rollback failures.",
+      "Use change sets to preview all modifications before executing a stack update, and require peer review of change sets that touch stateful resources like databases.",
+      "Apply stack policies to protect critical resources (databases, networking) from accidental deletion through CloudFormation, and use SCPs to prevent manual console-level deletions in production accounts."
     ]
   }
 }

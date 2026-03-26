@@ -80,12 +80,30 @@ Lambda resource-based policies are evaluated before a function is invoked. If th
 
 Bedrock Agents are designed to be resilient. When an action group invocation fails, the agent does not return an error to the user. Instead, it attempts to generate a response using the foundation model and any available context. This is useful for graceful degradation but dangerous when the action group is the primary source of truth. The agent will produce confident, well-structured responses that contain no real data. There is no visual indicator in the agent's response that the action group was skipped.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [[https://docs.aws.amazon.com/bedrock/latest/userguide/agents-permissions.html|Bedrock Agents Permissions]]
-- [[https://docs.aws.amazon.com/bedrock/latest/userguide/agents-action-create.html|Create Action Groups for Bedrock Agents]]
-- [[https://docs.aws.amazon.com/lambda/latest/dg/access-control-resource-based.html|Lambda Resource-Based Policies]]
-- [[https://docs.aws.amazon.com/bedrock/latest/userguide/agents-trace.html|Trace and Debug Bedrock Agents]]
+### Lambda resource-based policy missing entirely for Bedrock Agent
+
+Instead of a wrong SourceArn, the function has no resource-based policy statement for `bedrock.amazonaws.com` at all. The symptom is identical -- silent fallback to hallucinated responses -- but the fix is adding a new policy statement rather than correcting an existing one. To prevent this, include the Lambda resource-based policy as part of the infrastructure-as-code template that creates the Bedrock Agent and validate the policy exists in CI before deployment completes.
+
+### Bedrock Agent action group disabled or API schema misconfigured
+
+The Lambda function has correct permissions and would work if called, but the action group is in a DISABLED state or its OpenAPI schema has validation errors. The agent cannot determine which API to call, so it skips the action group entirely. CloudWatch shows zero Lambda invocations, same as this incident. Check `actionGroupState` is ENABLED after every agent update and include schema validation in the CI pipeline.
+
+### Lambda function timeout or runtime error causing action group failure
+
+The function is invoked successfully but fails during execution (timeout, unhandled exception, or downstream API error). Lambda Invocations count is non-zero but Errors count is elevated. The agent may still fall back to hallucinated responses, but CloudWatch error metrics provide a signal. Set Lambda timeout appropriately for downstream API latency and create alarms on both Invocations (zero) and Errors (non-zero).
+
+### Bedrock Agent version or alias pointing to outdated agent configuration
+
+The agent's draft version has the correct action group, but the production alias points to an older version that does not include the action group or references a different Lambda function. The resource-based policy is correct, but the alias routes to the wrong agent version. Always update the agent alias routing configuration after preparing a new agent version.
+
+## SOP Best Practices
+
+- Always use the Bedrock agent ARN (`arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT-ID`) as the SourceArn in Lambda resource-based policies, never the IAM execution role ARN
+- Treat Lambda resource-based policy updates as high-risk changes that require post-deployment verification of end-to-end invocation, not just CI pipeline green status
+- Monitor both sides of every service integration: Lambda Invocations for the function being called and Bedrock action group metrics for the agent successfully using the action group
+- Include the `aws:SourceAccount` condition alongside SourceArn in Lambda resource-based policies to prevent confused deputy scenarios across accounts
 
 ## Learning Objectives
 
@@ -93,3 +111,9 @@ Bedrock Agents are designed to be resilient. When an action group invocation fai
 - Know how Lambda resource-based policies control which services can invoke a function
 - Recognize Bedrock Agents silent fallback behavior when action groups fail to execute
 - Appreciate the importance of monitoring action group invocation metrics to detect silent failures early
+
+## Related
+
+- [[exam-topics#SAA-C03 -- Solutions Architect Associate]] -- Domain 1: Resource-Based Policies
+- [[exam-topics#DVA-C02 -- Developer Associate]] -- Domain 1: Lambda Permissions, Domain 2: IAM Policies
+- [[catalog]] -- bedrock, lambda, iam, cloudwatch service entries

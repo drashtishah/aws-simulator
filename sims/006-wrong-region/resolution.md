@@ -77,13 +77,30 @@ This command confirms which AWS account and IAM principal is making API calls. I
 
 A Lambda function ARN includes the region: `arn:aws:lambda:us-east-1:491783620174:function:calendine-booking-api`. An API Gateway integration that references this ARN expects the function to exist in `us-east-1`. If the function is deployed to `us-west-2` instead, the ARN does not resolve and the invocation fails with `ResourceNotFoundException`.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [AWS CLI Configuration and Credential File Settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- [Environment Variables for the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
-- [AWS Lambda Function Configuration](https://docs.aws.amazon.com/lambda/latest/dg/configuration-function-common.html)
-- [API Gateway Lambda Integration](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-integrations.html)
-- [AWS Regions and Availability Zones](https://docs.aws.amazon.com/general/latest/gr/rande.html)
+### S3 deployment bucket in a different region than the Lambda function
+Instead of the function being in the wrong region, the deployment artifact (zip file in S3) is in a different region than the target function. Lambda returns PermanentRedirect because the S3 bucket must be in the same region as the function.
+**Prevention:** Create a deployment artifact S3 bucket in each region where you deploy Lambda functions. Validate that the bucket region matches the function region in the pipeline.
+
+### API Gateway integration ARN points to a different account
+The function exists in the correct region but in a different AWS account. The ARN includes the account ID, so a mismatch produces the same ResourceNotFoundException. Cross-account invocation requires explicit Lambda resource policy permissions.
+**Prevention:** Use aws sts get-caller-identity in the pipeline to confirm the account ID before deploying. Pin the account ID in the API Gateway integration ARN.
+
+### AWS_REGION and AWS_DEFAULT_REGION set to different values
+The CLI uses AWS_DEFAULT_REGION, but some SDKs prefer AWS_REGION. If both are set to different values, the CLI and the application code may target different regions, causing the function to deploy to one region while the SDK-based integration expects another.
+**Prevention:** Set both AWS_REGION and AWS_DEFAULT_REGION to the same value in CI/CD environments. Better yet, use explicit --region flags and region parameters in code.
+
+### Lambda function alias or version referenced in API Gateway does not exist
+The function exists in the correct region, but the API Gateway integration ARN includes a version number or alias (e.g., :prod) that has not been published. The ARN does not resolve, producing the same ResourceNotFoundException.
+**Prevention:** Use Lambda aliases managed by your deployment pipeline. Verify the alias exists after each deploy with aws lambda get-alias before updating the API Gateway integration.
+
+## SOP Best Practices
+
+- Always use explicit --region flags in CI/CD deploy commands rather than relying on AWS_DEFAULT_REGION or config file defaults -- ambient configuration is the most common source of wrong-region deployments
+- Run aws configure list as the first diagnostic step when any deployment produces unexpected ResourceNotFoundException or region-related errors
+- Pin both AWS_REGION and AWS_DEFAULT_REGION to the same value in pipeline environments, and treat any divergence as a configuration error
+- After fixing a wrong-region deployment, delete orphaned resources in the incorrect region to avoid phantom costs and debugging confusion
 
 ## Learning Objectives
 

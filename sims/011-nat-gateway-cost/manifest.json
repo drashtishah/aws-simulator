@@ -52,21 +52,92 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "NAT Gateway": "A managed AWS service that lets instances in a private subnet send traffic to the internet. It charges per hour and per gigabyte of data it processes, in both directions.",
+        "VPC Gateway Endpoint": "A free routing target you add to a route table so that traffic to S3 or DynamoDB stays inside the AWS network instead of going through a NAT Gateway or the internet.",
+        "Prefix List": "An AWS-managed list of IP address ranges for a service like S3. When a gateway endpoint is created, a route using the prefix list is added to the route table automatically.",
+        "Private Subnet": "A subnet with no direct route to the internet. Instances in it must use a NAT Gateway or VPC endpoint to reach services outside the VPC.",
+        "Route Table": "A set of rules that determines where network traffic from a subnet is directed. Each entry maps a destination IP range to a target like a NAT Gateway, internet gateway, or VPC endpoint.",
+        "Data Processing Charge": "The per-gigabyte fee that a NAT Gateway charges for every byte of traffic it handles. At $0.045 per GB, this cost grows quickly when large amounts of data pass through it.",
+        "Cost Explorer": "An AWS tool that lets you view and filter your AWS spending by service, usage type, and time period. It is how most teams discover unexpected charges.",
+        "VPC Flow Logs": "Records of network traffic going to and from network interfaces in a VPC. Each record shows source, destination, port, protocol, and byte count."
+      },
+      "narrative_arc": {
+        "call": "The finance lead opens Cost Explorer for a board runway update. She filters by service and finds $907.20 in NAT Gateway data processing charges on a single day. The number is the same every day. It has been the same since January.",
+        "threshold": "She multiplies $907 by 90 days and sends the total to the engineering channel. $27,135. The pipeline sends data to an S3 bucket in the same region. The data never leaves AWS. The engineering team has no explanation.",
+        "trials": "The engineer examines the VPC configuration, the route table, the flow logs. The three pipeline instances in the private subnet send 500 gigabytes daily to S3. Every byte passes through the NAT Gateway. The VPC has no endpoints. The route table has one non-local route: 0.0.0.0/0 to the NAT Gateway.",
+        "revelation": "There is no S3 VPC gateway endpoint. Gateway endpoints are free. They route S3 traffic directly through the AWS network. Without one, the only path from the private subnet to S3 is through the NAT Gateway, which charges $0.045 per gigabyte.",
+        "return": "An S3 gateway endpoint is created and associated with the private subnet route table. A prefix list route appears. S3 traffic bypasses the NAT Gateway. Daily charges drop from $907 to $1.56. The finance lead updates the runway spreadsheet."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "EC2 Pipeline Instances (10.0.2.14, .15, .16)",
+            "role": "Three c5.2xlarge instances in the private subnet that ingest sensor data and write approximately 500 GB daily to S3",
+            "connections": ["Private Subnet Route Table", "S3 Bucket"],
+            "failure_impact": "If instances stop, the data pipeline halts and sensor data is not ingested"
+          },
+          {
+            "name": "Private Subnet (10.0.2.0/24)",
+            "role": "Hosts the pipeline instances with no direct internet access, all outbound traffic routed through the NAT Gateway",
+            "connections": ["NAT Gateway", "Route Table rtb-0d4e5f6a7b8c9d0e1"],
+            "failure_impact": "If the route table has no path to S3, the pipeline cannot write data"
+          },
+          {
+            "name": "NAT Gateway (nat-0a1b2c3d4e5f67890)",
+            "role": "Provides outbound internet access for the private subnet. Currently handles all S3 traffic at $0.045 per GB",
+            "connections": ["Private Subnet", "Internet Gateway", "S3 (via public internet path)"],
+            "failure_impact": "If the NAT Gateway fails, all outbound traffic from the private subnet stops, including S3 writes"
+          },
+          {
+            "name": "Route Table (rtb-0d4e5f6a7b8c9d0e1)",
+            "role": "Directs all non-local traffic from the private subnet to the NAT Gateway via the 0.0.0.0/0 route",
+            "connections": ["Private Subnet", "NAT Gateway"],
+            "failure_impact": "Without a prefix list route for S3, all S3 traffic is sent through the NAT Gateway and incurs data processing charges"
+          },
+          {
+            "name": "S3 Bucket (fieldspar-sensor-lake-prod)",
+            "role": "Stores sensor data from the pipeline, approximately 45 TB total, in the same region as the VPC",
+            "connections": ["EC2 Pipeline Instances"],
+            "failure_impact": "If the bucket is inaccessible, pipeline writes fail and sensor data is lost or queued"
+          },
+          {
+            "name": "S3 VPC Gateway Endpoint (missing)",
+            "role": "Would route S3 traffic directly from the private subnet to S3 without traversing the NAT Gateway, at no cost",
+            "connections": ["Route Table", "S3 Bucket"],
+            "failure_impact": "Its absence is the root cause -- all S3 traffic takes the expensive NAT Gateway path"
+          }
+        ],
+        "data_flow": "Sensor data arrives at the three EC2 pipeline instances in private subnet 10.0.2.0/24. The instances use the AWS SDK to write objects to the S3 bucket fieldspar-sensor-lake-prod. The private subnet route table has only two routes: 10.0.0.0/16 to local and 0.0.0.0/0 to the NAT Gateway. S3 traffic matches the 0.0.0.0/0 route, passes through the NAT Gateway in the public subnet, then through the Internet Gateway, and arrives at S3. The NAT Gateway charges $0.045 per GB for every byte it processes.",
+        "what_broke": "The VPC was built during a two-week sprint before the first customer demo. A NAT Gateway was created for outbound internet access, but no S3 VPC gateway endpoint was added. When the pipeline went live in January, all 500 GB of daily S3 traffic began routing through the NAT Gateway. The $0.045/GB data processing charge accumulated to $907 per day. Nobody examined line-item billing for three months. The total unnecessary spend reached $27,135."
+      },
       "hints": [
-        "Look at the bill breakdown. Which service has the highest data transfer charges?",
-        "How does traffic from a private subnet reach Amazon S3?",
-        "There is a way to route S3 traffic that does not go through the NAT Gateway.",
-        "An S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network. It is free."
+        {
+          "text": "Look at the bill breakdown. Which service has the highest data transfer charges?",
+          "relevant_services": ["cloudwatch"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "How does traffic from a private subnet reach Amazon S3? Check the route table for the private subnet.",
+          "relevant_services": ["vpc"],
+          "skip_if_queried": ["vpc"]
+        },
+        {
+          "text": "There is a way to route S3 traffic that does not go through the NAT Gateway. Look at VPC endpoints.",
+          "relevant_services": ["vpc"],
+          "skip_if_queried": ["vpc"]
+        },
+        {
+          "text": "An S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network. It is free. No gateway endpoint exists in this VPC.",
+          "relevant_services": ["vpc", "s3"],
+          "skip_if_queried": ["vpc", "s3"]
+        }
       ],
       "max_hints_before_nudge": 3
     },
     "consoles": [
       {
         "service": "vpc",
-        "covers": [
-          "nat-gateway",
-          "vpc"
-        ],
         "artifacts": [
           "artifacts/architecture-hint.txt",
           "artifacts/vpc-config.json",
@@ -84,7 +155,9 @@
       },
       {
         "service": "s3",
-        "artifacts": [],
+        "artifacts": [
+          "artifacts/cost-explorer.csv"
+        ],
         "capabilities": [
           "list_buckets",
           "get_bucket_location",
@@ -133,6 +206,41 @@
       "NAT Gateway charges $0.045 per GB of data processed, which adds up quickly with high-volume data pipelines",
       "Private subnets without gateway endpoints route all traffic through the NAT Gateway, including traffic to AWS services",
       "Route tables for gateway endpoints use prefix lists (pl-xxxxxxxx) to direct S3-bound traffic to the endpoint instead of the NAT Gateway"
+    ],
+    "sop_steps": [
+      "Turn on VPC flow logs and analyze traffic to identify which destinations account for the highest data transfer through the NAT Gateway",
+      "Open Cost Explorer and filter by NAT Gateway service to quantify data processing charges by day and identify the start date of the cost anomaly",
+      "Check the private subnet route table for existing VPC endpoints -- confirm that no S3 or DynamoDB gateway endpoint exists",
+      "Create an S3 VPC gateway endpoint using aws ec2 create-vpc-endpoint with --vpc-endpoint-type Gateway and associate it with the private subnet route table",
+      "Verify the route table now contains a prefix list entry (pl-xxxxxxxx) targeting the new VPC endpoint, which takes priority over the 0.0.0.0/0 NAT Gateway route",
+      "Confirm the data pipeline continues writing to S3 without errors -- gateway endpoints are transparent to applications and require no SDK or code changes",
+      "Monitor NAT Gateway data processing charges in Cost Explorer over the next 24 hours to confirm the cost reduction",
+      "Evaluate whether a DynamoDB gateway endpoint is also needed for any workloads in the private subnet",
+      "Create a CloudWatch billing alarm for NAT Gateway charges exceeding a daily threshold to catch similar issues in the future",
+      "Audit all other private subnets in the VPC for high-volume traffic to S3 or DynamoDB that could benefit from gateway endpoints"
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Gateway endpoint created but not associated with the correct route table",
+        "how_it_differs": "The endpoint exists but the private subnet route table still has no prefix list entry for S3. Traffic continues through the NAT Gateway because the endpoint was associated with a different route table, such as the public subnet route table.",
+        "prevention": "When creating a gateway endpoint, explicitly specify --route-table-ids for every private subnet route table that needs the S3 route. Verify with aws ec2 describe-route-tables that the prefix list entry appears in each target route table."
+      },
+      {
+        "scenario": "Cross-region S3 access through NAT Gateway",
+        "how_it_differs": "A gateway endpoint only routes traffic to S3 buckets in the same region as the VPC. If the pipeline writes to an S3 bucket in a different region, the traffic still goes through the NAT Gateway and incurs data processing charges plus cross-region data transfer fees.",
+        "prevention": "Ensure S3 buckets accessed from private subnets are in the same region as the VPC. If cross-region access is required, understand that gateway endpoints will not help and budget for NAT Gateway and data transfer costs."
+      },
+      {
+        "scenario": "VPC endpoint policy blocks the application",
+        "how_it_differs": "A custom endpoint policy is attached to the gateway endpoint that restricts access to specific buckets or actions. The pipeline's PutObject calls are denied by the policy, causing write failures instead of cost savings.",
+        "prevention": "Use the default endpoint policy (full access) unless there is a specific security requirement. If a custom policy is needed, test it against the application's actual S3 API calls before applying to production."
+      }
+    ],
+    "sop_practices": [
+      "Include S3 and DynamoDB gateway endpoints as a standard part of any VPC design with private subnets -- they are free and eliminate unnecessary NAT Gateway charges",
+      "Set up billing alerts for NAT Gateway data processing charges early, before high-volume workloads go live, to catch cost anomalies within days instead of months",
+      "Use VPC flow logs and Cost Explorer together to identify which traffic patterns are driving NAT Gateway costs and whether they can be routed through endpoints instead",
+      "After creating a gateway endpoint, verify the route table entry and monitor Cost Explorer to confirm the expected cost reduction within 24 hours"
     ]
   }
 }

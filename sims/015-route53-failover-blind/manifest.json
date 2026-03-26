@@ -45,12 +45,86 @@
           "section": "resolution"
         }
       ],
+      "glossary": {
+        "Route 53": "The AWS domain name system (DNS) service. It translates human-readable domain names like docs.spellbook.dev into IP addresses that computers use to find each other on the internet.",
+        "Failover Routing Policy": "A Route 53 routing configuration that maintains a primary and secondary endpoint for the same domain. When the primary is unhealthy, Route 53 automatically returns the secondary endpoint in DNS responses.",
+        "Health Check": "An automated probe that Route 53 sends from multiple global locations to an endpoint at regular intervals. If the endpoint stops responding correctly, Route 53 marks it as unhealthy and can trigger DNS failover.",
+        "EvaluateTargetHealth": "A boolean setting on a Route 53 alias record that controls whether Route 53 checks the health of the resource the alias points to. When set to false, Route 53 always considers the record healthy regardless of actual state.",
+        "ALB (Application Load Balancer)": "A load balancer that distributes incoming HTTP/HTTPS traffic across multiple targets (such as containers or instances) in one or more Availability Zones.",
+        "TTL (Time to Live)": "The number of seconds a DNS resolver is allowed to cache a DNS response before it must ask Route 53 again. Lower TTL means faster failover but more DNS queries.",
+        "CloudWatch Alarm": "A monitor that watches a single metric over a time period and performs one or more actions (like sending a notification) when the metric crosses a defined threshold.",
+        "SNS Topic": "A messaging channel in the Simple Notification Service. CloudWatch alarms publish to an SNS topic, which then delivers notifications to subscribers via email, SMS, or other endpoints.",
+        "Hosted Zone": "A container in Route 53 that holds DNS records for a single domain (like spellbook.dev). All routing rules and record sets for that domain live inside its hosted zone."
+      },
+      "narrative_arc": {
+        "call": "A customer in Berlin reports that docs.spellbook.dev is not loading. The browser waited sixteen seconds and timed out. 2.1 million developers depend on this documentation platform.",
+        "threshold": "The on-call SRE confirms the primary ALB in us-east-1 is unreachable but the secondary in eu-west-1 is healthy. The multi-region failover that took two weeks to build six months ago did nothing.",
+        "trials": "The health check has been in UNHEALTHY state since March 4th. Three weeks. The CloudWatch alarm has been in ALARM state the entire time. No one received a notification because no SNS topic was attached. The health check was configured for the wrong protocol, port, and path from the start.",
+        "revelation": "EvaluateTargetHealth is set to false on the primary failover record. Route 53 never consulted the health check result when routing DNS queries. The failover record set, the health check, and the alarm all existed but none of them were wired together correctly.",
+        "return": "Traffic is manually pointed to eu-west-1. The health check is fixed to use HTTPS on port 443 with the correct path. EvaluateTargetHealth is enabled. An SNS topic is attached to the alarm. The postmortem reveals the multi-region setup was never tested with an actual primary failure."
+      },
+      "system_narration": {
+        "components": [
+          {
+            "name": "Route 53 Hosted Zone (spellbook.dev)",
+            "role": "Holds the failover record set for docs.spellbook.dev, directing DNS queries to the primary or secondary ALB based on routing policy and health",
+            "connections": ["Primary ALB (us-east-1)", "Secondary ALB (eu-west-1)", "Route 53 Health Check"],
+            "failure_impact": "If failover routing is misconfigured (EvaluateTargetHealth false), Route 53 always returns the primary regardless of health state"
+          },
+          {
+            "name": "Route 53 Health Check (hc-spellbook-prod-primary)",
+            "role": "Probes the primary ALB endpoint from multiple global locations to determine if it is reachable and returning healthy responses",
+            "connections": ["Primary ALB (us-east-1)", "CloudWatch Alarm"],
+            "failure_impact": "If configured with wrong protocol/port/path, the health check reports UNHEALTHY even when the target is actually up -- and if EvaluateTargetHealth is false, the result is ignored entirely"
+          },
+          {
+            "name": "Primary ALB (us-east-1)",
+            "role": "Receives HTTPS traffic on port 443 and forwards it to ECS tasks running the documentation platform on port 8080",
+            "connections": ["ECS Cluster (us-east-1)", "Route 53 Hosted Zone"],
+            "failure_impact": "If all targets become unhealthy due to an AZ issue, the ALB returns 503 for every request"
+          },
+          {
+            "name": "Secondary ALB (eu-west-1)",
+            "role": "Standby load balancer with four healthy ECS targets, ready to serve traffic if Route 53 fails over",
+            "connections": ["ECS Cluster (eu-west-1)", "Route 53 Hosted Zone"],
+            "failure_impact": "No impact on its own -- the problem is that Route 53 never sends traffic here during the outage"
+          },
+          {
+            "name": "CloudWatch Alarm (spellbook-route53-health-check)",
+            "role": "Monitors the HealthCheckStatus metric and transitions to ALARM when the health check reports unhealthy",
+            "connections": ["Route 53 Health Check"],
+            "failure_impact": "AlarmActions is empty -- no SNS topic attached, so the alarm fires into the void and nobody is paged"
+          }
+        ],
+        "data_flow": "Developers request docs.spellbook.dev. The DNS query reaches Route 53, which evaluates the failover routing policy. Under correct configuration, Route 53 checks the health of the primary endpoint and returns the primary ALB IP if healthy or the secondary ALB IP if unhealthy. The ALB terminates HTTPS on port 443 and forwards to ECS tasks on port 8080. The response returns through the same path.",
+        "what_broke": "Two compounding misconfigurations: (1) The Route 53 health check was set to HTTP port 80 with path '/', but the ALB only listens on HTTPS port 443 and '/' returns a 301 redirect. The health check has been UNHEALTHY since creation. (2) The primary failover record set has EvaluateTargetHealth set to false, so Route 53 never uses the health check result in routing decisions. When the us-east-1 ALB went down due to an AZ issue, failover could not trigger. The CloudWatch alarm on HealthCheckStatus has been in ALARM since March 4th with no SNS topic attached, so no one was notified."
+      },
       "hints": [
-        "Is the Route 53 failover actually configured to use the health check?",
-        "What state is the Route 53 health check in? Has it been healthy recently?",
-        "Check the health check configuration. What port and path is it monitoring?",
-        "The health check targets port 80 and path '/' but the ALB listens on port 443 and '/' returns a 301 redirect. The health check has been UNHEALTHY for weeks. And EvaluateTargetHealth is false on the record set.",
-        "Fix: update health check to port 443 with HTTPS, change path to '/healthz', enable EvaluateTargetHealth on the failover record set, and set up a CloudWatch alarm that pages on health check state changes."
+        {
+          "text": "Is the Route 53 failover actually configured to use the health check?",
+          "relevant_services": ["route53"],
+          "skip_if_queried": []
+        },
+        {
+          "text": "What state is the Route 53 health check in? Has it been healthy recently?",
+          "relevant_services": ["route53", "cloudwatch"],
+          "skip_if_queried": ["route53"]
+        },
+        {
+          "text": "Check the health check configuration. What port and path is it monitoring?",
+          "relevant_services": ["route53", "elb"],
+          "skip_if_queried": ["route53"]
+        },
+        {
+          "text": "The health check targets port 80 and path '/' but the ALB listens on port 443 and '/' returns a 301 redirect. The health check has been UNHEALTHY for weeks. And EvaluateTargetHealth is false on the record set.",
+          "relevant_services": ["route53", "elb"],
+          "skip_if_queried": ["route53", "elb"]
+        },
+        {
+          "text": "Fix: update health check to port 443 with HTTPS, change path to '/healthz', enable EvaluateTargetHealth on the failover record set, and set up a CloudWatch alarm that pages on health check state changes.",
+          "relevant_services": ["route53", "elb", "cloudwatch"],
+          "skip_if_queried": []
+        }
       ],
       "max_hints_before_nudge": 3
     },
@@ -124,6 +198,50 @@
       "Route 53 health checks must match the actual listener configuration (port, protocol, path) of the target resource",
       "EvaluateTargetHealth on failover record sets must be enabled for Route 53 to use health check results in routing decisions",
       "Health check monitoring: CloudWatch alarms on HealthCheckStatus should page the team, not sit in ALARM state unnoticed"
+    ],
+    "sop_steps": [
+      "1. Acknowledge the incident and confirm the customer-facing symptom: docs.spellbook.dev is unreachable, returning connection timeouts.",
+      "2. Check the primary ALB (spellbook-prod-alb-east) in us-east-1 using describe-target-health -- confirm all targets are unhealthy or draining.",
+      "3. Check the secondary ALB (spellbook-prod-alb-west) in eu-west-1 using describe-target-health -- confirm four healthy targets are available.",
+      "4. Query Route 53 using list-resource-record-sets for the docs.spellbook.dev hosted zone -- identify the failover record set and note the HealthCheckId and EvaluateTargetHealth values on the primary record.",
+      "5. Retrieve the health check configuration using get-health-check -- note the protocol (HTTP), port (80), and resource path (/).",
+      "6. Retrieve the health check status using get-health-check-status -- confirm all checker regions report UNHEALTHY with 'HTTP Status Code 301' or 'Connection timed out'.",
+      "7. Compare the health check config to the ALB listener config: the ALB listens on HTTPS port 443, but the health check probes HTTP port 80. The path '/' returns a 301 redirect, not a 200.",
+      "8. Check CloudWatch alarm spellbook-route53-health-check using describe-alarms -- confirm it is in ALARM state and AlarmActions is an empty list (no SNS topic).",
+      "9. Immediate mitigation: manually update the Route 53 primary record to point to the eu-west-1 ALB to restore service.",
+      "10. Fix the health check: update to HTTPS, port 443, path '/healthz', and enable SNI using update-health-check.",
+      "11. Fix the failover record: set EvaluateTargetHealth to true on the primary failover alias record using change-resource-record-sets.",
+      "12. Fix the alarm: create an SNS topic with the on-call engineer subscribed and attach it to the CloudWatch alarm's AlarmActions.",
+      "13. Validate: temporarily simulate a primary failure and confirm Route 53 returns the secondary ALB. Confirm the alarm sends a notification.",
+      "14. Document the incident timeline, root cause, and remediation actions. Add disaster recovery testing to the quarterly runbook."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Health check passes but EvaluateTargetHealth is false, so failover still does not trigger",
+        "how_it_differs": "The health check is correctly configured and reports HEALTHY when the primary is up. But because EvaluateTargetHealth is false on the alias record, Route 53 ignores the health check entirely. When the primary goes down, the health check transitions to UNHEALTHY but Route 53 never reads that value. The symptoms during an outage are identical to sim 015, but the health check history looks normal until the actual failure.",
+        "prevention": "Always set EvaluateTargetHealth to true on failover alias records. Use AWS Config rules to detect alias records with EvaluateTargetHealth set to false."
+      },
+      {
+        "scenario": "DNS TTL caching delays failover even after Route 53 switches",
+        "how_it_differs": "Route 53 correctly detects the primary is unhealthy and starts returning the secondary in DNS responses. But recursive resolvers and client-side DNS caches hold the old (primary) IP address until the TTL expires. Users continue hitting the dead primary for the duration of the TTL. The root cause is not a misconfiguration of failover itself but an excessively high TTL on the failover record.",
+        "prevention": "Set failover record TTL to 60 seconds or less. Test failover end-to-end including DNS propagation delay to verify actual recovery time."
+      },
+      {
+        "scenario": "Health check region selection causes false positives",
+        "how_it_differs": "The health check is configured with a limited set of checker regions. If the primary ALB is experiencing a regional network partition, health checkers in unaffected regions may still reach the ALB and report HEALTHY while actual users in affected regions cannot. Failover does not trigger because the majority of checkers see the endpoint as healthy.",
+        "prevention": "Use the default set of health check regions (all available) rather than restricting to a few. Monitor HealthCheckPercentageHealthy in CloudWatch to detect partial reachability issues."
+      },
+      {
+        "scenario": "Secondary region is also unhealthy when failover triggers",
+        "how_it_differs": "Route 53 correctly detects the primary is down and attempts to fail over. But the secondary region has its own issues -- stale deployment, expired TLS certificate, or cold-start database replica lag. Traffic moves to the secondary but users still get errors. The DNS failover worked, but the standby was not actually ready to serve production traffic.",
+        "prevention": "Run continuous health checks against the secondary endpoint as well. Include the secondary region in regular deployment pipelines and load testing. Add a health check to the secondary failover record set."
+      }
+    ],
+    "sop_practices": [
+      "Route 53 health checks must match the target's actual listener configuration: correct protocol (HTTP vs HTTPS), correct port, and a path that returns HTTP 200 -- not a redirect.",
+      "Always set EvaluateTargetHealth to true on failover alias records. Without it, Route 53 treats the primary as permanently healthy and failover can never trigger.",
+      "Every CloudWatch alarm must have at least one action (SNS topic) that reaches a human. An alarm with no subscribers is invisible.",
+      "Test disaster recovery end-to-end on a regular schedule. Simulate a primary region failure and verify that DNS failover completes, the secondary serves traffic, and the on-call team is notified."
     ]
   }
 }

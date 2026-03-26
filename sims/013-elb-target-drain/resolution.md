@@ -98,13 +98,30 @@ ALB health check parameters interact with deployment safety:
 
 Reducing the healthy threshold from 5 to 2 changes the time to healthy from 150 seconds to 60 seconds. This must be balanced against the risk of prematurely marking a target as healthy before the application is fully warmed up.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [Target Group Deregistration Delay](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay)
-- [ALB Health Checks for Target Groups](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/target-group-health-checks.html)
-- [ALB Fail-Open When All Targets Are Unhealthy](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#target-group-health)
-- [CodeDeploy Deployment Configurations](https://docs.aws.amazon.com/codedeploy/latest/userguide/deployment-configurations.html)
-- [HealthyHostCount Metric](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-cloudwatch-metrics.html)
+### Health Check Passes Before the Application Is Ready
+
+The health check endpoint returns 200 before the application has finished loading caches, establishing database connections, or completing other initialization work. The ALB marks the target as healthy and sends traffic to it. The target cannot serve requests correctly even though it passes health checks. This differs from the root cause here because the timing gap is not between deregistration and health checks -- it is between the health check passing and the application actually being ready. Prevention: implement a readiness check that verifies all downstream dependencies before the health endpoint returns 200.
+
+### Auto Scaling Group Terminates Instances Still Initializing
+
+The ASG uses ELB health checks but the health check grace period is shorter than the time the application needs to start. New instances launched during a deployment fail their first ELB health check, the ASG marks them as unhealthy and terminates them, then launches replacements that also fail. This creates a loop of launch-terminate-launch. The difference from this sim is that the ASG itself is killing instances rather than a capacity gap from deregistration timing. Prevention: set the health check grace period to at least the time-to-healthy plus the application startup time and monitor scaling activities for repeated terminations.
+
+### Slow Start Mode Disabled Overloads New Targets
+
+New targets pass health checks and immediately receive an equal share of all traffic. If the application needs warm-up time (cache priming, JIT compilation), the sudden load spike causes latency increases or errors even though the target is technically healthy. This differs from the root cause because there is no zero-healthy-host event -- the problem is traffic volume, not traffic absence. Prevention: enable slow start mode on the target group with a duration matching the application warm-up time.
+
+### Cross-Zone Load Balancing Disabled During Partial Deployment
+
+The deployment removes targets in one availability zone while the other zone remains healthy. Without cross-zone load balancing, the ALB node in the depleted zone has no healthy targets and enters fail-open for that zone only, while the other zone is overloaded. This differs because the failure is zone-specific rather than global. Prevention: enable cross-zone load balancing on the ALB so each node can route to healthy targets in any zone.
+
+## SOP Best Practices
+
+- Always verify that the deregistration delay exceeds the health check time-to-healthy (interval multiplied by healthy threshold) before running any rolling deployment
+- Add a CloudWatch alarm on HealthyHostCount for every production target group -- alert when the count drops below the minimum required for safe operation
+- Use deployment batch sizes small enough that the remaining healthy targets can absorb the full traffic load while replacements initialize
+- Schedule production deployments outside peak traffic windows and document the policy in the team runbook
 
 ## Learning Objectives
 

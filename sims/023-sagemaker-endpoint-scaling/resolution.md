@@ -78,12 +78,32 @@ CloudWatch metrics are uniquely identified by namespace, metric name, and dimens
 
 Application Auto Scaling for SageMaker endpoints uses the resource ID format `endpoint/{endpoint-name}/variant/{variant-name}`. Target tracking policies create and manage CloudWatch alarms automatically. However, if a scaling policy was created with a custom alarm or if the variant name in the resource ID no longer matches the active variant, the scaling mechanism breaks silently. The scaling policy remains configured but never activates.
 
-## AWS Docs Links
+## Other Ways This Could Break
 
-- [[Amazon SageMaker -- Production Variants|https://docs.aws.amazon.com/sagemaker/latest/dg/endpoint-scaling.html]]
-- [[Application Auto Scaling -- SageMaker|https://docs.aws.amazon.com/autoscaling/application/userguide/services-that-can-integrate-sagemaker.html]]
-- [[CloudWatch Metrics for SageMaker|https://docs.aws.amazon.com/sagemaker/latest/dg/monitoring-cloudwatch.html]]
-- [[CloudWatch Alarm States|https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#alarm-states]]
+### Scaling Policy Resource ID References a Retired Variant
+
+The CloudWatch alarm dimensions could be correct, but the Application Auto Scaling scalable target and policy still reference the old variant name in their ResourceId (`endpoint/arcline-route-optimizer/variant/AllTraffic`). The alarm fires correctly, but the scaling action targets a variant that no longer exists, so no instances are added. The `describe-scaling-activities` output would show failed activities rather than an empty list.
+
+**Prevention:** After any blue-green deployment, verify the scalable target resource ID matches the active variant by running `describe-scalable-targets`. Automate this check as a post-deployment step in the pipeline.
+
+### Service Quota Blocks Scale-Out Despite Alarm Firing
+
+The alarm and scaling policy are configured correctly. The alarm transitions to ALARM state and triggers a scaling action. However, the account has reached its service quota for the `ml.g4dn.xlarge` instance type. The scaling activity fails with a "resource limit exceeded" error. The endpoint stays at one instance. The symptoms look similar -- 503 errors during peak -- but `describe-scaling-activities` shows a failed activity with a quota error message.
+
+**Prevention:** Before deploying to production, check your service quotas for the endpoint's instance type using the Service Quotas console. Request quota increases proactively when planning for expected traffic growth. Set up a CloudWatch alarm on failed scaling activities.
+
+### Cooldown Period Prevents Repeated Scale-Out
+
+The scaling policy and alarm are correct. The first scale-out triggers successfully. But traffic continues to climb and a second scale-out is needed. The `ScaleOutCooldown` period prevents additional scaling actions during the cooldown window. If the cooldown is set too high, the endpoint remains under-provisioned during rapid traffic ramps. The alarm stays in ALARM state but no new scaling actions occur until the cooldown expires.
+
+**Prevention:** Set `ScaleOutCooldown` to a value that balances responsiveness against thrashing. For traffic patterns with sharp ramps like morning rush, keep cooldown at 60-120 seconds. Monitor scaling activities during peak windows to confirm multiple scale-out steps complete.
+
+## SOP Best Practices
+
+- After any blue-green or rolling deployment that changes a SageMaker endpoint variant name, verify that all CloudWatch alarm dimensions and Application Auto Scaling resource IDs reference the new variant name.
+- Add a post-deployment validation step that checks the state of all CloudWatch alarms associated with the endpoint -- any alarm in INSUFFICIENT_DATA state immediately after deployment is a sign of a dimension mismatch.
+- Use Infrastructure as Code (CloudFormation, CDK, or Terraform) to define the endpoint, scaling policy, and alarms together so that variant name changes propagate automatically to all dependent resources.
+- Set up a CloudWatch alarm on describe-scaling-activities failures and on INSUFFICIENT_DATA state transitions so that broken scaling configurations are detected within minutes, not weeks.
 
 ## Learning Objectives
 

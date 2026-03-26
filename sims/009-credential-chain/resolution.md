@@ -80,14 +80,30 @@ If the output shows an IAM user ARN when you expect a role ARN, something in the
 
 Environment variables are invisible in day-to-day operations. They persist across reboots if set in `/etc/environment` or shell profiles. They silently override instance profiles and config files. Engineers set them for quick debugging and forget to remove them. When the associated IAM user is offboarded, the credentials break with no warning until the next API call.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [AWS CLI Configuration and Credential File Settings](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
-- [Environment Variables to Configure the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
-- [IAM Roles for Amazon EC2 (Instance Profiles)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
-- [AWS STS GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html)
-- [Credential Provider Chain](https://docs.aws.amazon.com/sdkref/latest/guide/standardized-credentials.html)
-- [Deactivating IAM User Access Keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
+### Credentials file override
+
+The `~/.aws/credentials` file on the instance contains long-lived access keys from a previous setup, overriding the instance profile. This differs from the environment variable scenario because the credential source is the shared credentials file (priority 3 in the chain) rather than environment variables (priority 2). Running `aws configure list` shows Type as `shared-credentials-file` instead of `env`. The fix is the same pattern: remove the credentials file and let the instance profile take over. Prevention: never store long-lived credentials on shared infrastructure; use instance profiles exclusively for EC2 workloads.
+
+### Expired STS session token
+
+An engineer ran `aws sts get-session-token` and exported `AWS_SESSION_TOKEN` alongside the access key variables into a persistent file like `/etc/environment`. The session token expired, but the environment variables remain. The error message is `ExpiredToken` rather than `AccessDenied`, which is the key difference. The access key itself may still be valid, but the session token has a fixed expiration. Prevention: never export temporary session tokens into persistent environment files. Use instance profiles or role assumption for automated workloads.
+
+### Wrong instance profile attached
+
+The EC2 instance has an instance profile, but it is associated with a role that lacks the required permissions. The CLI authenticates as the role (`get-caller-identity` returns a role ARN, not a user ARN), but the role's policies do not include the needed actions (s3:PutObject, secretsmanager:GetSecretValue, etc.). The fix is updating the role's policies, not removing credential overrides. Prevention: use infrastructure-as-code to define instance profile roles and their policies; review role permissions when deploy requirements change.
+
+### IMDSv2 enforcement blocks credential retrieval
+
+The instance was configured to require IMDSv2 (token-based metadata access), but the AWS CLI or SDK version running on the instance does not support IMDSv2. The credential chain reaches the instance profile step but fails to retrieve credentials from the metadata service. The error is `Unable to locate credentials` rather than `AccessDenied`. Prevention: update the AWS CLI and SDKs to versions that support IMDSv2 before enforcing it on instances.
+
+## SOP Best Practices
+
+- **Use instance profiles instead of access keys for EC2 workloads.** Instance profiles provide automatic credential rotation through the metadata service. There are no keys to lose, leak, or forget to remove. The SOP for setting up an instance profile involves creating an IAM role with a trust policy for ec2.amazonaws.com, wrapping it in an instance profile, and attaching it to the instance.
+- **Run `aws sts get-caller-identity` as the first step in any AccessDenied investigation.** It reveals the actual authenticating principal regardless of what you expect. If the output shows an IAM user ARN when you expect a role ARN, something in the credential chain is overriding the instance profile.
+- **Include a credential sweep in your offboarding checklist.** Search all shared infrastructure (CI machines, jump boxes, dev servers) for environment variables, credentials files, and config files belonging to the departing engineer. Check `/etc/environment`, `~/.bashrc`, `~/.bash_profile`, `~/.aws/credentials`, and cron job definitions.
+- **Configure CloudTrail alerts for AccessDenied events from inactive or unexpected principals.** This catches credential override issues before they cause extended outages. Alert when the principal in a CloudTrail event does not match the expected instance profile role for a given source IP.
 
 ## Learning Objectives
 

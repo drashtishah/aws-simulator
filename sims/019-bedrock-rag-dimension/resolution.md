@@ -52,13 +52,26 @@ OpenSearch Serverless vector search collections store vectors in fields of type 
 
 Retrieval-Augmented Generation pipelines have a failure mode that traditional monitoring does not catch. The system can be fully operational -- all services healthy, all API calls succeeding, all ingestion jobs completing -- while returning completely wrong results. This happens because correctness is a property of the data, not the infrastructure. Monitoring latency, error rates, and availability will not detect a retrieval quality regression. The only way to catch these failures is to measure retrieval quality directly, using precision, recall, or NDCG against a known evaluation dataset.
 
-## AWS Documentation Links
+## Other Ways This Could Break
 
-- [[Amazon Bedrock Knowledge Bases|https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html]]
-- [[Amazon Titan Embeddings V2|https://docs.aws.amazon.com/bedrock/latest/userguide/titan-embedding-models.html]]
-- [[OpenSearch Serverless Vector Search|https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-vector-search.html]]
-- [[OpenSearch knn_vector Field Type|https://opensearch.org/docs/latest/field-types/supported-field-types/knn-vector/]]
-- [[Bedrock Knowledge Base Data Source Sync|https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base-ds-sync.html]]
+### Embedding model swapped to a different model family
+The knowledge base embedding model ARN is changed from Titan V2 to a Cohere or third-party model with a different default vector size. The same silent truncation occurs, but the cause is a model swap rather than a dimension reconfiguration. A pre-deployment check that resolves the model ARN, queries its output dimensions, and compares against the index mapping would prevent this.
+
+### KMS key for OpenSearch Serverless collection rotated or deleted
+The AWS KMS key used to encrypt the OpenSearch Serverless collection becomes unavailable due to deletion, key policy change, or rotation failure. Unlike a dimension mismatch, this produces hard errors -- both ingestion and retrieval fail with access denied. The failure is loud and immediate. Prevention: use KMS key policies that prevent accidental deletion, and alarm on KMS key state changes.
+
+### Chunking strategy changed without full re-index
+The chunk size or overlap parameters in the data source configuration are modified, but only newly added documents are re-chunked during the next incremental sync. Existing documents keep their old chunk boundaries. Retrieval quality degrades gradually rather than catastrophically. Prevention: trigger a full re-sync after any chunking configuration change and monitor retrieval quality metrics continuously.
+
+### OpenSearch Serverless collection hits indexing capacity limits
+The collection runs out of available OCUs for indexing. Some vectors are indexed and some are silently dropped. The ingestion job may show fewer documents indexed than scanned. Unlike the dimension mismatch where all vectors are bad, here some results are correct and others are missing. Prevention: monitor OCU consumption and alarm when utilization exceeds 80%.
+
+## SOP Best Practices
+
+- Always validate that the embedding model's output dimensions match the vector store index mapping dimensions before deploying any change to either component. Automate this check in CI/CD.
+- Treat retrieval quality metrics (precision, recall, NDCG) as first-class operational metrics. Wire them to CloudWatch alarms with the same urgency as latency and error rate alarms.
+- After any change to the embedding model, chunking strategy, or index configuration, run a full data source re-sync followed by a regression test suite. Never assume incremental syncs preserve quality.
+- Document the relationship between your embedding model configuration and your vector store index schema in a single source of truth. When one changes, the other must be reviewed.
 
 ## Learning Objectives
 
