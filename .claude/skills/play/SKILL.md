@@ -124,6 +124,36 @@ The player investigates conversationally. Respond according to the behavioral ru
 - **Narrator Mode** for story delivery, hints, fix validation, and general questions
 - **Console Mode** when the player queries a specific AWS service -- serve raw artifact data in native AWS format, then return to Narrator Mode
 
+### 10a. Narrative Arc Awareness
+
+The narrator uses `manifest.team.narrator.narrative_arc` to pace improvised narration. During the "trials" phase (player investigating, hitting red herrings), let mundane details accumulate. When the player nears revelation, do not accelerate. All improvised speech follows the Narrative Voice rules from agent-prompts.md.
+
+### 10b. Inline Jargon Explanation
+
+When the player asks about an AWS term:
+- Source from `manifest.team.narrator.glossary` first
+- If the term is not in the glossary, the narrator explains from general AWS knowledge
+- Deliver in the narrator's voice, woven into narrative, never break character
+- NEVER hint at root cause through definitions
+- Only explain when the player asks or the term is central to a story beat being delivered
+
+### 10c. System Visualization Narration
+
+During gameplay, the narrator helps the player build a mental model of the system:
+- Source from `manifest.team.narrator.system_narration`
+- On first query to a service console, the narrator adds one sentence about that component's role
+- On second+ service query, the narrator describes how the services relate
+- Observations are factual -- what the system IS, not what is wrong
+- Do NOT reference `system_narration.what_broke` during gameplay -- that is resolution-only
+
+### 10d. Adaptive Hint Delivery
+
+Hints are now objects with `text`, `relevant_services`, and `skip_if_queried` fields. Before delivering the next hint:
+- Check the player's `services_queried` from session state
+- If all services in a hint's `skip_if_queried` have been queried, skip that hint
+- If a hint's `relevant_services` overlap with services the player has NOT queried, prioritize that hint
+- Still deliver only one hint at a time, still require 2+ unproductive questions before offering
+
 ### 11. Session State Auto-Save
 
 Auto-save session state to `learning/sessions/{sim_id}.json` after every significant interaction:
@@ -167,10 +197,10 @@ When the player proposes a fix, check it against `manifest.resolution.fix_criter
 2. Present the marked architecture diagram from artifacts/architecture-resolution.txt
 3. Provide a learning summary referencing the manifest's learning_objectives
 4. Include real-world remediation approaches for each fix action -- explain how it would be done via AWS Console (step-by-step UI navigation), CLI (`aws` commands), and SDK/IaC (boto3, CloudFormation, or Terraform)
-5. Attempt to call `aws-knowledge-mcp-server` to retrieve the Agent SOP most relevant to the incident type.
-   - **If the MCP server is active:** Present the SOP result under the heading "How AWS recommends approaching this" as numbered steps adapted to the sim's specific resources and company name. This section is separate from the narrative -- structured steps, not story prose.
-   - **If the MCP server is unavailable or returns an error:** Tell the user: "The AWS Knowledge MCP server is not connected. The 'How AWS recommends approaching this' section will be omitted. Restart your session and run `/mcp` to activate it for future sims." Then skip this section and continue to step 6.
-6. Update session state to `"status": "resolved"`
+5. Present `manifest.resolution.sop_steps` as numbered steps under the heading "How AWS recommends approaching this". This section is separate from the narrative -- structured steps, not story prose.
+6. Present `manifest.resolution.related_failure_modes` under the heading "Other ways this system could break". For each entry, describe the scenario, how it differs from the resolved root cause, and how to prevent it.
+7. Present `manifest.resolution.sop_practices` as a bulleted list under the heading "Best practices from AWS SOPs".
+8. Update session state to `"status": "resolved"`
 7. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
 
 ### 15. Coaching Analysis

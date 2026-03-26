@@ -48,13 +48,73 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 7. Look for patterns that involve 2-3 services interacting (not single-service trivial issues)
 8. Cross-reference findings against `references/exam-topics.md` to ensure exam domain coverage
 9. Prioritize patterns that cover multiple exam domains or certifications
-9b. **If `mcp_available: true`:** For each service in the proposed scenarios, call `aws-knowledge-mcp-server` to retrieve:
-    - The exact API response schema for the primary API actions (e.g., `DescribeSecurityGroups`, `GetBucketPolicy`)
-    - Real error codes and messages emitted by the service in failure states
-    - CloudWatch metric names published by the service (for `metrics.csv` artifact accuracy)
-    - IAM action names used to investigate and fix the issue (for `cloudtrail-events.json` accuracy)
-    - The Agent SOP most relevant to remediating this type of incident
-    Store all of this as reference data for Phase 4 artifact generation and validation.
+9b. **If `mcp_available: true`:** For each service in the proposed scenarios, use the following tools to collect reference data for Phase 4 artifact generation:
+
+    For API response schemas and IAM action names:
+    ```
+    aws___search_documentation(
+      search_phrase="<ServiceName> API response schema <ActionName>",
+      topics=["reference_documentation"]
+    )
+    ```
+
+    For error codes:
+    ```
+    aws___search_documentation(
+      search_phrase="<ServiceName> error codes <ActionName>",
+      topics=["troubleshooting"]
+    )
+    ```
+
+    For CloudWatch metric names:
+    ```
+    aws___search_documentation(
+      search_phrase="CloudWatch metrics <ServiceName>",
+      topics=["reference_documentation"]
+    )
+    ```
+
+    For the Agent SOP — two steps, do NOT skip step 1:
+    ```
+    Step 1: aws___search_documentation(
+              search_phrase="<describe the remediation task, e.g. 'remediate S3 public access'>",
+              topics=["agent_sops"]
+            )
+    Step 2: Find the result entry that has a `sop_name` field.
+            aws___retrieve_agent_sop(sop_name=<exact value from step 1 result>)
+            Do NOT guess or paraphrase the sop_name — copy it verbatim.
+    ```
+
+    For common failure modes and anti-patterns:
+    ```
+    aws___search_documentation(
+      search_phrase="<ServiceName> common misconfiguration troubleshooting",
+      topics=["troubleshooting"]
+    )
+    ```
+
+    For best practices:
+    ```
+    aws___search_documentation(
+      search_phrase="<ServiceName> security best practices",
+      topics=["reference_documentation"]
+    )
+    ```
+
+    For service interaction patterns (for each pair of services in the scenario):
+    ```
+    aws___search_documentation(
+      search_phrase="<ServiceA> integration with <ServiceB>",
+      topics=["reference_documentation"]
+    )
+    ```
+
+    After search, pick 2-3 most relevant URLs and deep-read them:
+    ```
+    aws___read_documentation(url="<doc_url_from_search_results>")
+    ```
+
+    Store all returned data as labeled `mcp_research` subsections: `api_schemas`, `error_codes`, `cloudwatch_metrics`, `sop`, `failure_modes`, `best_practices`, `service_interactions`. Reference by name in steps 15-18.
 
     **If `mcp_available: false`:** Use WebSearch to find the API response schema and error codes for each service. Search queries:
     - `"AWS {service} API response JSON format site:docs.aws.amazon.com"`
@@ -100,9 +160,17 @@ For each approved scenario, execute steps 12-19:
 - Fix criteria: at least 2, with at least 1 marked `required: true`
 - Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters
 - Exam topics: reference real domains from `references/exam-topics.md`
+- Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS -- no MCP needed for basic definitions. Do not define common English words.
+- Narrative arc: map this sim's story to the Campbell monomyth using `references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short sentence describing what that phase looks like in THIS specific sim. Write in the Emi Yagi voice -- flat, observational, concrete.
+- System narration: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only). Source from `mcp_research.service_interactions`.
+- Hints: generate as objects with `text`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
+- SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it.
+- Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`.
+- SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`.
 
 #### 16. Generate story.md
 
+- Consult `references/story-structure.md` for story beat pacing and `references/narrative-voice.md` for prose calibration
 - Obsidian frontmatter with tags: `type/simulation`, `service/{slug}` for each service, `difficulty/{level-name}`, `category/{category}`
 - Difficulty tag mapping: 1=starter, 2=associate, 3=professional, 4=expert
 - Opening section (3-4 paragraphs):
@@ -118,7 +186,7 @@ For each approved scenario, execute steps 12-19:
 #### 17. Generate resolution.md
 
 - Obsidian frontmatter matching `story.md` tags
-- Sections: Root Cause, Timeline (table), Correct Remediation (numbered), Key Concepts, AWS Documentation Links, Learning Objectives
+- Sections: Root Cause, Timeline (table), Correct Remediation (numbered), Key Concepts, Other Ways This Could Break, SOP Best Practices, Learning Objectives
 - The numbered remediation steps must align with the Agent SOP retrieved in step 9b, presented in the same sequence the SOP prescribes, adapted to the sim's specific company and resources
 - AWS documentation links must point to real docs pages
 - Key Concepts should explain 2-3 AWS concepts at the appropriate difficulty depth
@@ -311,3 +379,6 @@ The narrative voice for all story.md files follows the register of contemporary 
 - [[exam-topics]] -- Exam domain and incident pattern reference
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
 - [[catalog.csv]] -- AWS services catalog with knowledge gaps
+- [[story-structure]] -- Campbell monomyth mapping for sim storytelling
+- [[narrative-voice]] -- Emi Yagi style guide for narrative prose
+- [[game-design]] -- Text-based game and investigation design best practices

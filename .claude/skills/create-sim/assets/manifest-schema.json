@@ -146,10 +146,107 @@
             "hints": {
               "type": "array",
               "items": {
-                "type": "string"
+                "type": "object",
+                "required": ["text", "relevant_services"],
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "The hint text, progressing from vague to specific."
+                  },
+                  "relevant_services": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "Service slugs this hint relates to."
+                  },
+                  "skip_if_queried": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "default": [],
+                    "description": "Skip this hint if the player has already queried all of these services."
+                  }
+                },
+                "additionalProperties": false
               },
               "minItems": 2,
-              "description": "Progressive hints from least to most specific."
+              "description": "Progressive hints from least to most specific. Tagged with service relevance for adaptive delivery."
+            },
+            "glossary": {
+              "type": "object",
+              "additionalProperties": { "type": "string" },
+              "description": "AWS jargon definitions keyed by term. 5-10 entries per sim, 1-2 sentence definitions pitched at a beginner."
+            },
+            "narrative_arc": {
+              "type": "object",
+              "required": ["call", "threshold", "trials", "revelation", "return"],
+              "properties": {
+                "call": {
+                  "type": "string",
+                  "description": "The inciting incident -- the alert, symptom, or first sign of trouble."
+                },
+                "threshold": {
+                  "type": "string",
+                  "description": "The moment the player crosses into investigation -- what they see first."
+                },
+                "trials": {
+                  "type": "string",
+                  "description": "The red herrings, partial truths, and misleading evidence."
+                },
+                "revelation": {
+                  "type": "string",
+                  "description": "The root cause discovery moment."
+                },
+                "return": {
+                  "type": "string",
+                  "description": "The lesson, the prevention, what changes."
+                }
+              },
+              "additionalProperties": false,
+              "description": "Campbell monomyth mapping for this sim. Guides narrator pacing and improvisation."
+            },
+            "system_narration": {
+              "type": "object",
+              "required": ["components", "data_flow", "what_broke"],
+              "properties": {
+                "components": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["name", "role", "connections", "failure_impact"],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "description": "Component name including resource name. Example: novapay-txn-rpts (S3 bucket)"
+                      },
+                      "role": {
+                        "type": "string",
+                        "description": "What this component does in the system."
+                      },
+                      "connections": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "How this component connects to others. Example: novapay-ecs-task-role writes via PutObject"
+                      },
+                      "failure_impact": {
+                        "type": "string",
+                        "description": "What happens if this component fails or is misconfigured."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "minItems": 2,
+                  "description": "Major system components with roles, connections, and failure impacts."
+                },
+                "data_flow": {
+                  "type": "string",
+                  "description": "Normal data flow through the system. Example: RDS -> ECS task -> S3 bucket -> Analytics vendor"
+                },
+                "what_broke": {
+                  "type": "string",
+                  "description": "What specifically broke in this sim. RESOLUTION ONLY -- not shown during investigation."
+                }
+              },
+              "additionalProperties": false,
+              "description": "System context for narrator visualization. Helps player build mental model during investigation."
             },
             "max_hints_before_nudge": {
               "type": "integer",
@@ -235,6 +332,42 @@
           },
           "minItems": 1,
           "description": "Key takeaways the player should learn from this simulation."
+        },
+        "sop_steps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "How AWS recommends approaching this incident. Numbered remediation steps adapted to this sim's resources. Pre-computed from Agent SOP or best-practice fallback."
+        },
+        "related_failure_modes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["scenario", "how_it_differs", "prevention"],
+            "properties": {
+              "scenario": {
+                "type": "string",
+                "description": "Alternative failure scenario for the same services."
+              },
+              "how_it_differs": {
+                "type": "string",
+                "description": "How this differs from the sim's actual root cause."
+              },
+              "prevention": {
+                "type": "string",
+                "description": "How to prevent this failure mode."
+              }
+            },
+            "additionalProperties": false
+          },
+          "minItems": 2,
+          "description": "2-4 alternative ways the same services could break. Shown during resolution debrief."
+        },
+        "sop_practices": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "description": "Best-practice takeaways from the AWS SOP, beyond the immediate fix. Preventive measures, guardrails, operational habits."
         }
       },
       "additionalProperties": false
