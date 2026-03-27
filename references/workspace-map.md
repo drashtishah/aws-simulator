@@ -46,20 +46,19 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                                                        +------------------+
 
 +------------------+
-|   /publish       |
+|   /render        |
 |  (skill)         |
 |                  |
 | Reads:           |
 |  recordings/*.cast|
-|  published.json  |
-|  install-id      |
+|  video/src/*     |
 |                  |
 | Writes:          |
-|  published.json  |
+|  recordings/*.mp4|
 |                  |
 | External:        |
-|  asciinema upload|
-|  asciinema API   |
+|  npx remotion    |
+|  npx tsx         |
 +------------------+
 ```
 
@@ -89,12 +88,12 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> clears feedback.md
                 |
                 v
-/publish -----> reads learning/recordings/*.cast (metadata extraction)
-            --> reads learning/recordings/published.json (tracking state)
-            --> reads ~/.config/asciinema/install-id (auth)
-            --> runs asciinema upload (CLI, for new uploads)
-            --> calls asciinema.org API (DELETE, PATCH for management)
-            --> writes learning/recordings/published.json
+/render ------> reads learning/recordings/*.cast (metadata extraction)
+            --> copies .cast to video/public/recording.cast (temp)
+            --> runs npx tsx (extract cast metadata)
+            --> runs npx remotion render (video generation)
+            --> writes learning/recordings/*.mp4
+            --> cleans up video/public/recording.cast
 ```
 
 ## Shared Data Files
@@ -107,7 +106,6 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
-| `learning/recordings/published.json` | publish | publish | JSON: array of {file, id, url, title, visibility, uploaded_at} |
 
 ## Impact Analysis Guide
 
@@ -125,5 +123,5 @@ When changing a component, check what else reads/writes the same data:
 | `sessions/*.json` format | play (reads + writes + deletes), feedback (writes) |
 | Theme files (themes/) | play (theme selection + injection + rendering), agent-prompts.md (voice placeholder) |
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
-| `published.json` format | publish (reads + writes) |
-| `learning/recordings/` path | record script, publish skill |
+| `learning/recordings/` path | render skill, record script |
+| `video/src/*` components | render skill (Remotion composition, Terminal component) |
