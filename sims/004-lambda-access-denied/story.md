@@ -13,18 +13,28 @@ tags:
 
 ## Opening
 
-It is 11:32 AM on a Tuesday. The deployment pipeline just finished pushing a new version of the threat-feed synchronization Lambda function. The deploy succeeded -- green checkmarks across the board. But within minutes, the CloudWatch error rate dashboard turns red. The Lambda function is firing every 5 minutes on schedule, but every invocation fails with the same error: `AccessDeniedException`.
-
-PacketForge is a growth-stage cybersecurity startup that provides real-time threat intelligence feeds to 220 enterprise customers. The core product aggregates threat data from 14 external sources, enriches it with PacketForge's proprietary analysis, and pushes it to customer-facing APIs. Enterprise customers on the Sentinel plan pay $180K per year for guaranteed 15-minute update freshness on threat indicators. The threat-sync Lambda function is the heart of the pipeline -- it pulls raw threat data, processes it, and writes the enriched results to a DynamoDB table that feeds the customer API.
-
-The function code has not changed its external dependencies -- it still reads from the same threat sources and writes to the same DynamoDB table. But the new version refactored the data processing pipeline. Previously, the function used a single batch-write operation. The refactored code uses individual PutItem and UpdateItem calls for better error handling and idempotency. The code worked perfectly in the staging environment for two weeks.
-
-Your phone buzzes again -- the customer success team is pinging. Ridgeline Financial, the largest enterprise account at $480K ARR, has opened a Priority 1 support ticket. Their security operations center uses PacketForge threat feeds to generate real-time blocking rules for their network perimeter. Stale data means unblocked threats.
+company: PacketForge
+industry: cybersecurity, growth-stage startup, 35 engineers
+product: real-time threat intelligence feeds -- aggregates threat data from 14 external sources, enriches with proprietary analysis, pushes to customer-facing APIs
+scale: 220 enterprise customers, Sentinel plan at $180K/year guarantees 15-minute update freshness on threat indicators
+time: 11:32 AM, Tuesday
+scene: deployment pipeline just finished pushing new version of threat-feed synchronization Lambda function
+alert: deploy succeeded (green checkmarks), but CloudWatch error rate dashboard turns red within minutes -- Lambda function fires every 5 minutes on schedule, every invocation fails with `AccessDeniedException`
+stakes: Ridgeline Financial (largest enterprise account, $480K ARR) opened P1 support ticket -- their security operations center uses PacketForge threat feeds for real-time blocking rules on network perimeter, stale data means unblocked threats
+early_signals:
+  - CloudWatch error rate dashboard red
+  - every Lambda invocation fails with `AccessDeniedException`
+  - function code still reads same threat sources and writes to same DynamoDB table
+  - new version refactored data processing: replaced single BatchWriteItem with individual PutItem and UpdateItem calls for better error handling and idempotency
+  - code worked perfectly in staging environment for two weeks
+investigation_starting_point: deploy succeeded, function fires on schedule but every invocation fails with AccessDeniedException. The code refactor changed which DynamoDB API operations are called. Staging worked fine but production does not.
 
 ## Resolution
 
-The investigation revealed a gap between the Lambda function's code permissions and its IAM execution role. The original version of `packetforge-threat-sync` used `dynamodb:BatchWriteItem` for all writes. The execution role's IAM policy included `dynamodb:BatchWriteItem`, `dynamodb:GetItem`, and `dynamodb:Query`. When the code was refactored to use individual `PutItem` and `UpdateItem` calls instead of batch writes, the developer updated the code but did not update the IAM policy.
-
-The staging environment used a more permissive IAM role (`dynamodb:*`) for convenience, which masked the permission gap. When the code deployed to production, the production execution role's least-privilege policy correctly blocked the unauthorized actions, resulting in `AccessDeniedException` on every write attempt.
-
-The immediate fix was to add `dynamodb:PutItem` and `dynamodb:UpdateItem` to the execution role's IAM policy. The team also removed `dynamodb:BatchWriteItem` since it was no longer used, keeping the policy aligned with the principle of least privilege. As a preventive measure, the team added an IAM policy simulation step to the CI/CD pipeline that validates the Lambda execution role has permissions for all DynamoDB actions the code uses before deploying to production.
+root_cause: Lambda execution role's IAM policy included `dynamodb:BatchWriteItem`, `dynamodb:GetItem`, and `dynamodb:Query` but not `dynamodb:PutItem` or `dynamodb:UpdateItem`. Code refactor replaced BatchWriteItem with PutItem and UpdateItem calls but developer did not update the IAM policy.
+mechanism: staging environment used a more permissive IAM role (`dynamodb:*`) for convenience, masking the permission gap. Production execution role's least-privilege policy correctly blocked the unauthorized actions, resulting in `AccessDeniedException` on every write attempt.
+fix: add `dynamodb:PutItem` and `dynamodb:UpdateItem` to the execution role's IAM policy, remove `dynamodb:BatchWriteItem` (no longer used) to maintain least privilege. Preventive measure: add IAM policy simulation step to CI/CD pipeline that validates Lambda execution role has permissions for all DynamoDB actions the code uses before deploying to production.
+contributing_factors:
+  - staging IAM role used wildcard permissions (`dynamodb:*`), hiding the mismatch
+  - IAM policy update not included in the same pull request as the code refactor
+  - no automated validation of required permissions against actual API calls in the deployment pipeline

@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Quiet observer. States facts and lets them accumulate. Mentions the demo in twenty minutes the same way they mention the error message. Does not raise their voice.",
+      "personality": {
+        "role": "quiet observer on the engineering team",
+        "demeanor": "states facts and lets them accumulate, does not raise their voice",
+        "recurring_concern": "enterprise demo in twenty minutes"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,19 +40,33 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "The sales engineer just messaged. The demo is in fifteen minutes. She asked if the endpoint is ready. You told her you are looking into it."
+          "facts": [
+            "sales engineer just messaged, demo is in fifteen minutes",
+            "she asked if the endpoint is ready"
+          ]
         },
         {
           "trigger": "elapsed_minutes:8",
-          "message": "The pipeline ran clean. You checked twice. The function exists. But the API Gateway says it does not. These two facts sit next to each other and do not agree."
+          "facts": [
+            "pipeline ran clean, checked twice",
+            "function exists according to the pipeline, but API Gateway says it does not",
+            "these two facts do not agree"
+          ]
         },
         {
           "trigger": "elapsed_minutes:12",
-          "message": "Someone on the team mentioned they changed the CI environment variables last week. Something about default credentials. It did not seem important at the time."
+          "facts": [
+            "someone on the team mentioned they changed the CI environment variables last week",
+            "something about default credentials for disaster recovery testing"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The function is not broken. It deployed successfully. The question is where it deployed to. The API Gateway is looking for it in a specific place."
+          "facts": [
+            "function is not broken -- it deployed successfully",
+            "question is where it deployed to",
+            "API Gateway is looking for it in a specific region"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -57,27 +75,27 @@
       ],
       "hints": [
         {
-          "text": "The function exists. The API Gateway cannot find it. What could make a working function invisible to a service that should see it?",
+          "hint": "function exists but API Gateway cannot find it -- what could make a working function invisible to a service that should see it?",
           "relevant_services": ["lambda"],
           "skip_if_queried": []
         },
         {
-          "text": "AWS resources are regional. A Lambda function in one region does not exist in another. Where is the API Gateway looking?",
+          "hint": "AWS resources are regional -- a Lambda function in one region does not exist in another, check where the API Gateway is looking",
           "relevant_services": ["lambda"],
           "skip_if_queried": []
         },
         {
-          "text": "Check what region the CLI is configured to use. Run aws configure list and look at the region setting.",
+          "hint": "check what region the CLI is configured to use with aws configure list, look at the region setting",
           "relevant_services": ["iam"],
           "skip_if_queried": ["iam"]
         },
         {
-          "text": "The CI/CD pipeline has AWS_DEFAULT_REGION set to us-west-2. The API Gateway is in us-east-1. The function was deployed to the wrong region.",
+          "hint": "CI/CD pipeline has AWS_DEFAULT_REGION set to us-west-2 but API Gateway is in us-east-1 -- function was deployed to the wrong region",
           "relevant_services": ["lambda", "cloudwatch"],
           "skip_if_queried": ["lambda", "iam"]
         },
         {
-          "text": "Redeploy the function to us-east-1, or run: aws lambda get-function --function-name calendine-booking-api --region us-west-2 to confirm it is there, then deploy to us-east-1.",
+          "hint": "redeploy the function to us-east-1, or confirm it exists in us-west-2 with aws lambda get-function --function-name calendine-booking-api --region us-west-2",
           "relevant_services": ["lambda"],
           "skip_if_queried": ["lambda", "iam", "cloudwatch"]
         }
@@ -93,11 +111,11 @@
         "CI/CD pipeline": "An automated system that builds, tests, and deploys your code when you push changes. Common tools include GitHub Actions, CodePipeline, and Jenkins. The pipeline inherits environment variables that control where deployments go."
       },
       "narrative_arc": {
-        "call": "The deploy finished clean. The smoke test returned Internal server error. The function the pipeline confirmed was successful does not appear to exist.",
-        "threshold": "The player opens CloudWatch and sees ResourceNotFoundException pointing at an ARN in us-east-1. The Lambda console in us-east-1 shows nothing. The function is not there.",
-        "trials": "The code is correct. The pipeline logs show success. The IAM role exists. Everything looks right except the function is missing from the region where it should be. The player may check permissions, code, or handler configuration before questioning geography.",
-        "revelation": "aws configure list shows the region is us-west-2, sourced from AWS_DEFAULT_REGION. The function was deployed to the wrong region. It has been sitting in us-west-2 since 14:12 UTC, healthy and idle, waiting for invocations that will never come.",
-        "return": "Explicit --region flags in deploy scripts. Never rely on ambient configuration for production deployments. The CI/CD environment variable is corrected. The orphaned function in us-west-2 is deleted."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player opens CloudWatch, sees ResourceNotFoundException pointing at ARN in us-east-1, Lambda console in us-east-1 shows nothing",
+        "trials": "code correct, pipeline logs show success, IAM role exists -- everything looks right except function is missing from the expected region, player may check permissions or handler config before questioning geography",
+        "revelation": "aws configure list shows region is us-west-2 from AWS_DEFAULT_REGION, function deployed to wrong region, sitting in us-west-2 since 14:12 UTC healthy and idle",
+        "return": "redeploy to us-east-1, add explicit --region flags to deploy scripts, correct CI/CD environment variable, delete orphaned function in us-west-2"
       },
       "system_narration": {
         "components": [

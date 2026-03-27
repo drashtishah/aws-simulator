@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "ML platform engineer. Methodical, speaks in specifics. References precision and recall like a reflex. Quietly worried about client trust.",
+      "personality": {
+        "role": "ML platform engineer",
+        "demeanor": "methodical, speaks in specifics, references precision and recall like a reflex",
+        "recurring_concern": "client trust in legal research accuracy"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,33 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "A partner at Whitfield & Associates called in directly. Their associate used the assistant to prepare a brief and cited a case from an unrelated jurisdiction. The brief was filed yesterday."
+          "facts": [
+            "partner at Whitfield & Associates called in directly",
+            "their associate used the assistant to prepare a brief and cited a case from an unrelated jurisdiction",
+            "the brief was filed yesterday"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "QA team ran the regression suite. Retrieval precision dropped from 0.91 to 0.12 overnight. Every query returns results, but the results are essentially random."
+          "facts": [
+            "QA team ran the regression suite",
+            "retrieval precision dropped from 0.91 to 0.12 overnight",
+            "every query returns results but results are essentially random"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "CTO is asking whether we need to take the assistant offline. Two more firms reported incorrect citations this morning."
+          "facts": [
+            "CTO asking whether to take the assistant offline",
+            "two more firms reported incorrect citations this morning"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The knowledge base sync succeeded and the S3 source documents are correct. The issue is in how the vectors are stored and matched, not in the source data."
+          "facts": [
+            "knowledge base sync succeeded and S3 source documents are correct",
+            "issue is in how vectors are stored and matched, not in the source data"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -58,11 +76,11 @@
         "HNSW": "Hierarchical Navigable Small World -- an algorithm used by OpenSearch to build a graph structure for fast approximate nearest-neighbor search. It is configured per-index with parameters like ef_construction and m."
       },
       "narrative_arc": {
-        "call": "Friday morning. A law firm associate filed a brief citing a landlord-tenant case in a securities fraud proceeding. The case was real. The citation was nonsensical. The Terravox legal research assistant found it.",
-        "threshold": "The engineer opens the retrieval logs. Every query returns results. The scores are low and uniform -- 0.30 to 0.35 -- but the system did not error. The knowledge base sync completed cleanly. The S3 documents are intact. The problem is somewhere between the documents and the search results.",
-        "trials": "The sync job shows 280,412 documents indexed, zero failures. CloudWatch metrics show normal latency and zero errors. The obvious suspects -- bad source data, failed ingestion, broken index -- all check out. The system looks healthy by every standard metric.",
-        "revelation": "The embedding model configuration says 1,024 dimensions. The OpenSearch index mapping says 512. The model was upgraded on Thursday. The index was never recreated. Every vector has been silently truncated in half since the sync ran.",
-        "return": "The index must be deleted and recreated with 1,024 dimensions, then a full re-sync. The deeper lesson: ingestion success does not mean retrieval correctness. A CI check comparing model dimensions to index dimensions, and a CloudWatch alarm on retrieval precision, would have caught this before a law firm filed a bad brief."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "retrieval logs show every query returning results with low uniform scores (0.30-0.35), no errors, sync completed cleanly, S3 documents intact -- problem somewhere between documents and search results",
+        "trials": "sync job shows 280,412 documents indexed with zero failures, CloudWatch metrics show normal latency and zero errors, obvious suspects (bad source data, failed ingestion, broken index) all check out -- system looks healthy by every standard metric",
+        "revelation": "embedding model configuration says 1,024 dimensions, OpenSearch index mapping says 512, model upgraded Thursday, index never recreated, every vector silently truncated in half since sync ran",
+        "return": "delete index and recreate with 1,024 dimensions, full re-sync, add CI check comparing model dimensions to index dimensions and CloudWatch alarm on retrieval precision"
       },
       "system_narration": {
         "components": [
@@ -108,22 +126,22 @@
       },
       "hints": [
         {
-          "text": "The retrieval returns results for every query -- it just returns the wrong ones. What could cause a vector search to return near-random matches?",
+          "hint": "retrieval returns results for every query but returns the wrong ones -- what could cause a vector search to return near-random matches?",
           "relevant_services": ["bedrock", "opensearch-serverless"],
           "skip_if_queried": []
         },
         {
-          "text": "Something changed in the embedding pipeline recently. Compare the current embedding model configuration to the OpenSearch index mapping.",
+          "hint": "something changed in the embedding pipeline recently -- compare the current embedding model configuration to the OpenSearch index mapping",
           "relevant_services": ["bedrock", "opensearch-serverless"],
           "skip_if_queried": ["bedrock", "opensearch-serverless"]
         },
         {
-          "text": "The embedding model now produces 1,024-dimension vectors. How many dimensions does the OpenSearch index expect?",
+          "hint": "embedding model now produces 1,024-dimension vectors -- how many dimensions does the OpenSearch index expect?",
           "relevant_services": ["opensearch-serverless"],
           "skip_if_queried": ["opensearch-serverless"]
         },
         {
-          "text": "The index mapping specifies 512 dimensions. The model produces 1,024. The vectors are being truncated during ingestion, destroying their semantic meaning.",
+          "hint": "index mapping specifies 512 dimensions, model produces 1,024, vectors are being truncated during ingestion destroying their semantic meaning",
           "relevant_services": ["bedrock", "opensearch-serverless"],
           "skip_if_queried": []
         }

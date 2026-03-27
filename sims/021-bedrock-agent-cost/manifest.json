@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Finance operations lead. Reads spreadsheets the way other people read novels. States dollar amounts without inflection.",
+      "personality": {
+        "role": "finance operations lead",
+        "demeanor": "precise with numbers, states dollar amounts without inflection",
+        "recurring_concern": "monthly AI platform budget of $3,500 has been burned through in one week"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Daily cost for Bedrock was $1,714 yesterday. The monthly budget for the entire AI platform is $3,500. We have burned through four months of budget in one week."
+          "facts": [
+            "daily cost for Bedrock was $1,714 yesterday",
+            "monthly budget for the entire AI platform is $3,500",
+            "four months of budget burned in one week"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Engineering traced the cost to the InvokeModel API. Token consumption per query is 10x the baseline. The new action group went live eight days ago."
+          "facts": [
+            "engineering traced cost to InvokeModel API",
+            "token consumption per query is 10x the baseline",
+            "new comprehensive-benefits action group went live eight days ago"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "CFO has flagged the line item. She wants a root cause and a fix commitment by end of day."
+          "facts": [
+            "CFO has flagged the line item",
+            "she wants a root cause and a fix commitment by end of day"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The model pricing has not changed. The number of user queries has not changed. Look at what happens inside a single query -- how many tokens does the agent consume per request?"
+          "facts": [
+            "model pricing has not changed",
+            "number of user queries has not changed",
+            "look at what happens inside a single query -- how many tokens does the agent consume per request"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,11 +78,11 @@
         "AWS Budgets": "A service that lets you set custom cost and usage budgets for your AWS account. It sends alerts when your actual or forecasted spending exceeds the thresholds you set."
       },
       "narrative_arc": {
-        "call": "The weekly cost report arrives on Monday morning. The Bedrock line item reads $12,147.83. The previous week it was $812.40. Nobody changed the pricing tier. Nobody launched a campaign. The query volume is flat.",
-        "threshold": "The finance operations lead opens Cost Explorer and sees a vertical step on March 17th. Daily cost went from $116 to $1,714. Something changed eight days ago that made each query ten times more expensive.",
-        "trials": "The platform engineer reviews agent traces, token consumption metrics, and Lambda invocation counts. The model pricing is unchanged. The query volume is unchanged. The cost increase is invisible from the outside -- it lives inside the agent's internal reasoning loop.",
-        "revelation": "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates roughly 4,000 chain-of-thought reasoning tokens that are billed at the output token rate. Per-query cost went from $0.02 to $0.20. Forty percent of queries hit this action group.",
-        "return": "The action group is refactored to return consolidated data in fewer invocations. CloudWatch alarms are set on token consumption. AWS Budgets alerts are configured. The weekly cost drops from $12,147 to $1,260."
+        "call": "alert arrives, stakes established from story.md Opening -- weekly Bedrock cost jumped from $812 to $12,147 with no change in query volume or pricing",
+        "threshold": "player enters investigation, Cost Explorer shows vertical step on March 17th, daily cost from $116 to $1,714, something changed eight days ago",
+        "trials": "agent traces, token consumption metrics, Lambda invocation counts reviewed -- model pricing unchanged, query volume unchanged, cost increase invisible from outside, lives inside agent's internal reasoning loop",
+        "revelation": "comprehensive-benefits action group causes 6-8 sub-steps per query, each generating ~4,000 chain-of-thought reasoning tokens billed at output rate, per-query cost from $0.02 to $0.20, 40% of queries hit this action group",
+        "return": "action group refactored to return consolidated data in fewer invocations, CloudWatch alarms set on token consumption, AWS Budgets alerts configured, weekly cost drops to $1,260"
       },
       "system_narration": {
         "components": [
@@ -103,22 +122,22 @@
       },
       "hints": [
         {
-          "text": "The cost increase correlates with a specific date. What changed in the agent configuration around that time?",
+          "hint": "cost increase correlates with a specific date -- what changed in the agent configuration around that time?",
           "relevant_services": ["bedrock", "cost-explorer"],
           "skip_if_queried": ["agent-config.json", "cost-explorer.json"]
         },
         {
-          "text": "Look at the agent trace for a single query. How many action group invocations does the agent make per user question?",
+          "hint": "look at the agent trace for a single query -- how many action group invocations does the agent make per user question?",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["agent-trace.json"]
         },
         {
-          "text": "Each action group invocation triggers a full reasoning cycle with chain-of-thought tokens. Those internal tokens are billed. Count the total tokens per query.",
+          "hint": "each action group invocation triggers a full reasoning cycle with chain-of-thought tokens that are billed -- count the total tokens per query",
           "relevant_services": ["bedrock", "cloudwatch"],
           "skip_if_queried": ["invocation-logs.json", "metrics.csv"]
         },
         {
-          "text": "The comprehensive-benefits action group causes the agent to invoke 6-8 sub-steps per query. Each step generates ~4,000 reasoning tokens. The per-query cost went from $0.02 to $0.20.",
+          "hint": "the comprehensive-benefits action group causes 6-8 sub-steps per query, each generating ~4,000 reasoning tokens -- per-query cost went from $0.02 to $0.20",
           "relevant_services": ["bedrock", "lambda"],
           "skip_if_queried": ["agent-trace.json", "invocation-logs.json", "cloudwatch-logs.txt"]
         }

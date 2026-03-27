@@ -24,7 +24,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Co-founder and only backend engineer awake at this hour. Matter-of-fact. Mentions customer refund requests between technical details. Knows the codebase intimately but missed this configuration.",
+      "personality": {
+        "role": "co-founder and only backend engineer awake at this hour",
+        "demeanor": "matter-of-fact, knows the codebase intimately but missed this configuration",
+        "recurring_concern": "customer refund requests and financial impact of duplicate charges"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -32,19 +36,33 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Eight more duplicate charge reports came in while we were looking at this. Stripe shows two successful charges for each of those orders. The refund queue in the support tool is growing."
+          "facts": [
+            "8 more duplicate charge reports while investigating",
+            "Stripe shows two successful charges for each affected order",
+            "refund queue in support tool growing"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The inventory system shows negative stock for organic avocados and oat milk. That should not be possible. Three delivery drivers were assigned the same order."
+          "facts": [
+            "inventory system shows negative stock for organic avocados and oat milk",
+            "three delivery drivers assigned the same order"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "We have processed $4,200 in duplicate charges today. Support has handled eleven refund requests. Two customers posted about it on the Austin subreddit."
+          "facts": [
+            "$4,200 in duplicate charges processed today",
+            "support has handled 11 refund requests",
+            "two customers posted about it on the Austin subreddit"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The Lambda function code is correct for a single execution. The problem is that the same message is being processed more than once. Look at the queue configuration."
+          "facts": [
+            "Lambda function code is correct for a single execution",
+            "the problem is the same message being processed more than once -- look at the queue configuration"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -53,27 +71,27 @@
       ],
       "hints": [
         {
-          "text": "How long does the Lambda function take to process a large order?",
+          "hint": "how long does the Lambda function take to process a large order? check CloudWatch duration metrics",
           "relevant_services": ["lambda", "cloudwatch"],
           "skip_if_queried": ["get_function_configuration", "get_log_events"]
         },
         {
-          "text": "What happens to an SQS message if the consumer does not delete it within the visibility timeout?",
+          "hint": "what happens to an SQS message if the consumer does not delete it within the visibility timeout?",
           "relevant_services": ["sqs"],
           "skip_if_queried": ["get_queue_attributes"]
         },
         {
-          "text": "Compare the SQS visibility timeout with the Lambda function timeout. What do you notice?",
+          "hint": "compare the SQS visibility timeout with the Lambda function timeout -- is there a mismatch?",
           "relevant_services": ["sqs", "lambda"],
           "skip_if_queried": ["get_queue_attributes", "get_function_configuration"]
         },
         {
-          "text": "The visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. For large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it.",
+          "hint": "visibility timeout is 30 seconds, Lambda timeout is 90 seconds -- for large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it",
           "relevant_services": ["sqs", "lambda"],
           "skip_if_queried": []
         },
         {
-          "text": "Fix: set visibility timeout to at least 6x the Lambda timeout (540 seconds recommended by AWS), configure a dead-letter queue, and add idempotency checks using the order ID.",
+          "hint": "set visibility timeout to at least 6x Lambda timeout (540 seconds per AWS recommendation), configure a dead-letter queue, add idempotency checks using order ID",
           "relevant_services": ["sqs", "lambda"],
           "skip_if_queried": []
         }
@@ -91,11 +109,11 @@
         "batch size": "The number of messages Lambda pulls from the queue in a single invocation. A batch size of 1 means Lambda processes one message per invocation."
       },
       "narrative_arc": {
-        "call": "Customers report duplicate charges at 7:42 AM. Eleven reports by 8:15 AM. The pattern is the same each time: two Stripe charges for one order, seconds apart.",
-        "threshold": "The co-founder pulls up CloudWatch. Lambda concurrent executions are spiking beyond what the order volume explains. The invocation count is higher than the number of orders placed.",
-        "trials": "The player examines queue configuration, Lambda configuration, and CloudWatch logs. The queue visibility timeout is 30 seconds. The Lambda timeout is 90 seconds. Large orders take 60 to 90 seconds to process. The numbers do not add up.",
-        "revelation": "At the 30-second mark, SQS assumes the message was lost and makes it visible again. A second Lambda picks it up. Both complete. Both charge the customer. The function has no idempotency check.",
-        "return": "Visibility timeout increased to 540 seconds. Dead-letter queue configured. Idempotency check added. The system stops double-processing. Refunds go out to affected customers."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, Lambda concurrent executions spiking beyond order volume, invocation count higher than orders placed",
+        "trials": "queue visibility timeout is 30 seconds, Lambda timeout is 90 seconds, large orders take 60-90 seconds -- the numbers do not add up, duplicate charges only on large orders",
+        "revelation": "at the 30-second mark SQS makes the message visible again while Lambda is still processing it, second invocation picks it up, both complete, no idempotency check",
+        "return": "visibility timeout increased to 540 seconds, dead-letter queue configured, idempotency check added, refunds issued to affected customers"
       },
       "system_narration": {
         "components": [

@@ -13,22 +13,25 @@ tags:
 
 ## Opening
 
-The first 503 came at 6:14 AM Eastern. By 6:30 there were eighty. The on-call pager fired at 6:22 but by then the dispatch team already knew something was wrong. Routes were not coming back.
-
-Arcline Logistics runs a delivery route optimization service for regional carriers across the eastern seaboard. Fourteen hundred drivers, twelve carriers, each one needing a route computed before leaving the depot. The ML model runs on a SageMaker real-time endpoint called `arcline-route-optimizer`. During the 6 to 9 AM window, prediction requests climb from 200 per minute to 800 per minute. The endpoint is supposed to scale horizontally when load increases. An Application Auto Scaling policy was configured for exactly this scenario. Target tracking on `InvocationsPerInstance`, threshold of 100. Reasonable numbers.
-
-The endpoint has not scaled in three weeks. It runs on a single `ml.g4dn.xlarge` instance. That one instance handles the baseline load without issue. Two hundred requests per minute, model latency at 180 milliseconds p99. Then morning rush arrives and the instance gets buried. Latency climbs to eight seconds. The model starts dropping requests. SageMaker returns 503 `ModelError` responses. The Lambda function that calls the endpoint retries three times, then gives up and sends a notification to the dispatch team to route manually. Manual routing takes twelve extra minutes per driver.
-
-Three weeks ago the ML team ran a blue-green deployment. They replaced the default `AllTraffic` variant with a new production variant called `optimized-v3`. The model was faster, the inference cost was lower, the deployment went smoothly. Nobody checked the auto-scaling configuration afterward. Nobody checked the CloudWatch alarm that drives the scaling decision. The alarm still references the old variant name in its metric dimensions. It has been in `INSUFFICIENT_DATA` state since the deployment. It will stay there until someone looks.
+company: Arcline Logistics
+industry: supply chain, growth-stage, 64 engineers
+product: delivery route optimization service for regional carriers across the eastern seaboard
+scale: 1,400 drivers, 12 carriers, each needing a route computed before leaving the depot
+model: ML model on SageMaker real-time endpoint called arcline-route-optimizer, single ml.g4dn.xlarge instance, production variant optimized-v3
+time: 6:14 AM Eastern
+scene: morning rush window (6-9 AM), prediction requests climb from 200/min to 800/min
+alert: first 503 at 6:14 AM, 80 by 6:30 AM, on-call pager fired at 6:22 AM
+stakes: dispatch team already knows routes are not coming back, manual routing takes 12 extra minutes per driver (1,400 drivers, 12 carriers)
+early_signals:
+  - SageMaker returning 503 ModelError responses
+  - Lambda function (arcline-route-handler) retries three times then gives up and sends manual routing notification to dispatch team
+  - single instance handles baseline (200 req/min, 180ms p99 latency) but gets buried at morning rush -- latency climbs to 8 seconds
+  - endpoint has not scaled in three weeks despite Application Auto Scaling policy configured (target tracking on InvocationsPerInstance, threshold 100, scale 1-6 instances)
+recent_change: three weeks ago, ML team ran blue-green deployment -- replaced default AllTraffic variant with new production variant called optimized-v3. Model was faster, inference cost lower, deployment went smoothly. Nobody checked auto-scaling configuration or CloudWatch alarm afterward. Alarm still references old variant name in metric dimensions, has been in INSUFFICIENT_DATA state since deployment.
+investigation_starting_point: the auto-scaling policy exists and thresholds are reasonable, but scaling has never fired. The endpoint has been running on one instance for three weeks through every morning spike.
 
 ## Resolution
 
-The root cause is a dimension mismatch in the CloudWatch alarm that drives the auto-scaling policy.
-
-Three weeks before the incident, the ML team performed a blue-green deployment on the `arcline-route-optimizer` SageMaker endpoint. The deployment replaced the default production variant `AllTraffic` with a new variant named `optimized-v3`. The model, the instance type, and the endpoint configuration all updated correctly. The endpoint served traffic through the new variant without issue.
-
-The Application Auto Scaling policy was configured with a target tracking scaling policy. The policy relies on a CloudWatch alarm named `arcline-sagemaker-high-invocations`. That alarm monitors the `InvocationsPerInstance` metric in the `AWS/SageMaker` namespace. CloudWatch metrics for SageMaker endpoints are dimensioned by both `EndpointName` and `VariantName`. The alarm was created when the variant was still `AllTraffic`. After the blue-green deployment, the `AllTraffic` variant no longer existed. No metric data points were published to that dimension combination. The alarm entered `INSUFFICIENT_DATA` state and remained there permanently.
-
-The fix has two parts. The immediate remediation is to update the CloudWatch alarm dimensions to reference `VariantName: optimized-v3` instead of `VariantName: AllTraffic`. Once the alarm receives metric data, it evaluates normally and triggers scale-out when `InvocationsPerInstance` exceeds the threshold. The endpoint scales to additional instances during morning rush and the 503 errors stop.
-
-The longer-term fix is to update the deployment pipeline. Any blue-green deployment that changes the production variant name must also update all dependent resources: CloudWatch alarms, scaling policies, dashboards, and any other configuration that references the variant name as a dimension. This can be automated through CloudFormation, CDK, or a post-deployment validation script that checks alarm states and metric data availability.
+root_cause: dimension mismatch in CloudWatch alarm arcline-sagemaker-high-invocations that drives the auto-scaling policy. Alarm monitors InvocationsPerInstance metric in AWS/SageMaker namespace dimensioned by EndpointName and VariantName. Alarm was created when variant was AllTraffic. After blue-green deployment, AllTraffic variant no longer exists -- no metric data published to that dimension combination. Alarm entered INSUFFICIENT_DATA state permanently.
+mechanism: without the alarm firing, the Application Auto Scaling target tracking policy never triggers. Endpoint stays at one ml.g4dn.xlarge instance through every morning spike. At 800 req/min the instance is overwhelmed, model server queue fills, SageMaker returns 503 ModelError responses.
+fix: immediate -- update CloudWatch alarm dimensions to reference VariantName: optimized-v3 instead of VariantName: AllTraffic. Once alarm receives metric data, it evaluates normally and triggers scale-out when InvocationsPerInstance exceeds threshold. Endpoint scales to additional instances during morning rush, 503 errors stop. Long-term -- update deployment pipeline so any blue-green deployment that changes production variant name also updates all dependent resources (CloudWatch alarms, scaling policies, dashboards, any configuration referencing variant name as dimension). Automate via CloudFormation, CDK, or post-deployment validation script checking alarm states and metric data availability.

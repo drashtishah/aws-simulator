@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Patient. Has seen this before. Mentions that the developer checked IAM policies for two hours before looking at the browser console. States this without judgment.",
+      "personality": {
+        "role": "backend engineer, joined the debugging thread late",
+        "demeanor": "patient, has seen this before, states facts without judgment",
+        "recurring_concern": "upload feature is core product, law firm customers depending on it"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,15 +40,27 @@
         },
         {
           "trigger": "elapsed_minutes:8",
-          "message": "The frontend developer just sent another message in Slack. She says the presigned URL is valid because she tested it with curl. She attached the curl output. She is now re-reading the IAM policy JSON for the third time."
+          "facts": [
+            "frontend developer Rina sent another Slack message confirming presigned URL is valid (tested with curl, attached output)",
+            "she is re-reading the IAM policy JSON for the third time"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "A backend engineer joined the thread. He says the API Gateway logs show the presigned URL was generated correctly. He also checked the S3 bucket policy. Everything looks fine from the server side. He asked if anyone has checked the browser console."
+          "facts": [
+            "backend engineer Tomas joined the thread",
+            "API Gateway logs show presigned URL generated correctly",
+            "S3 bucket policy checked, everything looks fine from server side",
+            "Tomas asked if anyone has checked the browser console"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The IAM policy and presigned URL are both correct. The upload works from non-browser clients. The difference is in how the browser makes the request, not in the permissions."
+          "facts": [
+            "IAM policy and presigned URL are both correct",
+            "upload works from non-browser clients",
+            "the difference is in how the browser makes the request, not in the permissions"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -62,11 +78,11 @@
         "OPTIONS method": "An HTTP method used by browsers for preflight requests. It asks the server what methods and headers are allowed for cross-origin requests."
       },
       "narrative_arc": {
-        "call": "A browser upload fails silently. The same presigned URL works from curl, Postman, and a Python script. The developer begins reading IAM policies.",
-        "threshold": "Two hours pass. The developer has read the IAM policy three times. A backend engineer joins and asks whether anyone has checked the browser console.",
-        "trials": "The browser console shows a CORS error. The S3 bucket has no CORS configuration. After adding CORS, the upload still fails because CloudFront strips the Origin header before it reaches S3.",
-        "revelation": "The problem has two layers. S3 needs CORS rules. CloudFront needs an origin request policy that forwards the Origin, Access-Control-Request-Headers, and Access-Control-Request-Method headers. Both must be fixed together.",
-        "return": "The upload works. The developer adds a note to the team wiki: if it works in curl but not the browser, check CORS first."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, upload works from non-browser clients but fails in browser, developer has been reading IAM policies for two hours",
+        "trials": "browser console shows CORS error, S3 bucket has no CORS configuration, after adding CORS config upload still fails because CloudFront strips Origin header before it reaches S3",
+        "revelation": "two-layer problem -- S3 needs CORS rules, CloudFront needs origin request policy forwarding Origin, Access-Control-Request-Headers, and Access-Control-Request-Method headers, both must be fixed together",
+        "return": "both changes applied, upload works, cache invalidation clears stale responses, team wiki updated with CORS-first debugging note"
       },
       "system_narration": {
         "components": [
@@ -100,27 +116,27 @@
       },
       "hints": [
         {
-          "text": "The upload works outside the browser. What is different about browser HTTP requests?",
+          "hint": "the upload works outside the browser -- what is different about browser HTTP requests?",
           "relevant_services": ["s3"],
           "skip_if_queried": ["what is CORS", "same-origin policy", "preflight"]
         },
         {
-          "text": "Check the browser developer tools Network tab. Look at the request headers.",
+          "hint": "check the browser developer tools Network tab and look at the request headers",
           "relevant_services": ["s3"],
           "skip_if_queried": ["browser console", "network tab", "OPTIONS request"]
         },
         {
-          "text": "Browsers send preflight OPTIONS requests for cross-origin PUT requests.",
+          "hint": "browsers send preflight OPTIONS requests for cross-origin PUT requests",
           "relevant_services": ["s3"],
           "skip_if_queried": ["preflight", "OPTIONS", "CORS error"]
         },
         {
-          "text": "The S3 bucket has no CORS configuration. Run `aws s3api get-bucket-cors`.",
+          "hint": "the S3 bucket has no CORS configuration -- run aws s3api get-bucket-cors",
           "relevant_services": ["s3"],
           "skip_if_queried": ["get-bucket-cors", "CORS configuration", "CORSRules"]
         },
         {
-          "text": "CloudFront is also stripping the Origin header. Check the cache behavior's origin request policy.",
+          "hint": "CloudFront is also stripping the Origin header -- check the cache behavior's origin request policy",
           "relevant_services": ["cloudfront"],
           "skip_if_queried": ["origin request policy", "CORS-S3Origin", "CloudFront headers"]
         }

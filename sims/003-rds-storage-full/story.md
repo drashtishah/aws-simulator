@@ -12,20 +12,27 @@ tags:
 
 ## Opening
 
-It is 2:17 PM on a Thursday in late September -- peak harvest season in the midwest. Your monitoring dashboard lights up: the CropSync API is returning 500 errors on every write operation. Farmers are reporting that they cannot save irrigation schedules, log field observations, or update harvest tracking data.
-
-CropSync is a Series A agritech startup that provides precision agriculture software to 4,700 farms across 12 states. The platform collects soil moisture data from IoT sensors, cross-references it with weather forecasts, and generates irrigation schedules that farmers rely on to manage water usage. During harvest season, the platform processes 280,000 data points per day from field sensors and serves 1,200 concurrent users during peak hours.
-
-The support line is ringing. A farm manager in Iowa says he cannot log his irrigation schedule for the afternoon -- the weather service is forecasting the first rain in three weeks for tonight, and he needs to adjust his center-pivot systems before the water arrives. If he cannot update the schedule in CropSync, his team will have to configure each pivot manually, which takes four hours they do not have.
-
-You pull up the application logs. The API servers are running, they are connecting to the database, but every INSERT and UPDATE query is failing. SELECT queries still work. The application has not been deployed in three days. Something changed at the database level.
+company: CropSync
+industry: agritech, Series A startup, 18 engineers
+product: precision agriculture software -- collects soil moisture data from IoT sensors, cross-references with weather forecasts, generates irrigation schedules
+scale: 4,700 farms across 12 states, 280,000 data points per day from field sensors, 1,200 concurrent users during peak hours
+time: 2:17 PM, Thursday, late September -- peak harvest season in the midwest
+scene: monitoring dashboard lights up
+alert: CropSync API returning 500 errors on every write operation -- farmers cannot save irrigation schedules, log field observations, or update harvest tracking data
+stakes: farm manager in Iowa cannot log irrigation schedule, weather service forecasting first rain in three weeks for tonight, needs to adjust center-pivot systems before water arrives, manual configuration takes four hours they do not have
+early_signals:
+  - support line ringing with farmers unable to write data
+  - API servers running and connecting to database, but every INSERT and UPDATE query failing
+  - SELECT queries still work
+  - application has not been deployed in three days
+investigation_starting_point: API servers are healthy and connected to the database. Write operations fail, read operations succeed. No recent application deploy. Something changed at the database level.
 
 ## Resolution
 
-The investigation found that the RDS MySQL instance `cropsync-prod-db` had completely exhausted its 20GB of allocated storage. The instance was provisioned six months earlier with 20GB of gp3 storage, which seemed generous at the time for a startup's dataset. But three factors converged to fill the disk.
-
-First, CropSync had experienced rapid growth during the growing season -- their active farm count tripled from 1,500 to 4,700 in four months, and the IoT sensor data table was growing by 800MB per week. Second, MySQL binary logging was enabled for point-in-time recovery, and binary logs accumulated 3.2GB over the retention period. Third, a developer had added a verbose query logging configuration two weeks earlier for debugging a performance issue and never turned it off, adding another 1.8GB of slow query logs.
-
-When FreeStorageSpace hit zero, MySQL could not write to any table or create temporary files for query execution. All INSERT, UPDATE, and DELETE operations failed with "The table is full" errors. SELECT queries continued to work because they only require read access.
-
-The immediate fix was to increase the allocated storage from 20GB to 50GB through the AWS console -- RDS storage modifications can be applied immediately and do not require downtime. The team also purged the accumulated binary logs and disabled the verbose query logging. As a long-term fix, they enabled RDS storage auto-scaling with a maximum of 100GB and set a CloudWatch alarm on FreeStorageSpace with a threshold of 2GB.
+root_cause: RDS MySQL instance `cropsync-prod-db` (db.t3.medium, 20GB gp3 storage, provisioned six months earlier) completely exhausted its allocated storage
+mechanism: three factors converged -- (1) rapid growth during growing season, active farm count tripled from 1,500 to 4,700 in four months, IoT sensor data table growing by 800MB per week; (2) MySQL binary logging enabled for point-in-time recovery, binary logs accumulated 3.2GB over retention period; (3) developer added verbose query logging two weeks earlier for debugging a performance issue and never turned it off, adding 1.8GB of slow query logs. When FreeStorageSpace hit zero, MySQL could not write to any table or create temporary files. All INSERT, UPDATE, DELETE operations failed with "The table is full" errors. SELECT queries continued working (read-only access).
+fix: increase allocated storage from 20GB to 50GB via AWS console (applied immediately, no downtime required), purge accumulated binary logs, disable verbose query logging. Long-term: enable RDS storage auto-scaling with 100GB maximum, set CloudWatch alarm on FreeStorageSpace with 2GB threshold.
+contributing_factors:
+  - no CloudWatch alarm on FreeStorageSpace to provide early warning
+  - storage auto-scaling not enabled on the instance
+  - verbose slow query logging left on in production for two weeks after debugging concluded

@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Clinical operations lead. Speaks with the precision of someone used to medical charts. Counts affected patients, not tickets.",
+      "personality": {
+        "role": "clinical operations lead",
+        "demeanor": "precise, counts affected patients not tickets",
+        "recurring_concern": "patients unable to complete triage, two already diverted to urgent care"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "342 patients received the generic blocked response in the last four hours. Eight of them called the support line. Two gave up and went to urgent care instead of completing their triage."
+          "facts": [
+            "342 patients received the generic blocked response in the last four hours",
+            "eight called the support line",
+            "two gave up and went to urgent care instead of completing triage"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Clinical team tested twenty sample queries. Anything mentioning chest pain, shortness of breath, or medication names triggers the block. Those are the three most common triage categories."
+          "facts": [
+            "clinical team tested twenty sample queries",
+            "anything mentioning chest pain, shortness of breath, or medication names triggers the block",
+            "those are the three most common triage categories"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Chief Medical Officer is on the call now. She says the triage assistant is doing more harm than good if it blocks patients from describing symptoms."
+          "facts": [
+            "Chief Medical Officer is on the call",
+            "she says the triage assistant is doing more harm than good if it blocks patients from describing symptoms"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The model itself is working correctly. The blocked responses are not coming from the foundation model -- they are being intercepted before the model sees them. Check what sits between the user input and the model."
+          "facts": [
+            "the model itself is working correctly",
+            "blocked responses are not coming from the foundation model -- they are intercepted before the model sees them",
+            "check what sits between the user input and the model"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,11 +78,11 @@
         "GuardrailInterventions": "A CloudWatch metric that counts how many times a Bedrock Guardrail blocked a request or response. A sudden spike usually means a configuration change is catching unintended content."
       },
       "narrative_arc": {
-        "call": "The triage assistant stops responding to patients who describe symptoms. 342 patients received the generic blocked message in four hours. Two gave up and went to urgent care instead of completing their triage.",
-        "threshold": "Clinical operations pulls the numbers. Out of 1,100 queries per day, 440 are returning the blocked response. The SNS alert topic has zero subscribers. Nobody was notified.",
-        "trials": "The clinical team tests twenty sample queries. Anything mentioning chest pain, shortness of breath, or medication names triggers the block. These are the three most common triage categories. The model itself is working correctly -- the requests never reach it.",
-        "revelation": "The denied topic 'Medical Advice and Diagnosis' was defined with example phrases that match patient symptom descriptions. The guardrail evaluates user input, not model output. The topic blocks the exact language the triage assistant is designed to collect.",
-        "return": "Narrow the denied topic definition to target model output only -- block responses where the model renders a diagnosis or prescribes treatment. Update example phrases to match output patterns. Subscribe the operations team to the SNS alert topic and set a CloudWatch alarm on GuardrailInterventions."
+        "call": "alert arrives, stakes established from story.md Opening -- triage assistant blocking patients who describe symptoms, 440 out of 1,100 daily queries returning blocked response",
+        "threshold": "player enters investigation, SNS alert topic has zero subscribers, nobody was notified of guardrail intervention spike for two days",
+        "trials": "clinical team tested twenty sample queries -- chest pain, shortness of breath, medication names all trigger block, these are the three most common triage categories, model itself working correctly, requests never reach it",
+        "revelation": "denied topic 'Medical Advice and Diagnosis' defined with example phrases matching patient symptom descriptions, guardrail evaluates user input not model output, blocks the exact language the triage assistant is designed to collect",
+        "return": "denied topic narrowed to target model output only, example phrases updated to output patterns, operations team subscribed to SNS alert topic, CloudWatch alarm set on GuardrailInterventions"
       },
       "system_narration": {
         "components": [
@@ -115,22 +134,22 @@
       },
       "hints": [
         {
-          "text": "The responses say the request was blocked, not that the model could not answer. Something is intercepting the requests before the model sees them.",
+          "hint": "responses say the request was blocked, not that the model could not answer -- something is intercepting requests before the model sees them",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["get_guardrail", "apply_guardrail"]
         },
         {
-          "text": "Amazon Bedrock Guardrails evaluate input before it reaches the model. Has the guardrail configuration changed recently? Check the version history.",
+          "hint": "bedrock guardrails evaluate input before it reaches the model -- has the guardrail configuration changed recently? check the version history",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["get_guardrail_version"]
         },
         {
-          "text": "Look at the denied topics in the guardrail. Is there one whose example phrases might match legitimate medical triage queries like symptom descriptions?",
+          "hint": "look at the denied topics in the guardrail -- is there one whose example phrases might match legitimate medical triage queries like symptom descriptions?",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["get_guardrail"]
         },
         {
-          "text": "The denied topic 'Medical Advice and Diagnosis' is defined too broadly. Its example phrases match any symptom description, which is exactly what the triage assistant is supposed to collect. The fix is to narrow the topic and move it to output filtering.",
+          "hint": "the denied topic 'Medical Advice and Diagnosis' is defined too broadly -- its example phrases match any symptom description, which is exactly what the triage assistant collects. fix is to narrow the topic and move it to output filtering",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["get_guardrail", "apply_guardrail"]
         }

@@ -18,7 +18,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Platform engineer who triggered the deployment. Methodical, slightly defensive. Mentions customer impact in terms of dispatch delays and missed delivery windows.",
+      "personality": {
+        "role": "platform engineer who triggered the deployment",
+        "demeanor": "methodical, slightly defensive",
+        "recurring_concern": "dispatch delays and missed delivery windows for logistics customers"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -26,19 +30,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Fourteen customers have opened support tickets in the last four minutes. Route optimization requests are timing out. Dispatchers are switching to manual planning."
+          "facts": [
+            "14 customers have opened support tickets in the last four minutes",
+            "route optimization requests timing out",
+            "dispatchers switching to manual planning"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The deployment finished. All four new instances are running. But the error rate is still elevated. Some dispatchers are reporting stale route data."
+          "facts": [
+            "deployment finished, all four new instances running",
+            "error rate still elevated",
+            "some dispatchers reporting stale route data"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The VP of Customer Success wants a root cause by noon. Three enterprise customers mentioned it in their Slack channels. One used the word 'unreliable.'"
+          "facts": [
+            "VP of Customer Success wants root cause by noon",
+            "three enterprise customers mentioned it in their Slack channels",
+            "one customer used the word 'unreliable'"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The application code deployed correctly. The issue is in how the deployment interacted with the load balancer and health checks."
+          "facts": [
+            "application code deployed correctly",
+            "the issue is in how the deployment interacted with the load balancer and health checks"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -47,27 +66,27 @@
       ],
       "hints": [
         {
-          "text": "When did the errors start relative to the deployment?",
+          "hint": "when did the errors start relative to the deployment -- correlate the deployment timeline with the ALB error metrics",
           "relevant_services": ["elb", "cloudwatch"],
           "skip_if_queried": []
         },
         {
-          "text": "How long does it take a new instance to pass the ALB health check?",
+          "hint": "how long does it take a new instance to pass the ALB health check? multiply the health check interval by the healthy threshold",
           "relevant_services": ["elb"],
           "skip_if_queried": ["describe_target_health"]
         },
         {
-          "text": "Compare the deregistration delay with the time it takes a new target to become healthy. Is there a gap?",
+          "hint": "compare the deregistration delay with the time-to-healthy for new targets -- is there a gap where no healthy targets exist?",
           "relevant_services": ["elb"],
           "skip_if_queried": ["describe_target_group_attributes"]
         },
         {
-          "text": "The deregistration delay is 30 seconds but health checks need 150 seconds (interval 30s x threshold 5). Old targets drain out long before new ones are ready.",
+          "hint": "deregistration delay is 30 seconds but health checks need 150 seconds (30s interval x 5 threshold) -- old targets drain out 120 seconds before new ones are ready",
           "relevant_services": ["elb", "auto-scaling"],
           "skip_if_queried": ["describe_target_group_attributes", "describe_target_health"]
         },
         {
-          "text": "Fix: increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, and reduce deployment batch size to 25%.",
+          "hint": "increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, reduce deployment batch size to 25%",
           "relevant_services": ["elb", "auto-scaling"],
           "skip_if_queried": []
         }
@@ -83,11 +102,11 @@
         "Connection draining": "The process of allowing in-flight requests to finish on a target that is being removed from a target group. The deregistration delay controls how long this process lasts."
       },
       "narrative_arc": {
-        "call": "A routine deployment starts at 6:15 AM on a Wednesday. Three dependency patches and a logging format change. The pipeline approved it. Within ninety seconds, the first support ticket arrives.",
-        "threshold": "The error rate climbs. Fourteen customers report 502 Bad Gateway. Dispatchers switch to manual planning. The platform engineer insists the code changes are harmless. He is probably right.",
-        "trials": "The deployment finished. All new instances are running. But the error rate was elevated for three minutes. The metrics show HealthyHostCount dropped to zero. The target health timeline shows a gap between old targets draining and new targets passing health checks.",
-        "revelation": "The deregistration delay is 30 seconds. The health check needs 150 seconds. Old targets leave the pool 120 seconds before new targets are ready. The ALB had no healthy targets to route to.",
-        "return": "Increase the deregistration delay to 300 seconds. Reduce the healthy threshold from 5 to 2. Cut the deployment batch size in half. Never deploy during peak hours. The math has to work before the deployment starts."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, 502 errors during routine deployment, code changes confirmed harmless, problem is infrastructure interaction",
+        "trials": "deployment finished, all new instances running, but HealthyHostCount dropped to zero during the replacement window -- target health timeline shows a gap between old targets draining and new targets passing health checks",
+        "revelation": "deregistration delay is 30 seconds, health check needs 150 seconds (30s x 5 threshold) -- old targets leave 120 seconds before new targets are ready, ALB entered fail-open mode",
+        "return": "increase deregistration delay to 300 seconds, reduce healthy threshold to 2, cut batch size to 25%, deploy outside peak hours, post-incident review"
       },
       "system_narration": {
         "components": [

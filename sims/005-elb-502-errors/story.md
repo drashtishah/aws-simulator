@@ -13,20 +13,28 @@ tags:
 
 ## Opening
 
-It is 4:48 PM on a Friday -- peak delivery hour. The UrbanFleet dispatch dashboard goes blank and is replaced by a white page with three digits: 502. Customer-facing APIs are returning the same error. The mobile app that 1,200 delivery drivers depend on for route assignments, delivery confirmations, and real-time navigation is completely unresponsive.
-
-UrbanFleet is a Series B logistics startup that provides last-mile delivery routing and dispatch for 45 retail and grocery partners across six metro areas. On a typical Friday afternoon, the platform manages 8,400 active deliveries simultaneously, routing 1,200 drivers in real time. The dispatch engine recalculates optimal routes every 90 seconds based on traffic, delivery windows, and driver locations. When the platform goes down, drivers are stranded mid-route with no instructions, and packages pile up at distribution centers.
-
-The infrastructure team pulls up the ALB dashboard. The Application Load Balancer is online and receiving requests, but every request is getting a 502 response. The target group shows zero healthy instances. All four EC2 instances are registered but marked as "unhealthy" by the load balancer. Auto Scaling senses the unhealthy targets and launches replacement instances, but within two minutes, the new instances are also marked unhealthy and deregistered.
-
-You SSH into one of the instances directly. The application is running on port 3000, responding to requests normally, memory and CPU look fine. The instance passes both EC2 status checks. From the inside, everything looks perfect. But the load balancer disagrees -- it insists every instance is unhealthy. Something is wrong with how the ALB is checking instance health.
+company: UrbanFleet
+industry: logistics, Series B startup, 52 engineers
+product: last-mile delivery routing and dispatch for retail and grocery partners
+scale: 45 retail and grocery partners across six metro areas, 8,400 active deliveries simultaneously on typical Friday afternoon, 1,200 drivers routed in real time, dispatch engine recalculates routes every 90 seconds based on traffic, delivery windows, and driver locations
+time: 4:48 PM, Friday -- peak delivery hour
+scene: dispatch dashboard goes blank, replaced by white page with "502"
+alert: customer-facing APIs returning 502, mobile app (route assignments, delivery confirmations, real-time navigation) completely unresponsive
+stakes: 1,200 delivery drivers stranded mid-route with no instructions, packages piling up at distribution centers
+early_signals:
+  - ALB online and receiving requests, but every request gets 502 response
+  - target group shows zero healthy instances
+  - all four EC2 instances registered but marked "unhealthy" by load balancer
+  - Auto Scaling launching replacement instances, but new instances also marked unhealthy and deregistered within two minutes
+  - SSH into instance directly: application running on port 3000, responding normally, memory and CPU fine, passes both EC2 status checks
+investigation_starting_point: from inside the instance, everything looks perfect -- application running, metrics normal, status checks passing. But the load balancer insists every instance is unhealthy. Something is wrong with how the ALB checks instance health.
 
 ## Resolution
 
-The investigation traced the 502 errors to a health check misconfiguration in the ALB target group. Two hours before the outage, a DevOps engineer pushed an infrastructure-as-code update that was intended to standardize health check configurations across all target groups. The change updated the health check port from `traffic-port` (which defaults to the target's registered port, 3000) to an explicit port 8080, which the engineering team planned to use as a dedicated health check endpoint.
-
-The problem: the application had not been updated to listen on port 8080. Nothing responded on that port. Every health check from the ALB to port 8080 timed out, the ALB marked each target as unhealthy after the configured 3 consecutive failures (30 seconds), and deregistered them from the target group. With no healthy targets, the ALB returned 502 Bad Gateway for every incoming request.
-
-Auto Scaling made things worse, not better: it detected unhealthy instances via the ALB health check, terminated them, and launched replacements. The new instances also failed the port 8080 health check within 30 seconds of starting, creating a launch-terminate cycle that churned through instances without ever restoring service.
-
-The fix was to update the target group health check port back to `traffic-port` (port 3000) where the application was actually listening. Within 10 seconds of the change, the ALB registered all running instances as healthy and the 502 errors stopped. The team then created a proper health check endpoint on the application (`/health` on port 3000) and updated the health check path to use it.
+root_cause: DevOps engineer pushed infrastructure-as-code update two hours before outage to standardize health check configurations across all target groups, changed health check port from `traffic-port` (defaults to registered port 3000) to explicit port 8080, intended as a dedicated health check endpoint
+mechanism: application had not been updated to listen on port 8080 -- nothing responded on that port. Every health check timed out, ALB marked each target unhealthy after 3 consecutive failures (30 seconds), deregistered them. With zero healthy targets, ALB returned 502 Bad Gateway for every request. Auto Scaling made things worse: detected unhealthy instances via ALB health check, terminated them, launched replacements that also failed the port 8080 check within 30 seconds, creating a continuous launch-terminate churn cycle.
+fix: update target group health check port back to `traffic-port` (port 3000). Within 10 seconds, ALB registered all running instances as healthy and 502 errors stopped. Team then created proper health check endpoint (`/health` on port 3000) and updated health check path to use it.
+contributing_factors:
+  - IaC change to health check port deployed without verifying application listens on the new port
+  - no staging test of health check configuration change before production rollout
+  - Auto Scaling with ELB health check type amplified the problem by churning instances

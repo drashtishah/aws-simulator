@@ -29,7 +29,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Matter-of-fact. Notes that the keys were set eight months ago by someone who has since left the company. States this the way you might note the weather.",
+      "personality": {
+        "role": "engineer who noticed the failure Wednesday morning",
+        "demeanor": "matter-of-fact, states observations the way you might note the weather",
+        "recurring_concern": "deploy pipeline completely blocked, staging stuck on last week's build"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -37,15 +41,28 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "The deploy has been failing since Tuesday. Before that it worked for eleven months. Nobody changed the deploy script. The product manager asked if the release would go out today. You said you were looking into it."
+          "facts": [
+            "deploy has been failing since Tuesday, worked for eleven months before that",
+            "nobody changed the deploy script",
+            "product manager asked if the release would go out today"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "A teammate mentions that Raj set up the CI box originally. Raj left the company in November. His accounts were deactivated during offboarding. The CI machine has been running since then without issue, or so everyone assumed."
+          "facts": [
+            "teammate mentions Raj Patel set up the CI box originally",
+            "Raj left the company in November",
+            "his accounts were deactivated during offboarding",
+            "CI machine has been running since then without issue, or so everyone assumed"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The instance profile is fine. The role has the correct permissions. The problem is that the CLI is not using the instance profile at all. Something else is taking precedence."
+          "facts": [
+            "instance profile is fine, role has correct permissions",
+            "the CLI is not using the instance profile at all",
+            "something else is taking precedence in the credential chain"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -54,22 +71,22 @@
       ],
       "hints": [
         {
-          "text": "Who does the pipeline think it is?",
+          "hint": "who does the pipeline think it is?",
           "relevant_services": ["sts"],
           "skip_if_queried": ["aws sts get-caller-identity"]
         },
         {
-          "text": "Run `aws sts get-caller-identity` on the CI machine.",
+          "hint": "run aws sts get-caller-identity on the CI machine",
           "relevant_services": ["sts"],
           "skip_if_queried": ["get-caller-identity", "caller identity"]
         },
         {
-          "text": "Check if there are AWS credential environment variables set.",
+          "hint": "check if there are AWS credential environment variables set on the instance",
           "relevant_services": ["iam"],
           "skip_if_queried": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "environment variable", "/etc/environment"]
         },
         {
-          "text": "Environment variables take precedence over instance profiles in the credential chain.",
+          "hint": "environment variables take precedence over instance profiles in the credential chain",
           "relevant_services": ["iam", "sts"],
           "skip_if_queried": ["credential chain", "credential provider chain", "precedence", "priority"]
         }
@@ -86,11 +103,11 @@
         "GetCallerIdentity": "An STS API call that returns the IAM principal (user or role) the CLI is currently authenticating as. It works even when the principal lacks permissions for anything else."
       },
       "narrative_arc": {
-        "call": "The deploy script stopped working on Tuesday after eleven months without incident. Every AWS API call returns AccessDenied. The instance profile has the right permissions. Nothing changed in the script.",
-        "threshold": "The permissions are correct. The role is correct. The instance is healthy. The problem is not where you would normally look.",
-        "trials": "Checking the instance profile, reviewing IAM policies, verifying the role -- all confirm the permissions are there. The failure persists. Something outside the usual configuration is interfering.",
-        "revelation": "The CLI is not authenticating as the instance profile role. It is authenticating as a former employee. Environment variables containing his access keys were set eight months ago and never removed. They take precedence over the instance profile.",
-        "return": "Remove the environment variables. The instance profile credentials take over. The deploy runs. Add a step to the offboarding checklist to search shared infrastructure for leftover credentials."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, instance profile permissions correct, role correct, instance healthy -- problem is not where you would normally look",
+        "trials": "checking instance profile, reviewing IAM policies, verifying role -- all confirm permissions are there, failure persists, something outside usual configuration is interfering",
+        "revelation": "CLI is authenticating as former employee Raj Patel, not the instance profile role -- environment variables with his access keys set eight months ago take precedence over instance profile",
+        "return": "environment variables removed, instance profile credentials take over, deploy runs, offboarding checklist updated to search shared infrastructure for leftover credentials"
       },
       "system_narration": {
         "components": [

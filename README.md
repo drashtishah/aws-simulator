@@ -6,6 +6,8 @@ This is a game about those moments.
 
 You investigate simulated AWS incidents inside Claude Code. You read logs, query service consoles, trace the architecture, and propose a fix. A narrator -- flat-voiced, factual, unhurried -- walks you through each scenario. There is no timer. There is no score. There is only the problem, and what you find.
 
+Powered by the [AWS MCP server](https://docs.aws.amazon.com/aws-mcp/latest/userguide/what-is-mcp-server.html) -- the best practices you learn here are the real ones.
+
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)

@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Platform team lead. Measured, slightly puzzled. States facts in order. Mentions customer tickets as data points, not emergencies.",
+      "personality": {
+        "role": "platform team lead",
+        "demeanor": "measured, slightly puzzled",
+        "recurring_concern": "enterprise customers making business decisions on hallucinated data"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Three more enterprise accounts opened tickets this morning. The agent responds to every question, but the answers are wrong. It is making things up instead of querying the dashboard API."
+          "facts": [
+            "three more enterprise accounts opened tickets this morning",
+            "agent responds to every question but answers are wrong",
+            "agent is fabricating answers instead of querying the dashboard API"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Engineering lead confirmed the Lambda function has not been invoked since Friday. Zero invocations. The function itself works when tested directly."
+          "facts": [
+            "engineering lead confirmed Lambda function has not been invoked since Friday",
+            "zero invocations since Friday 4:00 PM UTC",
+            "function itself works when tested directly"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Product manager is asking whether we need to disable the assistant entirely. Customers are making decisions based on hallucinated numbers."
+          "facts": [
+            "product manager asking whether to disable the assistant entirely",
+            "customers making decisions based on hallucinated numbers"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The Lambda function works fine when invoked directly. The issue is not in the function code or its execution role. Look at what is preventing Bedrock from reaching the function."
+          "facts": [
+            "Lambda function works fine when invoked directly",
+            "issue is not in the function code or its execution role",
+            "look at what is preventing Bedrock from reaching the function"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,11 +78,11 @@
         "CloudWatch metric": "A time-series data point published to Amazon CloudWatch. Metrics like Lambda Invocations or Bedrock InvokeAgent let you monitor whether services are actually being called."
       },
       "narrative_arc": {
-        "call": "Enterprise customers report that the AI assistant is returning fabricated metrics. The numbers look plausible but do not match their dashboards.",
-        "threshold": "CloudWatch metrics show the Lambda function has received zero invocations since Friday afternoon. The Bedrock Agent is still responding to every query, but without calling the action group.",
-        "trials": "The Lambda function works when tested directly. The agent's IAM execution role has lambda:InvokeFunction permission. The action group is enabled and the API schema is valid. The failure is not in the function code or the agent configuration.",
-        "revelation": "The Lambda resource-based policy uses the IAM execution role ARN as the SourceArn condition instead of the Bedrock agent ARN. Lambda silently rejects every invocation from Bedrock because the source ARN does not match.",
-        "return": "Updating the SourceArn condition to the correct agent ARN restores invocations immediately. Adding CloudWatch alarms on invocation count and action group metrics prevents future silent failures."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "CloudWatch shows Lambda function at zero invocations since Friday afternoon, Bedrock Agent still responding to every query without calling action group",
+        "trials": "Lambda function works when tested directly, agent IAM execution role has lambda:InvokeFunction permission, action group enabled, API schema valid -- failure not in function code or agent configuration",
+        "revelation": "Lambda resource-based policy uses IAM execution role ARN as SourceArn condition instead of Bedrock agent ARN, Lambda silently rejects every invocation from Bedrock",
+        "return": "update SourceArn to correct agent ARN, add CloudWatch alarms on invocation count and action group metrics, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -109,22 +128,22 @@
       },
       "hints": [
         {
-          "text": "The agent is responding to every query, but the answers are wrong. The Lambda function has zero invocations since Friday. What would cause Bedrock to skip the Lambda call entirely?",
+          "hint": "agent responds to every query but answers are wrong, Lambda has zero invocations since Friday -- what would cause Bedrock to skip the Lambda call entirely?",
           "relevant_services": ["bedrock", "lambda"],
           "skip_if_queried": ["lambda"]
         },
         {
-          "text": "Lambda functions require a resource-based policy to allow external services to invoke them. Have you checked who is allowed to call this function and under what conditions?",
+          "hint": "Lambda functions require a resource-based policy to allow external services to invoke them -- check who is allowed to call this function and under what conditions",
           "relevant_services": ["lambda", "iam"],
           "skip_if_queried": ["lambda"]
         },
         {
-          "text": "Compare the aws:SourceArn value in the Lambda resource-based policy to the actual Bedrock agent ARN in the agent configuration. Are they the same resource?",
+          "hint": "compare the aws:SourceArn value in the Lambda resource-based policy to the actual Bedrock agent ARN in the agent configuration -- are they the same resource?",
           "relevant_services": ["lambda", "bedrock"],
           "skip_if_queried": ["lambda", "bedrock"]
         },
         {
-          "text": "The policy references an IAM role ARN, but Bedrock presents the agent ARN as the source when invoking Lambda. These are different identifiers. The function is rejecting the invocation silently, and the agent falls back to hallucinating.",
+          "hint": "policy references an IAM role ARN, but Bedrock presents the agent ARN as the source when invoking Lambda -- these are different identifiers, function rejects invocation silently, agent falls back to hallucinating",
           "relevant_services": ["lambda", "iam", "bedrock"],
           "skip_if_queried": ["lambda", "iam"]
         }

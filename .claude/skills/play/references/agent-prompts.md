@@ -78,24 +78,13 @@ This sim's story follows the monomyth structure. Use this to pace your improvise
 - Revelation: {narrative_arc.revelation}
 - Return: {narrative_arc.return}
 
+## Structural Rules
+
+{theme.base}
+
 ## Narrative Voice
 
-Simple, short declarative sentences. No compound sentences where two simple ones will do. Flat affect -- the stress lives in what is left unsaid, not in exclamation marks or urgency language. Mundane details sit right next to the crisis and are given equal weight. A deploy fails; the coffee is cold; the product manager sends a message. The narrator states what happened. The reader feels the tension.
-
-Sentence patterns:
-- Lead with concrete detail, not abstraction. "The metric read 412 requests." Not "There was a significant increase."
-- Stack observations. Let weight accumulate on its own. Do not summarize or interpret.
-- Time passes in small, factual increments. "It was 3:38 AM. The bucket policy had been public for six days."
-- Characters speak in short, factual fragments. "Three merchants emailed." Not "Several concerned merchants reached out."
-
-What to avoid:
-- Exclamation marks
-- "The clock is ticking" / "time is running out" / "your heart races"
-- Breathless compound sentences strung together with dashes
-- Dramatic rhetorical questions
-- Any language that sounds like a thriller novel or a conference talk
-
-Apply this voice to ALL narrator speech, including improvised responses during investigation. The story.md text was written in this voice; your live narration must match it.
+{theme.voice}
 
 ## Glossary
 
@@ -339,23 +328,24 @@ Use Console Mode when the player queries a specific AWS service. Switch back to 
 When the play skill starts a simulation, it populates this template as follows:
 
 1. Read `sims/{sim-id}/manifest.json`
-2. Read `sims/{sim-id}/story.md` -- insert full contents into the story section
+2. Read `sims/{sim-id}/story.md` -- the Opening and Resolution sections contain structured facts (key: value pairs), not prose. When delivering the Opening to the player, narrate these facts in the active theme's voice. When delivering the Resolution during debrief, narrate the root_cause, mechanism, fix, and contributing_factors in the active theme's voice.
 3. Read `sims/{sim-id}/artifacts/context.txt` -- insert into briefing card section
 4. Read `sims/{sim-id}/artifacts/architecture-hint.txt` -- insert into Architecture (Late Hint) section
 5. Read `sims/{sim-id}/artifacts/architecture-resolution.txt` -- insert into Architecture (Resolution) section
-6. Replace `{narrator.personality}` with `manifest.team.narrator.personality`
+6. Replace `{narrator.personality}` with `manifest.team.narrator.personality` (structured object with role, demeanor, recurring_concern). Express these traits through the active theme's narrator persona rules.
 7. Replace `{company.name}`, `{company.industry}`, `{company.size}` from `manifest.company`
 8. Expand the fix_criteria loop from `manifest.resolution.fix_criteria`
-9. Expand the hints loop from `manifest.team.narrator.hints`
+9. Expand the hints loop from `manifest.team.narrator.hints` (each hint has a `hint` field with plain guidance). When delivering hints, wrap in the active theme's hint phrasing style.
 10. Replace `{narrator.max_hints_before_nudge}` with `manifest.team.narrator.max_hints_before_nudge`
-11. Expand the story_beats loop from `manifest.team.narrator.story_beats`
+11. Expand the story_beats loop from `manifest.team.narrator.story_beats` (each beat has a `facts` array instead of a `message` string). When delivering story beats, narrate the facts in the active theme's voice.
 12. Expand the learning_objectives loop from `manifest.resolution.learning_objectives`
 13. Replace `{sim_id}` with `manifest.id`
-14. If `manifest.team.narrator.narrative_arc` exists, expand its fields into the Narrative Arc section
-15. The Narrative Voice section is static (already embedded in the template)
-16. Expand `manifest.team.narrator.glossary` into the Glossary section as term/definition pairs
-17. Expand `manifest.team.narrator.system_narration` into the System Context section: data_flow, components, and what_broke
-18. For each entry in `manifest.team.consoles[]`:
+14. If `manifest.team.narrator.narrative_arc` exists, expand its fields into the Narrative Arc section (arc fields are now factual pacing cues, not styled prose)
+15. Read `themes/_base.md`, insert into the "Structural Rules" section as `{theme.base}`
+16. Read `themes/{theme_id}.md`, strip YAML frontmatter, inject full content as `{theme.voice}` into the "Narrative Voice" section
+17. Expand `manifest.team.narrator.glossary` into the Glossary section as term/definition pairs
+18. Expand `manifest.team.narrator.system_narration` into the System Context section: data_flow, components, and what_broke
+19. For each entry in `manifest.team.consoles[]`:
     - Replace `{console.service}` with the service slug
     - Expand capabilities from `console.capabilities`
     - For each path in `console.artifacts`: read the file from `sims/{sim-id}/{path}` and insert its full contents

@@ -30,7 +30,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Operations manager. Pragmatic and numbers-driven. Tracks the 502 error rate obsessively. Keeps relating everything back to delivery drivers and customers waiting for packages.",
+      "personality": {
+        "role": "operations manager",
+        "demeanor": "pragmatic and numbers-driven, tracks 502 error rate obsessively",
+        "recurring_concern": "delivery drivers stranded mid-route and customers waiting for packages"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -38,19 +42,36 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Error rate just spiked to 38%. Dispatch cannot assign new routes. We have 1,200 drivers on the road right now with no way to get updated delivery manifests. Packages are piling up at the distribution centers."
+          "facts": [
+            "error rate spiked to 38%",
+            "dispatch cannot assign new routes",
+            "1,200 drivers on the road with no way to get updated delivery manifests",
+            "packages piling up at distribution centers"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Our biggest client, Metro Market, just called. They have 400 grocery deliveries scheduled in the next two hours -- perishable goods, time-sensitive. If we cannot route their drivers, they will invoke the SLA penalty clause."
+          "facts": [
+            "biggest client Metro Market called",
+            "400 grocery deliveries scheduled in next two hours, perishable goods, time-sensitive",
+            "if drivers cannot be routed, Metro Market will invoke SLA penalty clause"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Auto Scaling launched two new instances five minutes ago, but they are already being deregistered from the target group. The instances come up healthy at the OS level but the load balancer keeps pulling them out. Something is wrong with how we are checking health."
+          "facts": [
+            "Auto Scaling launched two new instances five minutes ago, already being deregistered from target group",
+            "instances come up healthy at OS level but load balancer keeps pulling them out",
+            "something wrong with how health is being checked"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The instances themselves are fine -- they pass EC2 status checks and the application starts correctly. The problem is between the load balancer and the instances. Look at how the ALB determines whether a target is healthy."
+          "facts": [
+            "instances pass EC2 status checks and application starts correctly",
+            "problem is between the load balancer and the instances",
+            "look at how the ALB determines whether a target is healthy"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,22 +80,22 @@
       ],
       "hints": [
         {
-          "text": "The ALB is returning 502 errors, which means it cannot get a valid response from the backend instances. Why would healthy instances fail the load balancer's health check?",
+          "hint": "ALB returning 502 means it cannot get a valid response from backend instances -- why would healthy instances fail the load balancer's health check?",
           "relevant_services": ["elb"],
           "skip_if_queried": ["target-group-config.json"]
         },
         {
-          "text": "ALB health checks are configured in the target group. What path is the health check hitting, and what response does it expect?",
+          "hint": "ALB health checks are configured in the target group -- check the health check path and what response it expects",
           "relevant_services": ["elb"],
           "skip_if_queried": ["target-group-config.json", "target-health.json"]
         },
         {
-          "text": "Look at the health check configuration: the path, port, expected status code, and thresholds. Compare those settings to what the application actually serves.",
+          "hint": "compare the health check configuration (path, port, expected status code, thresholds) to what the application actually serves",
           "relevant_services": ["elb", "ec2"],
           "skip_if_queried": ["cloudwatch-logs.txt"]
         },
         {
-          "text": "The health check is configured for port 8080 but the application listens on port 3000. Every health check fails because nothing is listening on port 8080, so the ALB deregisters every instance as unhealthy.",
+          "hint": "health check configured for port 8080 but application listens on port 3000 -- every check fails because nothing listens on 8080, so ALB deregisters every instance",
           "relevant_services": ["elb", "ec2"],
           "skip_if_queried": []
         }
@@ -93,11 +114,11 @@
         "Infrastructure as Code (IaC)": "Managing server and service configuration through code files (like Terraform or CloudFormation) instead of clicking through the AWS console by hand."
       },
       "narrative_arc": {
-        "call": "Friday rush hour. The dispatch dashboard returns 502 errors, stranding 1,200 delivery drivers mid-route with no instructions.",
-        "threshold": "The ALB is online and receiving requests, but every response is a 502. The target group shows zero healthy instances even though EC2 status checks pass.",
-        "trials": "New instances launched by Auto Scaling also fail within seconds. The health check port in the target group does not match the port the application actually listens on.",
-        "revelation": "The health check was changed to port 8080 by an IaC update, but the application still listens on port 3000. Every check times out, so the ALB deregisters every instance.",
-        "return": "Updating the health check port back to traffic-port restores all instances within 10 seconds. The team adds a dedicated /health endpoint and a pre-deployment port-match validation."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player sees ALB online but every response is 502, target group shows zero healthy instances despite EC2 status checks passing",
+        "trials": "new instances launched by Auto Scaling also fail within seconds, creating churn cycle -- health check port does not match application port",
+        "revelation": "health check changed to port 8080 by IaC update two hours earlier, application still listens on port 3000, every check times out",
+        "return": "update health check port back to traffic-port, instances healthy within 10 seconds, add dedicated /health endpoint and pre-deployment port-match validation"
       },
       "system_narration": {
         "components": [

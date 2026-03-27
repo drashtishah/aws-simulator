@@ -13,18 +13,31 @@ tags:
 
 ## Opening
 
-The deployment started at 6:15 AM on a Wednesday. A routine update -- three dependency patches and a logging format change. Nothing that touched business logic. The pipeline approved it. CodeDeploy began replacing instances in the target group in batches of two.
-
-Ridgewell's route optimization platform serves 340 enterprise logistics companies. Peak hours are 6 AM to 10 AM, when dispatchers across three time zones log in, pull overnight shipment data, and plan the day's delivery routes. The platform handles roughly 2,800 concurrent sessions during that window. $6.2M ARR. Thirty-eight engineers. The kind of company where a four-minute outage during peak hours generates support tickets faster than anyone can read them.
-
-Within ninety seconds of the deployment starting, the first ticket arrived. Then four more. The Slack channel for the on-call team lit up with a screenshot from a dispatcher at a freight company in Memphis: "502 Bad Gateway." The dispatcher had been mid-route when the page went white. Two minutes later, fourteen customers had reported the same thing. Route optimization requests were timing out. Some dispatchers had already switched to manual planning -- spreadsheets and phone calls, the way they did it before Ridgewell existed.
-
-You are the on-call engineer. You were pulled in at 6:18 AM. The deployment is still running. The error rate is climbing. The platform engineer who triggered the deploy is in the channel, insisting the code changes are harmless. He is probably right about the code. The problem is somewhere else.
+company: Ridgewell
+industry: logistics SaaS, growth-stage, 38 engineers
+product: route optimization platform for enterprise logistics companies
+scale: 340 enterprise logistics customers, 2,800 concurrent sessions during peak hours, $6.2M ARR
+time: 6:15 AM, Wednesday
+scene: routine deployment during peak dispatch hours (6 AM to 10 AM), dispatchers across three time zones logging in to plan delivery routes
+alert: "502 Bad Gateway" errors reported by dispatchers within 90 seconds of deployment start
+stakes: dispatchers mid-route planning for the day's deliveries, four-minute outage generates support tickets faster than anyone can read them
+early_signals:
+  - deployment started at 6:15 AM: three dependency patches and a logging format change, nothing touching business logic
+  - CodeDeploy replacing instances in target group in batches of two (50% of fleet)
+  - first support ticket within 90 seconds, four more immediately after
+  - screenshot from a dispatcher at a freight company in Memphis: "502 Bad Gateway"
+  - 14 customers reported the same issue within two minutes
+  - route optimization requests timing out
+  - some dispatchers switching to manual planning (spreadsheets and phone calls)
+investigation_starting_point: pulled in at 6:18 AM. Deployment still running. Error rate climbing. Platform engineer who triggered the deploy insists code changes are harmless -- he is probably right about the code. The problem is somewhere else.
 
 ## Resolution
 
-The deregistration delay on the target group was 30 seconds. The ALB health check required five consecutive successful checks at 30-second intervals -- 150 seconds to mark a new target as healthy. When CodeDeploy deregistered the first batch of two instances, those targets drained their connections in 30 seconds and left the target group. But the two replacement instances had only been running for 30 seconds. They needed another 120 seconds to pass their health checks. The target group had two healthy targets instead of four.
-
-Then the second batch started. The remaining two old instances were deregistered. They drained in 30 seconds. The two new instances from the first batch still had not passed their health checks. HealthyHostCount dropped to zero. The ALB entered fail-open mode -- when every target in a target group is unhealthy, the ALB routes requests to all of them rather than returning 503 directly. The new instances were still initializing. They returned 502 and 503 errors. The dispatchers saw "Bad Gateway."
-
-The deployment itself completed successfully. Every new instance eventually passed its health checks. The error window lasted roughly three minutes. The fix is structural: increase the deregistration delay to at least 300 seconds so old targets continue serving traffic while new ones initialize, reduce the healthy threshold from 5 to 2 so new targets become healthy faster, reduce the deployment batch size from 50% to 25% so at least two healthy targets remain at all times, and never deploy during the 6 AM to 10 AM peak window.
+root_cause: deregistration delay on the target group was 30 seconds, but ALB health check required 150 seconds (5 consecutive checks at 30-second intervals) to mark a new target as healthy -- old targets drained and left before replacements were ready
+mechanism: CodeDeploy deregistered the first batch of two instances, which drained in 30 seconds and left the target group. Replacement instances needed another 120 seconds to pass health checks. When the second batch started, the remaining two old instances were also deregistered. HealthyHostCount dropped to zero. The ALB entered fail-open mode, routing requests to initializing instances that returned 502 and 503 errors. Error window lasted roughly three minutes.
+fix: increase deregistration delay to at least 300 seconds so old targets continue serving while new ones initialize. Reduce healthy threshold from 5 to 2 so new targets become healthy faster. Reduce deployment batch size from 50% to 25% so at least two healthy targets remain at all times. Never deploy during the 6 AM to 10 AM peak window.
+contributing_factors:
+  - deregistration delay left at 30 seconds, far shorter than the 150-second health check time-to-healthy
+  - deployment batch size of 50% replaced half the fleet at once, leaving no capacity margin
+  - deployment scheduled during peak dispatch hours (6 AM to 10 AM)
+  - no HealthyHostCount alarm configured to detect when healthy capacity dropped

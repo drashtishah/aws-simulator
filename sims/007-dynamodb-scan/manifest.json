@@ -30,7 +30,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Quiet, methodical. Reports numbers -- consumed capacity, throttled requests, items scanned -- the way someone reads a weather report. The order backlog grows. They mention it.",
+      "personality": {
+        "role": "backend engineer, on-call this week",
+        "demeanor": "quiet, methodical, reports numbers the way someone reads a weather report",
+        "recurring_concern": "order backlog growing, dead-letter queue filling up"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -38,19 +42,36 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "The order processing Lambda has failed 312 times in the last five minutes. The dead-letter queue has 287 messages. Customer service has six open chats. Nobody is asking about the search feature."
+          "facts": [
+            "order processing Lambda has failed 312 times in the last five minutes",
+            "dead-letter queue has 287 messages",
+            "customer service has six open chats",
+            "nobody is asking about the search feature"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "A senior engineer suggests the Lambda timeout might be set too low. It was raised from 15 seconds to 30 seconds last week and that fixed a similar-looking issue. The order backlog is at 1,400."
+          "facts": [
+            "senior engineer suggests Lambda timeout might be set too low",
+            "timeout was raised from 15 seconds to 30 seconds last week and that fixed a similar-looking issue",
+            "order backlog is at 1,400"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The order backlog is at 2,100. Someone in the incident channel asks if they should increase provisioned capacity on the table. Someone else asks if the search Lambda is still running."
+          "facts": [
+            "order backlog is at 2,100",
+            "someone in incident channel asks if they should increase provisioned capacity on the table",
+            "someone else asks if the search Lambda is still running"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The Lambda timeout is a symptom. The function is waiting on DynamoDB reads that never complete because the table is throttled. Something is consuming all the read capacity."
+          "facts": [
+            "Lambda timeout is a symptom, not the cause",
+            "function is waiting on DynamoDB reads that never complete because the table is throttled",
+            "something is consuming all the read capacity"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,27 +80,27 @@
       ],
       "hints": [
         {
-          "text": "The order processing was fine until 10:00 AM. Something else started hitting the table around that time.",
+          "hint": "order processing was fine until 10:00 AM -- something else started hitting the table around that time",
           "relevant_services": ["dynamodb", "cloudwatch"],
           "skip_if_queried": ["ConsumedReadCapacityUnits", "metrics.csv"]
         },
         {
-          "text": "Check CloudWatch for ConsumedReadCapacityUnits. Something is reading far more than the order pipeline ever would.",
+          "hint": "check CloudWatch for ConsumedReadCapacityUnits -- something is reading far more than the order pipeline ever would",
           "relevant_services": ["cloudwatch", "dynamodb"],
           "skip_if_queried": ["get_metric_data", "ConsumedReadCapacityUnits"]
         },
         {
-          "text": "The product-search Lambda was deployed at 9:58 AM. Look at how it reads from the table.",
+          "hint": "the product-search Lambda was deployed at 9:58 AM -- look at how it reads from the table",
           "relevant_services": ["lambda", "dynamodb"],
           "skip_if_queried": ["tidepool-product-search", "lambda-code-snippet"]
         },
         {
-          "text": "There is a difference between a DynamoDB Scan and a Query. One reads every item in the table. The other uses an index.",
+          "hint": "there is a difference between a DynamoDB Scan and a Query -- one reads every item in the table, the other uses an index",
           "relevant_services": ["dynamodb"],
           "skip_if_queried": ["Scan", "Query", "scan", "query"]
         },
         {
-          "text": "The search Lambda runs a Scan with a FilterExpression on the 'category' attribute. There is no GSI on category. Every invocation reads all four million items.",
+          "hint": "the search Lambda runs a Scan with a FilterExpression on the category attribute -- there is no GSI on category, so every invocation reads all four million items",
           "relevant_services": ["dynamodb", "lambda"],
           "skip_if_queried": ["FilterExpression", "GlobalSecondaryIndexes", "GSI"]
         }
@@ -97,11 +118,11 @@
         "Partition Key": "The primary attribute DynamoDB uses to decide which internal partition stores an item. A good partition key distributes data evenly across partitions."
       },
       "narrative_arc": {
-        "call": "Tuesday morning. A new search feature was deployed two minutes ago. Orders are still flowing. Nothing looks wrong yet.",
-        "threshold": "ConsumedReadCapacityUnits hits 100 -- the provisioned ceiling. The order-writer Lambda starts failing. The dead-letter queue begins to fill. The two events look unrelated.",
-        "trials": "A senior engineer raises the Lambda timeout. It does not help. Someone suggests increasing provisioned capacity. The backlog keeps climbing. The search feature returns results slowly, which makes it look functional, not culpable.",
-        "revelation": "The product-search Lambda performs a full table Scan on every invocation. Four million items, read cover to cover, each time a customer searches by category. The FilterExpression discards most of them after the read. The capacity was consumed before the filter ran.",
-        "return": "The search Lambda is disabled. Throttling stops within sixty seconds. The lasting fix is a Global Secondary Index on the category attribute and a Query operation instead of a Scan."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, ConsumedReadCapacityUnits at 100 RCU ceiling, order-writer Lambda failing, dead-letter queue filling -- two events appear unrelated",
+        "trials": "senior engineer raises Lambda timeout (no effect), someone suggests increasing provisioned capacity, backlog keeps climbing, search feature returns results slowly making it look functional not culpable",
+        "revelation": "product-search Lambda performs full table Scan on every invocation -- 4 million items read cover to cover per search, FilterExpression discards after read, capacity consumed before filter runs",
+        "return": "search Lambda disabled, throttling stops within 60 seconds, lasting fix is GSI on category attribute and Query operation instead of Scan"
       },
       "system_narration": {
         "components": [

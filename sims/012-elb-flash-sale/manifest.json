@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Backend lead, awake because the sale was her idea. Quiet, self-blaming. States facts about customer drop-off between technical observations.",
+      "personality": {
+        "role": "backend lead, awake because the sale was her idea",
+        "demeanor": "quiet, self-blaming",
+        "recurring_concern": "customer drop-off and the collaboration partner's reputation"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,19 +40,33 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "The checkout error rate is at 68%. Social media mentions are turning negative. The collaboration partner's marketing team is asking what happened."
+          "facts": [
+            "checkout error rate at 68%",
+            "social media mentions turning negative",
+            "collaboration partner's marketing team asking what happened"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Traffic is dropping now. Not because we fixed it. Because people gave up. The sale items are still in stock. Nobody could add them to cart."
+          "facts": [
+            "traffic dropping because customers gave up, not because site recovered",
+            "sale items still in stock",
+            "nobody could add items to cart"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The CEO forwarded a tweet thread. Thirty-eight tweets about the site being down during the drop. The collaboration partner wants a call in the morning."
+          "facts": [
+            "CEO forwarded a tweet thread with 38 tweets about the site being down during the drop",
+            "collaboration partner wants a call in the morning"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "That is not what the metrics show. Look at the load balancer and scaling activity, not the application code."
+          "facts": [
+            "metrics do not support that diagnosis",
+            "look at the load balancer and scaling activity, not the application code"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -68,11 +86,11 @@
         "TargetResponseTime": "A CloudWatch metric that measures how long it takes for a target instance to respond to a request routed by the ALB. High values indicate overload."
       },
       "narrative_arc": {
-        "call": "The midnight flash sale countdown reaches zero. Traffic jumps from 200 to 2,400 requests per second in 45 seconds. The ALB begins returning 503 errors. Customers cannot add items to cart.",
-        "threshold": "The on-call engineer is paged at 12:01 AM. The CloudWatch dashboard is red. Both instances are at 98% CPU. The checkout error rate is 68%. The load balancer is rejecting connections.",
-        "trials": "The Auto Scaling group launches a third instance at 12:03 AM, but it does not pass health checks until 12:07 AM. The cooldown blocks a fourth instance until 12:08 AM. Traffic is falling because customers are leaving, not because the system is recovering.",
-        "revelation": "The ALB was never pre-warmed. It can absorb roughly a 2x increase over five minutes, not a 10x spike in under a minute. The scaling policy watches CPU with a 300-second cooldown. CPU is a lagging indicator. The traffic event was scheduled and public. The infrastructure treated it as a surprise.",
-        "return": "The fix is two-part. Contact AWS Support to pre-warm the ALB before planned events, or use LCU reservation. Replace the CPU-only simple scaling policy with a target tracking policy on ALBRequestCountPerTarget and reduce the cooldown to 60 seconds."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, ALB returning 503s, both instances at 98% CPU, checkout error rate 68%, load balancer rejecting connections",
+        "trials": "scaling group launched a third instance at 12:03 AM but health check did not pass until 12:07 AM, cooldown blocked fourth instance until 12:08 AM, traffic falling because customers leaving not because system recovering",
+        "revelation": "ALB was never pre-warmed, can only absorb ~2x over five minutes, scaling policy watches CPU with 300-second cooldown -- lagging indicator for a scheduled public traffic event",
+        "return": "pre-warm ALB or use LCU reservation, replace CPU policy with ALBRequestCountPerTarget target tracking, reduce cooldown to 60 seconds, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -130,27 +148,27 @@
       },
       "hints": [
         {
-          "text": "What does the ALB metrics dashboard show around midnight?",
+          "hint": "check the ALB metrics dashboard around midnight -- what do RequestCount, 5XX errors, and TargetResponseTime show?",
           "relevant_services": ["elb", "cloudwatch"],
           "skip_if_queried": ["describe_load_balancers", "get_metric_data"]
         },
         {
-          "text": "How quickly can an ALB scale its own capacity without intervention?",
+          "hint": "ALBs scale internal capacity gradually -- how quickly can one absorb a traffic increase without intervention?",
           "relevant_services": ["elb"],
           "skip_if_queried": ["describe_target_health"]
         },
         {
-          "text": "Check the Auto Scaling group configuration. What triggers a scale-out, and how long is the cooldown?",
+          "hint": "check the auto scaling group configuration -- what metric triggers scale-out and what is the cooldown period?",
           "relevant_services": ["auto-scaling"],
           "skip_if_queried": ["describe_auto_scaling_groups", "describe_policies"]
         },
         {
-          "text": "The ALB needed to be pre-warmed before the sale. AWS Support can scale the load balancer in advance. Also, the scaling policy uses only CPU -- RequestCountPerTarget would react faster to traffic spikes.",
+          "hint": "the ALB was never pre-warmed before the sale, and the scaling policy uses only CPU -- ALBRequestCountPerTarget reacts faster to traffic spikes",
           "relevant_services": ["elb", "auto-scaling", "cloudwatch"],
           "skip_if_queried": ["describe_scaling_activities"]
         },
         {
-          "text": "Two fixes: contact AWS Support to pre-warm the ALB (or use LCU reservation), and add a target tracking policy on ALBRequestCountPerTarget with a shorter cooldown.",
+          "hint": "two fixes: contact AWS Support to pre-warm the ALB or use LCU reservation, and add a target tracking policy on ALBRequestCountPerTarget with a 60-second cooldown",
           "relevant_services": ["elb", "auto-scaling"],
           "skip_if_queried": []
         }

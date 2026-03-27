@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Senior SRE. Dry, precise. Has seen intermittent failures before and hates them. States error rates to two decimal places.",
+      "personality": {
+        "role": "senior SRE",
+        "demeanor": "dry, precise, states error rates to two decimal places",
+        "recurring_concern": "847 claims queued, SLA breach imminent, adjusters falling back to manual processing"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Error rate is holding at 31.2% for the last six hours. No pattern by time of day. No pattern by request payload. Same request succeeds, then fails, then succeeds again."
+          "facts": [
+            "error rate holding at 31.2% for the last 6 hours",
+            "no pattern by time of day or request payload",
+            "same request succeeds, then fails, then succeeds again"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Claims processing SLA breach in 45 minutes. 847 claims queued behind the failures. Adjusters are processing manually as backup."
+          "facts": [
+            "claims processing SLA breach in 45 minutes",
+            "847 claims queued behind the failures",
+            "adjusters processing manually as backup"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The governance team confirmed the SCP change went in last Tuesday. They say it should not affect Bedrock. They are wrong about many things."
+          "facts": [
+            "governance team confirmed SCP change went in last Tuesday",
+            "governance team says it should not affect Bedrock"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The IAM role permissions are correct. The Bedrock model access is enabled. The intermittent pattern is the key -- what causes a service call to succeed sometimes and fail others with the same inputs?"
+          "facts": [
+            "IAM role permissions are correct",
+            "Bedrock model access is enabled",
+            "intermittent pattern is the key -- what causes a service call to succeed sometimes and fail others with the same inputs?"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -57,11 +76,11 @@
         "Load Balancer Routing": "The mechanism by which a service distributes requests across multiple destinations. In Bedrock cross-region inference, routing is heuristics-based -- requests are spread across destination regions for throughput and availability, with no caller control over which region is selected."
       },
       "narrative_arc": {
-        "call": "The error rate is 31.2%. It has been 31.2% for six hours. At Polaris Underwriting, one in three AI claim assessments is failing with AccessDeniedException. Eight hundred forty-seven claims are queued. The SLA clock is running.",
-        "threshold": "The IAM role is correct. The model access is enabled. The Lambda code has not changed. The same request succeeds, then fails, then succeeds again. The usual explanations do not apply. The problem is not in the application.",
-        "trials": "The engineer checks IAM policies, Bedrock model configuration, Lambda execution logs, and CloudWatch metrics. Everything that should matter is correct. The 31.2% error rate holds steady like a physical constant. The pattern is not in the payload, the timestamp, or the caller. It is somewhere else entirely.",
-        "revelation": "The cross-region inference profile routes to three regions. The SCP blocks one of those three. When Bedrock's load balancer picks the blocked region, the call dies. When it picks an allowed region, the call succeeds. One-third blocked. 31.2% failures. The SCP and the inference profile are operating at different layers and neither knows the other exists.",
-        "return": "The team creates an application inference profile that includes only the two allowed regions. The error rate drops to zero. A coordination process is established between the governance team and the engineering teams so that SCP changes are cross-referenced against active cross-region configurations before deployment."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "IAM role correct, model access enabled, Lambda code unchanged, same request succeeds then fails then succeeds -- usual explanations do not apply, problem not in the application",
+        "trials": "engineer checks IAM policies, Bedrock model configuration, Lambda execution logs, CloudWatch metrics -- everything correct, 31.2% error rate holds steady, pattern not in payload, timestamp, or caller",
+        "revelation": "cross-region inference profile routes to 3 regions, SCP blocks 1 of 3 (us-east-2), Bedrock load balancer picks blocked region ~1/3 of the time, SCP and inference profile operate at different layers with no mutual awareness",
+        "return": "create application inference profile with only allowed regions (us-east-1, us-west-2), establish coordination process between governance and engineering for SCP changes, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -107,22 +126,22 @@
       },
       "hints": [
         {
-          "text": "The failures are not random. They follow a pattern, but the pattern is not in the request. It is in the routing.",
+          "hint": "failures are not random -- they follow a pattern, but the pattern is not in the request, it is in the routing",
           "relevant_services": ["bedrock", "organizations"],
           "skip_if_queried": []
         },
         {
-          "text": "This account uses a cross-region inference profile. Where can Bedrock route the requests?",
+          "hint": "this account uses a cross-region inference profile -- where can Bedrock route the requests?",
           "relevant_services": ["bedrock"],
           "skip_if_queried": ["bedrock"]
         },
         {
-          "text": "Check which regions the inference profile includes. Now check which regions the SCP allows.",
+          "hint": "check which regions the inference profile includes, then check which regions the SCP allows",
           "relevant_services": ["bedrock", "organizations"],
           "skip_if_queried": ["bedrock", "organizations"]
         },
         {
-          "text": "The SCP blocks us-east-2. The inference profile includes us-east-2. When Bedrock routes there, the call is denied. When it routes to allowed regions, it succeeds.",
+          "hint": "SCP blocks us-east-2, inference profile includes us-east-2 -- when Bedrock routes there the call is denied, when it routes to allowed regions it succeeds",
           "relevant_services": ["bedrock", "iam", "organizations"],
           "skip_if_queried": []
         }

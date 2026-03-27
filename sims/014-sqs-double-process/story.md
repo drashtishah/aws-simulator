@@ -12,18 +12,32 @@ tags:
 
 ## Opening
 
-The first support email arrived at 7:42 AM. "I was charged twice for my grocery order." The customer attached a screenshot of two identical Stripe receipts, $67.40 each, timestamped 47 seconds apart. The order ID was the same on both.
-
-Canopy Goods delivers groceries in Austin. Twelve thousand active customers. Two thousand eight hundred orders on a normal day. Three hundred forty thousand dollars in monthly gross merchandise value. The company is eleven engineers, seed-stage, eighteen months old. The backend is a single SQS queue feeding a single Lambda function. Orders come in through the API, land in the queue, and the Lambda processes them one at a time: inventory check, payment charge, delivery slot reservation, confirmation email.
-
-By 8:15 AM, eleven customers had reported duplicate charges. The pattern was the same each time. Two successful Stripe charges for the same order, seconds apart, different request IDs. The support tool showed refund requests stacking up. The co-founder pulled up CloudWatch and saw Lambda concurrent executions spiking in a way that did not match the order volume. The invocation count was higher than the number of orders placed.
-
-You are the backend engineer. It is 8:15 AM on Wednesday. Yesterday the marketing team ran a promotional campaign -- twenty percent off orders over $50. The campaign brought in larger-than-usual baskets. Twenty items, thirty items. The duplicate charges started this morning, but only for some orders. Small orders seem fine. You have been asked to find why customers are being charged twice and stop it.
+company: Canopy Goods
+industry: grocery delivery, seed-stage startup, 11 engineers, 18 months old
+product: grocery delivery in Austin, order processing via SQS queue and Lambda
+scale: 12,000 active customers, 2,800 orders on a normal day, $340,000 monthly gross merchandise value
+time: 8:15 AM, Wednesday
+scene: morning after a promotional campaign (20% off orders over $50), which brought in larger-than-usual baskets (20-30 items)
+alert: customer email at 7:42 AM reporting duplicate charge -- two identical Stripe receipts for $67.40, timestamped 47 seconds apart, same order ID
+stakes: 11 customers reported duplicate charges by 8:15 AM, refund requests stacking up in support tool, customer trust at risk
+early_signals:
+  - two successful Stripe charges for the same order, seconds apart, different request IDs
+  - pattern repeats across all affected orders: same order ID charged twice
+  - Lambda concurrent executions spiking beyond what order volume explains
+  - invocation count higher than the number of orders placed
+  - duplicate charges only affecting large orders (20+ items), small orders seem fine
+  - backend is a single SQS queue (canopy-order-queue) feeding a single Lambda function (canopy-process-order)
+  - Lambda processes each order: inventory check, payment charge, delivery slot reservation, confirmation email
+investigation_starting_point: backend engineer, 8:15 AM Wednesday. Promotional campaign yesterday brought in large baskets. Duplicate charges started this morning but only for some orders. Small orders seem fine. Need to find why customers are being charged twice and stop it.
 
 ## Resolution
 
-The SQS queue `canopy-order-queue` had a visibility timeout of 30 seconds. It was the default. Nobody changed it when the queue was created eight months ago. For most of that time, it did not matter. The average order was five to eight items. The Lambda function processed those in seven to nine seconds. The message was deleted long before the visibility timeout expired.
-
-Wednesday's promotional campaign changed the distribution. Large orders -- twenty, twenty-five, thirty items -- required individual inventory checks, a longer payment processing call, and delivery slot reservation logic that scaled with basket size. The Lambda function needed 60 to 90 seconds for those orders. At the 30-second mark, the function was still running, but SQS assumed the message was lost. It made the message visible again. A second Lambda invocation picked it up. Both invocations completed successfully. Both charged the customer. Both reserved a delivery slot. Both decremented inventory. The function had no idempotency check -- no logic to ask whether an order had already been processed.
-
-The fix was three changes. First, increase the visibility timeout to at least six times the Lambda timeout -- AWS recommends this ratio -- bringing it to 540 seconds. Second, configure a dead-letter queue with a `maxReceiveCount` of 3, so that messages which genuinely fail processing are captured instead of retrying indefinitely. Third, add an idempotency check at the start of the Lambda function: query the orders table for the order ID before processing, and skip execution if the order has already been charged. The visibility timeout fix stopped the immediate bleeding. The idempotency check made the system correct regardless of delivery guarantees. The dead-letter queue made failures visible.
+root_cause: SQS queue canopy-order-queue had a visibility timeout of 30 seconds (the default, never changed when the queue was created 8 months ago), while the Lambda function needed 60-90 seconds to process large orders from the promotional campaign
+mechanism: at the 30-second mark, the Lambda was still processing the large order, but SQS assumed the message was lost and made it visible again. A second Lambda invocation picked it up. Both invocations completed successfully -- both charged the customer, both reserved a delivery slot, both decremented inventory. No idempotency check existed in the function.
+fix: three changes. (1) Increase visibility timeout to at least 6x the Lambda timeout (540 seconds, per AWS recommendation). (2) Configure a dead-letter queue with maxReceiveCount of 3 so genuinely failed messages are captured instead of retrying indefinitely. (3) Add idempotency check at the start of the Lambda function -- query orders table for order ID before processing, skip if already charged.
+contributing_factors:
+  - visibility timeout left at 30-second default, never reviewed against actual processing time
+  - no dead-letter queue configured, so failed messages were invisible
+  - no idempotency logic in the Lambda function to detect duplicate processing
+  - promotional campaign changed the order size distribution, pushing processing time past the visibility timeout
+  - average order previously 5-8 items (7-9 seconds to process), well within the 30-second timeout

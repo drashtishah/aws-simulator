@@ -12,20 +12,26 @@ tags:
 
 ## Opening
 
-It is 6:22 AM on a Monday. You are halfway through your first cup of coffee when the Slack security channel lights up: a well-known security researcher has sent an email to Meridian Health's responsible disclosure address. She reports that patient documents are publicly accessible via direct S3 URLs. She has included a screenshot of a patient intake form -- name, date of birth, insurance ID, all visible.
-
-Meridian Health is a mid-market healthtech company that provides a digital patient intake platform to 340 medical practices across the midwest. Every day, roughly 12,000 patients fill out intake forms through Meridian's web portal. Those forms are stored as PDFs in S3 and accessed by clinic staff through the Meridian dashboard. The company processes protected health information under strict HIPAA Business Associate Agreements with every clinic.
-
-The security team runs a quick test: copy the S3 object URL from the researcher's email, open it in an incognito browser window with no AWS credentials. The PDF downloads immediately. No authentication, no authorization check, no 403. The file just comes down.
-
-You open CloudTrail and start scrolling. The compliance officer is already calculating: if the bucket has been public for more than 24 hours, this triggers a HIPAA breach notification process. Affected patients must be notified within 60 days. Fines start at $100 per violation and scale to $50,000 per violation category. With 12,000 forms per day, even a few days of exposure could mean thousands of affected patients.
+company: Meridian Health
+industry: healthtech, mid-market SaaS, 80 engineers
+product: digital patient intake platform for medical practices, intake forms stored as PDFs in S3, accessed by clinic staff through Meridian dashboard
+scale: 340 medical practices across the midwest, 12,000 patients fill out intake forms daily
+compliance: HIPAA Business Associate Agreements with every clinic, processes protected health information (PHI)
+time: 6:22 AM, Monday
+scene: halfway through first cup of coffee
+alert: Slack security channel lights up -- well-known security researcher sent responsible disclosure email reporting patient documents publicly accessible via direct S3 URLs, screenshot of patient intake form attached (name, date of birth, insurance ID all visible)
+stakes: HIPAA breach notification triggered if bucket public for more than 24 hours, affected patients must be notified within 60 days, fines start at $100 per violation scaling to $50,000 per violation category, 12,000 forms per day means even a few days of exposure could mean thousands of affected patients
+early_signals:
+  - security team copied S3 object URL from researcher's email, opened in incognito browser with no AWS credentials -- PDF downloaded immediately, no authentication, no authorization check, no 403
+  - compliance officer already calculating exposure window and breach notification timeline
+investigation_starting_point: CloudTrail is available to scroll through. The bucket is confirmed publicly readable. The question is how it got that way, how long it has been exposed, who accessed it, and how to contain it.
 
 ## Resolution
 
-The investigation traced the exposure to a bucket policy change made four days earlier. A backend engineer was building an integration with a third-party medical records system that needed read access to the patient documents bucket. Instead of granting access to the vendor's specific AWS account ARN, the engineer set the bucket policy Principal to `*`, which grants read access to anyone on the internet.
-
-CloudTrail logs showed that `meridian-deploy-svc` called `PutBucketPolicy` on the `meridian-patient-documents` bucket four days before detection. During the exposure window, S3 access logs recorded 187 unique external IP addresses accessing objects in the bucket, including the security researcher, several search engine crawlers, and a handful of IP addresses that could not be attributed.
-
-The immediate fix was to replace `Principal: *` with the vendor's specific AWS account ARN and enable S3 Block Public Access at both the bucket and account level. The team also enabled AWS Config rule `s3-bucket-public-read-prohibited` for continuous monitoring and added a CI/CD pipeline check that rejects any bucket policy containing `Principal: *`.
-
-The compliance team initiated the HIPAA breach notification process for the 48,000 patients whose intake forms were in the bucket during the exposure window.
+root_cause: backend engineer building integration with third-party medical records system set bucket policy Principal to `*` instead of vendor's specific AWS account ARN on `meridian-patient-documents` bucket, granting read access to anyone on the internet
+mechanism: CloudTrail logs showed `meridian-deploy-svc` called `PutBucketPolicy` on `meridian-patient-documents` four days before detection. During the exposure window, S3 access logs recorded 187 unique external IP addresses accessing objects, including the security researcher, several search engine crawlers, and unattributable IP addresses.
+fix: replace `Principal: *` with vendor's specific AWS account ARN, enable S3 Block Public Access at both bucket and account level, enable AWS Config rule `s3-bucket-public-read-prohibited` for continuous monitoring, add CI/CD pipeline check rejecting any bucket policy containing `Principal: *`
+contributing_factors:
+  - no validation step in CI/CD pipeline to catch wildcard Principal in bucket policies
+  - no S3 Block Public Access enabled at account or bucket level as a guardrail
+  - 48,000 patients affected (intake forms in bucket during four-day exposure window), HIPAA breach notification process initiated

@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Junior SRE on their first solo on-call shift. Nervous but thorough. Keeps mentioning that students have midterm deadlines tomorrow.",
+      "personality": {
+        "role": "junior SRE, first solo on-call shift",
+        "demeanor": "nervous but thorough",
+        "recurring_concern": "students have midterm deadlines tomorrow"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,15 +40,28 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Support inbox just hit 40 tickets. A professor tweeted that BrightPath is down during midterm week. The CEO is asking for a status update."
+          "facts": [
+            "support inbox at 40 tickets",
+            "professor tweeted about BrightPath being down during midterm week",
+            "CEO asking for status update"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Engineering lead just joined the call. She says the last deployment was a security hardening sprint -- they tightened firewall rules across all environments."
+          "facts": [
+            "engineering lead just joined the call",
+            "last deployment was a security hardening sprint",
+            "they tightened firewall rules across all environments"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "That is not matching what we see. The instance itself is running fine -- this looks like a network access issue. Check what traffic is allowed to reach the instance."
+          "facts": [
+            "diagnosis does not match observed symptoms",
+            "instance itself is running fine",
+            "problem appears to be network access",
+            "check what traffic is allowed to reach the instance"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -64,11 +81,11 @@
         "Health Check": "An automated test that verifies whether an application or instance is responding correctly. A failing health check does not always mean the instance is broken -- it could mean traffic cannot reach it."
       },
       "narrative_arc": {
-        "call": "A PagerDuty alert fires at 9:47 PM. The BrightPath learning platform is not responding. 3,400 students have midterm papers due in ten hours.",
-        "threshold": "The on-call engineer opens the incident channel and crosses from normal operations into the unknown. The site is unreachable but the instance is running. The usual explanations do not apply.",
-        "trials": "The engineer checks instance status, application logs, database connections, CPU metrics. Everything reads healthy. Traffic metrics show packets dropping to zero at 19:42 UTC. The problem is invisible from the inside.",
-        "revelation": "The security group sg-0a1b2c3d4e5f67890 has no inbound rule for port 443. The security hardening sprint two hours earlier removed it. The firewall has been silently dropping every student connection since 19:42.",
-        "return": "One rule is added back. Traffic restores in seconds. The post-incident review produces two new requirements: automated validation of security group changes against required ports, and staging tests before production changes."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, instance running but unreachable externally, usual explanations ruled out",
+        "trials": "instance healthy, app running, metrics normal, traffic drops to zero at 19:42 UTC -- problem invisible from inside",
+        "revelation": "security group has no inbound rule for port 443, removed during hardening sprint",
+        "return": "one rule added, traffic restores in seconds, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -114,22 +131,22 @@
       },
       "hints": [
         {
-          "text": "The application is running on the instance. Can you check what network rules control access to it?",
+          "hint": "application is running on the instance but nothing reaches it from outside -- what network rules control access?",
           "relevant_services": ["ec2", "vpc"],
           "skip_if_queried": []
         },
         {
-          "text": "Security groups act as virtual firewalls for EC2 instances. What inbound rules are configured?",
+          "hint": "security groups act as virtual firewalls for EC2 instances -- what inbound rules are configured?",
           "relevant_services": ["ec2"],
           "skip_if_queried": ["ec2"]
         },
         {
-          "text": "Look at the inbound rules -- is port 443 allowed? The application serves HTTPS traffic on that port.",
+          "hint": "check inbound rules for port 443 -- the application serves HTTPS traffic on that port",
           "relevant_services": ["ec2", "vpc"],
           "skip_if_queried": ["ec2", "vpc"]
         },
         {
-          "text": "The security group has no inbound rule for port 443. That means all HTTPS traffic from users is being dropped at the network level.",
+          "hint": "security group has no inbound rule for port 443 -- all HTTPS traffic from users is being dropped at the network level",
           "relevant_services": ["ec2"],
           "skip_if_queried": []
         }

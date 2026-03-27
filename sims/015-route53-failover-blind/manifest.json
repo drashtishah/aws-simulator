@@ -18,7 +18,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "SRE who built the multi-region setup six months ago. Quiet guilt. States the customer impact in developer-hours lost. Mentions the health check alarm that was in ALARM state for three weeks.",
+      "personality": {
+        "role": "SRE who built the multi-region setup six months ago",
+        "demeanor": "quiet guilt",
+        "recurring_concern": "customer impact in developer-hours lost, and the health check alarm that was in ALARM state for three weeks"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -26,19 +30,33 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "StatusPage shows 412 reports in the last five minutes. Three API doc customers have opened P1 tickets. Their developers cannot access reference documentation during a shipping sprint."
+          "facts": [
+            "StatusPage shows 412 reports in the last five minutes",
+            "three API doc customers opened P1 tickets",
+            "developers cannot access reference documentation during a shipping sprint"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The eu-west-1 stack is healthy. I can reach it directly via the regional ALB DNS name. The failover just never happened."
+          "facts": [
+            "eu-west-1 stack is healthy, reachable directly via regional ALB DNS name",
+            "failover never happened"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Forty minutes of downtime now. We pay for a multi-region setup that did nothing when we needed it. The health check has been in ALARM state since March 4th. Nobody looked."
+          "facts": [
+            "40 minutes of downtime",
+            "multi-region setup did nothing when needed",
+            "health check has been in ALARM state since March 4th, nobody looked"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The primary region's ALB is genuinely down. The question is why traffic did not fail over to the secondary. Look at how Route 53 decides when to switch."
+          "facts": [
+            "primary region ALB is genuinely down",
+            "the question is why traffic did not fail over to the secondary -- look at how Route 53 decides when to switch"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -57,11 +75,11 @@
         "Hosted Zone": "A container in Route 53 that holds DNS records for a single domain (like spellbook.dev). All routing rules and record sets for that domain live inside its hosted zone."
       },
       "narrative_arc": {
-        "call": "A customer in Berlin reports that docs.spellbook.dev is not loading. The browser waited sixteen seconds and timed out. 2.1 million developers depend on this documentation platform.",
-        "threshold": "The on-call SRE confirms the primary ALB in us-east-1 is unreachable but the secondary in eu-west-1 is healthy. The multi-region failover that took two weeks to build six months ago did nothing.",
-        "trials": "The health check has been in UNHEALTHY state since March 4th. Three weeks. The CloudWatch alarm has been in ALARM state the entire time. No one received a notification because no SNS topic was attached. The health check was configured for the wrong protocol, port, and path from the start.",
-        "revelation": "EvaluateTargetHealth is set to false on the primary failover record. Route 53 never consulted the health check result when routing DNS queries. The failover record set, the health check, and the alarm all existed but none of them were wired together correctly.",
-        "return": "Traffic is manually pointed to eu-west-1. The health check is fixed to use HTTPS on port 443 with the correct path. EvaluateTargetHealth is enabled. An SNS topic is attached to the alarm. The postmortem reveals the multi-region setup was never tested with an actual primary failure."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, primary ALB unreachable but secondary healthy, multi-region failover did nothing",
+        "trials": "health check UNHEALTHY since March 4th (three weeks), CloudWatch alarm in ALARM state with no SNS topic attached, health check configured for wrong protocol (HTTP), port (80), and path (/ returns 301)",
+        "revelation": "EvaluateTargetHealth is false on the primary failover record -- Route 53 never consulted the health check result, all components existed but none were wired together correctly",
+        "return": "manually point traffic to eu-west-1, fix health check to HTTPS port 443 with /healthz, enable EvaluateTargetHealth, attach SNS topic to alarm, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -101,27 +119,27 @@
       },
       "hints": [
         {
-          "text": "Is the Route 53 failover actually configured to use the health check?",
+          "hint": "is the Route 53 failover actually configured to use the health check? check EvaluateTargetHealth on the record set",
           "relevant_services": ["route53"],
           "skip_if_queried": []
         },
         {
-          "text": "What state is the Route 53 health check in? Has it been healthy recently?",
+          "hint": "what state is the Route 53 health check in? has it been healthy recently?",
           "relevant_services": ["route53", "cloudwatch"],
           "skip_if_queried": ["route53"]
         },
         {
-          "text": "Check the health check configuration. What port and path is it monitoring?",
+          "hint": "check the health check configuration -- what protocol, port, and path is it monitoring? compare with what the ALB actually listens on",
           "relevant_services": ["route53", "elb"],
           "skip_if_queried": ["route53"]
         },
         {
-          "text": "The health check targets port 80 and path '/' but the ALB listens on port 443 and '/' returns a 301 redirect. The health check has been UNHEALTHY for weeks. And EvaluateTargetHealth is false on the record set.",
+          "hint": "health check targets HTTP port 80 with path / (returns 301), but ALB listens on HTTPS port 443 -- health check has been UNHEALTHY for weeks, and EvaluateTargetHealth is false",
           "relevant_services": ["route53", "elb"],
           "skip_if_queried": ["route53", "elb"]
         },
         {
-          "text": "Fix: update health check to port 443 with HTTPS, change path to '/healthz', enable EvaluateTargetHealth on the failover record set, and set up a CloudWatch alarm that pages on health check state changes.",
+          "hint": "update health check to HTTPS port 443 with path /healthz, enable EvaluateTargetHealth on the failover record set, attach an SNS topic to the CloudWatch alarm",
           "relevant_services": ["route53", "elb", "cloudwatch"],
           "skip_if_queried": []
         }

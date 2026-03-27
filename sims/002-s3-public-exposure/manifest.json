@@ -29,7 +29,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Senior security engineer. Calm but deadly serious. Keeps emphasizing HIPAA compliance and patient trust. Uses precise language.",
+      "personality": {
+        "role": "senior security engineer",
+        "demeanor": "calm but deadly serious, precise language",
+        "recurring_concern": "HIPAA compliance and patient trust"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -37,19 +41,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Compliance team just confirmed: the exposed files include patient intake forms with names, dates of birth, and insurance IDs. This is a HIPAA breach. We have 60 days to notify affected patients."
+          "facts": [
+            "compliance team confirmed exposed files include patient intake forms with names, dates of birth, and insurance IDs",
+            "this is a HIPAA breach, 60-day notification window applies",
+            "compliance officer beginning affected-patient count"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The security researcher who found it has 40,000 followers. She has not published yet but says she will give us 24 hours before public disclosure. Legal is drafting a breach notification."
+          "facts": [
+            "security researcher who found it has 40,000 followers",
+            "she has not published yet but gave 24-hour window before public disclosure",
+            "legal is drafting a breach notification"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "CISO is on the bridge. She wants root cause, blast radius, and remediation in the next five minutes. We need to know exactly which files were accessed and by whom."
+          "facts": [
+            "CISO is on the bridge",
+            "she wants root cause, blast radius, and remediation in five minutes",
+            "need to know exactly which files were accessed and by whom"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "That does not explain the public access. The IAM roles are scoped correctly -- the issue is in the resource-based policy on the bucket itself. Look at who the bucket policy grants access to."
+          "facts": [
+            "IAM roles are scoped correctly -- issue is in the resource-based policy on the bucket itself",
+            "look at who the bucket policy grants access to"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -69,11 +88,11 @@
         "PutBucketPolicy": "The S3 API call that sets or replaces the bucket policy on a bucket. CloudTrail logs this event, so you can always trace who changed a bucket's access rules and when."
       },
       "narrative_arc": {
-        "call": "A responsible-disclosure email arrives at 6:22 AM on a Monday. Patient documents are downloadable from S3 without credentials. The security team opens an incognito browser and confirms it.",
-        "threshold": "The player enters the investigation. CloudTrail logs, bucket policies, and access logs are available. The bucket has been public for four days and 187 external IPs have accessed it.",
-        "trials": "The player must distinguish between IAM policies and bucket policies, identify the wildcard Principal, trace the PutBucketPolicy event in CloudTrail, and assess how many patients were exposed.",
-        "revelation": "The root cause is a single line in a bucket policy: Principal set to * instead of the vendor's account ARN. A backend engineer made the change four days ago during a third-party integration.",
-        "return": "The player proposes restricting the Principal, enabling Block Public Access, and adding continuous monitoring. The HIPAA breach notification process begins for 48,000 affected patients."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, CloudTrail logs, bucket policies, and access logs available, bucket public for four days, 187 external IPs accessed it",
+        "trials": "player must distinguish IAM policies from bucket policies, identify wildcard Principal, trace PutBucketPolicy event in CloudTrail, assess patient exposure scope",
+        "revelation": "bucket policy Principal set to * instead of vendor account ARN, backend engineer made the change four days ago during third-party integration",
+        "return": "restrict Principal, enable Block Public Access, add continuous monitoring, HIPAA breach notification for 48,000 affected patients"
       },
       "system_narration": {
         "components": [
@@ -113,22 +132,22 @@
       },
       "hints": [
         {
-          "text": "The data is accessible without any AWS credentials. What kind of policy could allow unauthenticated access to an S3 bucket?",
+          "hint": "data is accessible without any AWS credentials -- what kind of policy could allow unauthenticated access to an S3 bucket?",
           "relevant_services": ["s3"],
           "skip_if_queried": ["s3"]
         },
         {
-          "text": "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based). Have you checked the bucket policy?",
+          "hint": "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based) -- check the bucket policy",
           "relevant_services": ["s3", "iam"],
           "skip_if_queried": ["s3"]
         },
         {
-          "text": "Look at the Principal field in the bucket policy. Who is granted access?",
+          "hint": "look at the Principal field in the bucket policy -- who is granted access?",
           "relevant_services": ["s3"],
           "skip_if_queried": ["s3"]
         },
         {
-          "text": "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions. That is your root cause.",
+          "hint": "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions -- that is the root cause",
           "relevant_services": ["s3"],
           "skip_if_queried": ["s3"]
         }

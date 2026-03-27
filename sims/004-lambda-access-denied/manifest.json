@@ -30,7 +30,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Senior platform engineer. Direct and technical. Frustrated because this was supposed to be a routine deployment. Keeps checking the customer dashboard for churn signals.",
+      "personality": {
+        "role": "senior platform engineer",
+        "demeanor": "direct and technical, frustrated by what should have been a routine deployment",
+        "recurring_concern": "enterprise customer churn, Sentinel plan SLA breaches"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -38,19 +42,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Product team confirms: the threat-feed sync has not run since the deployment. Enterprise customers on the Sentinel plan are seeing stale threat intelligence data. Three of them have SLAs that guarantee updates within 15 minutes."
+          "facts": [
+            "threat-feed sync has not run since the deployment",
+            "enterprise customers on Sentinel plan seeing stale threat intelligence data",
+            "three customers have SLAs guaranteeing updates within 15 minutes"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Customer success just flagged that Ridgeline Financial -- our largest enterprise account, $480K ARR -- opened a P1 support ticket. Their security operations center is relying on our threat feeds for real-time blocking rules."
+          "facts": [
+            "Ridgeline Financial (largest enterprise account, $480K ARR) opened P1 support ticket",
+            "their security operations center relies on threat feeds for real-time blocking rules"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The Lambda function code is correct -- it worked fine in staging. The difference has to be in the execution environment, not the code. What permissions does the function have in production?"
+          "facts": [
+            "Lambda function code is correct -- worked fine in staging",
+            "difference must be in the execution environment, not the code",
+            "check what permissions the function has in production"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The Lambda function is invoking correctly and the DynamoDB table exists. The issue is not connectivity or code -- it is authorization. What does the execution role allow this function to do?"
+          "facts": [
+            "Lambda function is invoking correctly and DynamoDB table exists",
+            "issue is not connectivity or code -- it is authorization",
+            "check what the execution role allows this function to do"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,22 +78,22 @@
       ],
       "hints": [
         {
-          "text": "The error message says AccessDeniedException. What controls whether a Lambda function can access other AWS services?",
+          "hint": "error message says AccessDeniedException -- what controls whether a Lambda function can access other AWS services?",
           "relevant_services": ["lambda", "iam"],
           "skip_if_queried": []
         },
         {
-          "text": "Lambda functions use an IAM execution role to interact with other AWS services. Have you looked at the permissions attached to this function's role?",
+          "hint": "Lambda functions use an IAM execution role to interact with other AWS services -- check the permissions attached to this function's role",
           "relevant_services": ["iam"],
           "skip_if_queried": ["iam"]
         },
         {
-          "text": "The execution role has DynamoDB permissions, but check the specific actions. Does it allow the operations the function is trying to perform?",
+          "hint": "execution role has DynamoDB permissions, but check the specific actions -- does it allow the operations the function is trying to perform?",
           "relevant_services": ["iam", "dynamodb"],
           "skip_if_queried": ["iam", "dynamodb"]
         },
         {
-          "text": "The role allows dynamodb:GetItem and dynamodb:Query, but the function also needs dynamodb:PutItem and dynamodb:UpdateItem to write threat feed data. Those actions are missing from the policy.",
+          "hint": "role allows dynamodb:GetItem and dynamodb:Query but function also needs dynamodb:PutItem and dynamodb:UpdateItem -- those actions are missing from the policy",
           "relevant_services": ["iam", "dynamodb"],
           "skip_if_queried": []
         }
@@ -91,11 +110,11 @@
         "BatchWriteItem": "A DynamoDB operation that writes up to 25 items in a single API call. It is a different action from PutItem and requires its own IAM permission."
       },
       "narrative_arc": {
-        "call": "CloudWatch error rate dashboard turns red within minutes of a routine deployment. Every Lambda invocation fails with AccessDeniedException.",
-        "threshold": "The player opens CloudWatch logs and sees the AccessDeniedException errors. The function fetches data successfully but fails on every write to DynamoDB.",
-        "trials": "The Lambda code is correct and worked in staging. The DynamoDB table exists and is healthy. The function invokes on schedule. The red herring is assuming the problem is in the code, the table, or network connectivity.",
-        "revelation": "The IAM execution role only allows read actions (GetItem, Query) and the now-unused BatchWriteItem. The refactored code uses PutItem and UpdateItem, which were never added to the policy.",
-        "return": "IAM policies must be updated whenever code changes introduce new API calls. Staging environments should mirror production IAM policies. A policy simulation step in CI/CD prevents this class of failure."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player opens CloudWatch logs, sees AccessDeniedException errors -- function fetches data successfully but fails on every write to DynamoDB",
+        "trials": "Lambda code correct and worked in staging, DynamoDB table exists and healthy, function invokes on schedule -- red herring is assuming problem is in code, table, or connectivity",
+        "revelation": "IAM execution role only allows GetItem, Query, and now-unused BatchWriteItem -- refactored code uses PutItem and UpdateItem which were never added to the policy",
+        "return": "add missing permissions to execution role, remove unused BatchWriteItem, add IAM policy simulation step to CI/CD pipeline"
       },
       "system_narration": {
         "components": [

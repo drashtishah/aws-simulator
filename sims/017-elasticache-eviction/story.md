@@ -12,18 +12,31 @@ tags:
 
 ## Opening
 
-The first complaint arrived at 9:23 AM from a provider office in Portland. "The scheduling page takes forever to load." Then another from a clinic in Austin. Then three more in quick succession from different states. By 9:30 AM the support queue had seven tickets, all reporting the same thing: appointment pages loading slowly, availability slots missing, patients unable to book.
-
-Trellis Health is a telehealth appointment platform. 520,000 registered patients. 8,400 appointments scheduled per day across provider offices in twelve states. The platform handles three core functions: provider availability lookups, appointment creation, and patient record retrieval. The architecture is straightforward. An ALB fronts an ECS cluster running the appointment service. The service uses a cache-aside pattern with an ElastiCache Redis node for hot data -- doctor availability schedules refreshed every five minutes, patient session tokens, appointment slot computations. On a cache miss, the service queries the RDS PostgreSQL database directly.
-
-The appointment booking success rate, normally 99.2%, was at 61% and falling. Patients were retrying failed bookings, which compounded the load. A deploy had gone out at 7:15 AM -- a new caching layer for lab results, pushed by the integrations team. The product team was already asking about a rollback. The on-call Slack channel had forty-three unread messages, most of them variations of "was it the deploy?"
-
-You are the platform reliability engineer. It is 9:30 AM on a Thursday morning. The support queue is growing. The product team wants a rollback decision in the next fifteen minutes. The database is under pressure. Something between the application and its data is broken.
+company: Trellis Health
+industry: healthtech, telehealth appointment platform, Series C, 42 engineers
+product: provider availability lookups, appointment creation, patient record retrieval
+scale: 520,000 registered patients, 8,400 appointments per day across provider offices in 12 states
+architecture: ALB fronts ECS cluster running appointment service, cache-aside pattern with ElastiCache Redis node (cache.r6g.large, 13.07 GB maxmemory) for hot data (doctor availability refreshed every 5 minutes, session tokens, appointment slot computations), cache miss falls through to RDS PostgreSQL
+time: 9:30 AM, Thursday
+scene: support queue growing since first complaint at 9:23 AM
+alert: appointment booking success rate dropped from 99.2% to 61% and falling
+stakes: patients retrying failed bookings, compounding load; product team wants rollback decision in 15 minutes
+early_signals:
+  - 9:23 AM provider office in Portland reports scheduling page loading slowly
+  - clinic in Austin reports same, then three more from different states in quick succession
+  - by 9:30 AM, seven tickets all reporting slow appointment pages, missing availability slots, inability to book
+  - on-call Slack channel has 43 unread messages, most asking "was it the deploy?"
+  - deploy went out at 7:15 AM -- new caching layer for lab results, pushed by integrations team
+investigation_starting_point: platform reliability engineer on call. Support queue growing. Product team pushing for rollback. Database under pressure. Something between the application and its data layer is broken.
 
 ## Resolution
 
-The Redis cache had been growing for months. Nobody tracked BytesUsedForCache. The node was a single cache.r6g.large with 13.07 GB of available memory. The maxmemory-policy was set to noeviction -- configured during initial provisioning eighteen months ago and never reviewed. As the patient base grew and more data types were cached, memory usage climbed steadily. No alarms existed for cache memory utilization.
-
-When memory hit the ceiling at approximately 7:30 AM, Redis began returning OOM errors on all write commands -- SET, HSET, LPUSH. The application's Redis client caught the exceptions, but the error handling logged them at DEBUG level only. No WARN, no ERROR, no alert. The cache-aside pattern meant every failed cache write was invisible, and every subsequent read that would have been a cache hit became a cache miss. The application fell through to PostgreSQL for every request. The database connection pool, sized at 200, filled within thirty minutes. Query latency went from 5 milliseconds (cached) to 800 milliseconds (database). Under the combined load of normal traffic plus patient retries, ALB TargetResponseTime climbed to 8.2 seconds.
-
-The deploy at 7:15 AM was coincidental. It added lab result caching, which consumed the last 400 MB of available Redis memory approximately two hours faster than the natural growth trajectory would have. The underlying problem -- noeviction policy, no memory monitoring, a single node with no scaling plan -- had been building for weeks. The deploy accelerated the timeline but did not cause the failure. Rolling it back would have delayed the symptoms by hours, not prevented them.
+root_cause: Redis cache had been growing for months with no tracking of BytesUsedForCache. Single cache.r6g.large node with 13.07 GB maxmemory. maxmemory-policy set to noeviction since initial provisioning 18 months ago, never reviewed. No alarms on cache memory utilization. Memory hit ceiling at approximately 7:30 AM.
+mechanism: Redis returned OOM errors on all write commands (SET, HSET, LPUSH). Application Redis client caught exceptions but logged at DEBUG level only -- no WARN, no ERROR, no alert. Cache-aside pattern meant every failed cache write was invisible, every subsequent read became a cache miss. Application fell through to PostgreSQL for every request. Database connection pool (sized at 200) filled within 30 minutes. Query latency went from 5 ms (cached) to 800 ms (database). Under normal traffic plus patient retries, ALB TargetResponseTime climbed to 8.2 seconds.
+fix: change maxmemory-policy to allkeys-lru to allow Redis to evict least-recently-used keys. Add CloudWatch alarms on BytesUsedForCache and CacheMisses to prevent the blind spot from recurring.
+contributing_factors:
+  - deploy at 7:15 AM was coincidental -- added lab result caching, consumed the last 400 MB of Redis memory approximately 2 hours faster than natural growth trajectory
+  - underlying problem (noeviction policy, no memory monitoring, single node with no scaling plan) had been building for weeks
+  - rolling back the deploy would have delayed symptoms by hours, not prevented them
+  - no automated validation of cache memory capacity after deploys
+  - Redis OOM errors logged at DEBUG level, invisible to operational monitoring

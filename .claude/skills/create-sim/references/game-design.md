@@ -179,7 +179,7 @@ Reference for the create-sim and play skills. Distills findings from text-based 
 
 **Principle:** Clear and concise language, player agency, imagination as a feature, consistent game world, and compelling narrative drive engagement in text-only formats.
 
-**What this means for our sims:** Without visual UI, every word carries weight. The writing style must be consistent (Emi Yagi voice), the AWS artifacts must be internally consistent, and the narrative must motivate investigation.
+**What this means for our sims:** Without visual UI, every word carries weight. All narrative text is rendered at play-time through the player's chosen theme. The AWS artifacts must be internally consistent, and the narrative must motivate investigation.
 
 **create-sim application:**
 - Write all narrative text in the established voice: dry, observational, precise

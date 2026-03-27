@@ -157,15 +157,6 @@ A well-paced sim distributes its beats roughly as follows:
 - The artifact that enables the revelation should already be available before the player reaches Stage 4. The revelation comes from connecting existing evidence, not from receiving new evidence.
 - The `context.txt` artifact belongs exclusively to Stage 1.
 
-### Voice Compatibility
-
-The monomyth provides structure. The literary voice provides texture. Rules for keeping them compatible:
-
-1. **Never narrate the emotional arc explicitly.** Do not write "the tension mounted" or "relief washed over the team." Let the facts produce the feeling.
-2. **Use mundane details as structural markers.** "It was 2:15 PM" is a threshold crossing. "Her tea had gone cold" is a trial duration marker. "The on-call shift ended at 6:00 PM" is a return to the ordinary world. These details do the work that dramatic language would do in a different voice.
-3. **Let silence carry weight.** Not every beat needs narration. The gap between "the health checks are failing" and the player opening CloudWatch is itself a threshold crossing. The sim does not need to describe it.
-4. **Keep declarative sentence structure.** Subject, verb, object. The structure is confident because it is plain. "The security group had no inbound rule for port 443." This is a trial. It does not need to announce itself as one.
-
 ### Common Anti-Patterns
 
 - **The flat line**: All five stages get equal weight. The trials phase is too short, the player finds the answer too quickly, and there is no sense of narrowing investigation.

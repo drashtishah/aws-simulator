@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Platform reliability engineer. Calm, clinical. Measures impact in patient appointments affected and provider schedule accuracy. Notes the deploy red herring without leading.",
+      "personality": {
+        "role": "platform reliability engineer",
+        "demeanor": "calm, clinical",
+        "recurring_concern": "patient appointments affected and provider schedule accuracy"
+      },
       "glossary": {
         "ElastiCache": "A managed in-memory data store service from AWS. It runs Redis or Memcached so your application can read frequently-accessed data from memory instead of querying a database every time.",
         "Redis": "An open-source, in-memory key-value store used for caching, session management, and real-time data. ElastiCache runs Redis as a managed service.",
@@ -42,11 +46,11 @@
         "TTL": "Time to Live. A value set on a cache key that tells Redis to automatically delete the key after a specified number of seconds. Keys without a TTL persist until manually deleted or evicted."
       },
       "narrative_arc": {
-        "call": "Appointment booking pages are loading slowly. Provider offices are calling support about missing availability slots. The booking success rate dropped from 99.2% to 61%.",
-        "threshold": "The product team points to the deploy from two hours ago. They want a rollback. But the symptoms started gradually, not in a single moment.",
-        "trials": "A deploy went out at 07:15 that added lab result caching. The targets are healthy. The application code is correct. The failure is somewhere between the application and its data layer.",
-        "revelation": "Redis memory is at 100%. The maxmemory-policy is noeviction. Every write returns an OOM error, logged at DEBUG. The cache-aside pattern silently falls through to PostgreSQL for every request, saturating the connection pool.",
-        "return": "Changing maxmemory-policy to allkeys-lru restores cache writes immediately. Adding CloudWatch alarms on BytesUsedForCache and CacheMisses prevents the blind spot from recurring."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "product team points to deploy from 2 hours ago, wants rollback -- but symptoms started gradually, not in a single moment",
+        "trials": "deploy at 07:15 added lab result caching, targets healthy, application code correct, failure somewhere between application and data layer -- deploy is a red herring",
+        "revelation": "Redis memory at 100%, maxmemory-policy is noeviction, every write returns OOM error logged at DEBUG, cache-aside pattern silently falls through to PostgreSQL for every request, saturating connection pool",
+        "return": "change maxmemory-policy to allkeys-lru, add CloudWatch alarms on BytesUsedForCache and CacheMisses, post-incident review"
       },
       "system_narration": {
         "components": [
@@ -91,19 +95,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Appointment booking success rate dropped from 99.2% to 61%. Patients are retrying, which adds more load. Three provider offices called support about missing availability slots."
+          "facts": [
+            "appointment booking success rate at 61%, down from 99.2%",
+            "patients retrying failed bookings, compounding load",
+            "three provider offices called support about missing availability slots"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The product team is certain it is the deploy from two hours ago. They want to roll back. The deploy added lab result caching. But the symptoms started gradually, not all at once."
+          "facts": [
+            "product team certain it is the deploy from two hours ago, wants rollback",
+            "deploy added lab result caching",
+            "symptoms started gradually, not all at once"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Database CPU is at 89%. Connection pool is at capacity. If we do not resolve this soon, the database will become the next failure point."
+          "facts": [
+            "database CPU at 89%",
+            "connection pool at capacity",
+            "database will become the next failure point if not resolved soon"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The deploy is a red herring. The code changes are correct. Look at what is happening between the application and the cache layer."
+          "facts": [
+            "deploy is a red herring, code changes are correct",
+            "look at what is happening between the application and the cache layer"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -112,27 +131,27 @@
       ],
       "hints": [
         {
-          "text": "The application is slower than usual. Where does it normally get its data from?",
+          "hint": "application is slower than usual -- where does it normally get its data from?",
           "relevant_services": ["elasticache", "rds"],
           "skip_if_queried": ["elasticache"]
         },
         {
-          "text": "What is the current state of the Redis cache? Is it serving requests normally?",
+          "hint": "what is the current state of the Redis cache -- is it serving requests normally?",
           "relevant_services": ["elasticache"],
           "skip_if_queried": ["elasticache"]
         },
         {
-          "text": "Check the ElastiCache memory metrics. How much memory is in use versus available?",
+          "hint": "check the ElastiCache memory metrics -- how much memory is in use versus available?",
           "relevant_services": ["cloudwatch", "elasticache"],
           "skip_if_queried": ["cloudwatch"]
         },
         {
-          "text": "Redis memory is at 100%. The maxmemory-policy is set to noeviction. When memory is full with noeviction, Redis returns OOM errors on write commands. The application falls through to the database for every read.",
+          "hint": "Redis memory is at 100%, maxmemory-policy is noeviction -- when memory is full with noeviction, Redis returns OOM errors on write commands, application falls through to database for every read",
           "relevant_services": ["elasticache"],
           "skip_if_queried": ["elasticache", "cloudwatch"]
         },
         {
-          "text": "Fix: change maxmemory-policy to allkeys-lru to allow Redis to evict least-recently-used keys. Then add CloudWatch alarms on BytesUsedForCache and Evictions metrics. Consider scaling to a larger node or enabling cluster mode.",
+          "hint": "change maxmemory-policy to allkeys-lru to allow Redis to evict least-recently-used keys, then add CloudWatch alarms on BytesUsedForCache and Evictions metrics, consider scaling to a larger node or enabling cluster mode",
           "relevant_services": ["elasticache", "cloudwatch"],
           "skip_if_queried": ["elasticache", "cloudwatch"]
         }

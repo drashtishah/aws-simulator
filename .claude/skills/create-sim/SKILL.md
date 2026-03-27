@@ -173,18 +173,18 @@ For each approved scenario, execute steps 12-19:
 - Validate against `assets/manifest-schema.json`
 - ID format: 3-digit zero-padded number + kebab-case slug (e.g., `002-rds-failover-cascade`)
 - Company: generate a realistic name matching the industry (never "Acme Corp")
-- Narrator personality: match the incident tone (3am page vs business-hours escalation)
-- Story beats: minimum `start` and `fix_validated` triggers; add time-based pressure beats
-- Hints: 3-5 hints progressing from vague to specific
+- Narrator personality: structured object with `role`, `demeanor`, and `recurring_concern` fields
+- Story beats: minimum `start` and `fix_validated` triggers; add time-based pressure beats. Non-section beats use `facts` arrays (not `message` strings)
+- Hints: 3-5 hints progressing from vague to specific, using `hint` field (not `text`)
 - Agents: minimum 2 service consoles; one per involved AWS service
 - Every service in the `services` array MUST have a corresponding console entry
 - Fix criteria: at least 2, with at least 1 marked `required: true`
 - Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters. Describe each criterion in plain English so a beginner understands what action to take, then name the specific AWS API or setting.
 - Exam topics: reference real domains from `references/exam-topics.md`
 - Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS -- no MCP needed for basic definitions. Do not define common English words.
-- Narrative arc: map this sim's story to the Campbell monomyth using `references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short sentence describing what that phase looks like in THIS specific sim. Write in the Emi Yagi voice -- flat, observational, concrete.
+- Narrative arc: map this sim's story to the Campbell monomyth using `references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short factual pacing cue describing what that phase looks like in THIS specific sim. No styled prose -- plain facts only. The `call` field should reference "story.md Opening" rather than duplicating its facts.
 - System narration: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only). Source from `mcp_research.service_interactions`.
-- Hints: generate as objects with `text`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
+- Hints: generate as objects with `hint`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
 - SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it. Follow the beginner-friendly writing rule below.
 - Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`. Follow the beginner-friendly writing rule below.
 - SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`. Follow the beginner-friendly writing rule below.
@@ -193,18 +193,20 @@ For each approved scenario, execute steps 12-19:
 
 #### 16. Generate story.md
 
-- Consult `references/story-structure.md` for story beat pacing and `references/narrative-voice.md` for prose calibration
+- Consult `references/story-structure.md` for story beat pacing
 - YAML frontmatter with tags: `type/simulation`, `service/{slug}` for each service, `difficulty/{level-name}`, `category/{category}`
 - Difficulty tag mapping: 1=starter, 2=associate, 3=professional, 4=expert
-- Opening section (3-4 paragraphs):
-  - Start with sensory detail (phone buzzing, Slack notification, dashboard turning red)
-  - Name the company, its business, its scale (revenue, users, team size)
-  - Describe customer impact in concrete terms (merchants cannot process payments, users see errors)
-  - Establish urgency and the player's role as Incident Commander
-- Resolution section (2-3 paragraphs):
-  - Explain the full causal chain
-  - State when the misconfiguration was introduced and by whom
-  - Describe the fix and preventive measures
+- Opening section (structured facts, not prose):
+  - company, industry, product, scale
+  - time, scene, alert (the exact alert text)
+  - stakes (concrete deadlines, user impact)
+  - early_signals (list of what users/stakeholders are reporting)
+  - investigation_starting_point (what the player knows at the start)
+- Resolution section (structured facts, not prose):
+  - root_cause (what went wrong, when, who, what specific resource)
+  - mechanism (how the root cause produces the symptoms)
+  - fix (specific remediation action and its immediate effect)
+  - contributing_factors (list of systemic issues that allowed this to happen)
 
 #### 17. Generate resolution.md
 
@@ -346,37 +348,15 @@ feat: add sim {id} -- {short title}
 
 ---
 
-## Narrative Style
+## Content Style
 
-The narrative voice for all story.md files follows the register of contemporary Japanese literary fiction -- specifically the quiet, observational tone of works like *Diary of a Void* (Emi Yagi).
+Sim content is theme-agnostic structured data. The play skill renders all text through the player's chosen theme at runtime.
 
-**Principles:**
+story.md uses structured facts (key: value pairs) for Opening and Resolution sections, not prose. See any existing sim's story.md for the format.
 
-- Simple, short declarative sentences. No compound sentences where two simple ones will do.
-- Flat affect. The stress lives in what is left unsaid, not in exclamation marks or "the clock is ticking" urgency.
-- Mundane details sit right next to the crisis and are given equal weight. A deploy fails; the coffee is cold; the product manager sends a message.
-- No breathlessness. No dramatic narration. No "your heart races" or "time is running out."
-- Observations stacked like small facts. Let the weight accumulate on its own.
-- The narrator states what happened. The reader feels the tension.
+Manifest story_beats use `facts` arrays instead of `message` strings. Manifest hints use `hint` with plain guidance sentences, not styled prose. Manifest narrative_arc uses factual pacing cues, not styled descriptions. Manifest narrator.personality uses a structured object (role, demeanor, recurring_concern), not a styled character description string.
 
-**Sim titles** should read like chapter headings, not incident reports. Quiet, understated, slightly literary. Examples: "A Function in the Wrong Room," "Four Million Records, One by One," "Someone Else's Keys."
-
-**Narrator personality** in manifests should match: a quiet observer who states facts, not a high-energy SRE barking updates. Story beats use the same flat register.
-
-**What to avoid:**
-- Exclamation marks
-- "The clock is ticking" / "time is running out" / "your heart races"
-- Breathless compound sentences strung together with dashes
-- Dramatic rhetorical questions
-- Any language that sounds like a thriller novel or a conference talk
-
-**Example opening (good):**
-
-> The terminal said `ResourceNotFoundException`. I read it twice. I had deployed the function twenty minutes ago. I watched it succeed. The green checkmark was still in the pipeline dashboard, small and certain.
-
-**Example opening (bad):**
-
-> It's 3 AM and your phone is BUZZING -- a PagerDuty alert screams across your nightstand! The API is down, customers are furious, and the clock is ticking. You need to figure out what went wrong before the VP joins the war room!
+Sim titles are theme-invariant. They read like chapter headings -- quiet, understated, slightly literary. Examples: "A Function in the Wrong Room," "Four Million Records, One by One," "Someone Else's Keys."
 
 ---
 
@@ -384,7 +364,7 @@ The narrative voice for all story.md files follows the register of contemporary 
 
 1. No emojis in any output, files, or UI
 2. Markdown formatting for all files: YAML frontmatter tags, callout syntax where appropriate
-3. Narrative language follows the style guide above -- quiet, observational, impact shown through concrete detail not dramatic language
+3. All narrative text is rendered at play-time through the player's chosen theme -- sim content is structured facts only
 4. AWS vocabulary throughout -- use official service names (Amazon S3, not "S3 storage"), official API action names (PutBucketPolicy, not "change bucket settings")
 5. Artifacts in native AWS formats -- never wrap AWS JSON/logs in markdown code blocks within artifact files
 6. Every sim requires at least 2 service consoles
@@ -402,5 +382,5 @@ The narrative voice for all story.md files follows the register of contemporary 
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
 - [[learning/catalog.csv]] -- Player service catalog and progress
 - [[story-structure]] -- Campbell monomyth mapping for sim storytelling
-- [[narrative-voice]] -- Emi Yagi style guide for narrative prose
+- [[themes/_base]] -- Structural constants for the theme system
 - [[game-design]] -- Text-based game and investigation design best practices

@@ -12,22 +12,26 @@ tags:
 
 ## Opening
 
-The weekly cost report arrived on Monday morning. The line item for Amazon Bedrock read $12,147.83. The previous week it had been $812.40. The week before that, $803.15. Nobody had changed the pricing tier. Nobody had launched a marketing campaign. The number of user queries was the same as it had been for the past two months.
-
-Camber Health builds patient portal software for healthcare providers. Eighty-five clinics and hospital networks use their platform. The core product is a patient-facing assistant that handles insurance eligibility checks, appointment scheduling, and benefits explanations. The assistant runs on Amazon Bedrock Agents, backed by Claude 3.5 Sonnet. It processes roughly 60,000 queries per week. The assistant has been running since January. The weekly Bedrock bill had never exceeded $850.
-
-Eight days ago, a product engineer named Lian shipped a new action group called comprehensive-benefits. The feature allows the assistant to compare multiple insurance plan options side by side. A patient can ask "What does my HMO cover for physical therapy versus my PPO option?" and get a detailed comparison. The feature went through code review. It passed staging tests. Patients started using it immediately. The satisfaction scores for benefits-related queries went up by 34 percent.
-
-The finance operations lead pulled the cost data at 8:47 AM on Monday. She opened the Cost Explorer, filtered by service, and stared at the graph. A flat line at $116 per day for weeks, then a vertical step to $1,714 per day starting on March 17th. She checked the Bedrock model invocation metrics. Token consumption per day had increased by a factor of ten. She checked the user query volume. Flat. She sent the numbers to the engineering channel and waited.
-
-You are the platform engineer on call. The cost report is in front of you. Something changed eight days ago that made each query ten times more expensive.
+company: Camber Health
+industry: healthcare SaaS, Series B startup, 52 engineers
+product: patient portal software for healthcare providers -- insurance eligibility checks, appointment scheduling, benefits explanations
+scale: 85 clinics and hospital networks, 60,000 queries per week
+model: Amazon Bedrock Agents backed by Claude 3.5 Sonnet, running since January
+time: 8:47 AM, Monday morning
+scene: weekly cost report arrives
+alert: Bedrock line item reads $12,147.83 -- previous week was $812.40, week before that $803.15
+stakes: weekly Bedrock bill had never exceeded $850, no pricing tier change, no marketing campaign, user query volume flat for two months
+early_signals:
+  - finance operations lead opened Cost Explorer, filtered by service: flat line at $116/day for weeks, then vertical step to $1,714/day starting March 17th
+  - Bedrock model invocation metrics show token consumption per day increased 10x
+  - user query volume is flat
+  - finance lead sent numbers to engineering channel
+recent_change: eight days ago, product engineer Lian shipped new action group called comprehensive-benefits -- allows assistant to compare multiple insurance plan options side by side (e.g., "What does my HMO cover for physical therapy versus my PPO option?"), went through code review, passed staging tests, patient satisfaction scores for benefits-related queries up 34%
+investigation_starting_point: you are the platform engineer on call, cost report is in front of you, something changed eight days ago that made each query ten times more expensive
 
 ## Resolution
 
-The root cause was the comprehensive-benefits action group. When a user asked a benefits comparison question, the Bedrock Agent entered a multi-step reasoning loop. Instead of making a single call to retrieve and compare plan data, the agent invoked the action group six to eight times per query. Each invocation triggered a full reasoning cycle: the agent generated chain-of-thought tokens to decide what to do next, called the action group, processed the result, and then reasoned again about the next step.
-
-A single benefits comparison query generated approximately 27,800 reasoning tokens, 2,000 input tokens, and 800 output tokens. The reasoning tokens -- the internal chain-of-thought that the user never sees -- were billed at the standard output token rate. A query that previously cost $0.02 now cost $0.20. Across 60,000 queries per week, with roughly 40 percent hitting the new action group, the weekly cost jumped from $812 to $12,147.
-
-The fix had two parts. First, the action group was refactored to return consolidated plan comparison data in a single invocation rather than requiring the agent to make multiple calls for individual plan details, copay information, and network data separately. This reduced the reasoning steps from six to eight down to two. Second, the team configured CloudWatch alarms on the `InvocationTokenCount` metric for the Bedrock agent, with thresholds at 5,000 tokens per invocation and $500 per day in estimated cost. A budget alert was added in AWS Budgets for the Bedrock service at 120 percent of the $3,500 monthly allocation.
-
-The refactored action group reduced per-query cost to $0.035. Weekly Bedrock cost dropped to $1,260. The overspend for the eight-day period was $11,335.43 above baseline.
+root_cause: the comprehensive-benefits action group caused the Bedrock Agent to enter a multi-step reasoning loop -- instead of a single call to retrieve and compare plan data, the agent invoked the action group 6-8 times per query, each invocation triggering a full reasoning cycle (chain-of-thought tokens to decide next step, action group call, result processing, then reasoning again)
+mechanism: a single benefits comparison query generated approximately 27,800 reasoning tokens, 2,000 input tokens, and 800 output tokens. Reasoning tokens (internal chain-of-thought the user never sees) billed at standard output token rate. Per-query cost went from $0.02 to $0.20. Across 60,000 queries/week with ~40% hitting the new action group, weekly cost jumped from $812 to $12,147.
+fix: two parts -- (1) refactored action group to return consolidated plan comparison data in a single invocation instead of requiring multiple calls for individual plan details, copay information, and network data separately, reducing reasoning steps from 6-8 down to 2; (2) configured CloudWatch alarms on InvocationTokenCount metric with thresholds at 5,000 tokens per invocation and $500/day estimated cost, added AWS Budgets alert for Bedrock service at 120% of $3,500 monthly allocation
+outcome: refactored action group reduced per-query cost to $0.035, weekly Bedrock cost dropped to $1,260, overspend for eight-day period was $11,335.43 above baseline

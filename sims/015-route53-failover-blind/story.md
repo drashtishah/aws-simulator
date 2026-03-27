@@ -12,18 +12,32 @@ tags:
 
 ## Opening
 
-The Slack message from a customer said "docs.spellbook.dev is not loading." It was 2:14 PM on a Tuesday. A developer at one of their API doc customers, sitting in Berlin, had tried to open a reference page and waited sixteen seconds before the browser gave up. Connection timed out.
-
-Spellbook hosts API documentation for 400 SaaS companies. 2.1 million developers visit each month to look up endpoints, read authentication guides, copy code samples. The platform runs in two regions: us-east-1 as the primary, eu-west-1 as the failover. Six months ago, the SRE team spent two weeks building the multi-region setup. Route 53 failover routing. Separate Application Load Balancers. ECS clusters in both regions. A DocumentDB global cluster. The whole architecture diagram on the wiki, clean lines and green boxes.
-
-The primary ALB in us-east-1 was unreachable. An availability zone issue had taken down enough capacity that the target group was empty. No healthy instances behind the load balancer. The secondary region in eu-west-1 was running perfectly. Four healthy targets, normal response times, ready to serve traffic.
-
-The failover never happened. Route 53 kept sending every request to the dead primary. The eu-west-1 stack sat idle, healthy and useless, while 2.1 million developers' documentation platform returned nothing at all.
+company: Spellbook
+industry: developer tools / documentation, Series B, 28 engineers
+product: API documentation hosting for SaaS companies
+scale: 400 SaaS company customers, 2.1 million developers visit monthly to look up endpoints, read authentication guides, copy code samples
+time: 2:14 PM, Tuesday
+scene: customer in Berlin reports docs.spellbook.dev is not loading, browser waited 16 seconds then timed out
+alert: Slack message from a customer developer: "docs.spellbook.dev is not loading"
+stakes: 2.1 million developers depend on the documentation platform, customers use it to look up API endpoints during active development work
+early_signals:
+  - customer in Berlin waited 16 seconds before connection timed out
+  - platform runs in two regions: us-east-1 (primary) and eu-west-1 (failover)
+  - multi-region setup built 6 months ago by SRE team over two weeks: Route 53 failover routing, separate ALBs, ECS clusters in both regions, DocumentDB global cluster
+  - primary ALB in us-east-1 unreachable, AZ issue took down enough capacity that target group is empty
+  - secondary region eu-west-1 running perfectly: 4 healthy targets, normal response times
+  - failover never happened -- Route 53 kept sending every request to the dead primary
+  - eu-west-1 stack sitting idle, healthy and useless
+investigation_starting_point: the primary is down and the secondary is healthy, but failover did not trigger. Something in the Route 53 failover configuration is preventing the switch.
 
 ## Resolution
 
-The Route 53 health check was created six months ago, during the multi-region buildout. It was configured to check port 80 using HTTP. The ALB only listens on port 443 using HTTPS. The health check path was set to `/`, which the application redirects to `/docs` with a 301 status code. The health check saw a non-200 response and marked the endpoint unhealthy. It had been in UNHEALTHY state since March 4th. Three weeks.
-
-But the failover record set for the primary endpoint had `EvaluateTargetHealth` set to `false`. Route 53 never consulted the health check result when making routing decisions. The health check existed, it was associated with the record, but the routing policy ignored it entirely. A CloudWatch alarm had been created for the health check metric. It had been in ALARM state for three weeks. No SNS topic was attached. No one received a page. No one received an email.
-
-The fix required two changes: update the health check to use HTTPS on port 443 with a path of `/healthz` that returns a 200, and set `EvaluateTargetHealth` to `true` on the primary failover record set. The team also attached an SNS topic to the CloudWatch alarm so that health check state changes would page the on-call engineer. The postmortem found that the multi-region setup had never been tested with an actual primary failure. The architecture diagram on the wiki showed what was intended, not what was configured.
+root_cause: Route 53 failover record set had EvaluateTargetHealth set to false, and the associated health check was misconfigured -- checking HTTP port 80 with path "/" instead of HTTPS port 443 with a health endpoint returning 200
+mechanism: the health check was created 6 months ago during the multi-region buildout. It checked port 80 using HTTP, but the ALB only listens on port 443 using HTTPS. The path "/" returns a 301 redirect to /docs, which the health check treated as a failure. The health check had been UNHEALTHY since March 4th (three weeks). But EvaluateTargetHealth was set to false on the primary failover record, so Route 53 never consulted the health check result when routing. A CloudWatch alarm existed for the health check metric and had been in ALARM state for three weeks, but no SNS topic was attached -- no page, no email.
+fix: two changes. (1) Update the health check to use HTTPS on port 443 with path /healthz that returns 200. (2) Set EvaluateTargetHealth to true on the primary failover record set. Also attach an SNS topic to the CloudWatch alarm so health check state changes page the on-call engineer.
+contributing_factors:
+  - health check configured with wrong protocol (HTTP vs HTTPS), wrong port (80 vs 443), and wrong path (/ returns 301)
+  - EvaluateTargetHealth set to false, disconnecting the health check from routing decisions
+  - CloudWatch alarm had no SNS topic attached, so ALARM state went unnoticed for three weeks
+  - multi-region setup never tested with an actual primary failure
+  - architecture diagram on the wiki showed what was intended, not what was configured

@@ -12,30 +12,33 @@ tags:
 
 ## Opening
 
-The stack has been in UPDATE_ROLLBACK_FAILED for three days. Nobody can deploy.
-
-Threadline is a project management platform used by about 1,200 teams, mostly mid-size agencies and consultancies. Series B. Thirty-eight engineers. They ship twice a day through a CodePipeline that runs CloudFormation updates against a single production stack. The stack manages everything: the EC2 auto-scaling group, the RDS PostgreSQL instance, three Lambda functions, an SQS queue, and the associated IAM roles. It has worked this way for two years.
-
-On Friday at 4:47 PM, a developer named Marcus Chen opened the RDS console and deleted the production database instance. He did this to save costs. The instance was a db.r5.large and the monthly bill had come up in standup that morning. He did not tell anyone. He did not update the CloudFormation template. He left for the weekend eleven minutes later.
-
-On Monday at 9:12 AM, the CI/CD pipeline picked up a merged pull request and triggered a stack update. CloudFormation attempted to modify the Lambda function configuration. The update itself was routine. But when it failed a validation check on an unrelated parameter and tried to roll back, it discovered that the RDS instance it expected to find -- the one described in its template, the one it believed it owned -- was gone. CloudFormation could not roll back to a state that included a resource that no longer existed. The stack entered UPDATE_ROLLBACK_FAILED.
-
-Since Monday, three more deployment attempts have been made. Each one failed immediately. The stack will not accept updates. It will not delete cleanly. Four pull requests are queued in the pipeline. One of them fixes a billing calculation bug that has been overcharging enterprise customers since Tuesday. The engineering lead has been manually restarting the pipeline each morning, hoping something has changed. Nothing has changed.
-
-The CloudWatch dashboard shows the deployment failure count climbing. The CI/CD role's IAM permissions were tightened last month, and some people on the team suspect that might be the issue. It is not.
-
-You have been asked to look at the stack and figure out why it will not move.
+company: Threadline
+industry: project management SaaS, Series B, 38 engineers
+product: project management platform used by about 1,200 teams, mostly mid-size agencies and consultancies
+infrastructure: ship twice daily through CodePipeline running CloudFormation updates against single production stack (threadline-prod-stack) managing EC2 auto-scaling group, RDS PostgreSQL instance (db.r5.large), three Lambda functions, SQS queue, and IAM roles. Worked this way for two years.
+time: Wednesday (stack stuck since Monday at 9:12 AM, root cause from Friday at 4:47 PM)
+scene: stack in UPDATE_ROLLBACK_FAILED for three days, nobody can deploy
+alert: "UPDATE_ROLLBACK_FAILED -- stack threadline-prod-stack will not accept updates"
+stakes: four pull requests queued in pipeline, one fixes billing calculation bug overcharging enterprise customers since Tuesday
+early_signals:
+  - Friday 4:47 PM: developer Marcus Chen opened RDS console and deleted production database instance to save costs (db.r5.large bill came up in standup). Did not tell anyone, did not update CloudFormation template, left for weekend eleven minutes later.
+  - Monday 9:12 AM: CI/CD pipeline triggered stack update for merged PR (routine Lambda function configuration change). Update failed validation check on unrelated parameter, CloudFormation tried to roll back, discovered RDS instance it expected was gone. Stack entered UPDATE_ROLLBACK_FAILED.
+  - three more deployment attempts since Monday, each failed immediately
+  - stack will not accept updates, will not delete cleanly
+  - engineering lead manually restarting pipeline each morning
+  - CloudWatch dashboard shows deployment failure count climbing
+  - CI/CD role IAM permissions tightened last month, team suspects this is the issue (it is not)
+  - Marcus Chen is on PTO this week, Slack status says "hiking in Patagonia"
+investigation_starting_point: stack is in UPDATE_ROLLBACK_FAILED. The stack events should reveal which resource caused the rollback failure. The CI/CD role permissions are a red herring -- they were confirmed correct.
 
 ## Resolution
 
-The root cause was a manually deleted RDS instance.
-
-Marcus Chen deleted `threadline-prod-db` (the RDS PostgreSQL instance managed by the CloudFormation stack `threadline-prod-stack`) directly from the AWS Console on Friday, March 20 at 4:47 PM EST. He did not modify the CloudFormation template. He did not run a stack update. He simply deleted the database.
-
-When the CI/CD pipeline triggered a stack update on Monday morning, the update encountered a validation issue and CloudFormation initiated a rollback. During the rollback, CloudFormation attempted to restore the stack to its previous state, which included the RDS instance. The instance no longer existed. CloudFormation cannot create a resource during a rollback -- it can only restore to the prior state. The rollback failed, and the stack entered UPDATE_ROLLBACK_FAILED.
-
-The fix was `aws cloudformation continue-update-rollback` with `--resources-to-skip threadline-prod-db`. This told CloudFormation to complete the rollback while ignoring the missing RDS instance. The stack returned to UPDATE_ROLLBACK_COMPLETE, and deployments resumed.
-
-The RDS instance was then recreated by adding it back to the template and running a normal stack update. The data was restored from the most recent automated snapshot, taken Friday at 3:00 AM.
-
-The team implemented three changes afterward: enabled CloudFormation drift detection on a daily schedule, added a stack policy preventing deletion of the RDS resource through CloudFormation, and requested an SCP from the platform team to restrict manual RDS deletions in the production account. The IAM permissions on the CI/CD role were confirmed to be correct. They had never been the problem.
+root_cause: developer Marcus Chen deleted RDS instance threadline-prod-db (managed by CloudFormation stack threadline-prod-stack) directly from the AWS Console on Friday, March 20 at 4:47 PM EST. Did not modify CloudFormation template or run a stack update.
+mechanism: when CI/CD pipeline triggered stack update Monday morning, update encountered a validation issue and CloudFormation initiated rollback. During rollback, CloudFormation attempted to restore stack to previous state which included the RDS instance. Instance no longer existed. CloudFormation cannot create a resource during rollback -- it can only restore to prior state. Rollback failed, stack entered UPDATE_ROLLBACK_FAILED.
+fix: aws cloudformation continue-update-rollback --stack-name threadline-prod-stack --resources-to-skip ProdDatabase. Stack returned to UPDATE_ROLLBACK_COMPLETE, deployments resumed. RDS instance recreated by adding it back to template and running normal stack update. Data restored from most recent automated snapshot (Friday 3:00 AM).
+contributing_factors:
+  - no drift detection to catch manual resource deletion before next deployment
+  - no stack policy preventing deletion of critical resources
+  - no SCP restricting manual RDS deletions in production account
+  - team implemented all three afterward: daily drift detection, stack policy on RDS resource, SCP from platform team
+  - IAM permissions on CI/CD role confirmed correct -- never the problem

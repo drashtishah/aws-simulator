@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "DevOps engineer who grew up on a farm. Practical, no-nonsense. Keeps relating the urgency to actual farmers who depend on the platform. Says things like 'we are losing daylight here.'",
+      "personality": {
+        "role": "DevOps engineer who grew up on a farm",
+        "demeanor": "practical, no-nonsense",
+        "recurring_concern": "actual farmers depend on the platform, losing daylight"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,15 +40,25 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Three more counties just reported the app is down. Farmers are calling our support line directly -- they say they cannot log irrigation schedules and the forecast shows rain in 6 hours. If they miss this window, crops dry out."
+          "facts": [
+            "three more counties reported the app is down",
+            "farmers calling support line directly, cannot log irrigation schedules",
+            "forecast shows rain in 6 hours -- if they miss this window, crops dry out"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "CEO just got off the phone with our biggest customer, a 2,000-acre corn operation in Iowa. They are threatening to switch to a competitor if we cannot get this fixed before the rain window. We are losing daylight here."
+          "facts": [
+            "CEO just got off the phone with biggest customer, a 2,000-acre corn operation in Iowa",
+            "customer threatening to switch to competitor if not fixed before rain window"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The EC2 instances are healthy and the application code has not changed. The issue is at the database layer. Take a closer look at the RDS instance metrics."
+          "facts": [
+            "EC2 instances are healthy and application code has not changed",
+            "issue is at the database layer -- check RDS instance metrics"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -62,11 +76,11 @@
         "Multi-AZ": "A deployment option that maintains a standby replica of your RDS instance in a different Availability Zone for automatic failover during outages."
       },
       "narrative_arc": {
-        "call": "API write operations begin failing during peak harvest season. Farmers cannot save irrigation schedules before a critical rain window.",
-        "threshold": "The CloudWatch console shows the RDS instance in a storage-full state. FreeStorageSpace is zero. The database is rejecting every INSERT and UPDATE.",
-        "trials": "EC2 instances are healthy, application code has not changed, and SELECT queries still work. The failure is isolated to write operations at the database layer.",
-        "revelation": "The 20GB storage allocation was consumed by rapid IoT data growth, accumulated binary logs, and verbose slow query logging that was never turned off.",
-        "return": "Increasing allocated storage to 50GB restores writes immediately. Enabling storage auto-scaling and adding a FreeStorageSpace alarm prevents recurrence."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player checks CloudWatch, RDS instance in storage-full state, FreeStorageSpace at zero, database rejecting every INSERT and UPDATE",
+        "trials": "EC2 instances healthy, application code unchanged, SELECT queries still work -- failure isolated to write operations at database layer",
+        "revelation": "20GB storage consumed by rapid IoT data growth (800MB/week), accumulated binary logs (3.2GB), and verbose slow query logging left on (1.8GB)",
+        "return": "increase allocated storage to 50GB (immediate, no downtime), enable storage auto-scaling with 100GB max, add FreeStorageSpace CloudWatch alarm"
       },
       "system_narration": {
         "components": [
@@ -100,22 +114,22 @@
       },
       "hints": [
         {
-          "text": "The application is timing out on database writes. What could cause a database to reject write operations?",
+          "hint": "application is timing out on database writes -- what could cause a database to reject write operations?",
           "relevant_services": ["rds"],
           "skip_if_queried": ["rds"]
         },
         {
-          "text": "Check the RDS instance metrics in CloudWatch. Storage-related metrics can tell you a lot about database health.",
+          "hint": "check the RDS instance metrics in CloudWatch -- storage-related metrics reveal database health",
           "relevant_services": ["cloudwatch", "rds"],
           "skip_if_queried": ["cloudwatch"]
         },
         {
-          "text": "The FreeStorageSpace metric is at zero. The RDS instance has run out of disk space, which causes all write operations to fail.",
+          "hint": "FreeStorageSpace metric is at zero -- RDS instance has run out of disk space, causing all write operations to fail",
           "relevant_services": ["cloudwatch", "rds"],
           "skip_if_queried": ["rds"]
         },
         {
-          "text": "You need to increase the allocated storage for the RDS instance. RDS supports storage auto-scaling -- that would prevent this from happening again.",
+          "hint": "increase the allocated storage for the RDS instance, and enable storage auto-scaling to prevent recurrence",
           "relevant_services": ["rds"],
           "skip_if_queried": ["rds"]
         }

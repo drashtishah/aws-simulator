@@ -29,7 +29,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Calm, precise with numbers. States dollar amounts and gigabyte counts the way a clerk reads receipts. The waste is enormous but the narrator does not dramatize it.",
+      "personality": {
+        "role": "infrastructure engineer asked to investigate the cost spike",
+        "demeanor": "calm, precise with numbers, states dollar amounts and gigabyte counts the way a clerk reads receipts",
+        "recurring_concern": "startup runway impact, $27,135 in unnecessary charges over three months"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -37,15 +41,28 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "The finance lead just sent another message. She has calculated the three-month total. It is $27,135. She typed it without commentary. Just the number."
+          "facts": [
+            "finance lead Ren calculated the three-month total: $27,135",
+            "she sent just the number to the engineering channel, no commentary"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Someone on the infrastructure team asked if the NAT Gateway was necessary at all. Nobody answered. The pipeline has been running since January. The S3 bucket is in the same region as the VPC."
+          "facts": [
+            "someone on infrastructure team asked if NAT Gateway was necessary at all",
+            "nobody answered",
+            "pipeline has been running since January",
+            "S3 bucket is in the same region as the VPC"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "That does not match the billing data. The charge is specifically for NAT Gateway data processing, not data transfer out to the internet. The traffic stays within AWS. Look at where the S3-bound traffic is being routed."
+          "facts": [
+            "does not match the billing data",
+            "charge is specifically for NAT Gateway data processing, not data transfer out to the internet",
+            "traffic stays within AWS",
+            "look at where the S3-bound traffic is being routed"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -63,11 +80,11 @@
         "VPC Flow Logs": "Records of network traffic going to and from network interfaces in a VPC. Each record shows source, destination, port, protocol, and byte count."
       },
       "narrative_arc": {
-        "call": "The finance lead opens Cost Explorer for a board runway update. She filters by service and finds $907.20 in NAT Gateway data processing charges on a single day. The number is the same every day. It has been the same since January.",
-        "threshold": "She multiplies $907 by 90 days and sends the total to the engineering channel. $27,135. The pipeline sends data to an S3 bucket in the same region. The data never leaves AWS. The engineering team has no explanation.",
-        "trials": "The engineer examines the VPC configuration, the route table, the flow logs. The three pipeline instances in the private subnet send 500 gigabytes daily to S3. Every byte passes through the NAT Gateway. The VPC has no endpoints. The route table has one non-local route: 0.0.0.0/0 to the NAT Gateway.",
-        "revelation": "There is no S3 VPC gateway endpoint. Gateway endpoints are free. They route S3 traffic directly through the AWS network. Without one, the only path from the private subnet to S3 is through the NAT Gateway, which charges $0.045 per gigabyte.",
-        "return": "An S3 gateway endpoint is created and associated with the private subnet route table. A prefix list route appears. S3 traffic bypasses the NAT Gateway. Daily charges drop from $907 to $1.56. The finance lead updates the runway spreadsheet."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player enters investigation, $27,135 in NAT Gateway charges over 90 days, pipeline sends data to S3 bucket in same region, data never leaves AWS",
+        "trials": "examining VPC configuration, route table, flow logs -- three pipeline instances send 500 GB daily to S3, every byte passes through NAT Gateway, VPC has no endpoints, route table has one non-local route (0.0.0.0/0 to NAT Gateway)",
+        "revelation": "no S3 VPC gateway endpoint exists -- gateway endpoints are free, route S3 traffic directly through AWS network, without one the only path is through NAT Gateway at $0.045/GB",
+        "return": "S3 gateway endpoint created and associated with private subnet route table, prefix list route appears, S3 traffic bypasses NAT Gateway, daily charges drop from $907 to $1.56"
       },
       "system_narration": {
         "components": [
@@ -113,22 +130,22 @@
       },
       "hints": [
         {
-          "text": "Look at the bill breakdown. Which service has the highest data transfer charges?",
+          "hint": "look at the bill breakdown -- which service has the highest data transfer charges?",
           "relevant_services": ["cloudwatch"],
           "skip_if_queried": []
         },
         {
-          "text": "How does traffic from a private subnet reach Amazon S3? Check the route table for the private subnet.",
+          "hint": "how does traffic from a private subnet reach Amazon S3? check the route table for the private subnet",
           "relevant_services": ["vpc"],
           "skip_if_queried": ["vpc"]
         },
         {
-          "text": "There is a way to route S3 traffic that does not go through the NAT Gateway. Look at VPC endpoints.",
+          "hint": "there is a way to route S3 traffic that does not go through the NAT Gateway -- look at VPC endpoints",
           "relevant_services": ["vpc"],
           "skip_if_queried": ["vpc"]
         },
         {
-          "text": "An S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network. It is free. No gateway endpoint exists in this VPC.",
+          "hint": "an S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network, it is free, and no gateway endpoint exists in this VPC",
           "relevant_services": ["vpc", "s3"],
           "skip_if_queried": ["vpc", "s3"]
         }

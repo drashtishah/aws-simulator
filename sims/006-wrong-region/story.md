@@ -12,18 +12,28 @@ tags:
 
 ## Opening
 
-The deploy finished at 14:12 UTC. The pipeline said everything was fine. Green checkmark, clean logs, no warnings. You closed the terminal tab and went to get water.
-
-Calendine is a small company. Eight engineers building a scheduling tool for independent consultants. The kind of product where a single API endpoint handles booking creation, and if that endpoint goes down, the consultants' clients see a blank page where the calendar should be. There is a demo for a potential enterprise customer at 14:45 UTC. The sales engineer has been preparing for it since Monday.
-
-You came back to your desk at 14:18 UTC and opened the API endpoint in a browser to do a quick smoke test. The response was a JSON object with one field: `message: "Internal server error"`. You opened CloudWatch. The API Gateway logs showed `ResourceNotFoundException: Function not found`. The function you deployed twenty minutes ago. The function that the pipeline confirmed was successful.
-
-The ARN in the error pointed to `us-east-1`. You had no reason to doubt it. The API Gateway was in `us-east-1`. Everything was supposed to be in `us-east-1`. You opened the Lambda console in `us-east-1` and searched for `calendine-booking-api`. Nothing. The function did not exist.
+company: Calendine
+industry: scheduling software, seed-stage startup, 8 engineers
+product: scheduling tool for independent consultants, single API endpoint handles booking creation -- if endpoint goes down, consultants' clients see blank page where calendar should be
+scale: small but critical -- enterprise demo scheduled
+time: 14:12 UTC deploy finished, 14:18 UTC smoke test failed
+scene: deploy finished clean (green checkmark, clean logs, no warnings), closed terminal tab, went to get water
+alert: smoke test at 14:18 UTC returned `message: "Internal server error"`, API Gateway logs showed `ResourceNotFoundException: Function not found` for `calendine-booking-api`
+stakes: demo for potential enterprise customer at 14:45 UTC, sales engineer has been preparing since Monday
+early_signals:
+  - pipeline confirmed successful deployment (green checkmark)
+  - API endpoint returns JSON `message: "Internal server error"`
+  - CloudWatch API Gateway logs show `ResourceNotFoundException: Function not found`
+  - ARN in error points to us-east-1, API Gateway is in us-east-1
+  - Lambda console in us-east-1 shows no function named `calendine-booking-api`
+investigation_starting_point: the pipeline says the function deployed successfully, but the function does not exist in us-east-1 where the API Gateway expects it. The function is confirmed deployed somewhere, but it is not where it should be.
 
 ## Resolution
 
-The function was in `us-west-2`. It had been there since the deploy at 14:12 UTC, running normally, waiting for invocations that would never come. The CI/CD pipeline environment had `AWS_DEFAULT_REGION` set to `us-west-2`. Someone on the team had changed it the previous week while testing a disaster recovery configuration. They had not changed it back.
-
-The fix was to redeploy the function to `us-east-1`. This meant either overriding the region in the deploy command with `--region us-east-1` or correcting the `AWS_DEFAULT_REGION` variable in the pipeline configuration. The team chose to do both -- fix the environment variable and add an explicit `--region` flag to the deploy script so it would never depend on the ambient configuration again.
-
-The demo happened at 14:52 UTC, seven minutes late. The sales engineer made a small joke about technical difficulties. The customer did not seem to mind. The function in `us-west-2` was deleted the following morning. Nobody had noticed it was there.
+root_cause: CI/CD pipeline environment had `AWS_DEFAULT_REGION` set to `us-west-2` -- someone on the team changed it the previous week while testing a disaster recovery configuration and never changed it back
+mechanism: deploy command had no explicit `--region` flag, so the function deployed to us-west-2 while the API Gateway in us-east-1 referenced an ARN in us-east-1. The function sat in us-west-2 since 14:12 UTC, running normally, waiting for invocations that would never come.
+fix: redeploy function to us-east-1 by both correcting `AWS_DEFAULT_REGION` in pipeline configuration and adding explicit `--region us-east-1` flag to deploy script so it never depends on ambient configuration again. Demo happened at 14:52 UTC, seven minutes late. Orphaned function in us-west-2 deleted the following morning.
+contributing_factors:
+  - no explicit --region flag in deploy command, relying entirely on ambient environment variable
+  - disaster recovery testing changed pipeline environment variable without reverting it
+  - no post-deploy validation step to confirm function exists in the expected region

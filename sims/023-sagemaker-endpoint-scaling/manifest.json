@@ -19,7 +19,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Infrastructure engineer. Thinks in request rates and p99 latencies. States facts about the fleet like a dispatcher reading positions.",
+      "personality": {
+        "role": "infrastructure engineer",
+        "demeanor": "thinks in request rates and p99 latencies, states facts like a dispatcher reading positions",
+        "recurring_concern": "1,400 drivers need routes before leaving the depot, manual routing adds 12 minutes per driver"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -27,19 +31,34 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "503 rate is at 34%. Dispatch team switched to manual routing for the eastern corridor. That adds twelve minutes per route."
+          "facts": [
+            "503 rate is at 34%",
+            "dispatch team switched to manual routing for the eastern corridor",
+            "manual routing adds twelve minutes per route"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "The auto-scaling policy exists. It just never fires. The endpoint has been running on one instance for three weeks, through every morning spike."
+          "facts": [
+            "auto-scaling policy exists but has never fired",
+            "endpoint has been running on one instance for three weeks",
+            "every morning spike has gone unscaled"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "Operations director is calculating the cost of manual routing. Fourteen drivers, twelve extra minutes each, every morning. It adds up."
+          "facts": [
+            "operations director is calculating cost of manual routing",
+            "fourteen drivers, twelve extra minutes each, every morning"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "The scaling policy configuration looks correct -- the thresholds are reasonable. The issue is not in the policy logic. Check whether the alarm is actually receiving metric data."
+          "facts": [
+            "scaling policy configuration looks correct -- thresholds are reasonable",
+            "issue is not in the policy logic",
+            "check whether the alarm is actually receiving metric data"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -59,11 +78,11 @@
         "503 Error": "An HTTP status code meaning the server is too busy to handle the request. For SageMaker endpoints, this typically means the model server's request queue is full because the instance is overloaded."
       },
       "narrative_arc": {
-        "call": "The first 503 arrives at 6:14 AM. By 6:30 there are eighty. The dispatch team already knows something is wrong before the pager fires. Routes are not coming back.",
-        "threshold": "The engineer opens the CloudWatch console and sees the auto-scaling policy sitting idle. The endpoint has been running on one instance for three weeks. Every morning spike has gone unscaled.",
-        "trials": "The scaling policy exists. The thresholds are reasonable. The alarm configuration looks correct at first glance. The engineer checks instance status, scaling activities, cooldown periods. Nothing explains why scaling never fires.",
-        "revelation": "The CloudWatch alarm is in INSUFFICIENT_DATA state. It references VariantName=AllTraffic, but the current production variant is optimized-v3. The blue-green deployment three weeks ago changed the variant name. The alarm has been watching a metric that no longer exists.",
-        "return": "The alarm dimension is updated to optimized-v3. Within minutes, the alarm evaluates, transitions to ALARM, and scaling triggers. A second instance reaches InService. The 503 errors stop. The deployment pipeline gets a new post-deployment validation step."
+        "call": "alert arrives, stakes established from story.md Opening -- 503 errors during morning rush, 80 failures by 6:30 AM, routes not coming back for 1,400 drivers",
+        "threshold": "player enters investigation, auto-scaling policy exists but sits idle, endpoint running on one instance for three weeks through every morning spike",
+        "trials": "scaling policy exists, thresholds reasonable, alarm configuration looks correct at first glance -- instance status, scaling activities, cooldown periods all checked, nothing explains why scaling never fires",
+        "revelation": "CloudWatch alarm in INSUFFICIENT_DATA state, references VariantName=AllTraffic but current production variant is optimized-v3, blue-green deployment three weeks ago changed variant name, alarm watching a metric that no longer exists",
+        "return": "alarm dimension updated to optimized-v3, alarm evaluates and transitions to ALARM within minutes, scaling triggers, second instance reaches InService, 503 errors stop, deployment pipeline gets post-deployment validation step"
       },
       "system_narration": {
         "components": [
@@ -109,22 +128,22 @@
       },
       "hints": [
         {
-          "text": "Auto-scaling is configured but has never triggered. What drives the scaling decision?",
+          "hint": "auto-scaling is configured but has never triggered -- what drives the scaling decision?",
           "relevant_services": ["auto-scaling", "cloudwatch"],
           "skip_if_queried": []
         },
         {
-          "text": "The CloudWatch alarm for scaling is in INSUFFICIENT_DATA state. That means it is not receiving the metric it expects.",
+          "hint": "the CloudWatch alarm for scaling is in INSUFFICIENT_DATA state -- it is not receiving the metric it expects",
           "relevant_services": ["cloudwatch"],
           "skip_if_queried": ["cloudwatch"]
         },
         {
-          "text": "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension. Compare the alarm's dimension to the actual endpoint variant.",
+          "hint": "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension -- compare the alarm's dimension to the actual endpoint variant",
           "relevant_services": ["cloudwatch", "sagemaker"],
           "skip_if_queried": ["cloudwatch", "sagemaker"]
         },
         {
-          "text": "The alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3'. The metric namespace does not match, so the alarm never evaluates.",
+          "hint": "the alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3' -- the metric dimension does not match, so the alarm never evaluates",
           "relevant_services": ["cloudwatch", "sagemaker", "auto-scaling"],
           "skip_if_queried": ["cloudwatch", "sagemaker"]
         }

@@ -28,7 +28,11 @@
   },
   "team": {
     "narrator": {
-      "personality": "Dry. Notes the three-day gap between the deletion and anyone noticing. Mentions that four pull requests are waiting to deploy. Reports the stack status the way a doctor reads test results.",
+      "personality": {
+        "role": "senior engineer brought in to diagnose the stuck stack",
+        "demeanor": "dry, reports stack status the way a doctor reads test results",
+        "recurring_concern": "four pull requests queued, one fixes billing bug overcharging enterprise customers since Tuesday"
+      },
       "story_beats": [
         {
           "trigger": "start",
@@ -36,19 +40,35 @@
         },
         {
           "trigger": "elapsed_minutes:5",
-          "message": "Four pull requests are queued behind this. One of them is a fix for a billing calculation bug that has been overcharging enterprise customers since Tuesday. The product manager has asked about it twice today."
+          "facts": [
+            "four pull requests queued behind the stuck stack",
+            "one is a fix for a billing calculation bug overcharging enterprise customers since Tuesday",
+            "product manager has asked about it twice today"
+          ]
         },
         {
           "trigger": "elapsed_minutes:10",
-          "message": "Someone on the team mentions that the CI/CD role's permissions were tightened last month. They wonder if maybe the deploy role can't modify RDS resources anymore. The IAM policy is attached to the artifacts if you want to check."
+          "facts": [
+            "someone on the team mentions CI/CD role permissions were tightened last month",
+            "they wonder if the deploy role cannot modify RDS resources anymore",
+            "IAM policy is attached to the artifacts if you want to check"
+          ]
         },
         {
           "trigger": "elapsed_minutes:15",
-          "message": "The developer who deleted the database is on PTO this week. His Slack status says 'hiking in Patagonia.' He set it on Saturday morning."
+          "facts": [
+            "the developer who deleted the database (Marcus Chen) is on PTO this week",
+            "his Slack status says 'hiking in Patagonia', set Saturday morning"
+          ]
         },
         {
           "trigger": "wrong_diagnosis",
-          "message": "That does not match what the stack events are showing. The stack is not failing on permissions or configuration. CloudFormation is trying to act on a resource and cannot find it. Look at which specific resource is causing the rollback failure."
+          "facts": [
+            "does not match what stack events are showing",
+            "stack is not failing on permissions or configuration",
+            "CloudFormation is trying to act on a resource and cannot find it",
+            "look at which specific resource is causing the rollback failure"
+          ]
         },
         {
           "trigger": "fix_validated",
@@ -67,11 +87,11 @@
         "CloudTrail": "A service that records every API call made in your AWS account -- who did what, when, and from where. It is the audit trail you check when something was changed and you need to find out who changed it."
       },
       "narrative_arc": {
-        "call": "The CI/CD pipeline has been red for three days. Four pull requests are queued. One fixes a billing bug that has been overcharging enterprise customers since Tuesday. The engineering lead has been restarting the pipeline each morning. The stack status reads UPDATE_ROLLBACK_FAILED.",
-        "threshold": "The player opens the stack events and enters the gap between what the template says should exist and what actually exists in the account. The usual deployment troubleshooting does not apply here. The stack is not failing on code or permissions. It is failing on reality.",
-        "trials": "The IAM permissions on the deploy role were tightened last month, and the team suspects that is the issue. It is not. The stack events point to ProdDatabase. The CloudTrail log shows a DeleteDBInstance call made from the console by mchen on Friday at 4:47 PM. The developer is on PTO in Patagonia.",
-        "revelation": "CloudFormation maintains its own model of the world. When Marcus deleted the RDS instance through the console, CloudFormation did not know. On Monday, when the rollback tried to restore a resource that no longer existed, it had nowhere to go. The stack froze.",
-        "return": "The player runs continue-update-rollback with --resources-to-skip ProdDatabase. The stack returns to UPDATE_ROLLBACK_COMPLETE. Deployments resume. The team adds drift detection, a stack policy, and an SCP to prevent the same class of failure."
+        "call": "alert arrives, stakes established from story.md Opening",
+        "threshold": "player opens stack events, enters the gap between what template says should exist and what actually exists -- usual deployment troubleshooting does not apply, stack is not failing on code or permissions",
+        "trials": "IAM permissions on deploy role tightened last month (red herring), stack events point to ProdDatabase, CloudTrail shows DeleteDBInstance by mchen on Friday 4:47 PM, developer on PTO in Patagonia",
+        "revelation": "CloudFormation maintains its own model of the world -- Marcus deleted RDS instance through console, CloudFormation did not know, rollback tried to restore a resource that no longer existed, stack froze",
+        "return": "continue-update-rollback with --resources-to-skip ProdDatabase, stack returns to UPDATE_ROLLBACK_COMPLETE, deployments resume, team adds drift detection, stack policy, and SCP"
       },
       "system_narration": {
         "components": [
@@ -117,27 +137,27 @@
       },
       "hints": [
         {
-          "text": "Look at the stack events. Which resource failed during rollback?",
+          "hint": "look at the stack events -- which resource failed during rollback?",
           "relevant_services": ["cloudformation"],
           "skip_if_queried": []
         },
         {
-          "text": "Does that resource still exist? Check if it was modified outside CloudFormation.",
+          "hint": "does that resource still exist? check if it was modified outside CloudFormation",
           "relevant_services": ["cloudformation", "iam"],
           "skip_if_queried": ["cloudformation"]
         },
         {
-          "text": "CloudFormation tried to roll back to the previous state, but the resource it expected to find was gone.",
+          "hint": "CloudFormation tried to roll back to the previous state but the resource it expected to find was gone",
           "relevant_services": ["cloudformation"],
           "skip_if_queried": ["cloudformation", "iam"]
         },
         {
-          "text": "aws cloudformation continue-update-rollback can skip resources that no longer exist.",
+          "hint": "aws cloudformation continue-update-rollback can skip resources that no longer exist",
           "relevant_services": ["cloudformation"],
           "skip_if_queried": ["cloudformation"]
         },
         {
-          "text": "Use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback.",
+          "hint": "use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback",
           "relevant_services": ["cloudformation"],
           "skip_if_queried": []
         }

@@ -21,9 +21,9 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  .mcp.json       |       |  exam-topics.md   |       |  sims/{id}/*     |
 |                  |       |  sim-template.md  |       |  profile.json    |
 | Writes:          |       |  story-struct.md  |       |  sessions/*.json |
-|  profile.json    |       |  narrative-voice   |       |  agent-prompts   |
+|  profile.json    |       |  themes/_base.md  |       |  agent-prompts   |
 |  catalog.csv     |       |  game-design.md   |       |  coaching-patt.  |
-|  journal.md      |       |  manifest-schema  |       |                  |
+|  journal.md      |       |  manifest-schema  |       |  themes/*.md     |
 |  feedback.md     |       |  catalog.csv      |       | Writes:          |
 |  sessions/ (dir) |       |                   |       |  sessions/*.json |
 +------------------+       | Writes:           |       |  profile.json    |
@@ -123,7 +123,7 @@ When changing a component, check what else reads/writes the same data:
 | `sim-template.md` | create-sim (gold-standard example for generation) |
 | `sims/registry.json` format | setup (validates), create-sim (writes), play (reads for filtering) |
 | `sessions/*.json` format | play (reads + writes + deletes), feedback (writes) |
-| Narrative voice rules | create-sim (story generation), play (live narration), narrative-voice.md, agent-prompts.md |
+| Theme files (themes/) | play (theme selection + injection + rendering), agent-prompts.md (voice placeholder) |
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
 | `published.json` format | publish (reads + writes) |
 | `learning/recordings/` path | record script, publish skill |

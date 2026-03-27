@@ -12,18 +12,31 @@ tags:
 
 ## Opening
 
-The deploy script ran every day at 4 PM. It had run without error for eleven months. On Tuesday it returned `AccessDenied`. Nothing in the script had changed.
-
-Fenwick Systems builds invoice reconciliation software for mid-size accounting firms. Ten engineers, a shared office above a ramen shop in Portland, a single CI/CD pipeline running on an EC2 instance that deploys to staging and production. The pipeline is not sophisticated. It works, or it used to. The company has eighteen paying customers and a Series A that closed in January.
-
-You are the one who noticed. The deploy failed silently on Tuesday and nobody checked until Wednesday morning, when the product manager asked why the staging environment still had last week's build. You pulled up the logs. Every AWS API call in the deploy script returned `AccessDenied`. The S3 upload, the Secrets Manager fetch, the Lambda update. All of them.
-
-The EC2 instance has an instance profile attached. The IAM role has the correct policies. You verified this twice. The permissions are there. The deploy script has not been modified since February. The instance is healthy. Everything looks right, but the pipeline cannot do anything at all.
+company: Fenwick Systems
+industry: b2b SaaS, invoice reconciliation software for mid-size accounting firms
+location: shared office above a ramen shop in Portland
+scale: 10 engineers, 18 paying customers, Series A closed in January
+infrastructure: single CI/CD pipeline on an EC2 instance deploying to staging and production
+time: Wednesday morning (deploy failed silently on Tuesday at 4 PM)
+scene: product manager asked why staging still has last week's build
+alert: "AccessDenied on every AWS API call in the deploy script -- S3 upload, Secrets Manager fetch, Lambda update"
+stakes: deploy pipeline completely blocked, staging stuck on last week's build, no code shipping
+early_signals:
+  - deploy script ran daily at 4 PM without error for eleven months, returned AccessDenied on Tuesday
+  - nothing in the script had changed
+  - failure was silent -- nobody checked until Wednesday morning
+  - every AWS API call returns AccessDenied: S3 upload, Secrets Manager fetch, Lambda update
+  - EC2 instance has instance profile attached, IAM role has correct policies (verified twice)
+  - deploy script not modified since February, instance is healthy
+investigation_starting_point: permissions are verified correct on the instance profile and IAM role. Deploy script unchanged since February. Instance healthy. Everything looks right but the pipeline cannot do anything at all. Something outside the usual configuration is interfering.
 
 ## Resolution
 
-The root cause was two environment variables. `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` were set in `/etc/environment` on the CI machine. They had been there for eight months. Raj Patel, a former engineer, had added them while debugging a cross-account access issue for a different project. He solved his problem and moved on. The variables stayed.
-
-When Raj left the company in November, his IAM user account was deactivated and his access keys were marked inactive as part of the standard offboarding checklist. For months this did not matter. The deploy script happened to use SDK calls that fell through to the instance profile because of how the credential chain resolved at the time. A recent AWS CLI update changed the behavior slightly, and the environment variables began taking precedence consistently. The credentials pointed to a deactivated user. Every call failed.
-
-The fix was to remove the two environment variables from `/etc/environment` and restart the shell session. The instance profile credentials took over immediately. The deploy ran without error at the next scheduled time. The team added a check to their onboarding documentation: search all CI machines for hardcoded AWS credentials during offboarding.
+root_cause: two environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY set in /etc/environment on the CI machine. Added eight months ago by former engineer Raj Patel while debugging a cross-account access issue for a different project. He solved his problem and moved on. The variables stayed.
+mechanism: when Raj left the company in November, his IAM user account was deactivated and access keys marked inactive during standard offboarding. For months this did not matter -- SDK calls fell through to the instance profile because of how the credential chain resolved. A recent AWS CLI update changed the behavior, and environment variables began taking precedence consistently. Credentials pointed to a deactivated user, so every call failed.
+fix: remove the two environment variables from /etc/environment and restart the shell session. Instance profile credentials took over immediately. Deploy ran without error at the next scheduled time.
+contributing_factors:
+  - former engineer left hardcoded credentials on shared CI machine eight months ago
+  - offboarding checklist deactivated IAM user but did not search infrastructure for leftover credentials
+  - AWS CLI update changed credential chain resolution behavior, making environment variables consistently take precedence
+  - team added check to offboarding documentation: search all CI machines for hardcoded AWS credentials

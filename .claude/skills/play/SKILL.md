@@ -67,6 +67,22 @@ Read `sims/registry.json`. A sim is eligible if ALL of these are true:
 
 If no sims are eligible, tell the user: "No eligible simulations at your current level. Run create-sim to generate more." Then stop.
 
+### 3b. Select Theme
+
+Read the `themes/` directory. List all `.md` files except `_base.md`. Read YAML frontmatter from each to extract `id`, `name`, and `tagline`.
+
+Present to the player:
+
+```
+Choose a narrative voice for this session:
+
+1. Still Life -- "Flat affect. The facts carry the weight."
+2. Slow Burn -- "The narrator has all the time in the world. The system does not."
+3. Field Notes -- "Observed at 14:32. Behavior consistent with prior specimens."
+```
+
+Wait for choice. Store `theme_id` for Step 7.
+
 ### 4. Present Available Simulations
 
 Sort eligible sims with weakness-targeting sims first:
@@ -94,7 +110,7 @@ Ask the user to pick a sim. Wait for their response.
 Read the selected sim's files:
 
 - `sims/{id}/manifest.json` -- full manifest
-- `sims/{id}/story.md` -- narrative
+- `sims/{id}/story.md` -- structured facts (key: value pairs for Opening and Resolution, not prose)
 - `sims/{id}/artifacts/context.txt` -- briefing card for opening
 - `sims/{id}/artifacts/architecture-hint.txt` -- clean architecture diagram (late hint)
 - `sims/{id}/artifacts/architecture-resolution.txt` -- marked architecture diagram (debrief)
@@ -108,7 +124,11 @@ Read `.claude/skills/play/references/agent-prompts.md` for the consolidated prom
 
 Populate the template following the population instructions in agent-prompts.md:
 
-- Insert narrator fields: personality, company, story, briefing card, architecture diagrams, fix criteria, hints, story beats, learning objectives, sim_id
+- Read `themes/_base.md` and `themes/{theme_id}.md` (selected in Step 3b)
+- Inject `_base.md` content into the "Structural Rules" section
+- Strip YAML frontmatter from the theme file and inject full content as `{theme.voice}` into the "Narrative Voice" section
+- Story.md facts are rendered through the theme at delivery time, not pre-inserted as prose
+- Insert narrator fields: personality (structured object), company, story facts, briefing card, architecture diagrams, fix criteria, hints, story beats, learning objectives, sim_id
 - Insert console data: for each entry in `manifest.team.consoles[]`, insert the service name, capabilities, and full contents of all referenced artifacts
 - This populated prompt governs the rest of the session -- it defines both Narrator Mode and Console Mode behavior
 
@@ -117,6 +137,8 @@ Populate the template following the population instructions in agent-prompts.md:
 If the user chose to resume an in-progress session:
 
 - Read the session state from `learning/sessions/{sim_id}.json`
+- Restore `theme_id` from session state (do not re-prompt for theme selection)
+- Load `themes/_base.md` and `themes/{theme_id}.md` for prompt population
 - Use the investigation_summary and criteria_met to restore context
 - Acknowledge the resume: "Resuming your investigation of {title}. Here is where you left off: {investigation_summary}"
 - Do NOT replay the Opening or already-fired story beats
@@ -127,7 +149,7 @@ If the user chose to resume an in-progress session:
 
 ### 9. Start the Simulation
 
-Deliver the Opening section from story.md. Present the briefing card from artifacts/context.txt. Wait for the player to begin investigating.
+Read the Opening facts from story.md. Narrate them to the player in the active theme's voice, incorporating the narrator personality traits from the manifest. Present the briefing card from artifacts/context.txt. Wait for the player to begin investigating.
 
 ### 10. Player Investigation Loop
 
@@ -138,7 +160,7 @@ The player investigates conversationally. Respond according to the behavioral ru
 
 ### 10a. Narrative Arc Awareness
 
-The narrator uses `manifest.team.narrator.narrative_arc` to pace improvised narration. During the "trials" phase (player investigating, hitting red herrings), let mundane details accumulate. When the player nears revelation, do not accelerate. All improvised speech follows the Narrative Voice rules from agent-prompts.md.
+The narrator uses `manifest.team.narrator.narrative_arc` to pace improvised narration. During the "trials" phase (player investigating, hitting red herrings), let mundane details accumulate. When the player nears revelation, do not accelerate. All improvised speech follows the active theme's voice (injected from the selected theme file).
 
 ### 10b. Inline Jargon Explanation
 
@@ -160,7 +182,7 @@ During gameplay, the narrator helps the player build a mental model of the syste
 
 ### 10d. Adaptive Hint Delivery
 
-Hints are now objects with `text`, `relevant_services`, and `skip_if_queried` fields. Before delivering the next hint:
+Hints are objects with `hint`, `relevant_services`, and `skip_if_queried` fields. Before delivering the next hint:
 - Check the player's `services_queried` from session state
 - If all services in a hint's `skip_if_queried` have been queried, skip that hint
 - If a hint's `relevant_services` overlap with services the player has NOT queried, prioritize that hint
@@ -168,7 +190,7 @@ Hints are now objects with `text`, `relevant_services`, and `skip_if_queried` fi
 
 ### 11. Session State Auto-Save
 
-Auto-save session state to `learning/sessions/{sim_id}.json` after every significant interaction:
+Auto-save session state to `learning/sessions/{sim_id}.json` after every significant interaction. Include `theme_id` in the session state so it persists across resumes.
 
 - Player asks a question (increment questions_asked)
 - Hint is delivered (increment hints_used)
