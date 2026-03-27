@@ -8,13 +8,15 @@
   },
   "dependencies": {
     "@remotion/cli": "^4.0.0",
-    "remotion": "^4.0.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "asciinema-player": "^3.9.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "asciinema-player": "^3.9.0"
+    "remotion": "^4.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
   }
 }
