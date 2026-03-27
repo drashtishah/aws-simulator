@@ -3,3 +3,11 @@ learning/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Remotion video project
+video/node_modules/
+video/dist/
+video/public/*.cast
+
+# Rendered videos (large binaries)
+learning/recordings/*.mp4
