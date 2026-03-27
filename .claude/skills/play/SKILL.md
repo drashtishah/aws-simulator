@@ -201,19 +201,60 @@ When the player proposes a fix, check it against `manifest.resolution.fix_criter
 
 ---
 
-## Phase 4: Resolution
+## Phase 4: Resolution and Debrief
 
-### 14. Deliver Resolution
+### 14a. Deliver Summary
+
+Keep this short -- roughly 150 words. The player just solved something. Let it land.
 
 1. Deliver the Resolution section from story.md
 2. Present the marked architecture diagram from artifacts/architecture-resolution.txt
-3. Provide a learning summary referencing the manifest's learning_objectives
-4. Include real-world remediation approaches for each fix action -- explain how it would be done via AWS Console (step-by-step UI navigation), CLI (`aws` commands), and SDK/IaC (boto3, CloudFormation, or Terraform). Use beginner-friendly language: describe what each step accomplishes before naming the specific AWS setting or API action.
-5. Present `manifest.resolution.sop_steps` as numbered steps under the heading "How AWS recommends approaching this". This section is separate from the narrative -- structured steps, not story prose. Rephrase any jargon-heavy steps so the concept is clear before the AWS term appears.
-6. Present `manifest.resolution.related_failure_modes` under the heading "Other ways this system could break". For each entry, describe the scenario, how it differs from the resolved root cause, and how to prevent it. Use beginner-friendly language: lead with a plain English explanation of what happens, then introduce the AWS term. If the manifest text already contains unexplained jargon, rephrase it during delivery.
-7. Present `manifest.resolution.sop_practices` as a bulleted list under the heading "Best practices from AWS SOPs". Same beginner-friendly rule: plain English first, AWS terms second.
-8. Update session state to `"status": "resolved"`
-9. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
+3. State `manifest.resolution.root_cause` in one plain-English sentence. Not the learning objectives. Not the SOP. Just what broke and what fixed it.
+4. Update session state: set `status` to `"resolved"`, set `debrief_phase` to `"summary"`
+
+### 14b. Open Debrief Q&A
+
+Generate three seed questions from the manifest -- things the player might be wondering. One from each type:
+
+- **Concept seed**: drawn from `manifest.resolution.learning_objectives`. Frame as a "why" or "how does this work" question.
+- **How-to seed**: drawn from `manifest.resolution.fix_criteria`. Point toward the practical remediation (Console/CLI/IaC).
+- **What-else seed**: drawn from `manifest.resolution.related_failure_modes`. Frame as "what if the problem had been something else."
+
+Present the seeds in narrator voice as observations, not instructions. "Three things you might be wondering" -- not "Here are questions you should ask." End with: "Ask about any of these. Or ask something else entirely."
+
+Update session state: set `debrief_phase` to `"qa"`, record seeds in `debrief_seeds_offered`.
+
+Wait for the player to respond.
+
+### 14c. Debrief Conversation Loop
+
+When the player asks a question, identify which content zone it maps to and serve the relevant manifest content. Five zones:
+
+| Zone | Manifest source |
+|---|---|
+| concepts | `learning_objectives` -- explain each relevant objective |
+| remediation | Console/CLI/IaC for the relevant `fix_criteria` action |
+| process | `sop_steps` -- present as numbered steps under "How AWS recommends approaching this" |
+| failure_modes | `related_failure_modes` -- describe the relevant scenario, how it differs, prevention |
+| practices | `sop_practices` -- present as bulleted list under "Best practices from AWS SOPs" |
+
+All answers use beginner-friendly language: plain English first, AWS term second. If the manifest text contains unexplained jargon, rephrase it during delivery.
+
+After each answer, plant one follow-up seed -- a sentence embedded in the answer that implies a question toward an unexplored zone. Not a directive. An observation that trails toward the next idea. The narrator does not say "you should ask about X." The narrator says something that makes X the obvious next thought.
+
+If the player asks something outside all five zones, answer from general AWS knowledge (same as glossary rule 12), then redirect toward an unexplored zone with a follow-up seed.
+
+Update session state after each exchange:
+- Increment `debrief_questions_asked`
+- Add zone to `debrief_zones_explored`
+- Increment `debrief_depth_score` if the question demonstrated systems thinking (follow-ups, cross-references, "why" / "what if" questions)
+
+**Exit conditions:**
+- Player signals done ("I'm good", "thanks", "that's all", etc.)
+- All five zones explored -- narrator says: "That covers the full picture." and transitions to coaching
+- Inactivity: prompt once ("Anything you want to dig into?"). If still silent, transition to coaching.
+
+On exit: set `debrief_phase` to `"coaching"`. Signal: "SIMULATION COMPLETE. Generating coaching analysis."
 
 ### 15. Coaching Analysis
 
@@ -229,6 +270,7 @@ Analyze the player's investigation using the patterns and rules in coaching-patt
 - Check for blast radius consideration
 - Check investigation depth (questions before fix)
 - Check hint usage
+- Analyze debrief engagement: questions asked, zones explored, depth score (see "Debrief Engagement" section in coaching-patterns.md)
 
 Generate coaching feedback by applying ALL matching rules from coaching-patterns.md. Present the feedback to the player in a structured format:
 

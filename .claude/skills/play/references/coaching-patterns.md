@@ -63,6 +63,13 @@ What did the player check first?
 - Did the player ask about recent deployments or configuration changes?
 - Did they correlate the incident timeline with change events?
 
+### 8. Debrief Engagement
+
+- How many questions did the player ask during the debrief Q&A? (`debrief_questions_asked`)
+- How many content zones did they explore? (`debrief_zones_explored`)
+- Did they ask follow-up or depth questions -- "why", "what if", cross-referencing concepts? (`debrief_depth_score`)
+- Did they skip the debrief entirely?
+
 ---
 
 ## Coaching Feedback Rules
@@ -132,6 +139,24 @@ Feedback: "Thorough investigation -- you asked {questions_asked} questions and n
 **Asked excellent diagnostic questions:**
 Condition: Player asked specific, targeted questions that directly advanced the investigation (judge from investigation_summary)
 Feedback: "Your question about {specific_question_example} was particularly effective -- it went straight to the heart of the issue. Asking precise, targeted questions reduces noise and gets you to root cause faster."
+
+### Debrief Engagement
+
+**Curious investigator (positive):**
+Condition: debrief_questions_asked >= 4 AND len(debrief_zones_explored) >= 3
+Feedback: "You dug into the debrief -- asked {debrief_questions_asked} questions across {comma-separated debrief_zones_explored}. That curiosity is the same instinct that drives good incident postmortems."
+
+**Systems thinker (positive):**
+Condition: debrief_depth_score >= 3
+Feedback: "Your debrief questions went beyond 'what happened' into 'what else could happen' and 'how do the pieces connect.' That is systems thinking -- the skill that separates someone who fixes incidents from someone who prevents them."
+
+**Skipped debrief (negative):**
+Condition: debrief_questions_asked == 0
+Feedback: "You skipped the debrief. The resolution is where the learning happens -- not the incident itself. Next time, try asking at least one question about how to prevent recurrence or what else could break."
+
+**Surface engagement (neutral):**
+Condition: debrief_questions_asked >= 2 AND debrief_depth_score < 2
+Feedback: "You asked questions during the debrief. Try pushing deeper next time: after learning what happened, ask why it was possible, and what would catch it earlier."
 
 ---
 
