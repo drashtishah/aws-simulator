@@ -96,53 +96,39 @@ This is not a blocker. The MCP server enriches sim creation but is not required 
 
 ### 8. Check optional tools
 
-#### 8a. Verify python3
+#### 8a. Verify Node.js and video dependencies
 
 ```bash
-command -v python3
+command -v node
 ```
 
-If missing, warn: "python3 was not found. The /publish skill needs it for reading recording metadata." Informational only -- do not attempt to install python3.
+If missing, warn: "Node.js was not found. The /render skill needs it to convert recordings to MP4." Informational only, do not attempt to install Node.js.
+
+If Node.js is present, check whether `video/node_modules` exists. If missing, run:
+
+```bash
+cd video && npm install
+```
+
+Tell the player: "Installing video rendering dependencies." This enables the /render skill.
 
 #### 8b. Check and install asciinema
 
-asciinema is optional. It is only needed for recording and publishing terminal sessions.
+asciinema is optional. It is only needed for recording terminal sessions.
 
 ```bash
 command -v asciinema
 ```
 
-If found, skip to 8c.
+If found, report that asciinema is available for recording.
 
 If missing:
 
 1. Detect which package manager is available (`brew`, `apt`, `pacman`, `dnf`).
-2. Tell the player: "asciinema is not installed. It is optional -- only needed if you want to record and publish sessions." Ask if they want to install it now.
+2. Tell the player: "asciinema is not installed. It is optional, only needed if you want to record sessions." Ask if they want to install it now.
 3. If yes, run the install command for their platform (e.g. `brew install asciinema`).
 4. If no, move on. This is not a blocker.
 5. If no known package manager is found, print the install page (asciinema.org/docs/installation) and move on.
-
-#### 8c. Check asciinema authentication
-
-Only run this if asciinema is installed. Check whether it is linked to an account:
-
-```bash
-test -f ~/.local/state/asciinema/install-id || test -f ~/.config/asciinema/install-id
-```
-
-If not authenticated:
-
-> asciinema is installed but not linked to an account. To publish recordings later, run:
->
->     asciinema auth
->
-> This prints a connect URL. Open it in your browser while logged in to your asciinema.org account. You can skip this now and do it when you first run /publish.
-
-If authenticated:
-
-> asciinema is authenticated. Run /publish after recording a session to upload it.
-
-This step is informational only. It does not block setup.
 
 ### 9. Welcome
 
