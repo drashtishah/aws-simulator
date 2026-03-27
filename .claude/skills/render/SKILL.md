@@ -118,15 +118,17 @@ cd video && npx remotion render src/index.ts CastVideo \
 
 Output filename: same as the .cast file but with `.mp4` extension. Place it in `learning/recordings/`.
 
-### 5. Clean up
+### 5. Clean up (mandatory, even on failure)
 
-Remove the temporary copy:
+Remove all temporary files from video/public/ immediately after render completes or fails:
 
 ```bash
-rm video/public/recording.cast
+rm -f video/public/recording.cast video/public/test.cast video/public/*.cast
 ```
 
-Report success with the output path, file size, and duration.
+This step is not optional. Run it before reporting success or failure. If the render failed, clean up first, then show the error.
+
+On success, report the output path, file size, and duration.
 
 ---
 
