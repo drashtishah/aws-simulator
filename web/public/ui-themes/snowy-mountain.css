@@ -1,0 +1,48 @@
+:root {
+  /* Snow & sky (60% of the UI) */
+  --bg-deep: #F0F4F8;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #EDF2F7;
+  --bg-input: #FFFFFF;
+
+  /* Frost borders (part of the 30%) */
+  --border: #CBD5E0;
+  --border-subtle: #E2E8F0;
+
+  /* Deep pine text, all WCAG AA on white */
+  --text-primary: #1A2E22;
+  --text-secondary: #3D5A4A;
+  --text-muted: #6B8A78;
+
+  /* Strategic warm accents (10% of the UI) */
+  --accent-primary: #C2542A;
+  --accent-primary-hover: #A3431F;
+  --accent-green: #2F855A;
+  --accent-red: #C53030;
+
+  /* Cool accents */
+  --accent-blue: #2B6CB0;
+
+  /* Console (stays dark for contrast, deep pine) */
+  --console-bg: #142018;
+  --console-text: #A8D4C0;
+
+  /* Chat bubbles */
+  --narrator-bg: #EDF2F7;
+  --player-bg: #EBF4FF;
+
+  /* Category accents (muted mountain tones) */
+  --category-networking: #2B6CB0;
+  --category-security: #C53030;
+  --category-data: #C2542A;
+  --category-reliability: #2F855A;
+  --category-compute: #6B46C1;
+  --category-observability: #2B6CB0;
+  --category-operations: #5A6B7A;
+  --category-performance: #B7791F;
+  --category-cost: #B7791F;
+
+  /* Shadows (light theme needs subtle shadows for depth) */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}

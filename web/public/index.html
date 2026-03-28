@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Incident Simulator</title>
+  <link rel="stylesheet" href="/style.css">
+  <link id="ui-theme" rel="stylesheet" href="/ui-themes/snowy-mountain.css">
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="topbar-title">
+      <span class="topbar-title-full">AWS Incident Simulator</span>
+      <span class="topbar-title-short">AWS Sim</span>
+    </span>
+    <nav class="topbar-nav" role="tablist" aria-label="Main navigation">
+      <button role="tab" aria-selected="true" data-view="dashboard" id="tab-dashboard">Dashboard</button>
+      <button role="tab" aria-selected="false" data-view="play" id="tab-play">Play</button>
+    </nav>
+    <button class="topbar-settings" aria-label="Settings" id="btn-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- Dashboard View -->
+    <div id="view-dashboard" class="view active">
+      <div id="resume-banner" class="resume-banner" style="display: none;">
+        <div class="resume-banner-text">
+          <div class="resume-banner-title" id="resume-title">In progress</div>
+          <div class="resume-banner-detail" id="resume-detail"></div>
+        </div>
+        <button class="btn btn-primary" id="btn-resume">Resume</button>
+      </div>
+
+      <div class="dashboard-stats" id="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-level">1</div>
+          <div class="stat-label">Level</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-completed">0</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
+
+      <div class="dashboard-section" id="section-skills" style="display: none;">
+        <h2>Strengths and Weaknesses</h2>
+        <div id="skills-content"></div>
+      </div>
+
+      <div class="dashboard-section" id="section-journal" style="display: none;">
+        <h2>Recent Sessions</h2>
+        <div id="journal-content"></div>
+      </div>
+    </div>
+
+    <!-- Play View -->
+    <div id="view-play" class="view">
+      <!-- Sim Picker -->
+      <div id="sim-picker">
+        <div class="sim-grid" id="sim-grid"></div>
+        <div class="sim-empty" id="sim-empty" style="display: none;">
+          No eligible simulations at your current level.
+        </div>
+      </div>
+
+      <!-- Chat (hidden until sim starts) -->
+      <div id="chat" class="chat-container">
+        <div class="chat-header">
+          <button class="chat-back" id="btn-back-to-sims">Back to sims</button>
+          <span class="chat-sim-title" id="chat-sim-title"></span>
+        </div>
+        <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
+        </div>
+        <div class="typing-indicator" id="typing-indicator">
+          <div class="typing-dots">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+        <button class="new-messages-pill" id="new-messages-pill">New messages</button>
+        <div class="chat-input-area" id="chat-input-area">
+          <textarea
+            class="chat-input"
+            id="chat-input"
+            placeholder="Investigate the incident..."
+            rows="1"
+            aria-label="Message input"
+          ></textarea>
+          <button class="btn btn-primary" id="btn-send">Send</button>
+          <button class="btn btn-quit" id="btn-quit">Quit</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal" role="dialog" aria-label="Settings">
+      <div class="modal-title">Settings</div>
+      <div class="modal-field">
+        <label for="select-ui-theme">UI Color Theme</label>
+        <select id="select-ui-theme"></select>
+      </div>
+      <div class="modal-field">
+        <label for="select-narrative-theme">Narrative Voice</label>
+        <select id="select-narrative-theme"></select>
+      </div>
+      <button class="btn btn-secondary modal-close" id="btn-close-settings">Close</button>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
