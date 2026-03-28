@@ -6,7 +6,6 @@ Interactive AWS incident-response game played through Claude Code skills.
 
 - `/setup`: run once after cloning to create player profile in learning/
 - `/play`: run a simulation; the main game loop
-- `/render`: convert terminal recordings to MP4 video
 - `/create-sim`: generate new sim packages (for authors, not players)
 - `/feedback`: log a note during play about the sim system
 - `/fix`: apply accumulated feedback to skills
