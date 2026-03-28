@@ -30,7 +30,7 @@ function logEvent(sessionId, event) {
   try {
     fs.appendFileSync(logFile, line);
   } catch (err) {
-    console.error('Failed to write log:', err.message);
+    console.error(`Failed to write log to ${logFile}: ${err.message}`);
   }
 
   // Check warning thresholds

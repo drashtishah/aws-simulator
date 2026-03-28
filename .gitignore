@@ -6,3 +6,6 @@ node_modules/
 
 # All logs (shared hooks + web app)
 learning/logs/
+
+# Test artifacts (screenshots, traces from failed tests)
+web/test/e2e/test-results/

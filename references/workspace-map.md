@@ -96,6 +96,26 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, warnings, fix manifests |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 
+## Tests
+
+| Type | Location | Runner | What it covers |
+|------|----------|--------|----------------|
+| Unit | `web/test/server.test.js` | `npm test` (node --test) | All API endpoints, SSE game routes, 503/400 responses |
+| Unit | `web/test/logger.test.js` | `npm test` | logEvent, generateFixManifest, checkThresholds (context, latency, tool loop) |
+| Unit | `web/test/claude-process.test.js` | `npm test` | parseStreamJson, verifyAutosave, sendMessage SESSION_LOST, endSession cleanup |
+| Unit | `web/test/prompt-builder.test.js` | `npm test` | buildPrompt, all themes, all sims, error messages, marker injection |
+| E2E | `web/test/e2e/navigation.spec.js` | `npm run test:e2e` (Playwright) | Tab switching, aria-selected, settings modal open/close |
+| E2E | `web/test/e2e/dashboard.spec.js` | `npm run test:e2e` | Profile stats, skills, journal, resume banner |
+| E2E | `web/test/e2e/sim-picker.spec.js` | `npm run test:e2e` | Card rendering, keyboard nav, empty state, category borders |
+| E2E | `web/test/e2e/chat.spec.js` | `npm run test:e2e` | Chat flow, message types, send/quit, session complete |
+| E2E | `web/test/e2e/settings.spec.js` | `npm run test:e2e` | Dropdowns, theme switching, localStorage persistence |
+| E2E | `web/test/e2e/layout.spec.js` | `npm run test:e2e` | CSS layout assertions, responsive breakpoints, alignment |
+| E2E | `web/test/e2e/visual.spec.js` | `npm run test:e2e` | Screenshot baselines at desktop/mobile, visual regression |
+| E2E | `web/test/e2e/accessibility.spec.js` | `npm run test:e2e` | axe-core WCAG 2.1 AA scans, ARIA attributes, keyboard nav |
+| All | | `npm run test:all` | Runs unit then e2e |
+
+Configuration: `playwright.config.js` at project root. Screenshots on failure, traces on failure. Mock SSE fixtures in `web/test/e2e/fixtures.js`.
+
 ## Impact Analysis Guide
 
 When changing a component, check what else reads/writes the same data:

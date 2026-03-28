@@ -25,16 +25,45 @@ tags:
 
 ## Testing
 
-1. `npm test` runs unit tests (node:test, zero dependencies)
-2. `npm run test:e2e` runs Playwright E2E tests (headless Chromium)
-3. `npm run test:all` runs both
-4. All tests must pass before any change is committed
+### Running Tests
+
+- `npm test`: unit tests (node:test, 78 tests, zero test-framework dependencies)
+- `npm run test:e2e`: Playwright E2E tests (70 tests, headless Chromium)
+- `npm run test:all`: runs both sequentially
+- All tests must pass before any change is committed
+
+### Playwright CLI
+
+- `npx playwright test --headed`: see the browser during tests
+- `npx playwright test --debug`: step through with the Inspector
+- `npx playwright test -u`: update visual regression screenshot baselines
+- `npx playwright show-trace <trace.zip>`: open trace viewer for a failed test
+- `npx playwright codegen http://localhost:3200`: record browser actions to generate test code
+
+### TDD for New Features
+
+- Write a failing test first, verify it fails for the right reason
+- Write minimal code to make the test pass
+- Refactor only after tests are green
+- Every new endpoint, behavior, or UI feature needs a test
+
+### Test Architecture
+
+- Unit tests: `web/test/*.test.js` (node:test + assert/strict)
+- E2E tests: `web/test/e2e/*.spec.js` (Playwright)
+- E2E fixtures: `web/test/e2e/fixtures.js` (mock SSE routes, page objects)
+- Config: `playwright.config.js` (webServer auto-starts, screenshots on failure, traces on failure)
+- Visual baselines: `web/test/e2e/visual.spec.js-snapshots/`
+
+### After CSS Changes
+
+Update visual regression baselines: `npx playwright test visual.spec.js -u`
 
 ## Adding New Content (Zero Code Changes)
 
 - New sim: use `/create-sim`, auto-discovered from registry
 - New narrative theme: add `themes/{id}.md` with YAML frontmatter (id, name, tagline)
-- New UI color theme: add `web/public/ui-themes/{id}.css` defining all CSS variables from snowy-mountain.css
+- New UI color theme: add `web/public/ui-themes/{id}.css` defining all CSS variables from dracula.css
 
 ## Debugging
 

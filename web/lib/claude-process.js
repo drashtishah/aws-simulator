@@ -178,6 +178,9 @@ async function startSession(simId, themeId, options = {}) {
     await endSession(id);
   }
 
+  const VALID_MODELS = ['sonnet', 'opus', 'haiku'];
+  const model = VALID_MODELS.includes(options.model) ? options.model : 'sonnet';
+
   const sessionId = crypto.randomUUID();
   const turnStart = new Date();
 
@@ -197,7 +200,7 @@ async function startSession(simId, themeId, options = {}) {
     '--append-system-prompt-file', promptFile,
     '--dangerously-skip-permissions',
     '--allowedTools', 'Read,Write',
-    '--model', 'sonnet'
+    '--model', model
   ];
 
   const { stdout } = await spawnClaude(args, stdinMessage);
@@ -207,6 +210,7 @@ async function startSession(simId, themeId, options = {}) {
     claudeSessionId: parsed.claudeSessionId,
     simId,
     themeId,
+    model,
     promptFile,
     startedAt: turnStart,
     autosaveFailCount: 0
@@ -217,6 +221,7 @@ async function startSession(simId, themeId, options = {}) {
     event: 'session_start',
     sim_id: simId,
     theme: themeId,
+    model,
     claude_session_id: parsed.claudeSessionId
   });
 
@@ -259,7 +264,7 @@ async function sendMessage(sessionId, message) {
     '--resume', session.claudeSessionId,
     '--dangerously-skip-permissions',
     '--allowedTools', 'Read,Write',
-    '--model', 'sonnet'
+    '--model', session.model || 'sonnet'
   ];
 
   let result;
@@ -282,7 +287,7 @@ async function sendMessage(sessionId, message) {
         '--append-system-prompt-file', session.promptFile,
         '--dangerously-skip-permissions',
         '--allowedTools', 'Read,Write',
-        '--model', 'sonnet'
+        '--model', session.model || 'sonnet'
       ];
       result = await spawnClaude(retryArgs, message);
       const parsed = parseStreamJson(result.stdout);

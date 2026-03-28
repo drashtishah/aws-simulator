@@ -86,7 +86,8 @@ app.get('/api/themes', (req, res) => {
       };
     });
     res.json(themes);
-  } catch {
+  } catch (err) {
+    console.error(`GET /api/themes: failed to read ${themesDir}: ${err.message}`);
     res.json([]);
   }
 });
@@ -115,7 +116,8 @@ app.get('/api/sessions', (req, res) => {
     const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
     const sessions = files.map(f => readJSON(path.join(sessionsDir, f), null)).filter(Boolean);
     res.json(sessions);
-  } catch {
+  } catch (err) {
+    console.error(`GET /api/sessions: failed to read ${sessionsDir}: ${err.message}`);
     res.json([]);
   }
 });
@@ -139,7 +141,8 @@ app.get('/api/journal-summary', (req, res) => {
       };
     });
     res.json(parsed);
-  } catch {
+  } catch (err) {
+    console.error(`GET /api/journal-summary: failed to read ${journalPath}: ${err.message}`);
     res.json([]);
   }
 });
@@ -150,7 +153,8 @@ app.get('/api/ui-themes', (req, res) => {
     const files = fs.readdirSync(themesDir).filter(f => f.endsWith('.css'));
     const themes = files.map(f => f.replace('.css', ''));
     res.json(themes);
-  } catch {
+  } catch (err) {
+    console.error(`GET /api/ui-themes: failed to read ${themesDir}: ${err.message}`);
     res.json([]);
   }
 });
@@ -167,7 +171,7 @@ try {
 app.post('/api/game/start', async (req, res) => {
   if (!claudeProcess) return res.status(503).json({ error: 'Game engine not available' });
 
-  const { simId, themeId } = req.body;
+  const { simId, themeId, model } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
   const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
@@ -180,7 +184,7 @@ app.post('/api/game/start', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const result = await claudeProcess.startSession(simId, themeId || 'still-life');
+    const result = await claudeProcess.startSession(simId, themeId || 'still-life', { model: model || 'sonnet' });
     res.write(`data: ${JSON.stringify({ type: 'session', sessionId: result.sessionId })}\n\n`);
 
     for (const event of result.events) {
@@ -190,6 +194,7 @@ app.post('/api/game/start', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
   } catch (err) {
+    console.error(`POST /api/game/start: simId=${simId}, error=${err.message}`);
     res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
     res.end();
   }
@@ -231,6 +236,7 @@ app.post('/api/game/message', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
   } catch (err) {
+    console.error(`POST /api/game/message: sessionId=${sessionId}, error=${err.message}`);
     res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
     res.end();
   }
@@ -243,6 +249,7 @@ app.post('/api/game/quit', async (req, res) => {
     await claudeProcess.endSession(sessionId);
     res.json({ ok: true });
   } catch (err) {
+    console.error(`POST /api/game/quit: sessionId=${sessionId}, error=${err.message}`);
     res.json({ ok: true });
   }
 });
@@ -250,7 +257,7 @@ app.post('/api/game/quit', async (req, res) => {
 app.post('/api/game/resume', async (req, res) => {
   if (!claudeProcess) return res.status(503).json({ error: 'Game engine not available' });
 
-  const { simId, themeId } = req.body;
+  const { simId, themeId, model } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -260,6 +267,7 @@ app.post('/api/game/resume', async (req, res) => {
 
   try {
     const result = await claudeProcess.startSession(simId, themeId || 'still-life', {
+      model: model || 'sonnet',
       resume: true,
       resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}.json for session state.`
     });
@@ -272,6 +280,7 @@ app.post('/api/game/resume', async (req, res) => {
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
     res.end();
   } catch (err) {
+    console.error(`POST /api/game/resume: simId=${simId}, error=${err.message}`);
     res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
     res.end();
   }

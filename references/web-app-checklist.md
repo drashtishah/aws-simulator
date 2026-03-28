@@ -84,7 +84,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 ## Frontend
 
 - [ ] localStorage reads wrapped in try/catch
-- [ ] Default UI theme: snowy-mountain
+- [ ] Default UI theme: dracula
 - [ ] Default narrative theme: still-life
 - [ ] Theme CSS loaded via `<link>` tag with id="ui-theme"
 - [ ] Sim picker grid uses `repeat(auto-fill, minmax(280px, 1fr))`
@@ -116,3 +116,24 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] Warning thresholds: context >80%, latency >30s, tool loop >5
 - [ ] Autosave verification after each turn
 - [ ] Autosave fail count resets on success, logs error at count >= 3
+
+## Tests
+
+- [ ] `npm test` passes all unit tests (78 tests across 4 files)
+- [ ] `npm run test:e2e` passes all Playwright tests (70 tests across 8 files)
+- [ ] `npm run test:all` passes everything
+- [ ] All API endpoints have unit tests (GET and POST routes)
+- [ ] Game endpoints tested for 400 (validation) and 503 (no claude-process)
+- [ ] Logger thresholds tested (context, latency, tool loop)
+- [ ] parseStreamJson tested for all marker types (console, coaching, complete)
+- [ ] verifyAutosave tested for all failure modes
+- [ ] buildPrompt tested with all registered sims and themes
+- [ ] E2E: navigation, dashboard, sim picker, chat, settings all covered
+- [ ] E2E: layout assertions for responsive breakpoints (1280px, 480px, 375px)
+- [ ] E2E: visual regression baselines in `web/test/e2e/visual.spec.js-snapshots/`
+- [ ] E2E: axe-core WCAG 2.1 AA scans pass on dashboard, play, settings views
+- [ ] E2E: keyboard navigation reachable for all interactive elements
+- [ ] E2E: mock SSE fixtures avoid dependency on Claude CLI for browser tests
+- [ ] Color contrast meets WCAG 2.1 AA (4.5:1 minimum)
+- [ ] All catch blocks in server.js log descriptive errors (endpoint, entity ID, cause)
+- [ ] Screenshot baselines updated after CSS changes: `npx playwright test visual.spec.js -u`

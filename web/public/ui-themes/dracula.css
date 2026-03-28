@@ -1,0 +1,49 @@
+:root {
+  /* Dracula backgrounds */
+  --bg-deep: #21222C;
+  --bg-surface: #282A36;
+  --bg-elevated: #44475A;
+  --bg-input: #44475A;
+
+  /* Borders */
+  --border: #6272A4;
+  --border-subtle: #44475A;
+
+  /* Text */
+  --text-primary: #F8F8F2;
+  --text-secondary: #BFC9DB;
+  --text-muted: #8791B3;
+
+  /* Accents */
+  --accent-primary: #CBA6FF;
+  --accent-primary-hover: #D6ACFF;
+  --accent-primary-text: #1A1B26;
+  --accent-green: #50FA7B;
+  --accent-red: #FF5555;
+
+  /* Cool accents */
+  --accent-blue: #8BE9FD;
+
+  /* Console */
+  --console-bg: #21222C;
+  --console-text: #50FA7B;
+
+  /* Chat bubbles */
+  --narrator-bg: #44475A;
+  --player-bg: #3A3D4E;
+
+  /* Category accents */
+  --category-networking: #8BE9FD;
+  --category-security: #FF5555;
+  --category-data: #FFB86C;
+  --category-reliability: #50FA7B;
+  --category-compute: #BD93F9;
+  --category-observability: #8BE9FD;
+  --category-operations: #6272A4;
+  --category-performance: #F1FA8C;
+  --category-cost: #F1FA8C;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}

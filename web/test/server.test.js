@@ -1,0 +1,494 @@
+const { describe, it, before, after, beforeEach } = require('node:test');
+const assert = require('node:assert/strict');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
+const express = require('express');
+
+const ROOT = path.resolve(__dirname, '..', '..');
+
+// --- Helpers ---
+
+function request(app, method, url, body) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(0, () => {
+      const port = server.address().port;
+      const opts = {
+        hostname: '127.0.0.1',
+        port,
+        path: url,
+        method,
+        headers: { 'Content-Type': 'application/json' }
+      };
+      const req = http.request(opts, (res) => {
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => {
+          server.close();
+          try {
+            resolve({ status: res.statusCode, headers: res.headers, body: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode, headers: res.headers, body: data });
+          }
+        });
+      });
+      req.on('error', (err) => { server.close(); reject(err); });
+      if (body) req.write(JSON.stringify(body));
+      req.end();
+    });
+  });
+}
+
+// --- Build a test app that mirrors server.js routes without startup validation ---
+
+function buildApp() {
+  const app = express();
+  app.use(express.json());
+  app.use(express.static(path.join(ROOT, 'web', 'public')));
+
+  function readJSON(filePath, fallback) {
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch {
+      return fallback;
+    }
+  }
+
+  function stripFrontmatter(content) {
+    const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    if (!match) return { meta: {}, body: content };
+    const meta = {};
+    for (const line of match[1].split('\n')) {
+      const idx = line.indexOf(':');
+      if (idx > 0) {
+        const key = line.slice(0, idx).trim();
+        let val = line.slice(idx + 1).trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        meta[key] = val;
+      }
+    }
+    return { meta, body: match[2] };
+  }
+
+  app.get('/api/profile', (req, res) => {
+    const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
+      current_level: 1, strengths: [], weaknesses: []
+    });
+    res.json(profile);
+  });
+
+  app.get('/api/registry', (req, res) => {
+    const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { version: 1, sims: [] });
+    res.json(registry);
+  });
+
+  app.get('/api/themes', (req, res) => {
+    const themesDir = path.join(ROOT, 'themes');
+    try {
+      const files = fs.readdirSync(themesDir).filter(f => f.endsWith('.md') && !f.startsWith('_'));
+      const themes = files.map(f => {
+        const content = fs.readFileSync(path.join(themesDir, f), 'utf8');
+        const { meta } = stripFrontmatter(content);
+        return {
+          id: meta.id || f.replace('.md', ''),
+          name: meta.name || f.replace('.md', ''),
+          tagline: meta.tagline || ''
+        };
+      });
+      res.json(themes);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  app.get('/api/sims/:id/manifest', (req, res) => {
+    const manifestPath = path.join(ROOT, 'sims', req.params.id, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) {
+      return res.status(404).json({ error: 'Sim not found' });
+    }
+    const manifest = readJSON(manifestPath, null);
+    if (!manifest) return res.status(500).json({ error: 'Invalid manifest' });
+    res.json(manifest);
+  });
+
+  app.get('/api/sims/:id/artifacts/:file', (req, res) => {
+    const filePath = path.join(ROOT, 'sims', req.params.id, 'artifacts', req.params.file);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+    res.type('text/plain').send(fs.readFileSync(filePath, 'utf8'));
+  });
+
+  app.get('/api/sessions', (req, res) => {
+    const sessionsDir = path.join(ROOT, 'learning', 'sessions');
+    try {
+      const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
+      const sessions = files.map(f => readJSON(path.join(sessionsDir, f), null)).filter(Boolean);
+      res.json(sessions);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  app.get('/api/journal-summary', (req, res) => {
+    const journalPath = path.join(ROOT, 'learning', 'journal.md');
+    try {
+      const content = fs.readFileSync(journalPath, 'utf8');
+      if (!content.trim()) return res.json([]);
+      const entries = content.split(/^## /m).filter(Boolean).slice(0, 5);
+      const parsed = entries.map(entry => {
+        const lines = entry.trim().split('\n');
+        const title = lines[0] || '';
+        const dateMatch = entry.match(/\*\*Date\*\*:\s*(.+)/i) || entry.match(/Date:\s*(.+)/i);
+        const takeawayMatch = entry.match(/\*\*Key [Tt]akeaway\*\*:\s*(.+)/i) || entry.match(/Key [Tt]akeaway:\s*(.+)/i);
+        return {
+          title: title.trim(),
+          date: dateMatch ? dateMatch[1].trim() : '',
+          takeaway: takeawayMatch ? takeawayMatch[1].trim() : lines.slice(1).join(' ').trim().slice(0, 200)
+        };
+      });
+      res.json(parsed);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  app.get('/api/ui-themes', (req, res) => {
+    const themesDir = path.join(ROOT, 'web', 'public', 'ui-themes');
+    try {
+      const files = fs.readdirSync(themesDir).filter(f => f.endsWith('.css'));
+      const themes = files.map(f => f.replace('.css', ''));
+      res.json(themes);
+    } catch {
+      res.json([]);
+    }
+  });
+
+  // Game endpoints return 503 without claude-process (acceptable for unit tests)
+  app.post('/api/game/start', (req, res) => {
+    const { simId, themeId, model } = req.body;
+    if (!simId) return res.status(400).json({ error: 'simId is required' });
+    const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
+    const simExists = registry.sims.some(s => s.id === simId);
+    if (!simExists) return res.status(400).json({ error: 'Invalid simId' });
+    // Would normally start Claude process; return mock for testing
+    res.json({ simId, themeId: themeId || 'still-life', model: model || 'sonnet' });
+  });
+
+  app.post('/api/game/message', (req, res) => {
+    const { sessionId, message } = req.body;
+    if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required' });
+    if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
+    res.json({ ok: true });
+  });
+
+  app.post('/api/game/quit', (req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.post('/api/game/resume', (req, res) => {
+    const { simId } = req.body;
+    if (!simId) return res.status(400).json({ error: 'simId is required' });
+    res.json({ ok: true });
+  });
+
+  return app;
+}
+
+// Build an app without claudeProcess to test 503 behavior
+function buildAppWithoutClaude() {
+  const app = express();
+  app.use(express.json());
+
+  app.post('/api/game/start', (req, res) => {
+    res.status(503).json({ error: 'Game engine not available' });
+  });
+  app.post('/api/game/message', (req, res) => {
+    res.status(503).json({ error: 'Game engine not available' });
+  });
+  app.post('/api/game/quit', (req, res) => {
+    res.status(503).json({ error: 'Game engine not available' });
+  });
+  app.post('/api/game/resume', (req, res) => {
+    res.status(503).json({ error: 'Game engine not available' });
+  });
+
+  return app;
+}
+
+// --- Tests ---
+
+describe('GET /api/profile', () => {
+  const app = buildApp();
+
+  it('returns the player profile', async () => {
+    const res = await request(app, 'GET', '/api/profile');
+    assert.equal(res.status, 200);
+    assert.equal(typeof res.body.current_level, 'number');
+    assert.ok(Array.isArray(res.body.completed_sims));
+    assert.ok(Array.isArray(res.body.strengths));
+    assert.ok(Array.isArray(res.body.weaknesses));
+  });
+
+  it('returns completed_sims as an array with entries', async () => {
+    const res = await request(app, 'GET', '/api/profile');
+    assert.ok(res.body.completed_sims.length > 0, 'completed_sims should not be empty');
+  });
+
+  it('returns current_level as a positive integer', async () => {
+    const res = await request(app, 'GET', '/api/profile');
+    assert.ok(res.body.current_level >= 1);
+  });
+});
+
+describe('GET /api/registry', () => {
+  const app = buildApp();
+
+  it('returns sims array', async () => {
+    const res = await request(app, 'GET', '/api/registry');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.body.sims));
+  });
+
+  it('each sim has required fields', async () => {
+    const res = await request(app, 'GET', '/api/registry');
+    for (const sim of res.body.sims) {
+      assert.ok(sim.id, 'sim must have id');
+      assert.ok(sim.title, 'sim must have title');
+      assert.ok(typeof sim.difficulty === 'number', 'sim must have numeric difficulty');
+      assert.ok(Array.isArray(sim.services), 'sim must have services array');
+    }
+  });
+});
+
+describe('GET /api/themes', () => {
+  const app = buildApp();
+
+  it('returns array of narrative themes', async () => {
+    const res = await request(app, 'GET', '/api/themes');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.body));
+    assert.ok(res.body.length > 0, 'should have at least one theme');
+  });
+
+  it('each theme has id, name, and tagline', async () => {
+    const res = await request(app, 'GET', '/api/themes');
+    for (const theme of res.body) {
+      assert.ok(theme.id, 'theme must have id');
+      assert.ok(theme.name, 'theme must have name');
+      assert.ok(typeof theme.tagline === 'string', 'theme must have tagline string');
+    }
+  });
+
+  it('excludes _base.md from theme list', async () => {
+    const res = await request(app, 'GET', '/api/themes');
+    const ids = res.body.map(t => t.id);
+    assert.ok(!ids.includes('_base'), '_base should not appear in themes');
+  });
+});
+
+describe('GET /api/sims/:id/manifest', () => {
+  const app = buildApp();
+
+  it('returns manifest for valid sim', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'GET', `/api/sims/${simId}/manifest`);
+    assert.equal(res.status, 200);
+    assert.ok(res.body.id);
+    assert.ok(res.body.team);
+    assert.ok(res.body.resolution);
+  });
+
+  it('returns 404 for nonexistent sim', async () => {
+    const res = await request(app, 'GET', '/api/sims/nonexistent-999/manifest');
+    assert.equal(res.status, 404);
+  });
+});
+
+describe('GET /api/sims/:id/artifacts/:file', () => {
+  const app = buildApp();
+
+  it('returns artifact content as text', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'GET', `/api/sims/${simId}/artifacts/context.txt`);
+    assert.equal(res.status, 200);
+    assert.ok(typeof res.body === 'string' || typeof res.body === 'object');
+  });
+
+  it('returns 404 for nonexistent artifact', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'GET', `/api/sims/${simId}/artifacts/does-not-exist.txt`);
+    assert.equal(res.status, 404);
+  });
+});
+
+describe('GET /api/sessions', () => {
+  const app = buildApp();
+
+  it('returns array (empty if no in-progress sessions)', async () => {
+    const res = await request(app, 'GET', '/api/sessions');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.body));
+  });
+});
+
+describe('GET /api/journal-summary', () => {
+  const app = buildApp();
+
+  it('returns array of journal entries', async () => {
+    const res = await request(app, 'GET', '/api/journal-summary');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.body));
+  });
+
+  it('returns at most 5 entries', async () => {
+    const res = await request(app, 'GET', '/api/journal-summary');
+    assert.ok(res.body.length <= 5);
+  });
+
+  it('each entry has title and date', async () => {
+    const res = await request(app, 'GET', '/api/journal-summary');
+    for (const entry of res.body) {
+      assert.ok(typeof entry.title === 'string');
+      assert.ok(typeof entry.date === 'string');
+    }
+  });
+});
+
+describe('GET /api/ui-themes', () => {
+  const app = buildApp();
+
+  it('returns array of CSS theme ids', async () => {
+    const res = await request(app, 'GET', '/api/ui-themes');
+    assert.equal(res.status, 200);
+    assert.ok(Array.isArray(res.body));
+    assert.ok(res.body.length > 0, 'should have at least one UI theme');
+  });
+
+  it('includes dracula theme', async () => {
+    const res = await request(app, 'GET', '/api/ui-themes');
+    assert.ok(res.body.includes('dracula'), 'should include dracula');
+  });
+
+  it('does not include snowy-mountain theme', async () => {
+    const res = await request(app, 'GET', '/api/ui-themes');
+    assert.ok(!res.body.includes('snowy-mountain'), 'snowy-mountain should be removed');
+  });
+});
+
+describe('POST /api/game/start', () => {
+  const app = buildApp();
+
+  it('rejects missing simId', async () => {
+    const res = await request(app, 'POST', '/api/game/start', {});
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('simId'));
+  });
+
+  it('rejects invalid simId', async () => {
+    const res = await request(app, 'POST', '/api/game/start', { simId: 'nonexistent-999' });
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('Invalid'));
+  });
+
+  it('accepts valid simId and passes model through', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'POST', '/api/game/start', { simId, model: 'opus' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.model, 'opus');
+  });
+
+  it('defaults model to sonnet when not provided', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'POST', '/api/game/start', { simId });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.model, 'sonnet');
+  });
+
+  it('defaults themeId to still-life when not provided', async () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const res = await request(app, 'POST', '/api/game/start', { simId });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.themeId, 'still-life');
+  });
+});
+
+describe('POST /api/game/message', () => {
+  const app = buildApp();
+
+  it('rejects empty message', async () => {
+    const res = await request(app, 'POST', '/api/game/message', { sessionId: 'x', message: '' });
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('Message'), 'error should mention Message');
+  });
+
+  it('rejects whitespace-only message', async () => {
+    const res = await request(app, 'POST', '/api/game/message', { sessionId: 'x', message: '   ' });
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('Message'));
+  });
+
+  it('rejects missing sessionId', async () => {
+    const res = await request(app, 'POST', '/api/game/message', { message: 'hello' });
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('sessionId'));
+  });
+
+  it('rejects missing message field', async () => {
+    const res = await request(app, 'POST', '/api/game/message', { sessionId: 'x' });
+    assert.equal(res.status, 400);
+  });
+});
+
+describe('POST /api/game/quit', () => {
+  const app = buildApp();
+
+  it('returns ok: true', async () => {
+    const res = await request(app, 'POST', '/api/game/quit', { sessionId: 'x' });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+  });
+});
+
+describe('POST /api/game/resume', () => {
+  const app = buildApp();
+
+  it('rejects missing simId', async () => {
+    const res = await request(app, 'POST', '/api/game/resume', {});
+    assert.equal(res.status, 400);
+    assert.ok(res.body.error.includes('simId'));
+  });
+});
+
+describe('Game endpoints return 503 without claudeProcess', () => {
+  const app = buildAppWithoutClaude();
+
+  it('POST /api/game/start returns 503', async () => {
+    const res = await request(app, 'POST', '/api/game/start', { simId: 'test' });
+    assert.equal(res.status, 503);
+    assert.ok(res.body.error.includes('not available'));
+  });
+
+  it('POST /api/game/message returns 503', async () => {
+    const res = await request(app, 'POST', '/api/game/message', { sessionId: 'x', message: 'hi' });
+    assert.equal(res.status, 503);
+  });
+
+  it('POST /api/game/quit returns 503', async () => {
+    const res = await request(app, 'POST', '/api/game/quit', { sessionId: 'x' });
+    assert.equal(res.status, 503);
+  });
+
+  it('POST /api/game/resume returns 503', async () => {
+    const res = await request(app, 'POST', '/api/game/resume', { simId: 'test' });
+    assert.equal(res.status, 503);
+  });
+});

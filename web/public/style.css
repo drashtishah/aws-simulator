@@ -279,6 +279,22 @@ a:hover {
   border-left: 3px solid var(--border);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.sim-card.sim-completed {
+  filter: saturate(0.4);
+}
+
+.sim-completed-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
 }
 
 .sim-card:hover {
@@ -548,7 +564,7 @@ a:hover {
 
 .btn-primary {
   background: var(--accent-primary);
-  color: #fff;
+  color: var(--accent-primary-text, #fff);
 }
 
 .btn-primary:hover {
