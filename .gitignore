@@ -3,3 +3,12 @@ learning/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Node dependencies
+node_modules/
+
+# Web app logs
+web/logs/
+
+# Shared hook logs
+learning/logs/
