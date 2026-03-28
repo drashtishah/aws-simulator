@@ -1,0 +1,17 @@
+{
+  "name": "aws-incident-simulator",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node web/server.js",
+    "test": "node --test web/test/*.test.js",
+    "test:e2e": "npx playwright test web/test/e2e/",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "@axe-core/playwright": "^4.9.0"
+  }
+}
