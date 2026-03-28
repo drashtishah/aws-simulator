@@ -19,6 +19,30 @@ If any of the following are missing, tell the user: "Run `/setup` first to initi
 - `learning/profile.json`
 - `learning/catalog.csv`
 
+### 0a. Choose Play Mode
+
+Ask the player:
+
+```
+How would you like to play?
+
+1. Terminal -- play right here in Claude Code
+2. Web app -- open the simulator in your browser
+```
+
+Wait for the player's response.
+
+If the player chooses **web app**:
+
+1. Run `npm install` (if `node_modules/` does not exist)
+2. Run `npm start` in the background using Bash (do not wait for it to exit)
+3. Wait 2 seconds for the server to start
+4. Run `open http://localhost:3200` to open the browser
+5. Tell the player: "The simulator is running at http://localhost:3200. Play from your browser. When you are done, press Ctrl+C in the terminal to stop the server."
+6. Stop. Do not proceed to Phase 2 or any further steps. The web app handles the game loop.
+
+If the player chooses **terminal**, continue to Step 0b and the rest of the skill.
+
 ### 0b. Disable MCP Tools
 
 The `aws-knowledge-mcp-server` MCP tools are for sim creation, not gameplay. Do NOT call any `aws___` prefixed tools during the play session. If the player asks about AWS documentation or service details, answer from the sim's artifacts and glossary only.
