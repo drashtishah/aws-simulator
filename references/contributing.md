@@ -38,10 +38,8 @@ tags:
 
 ## Debugging
 
-- Shared logs: `learning/logs/tools.jsonl`, `learning/logs/sessions.jsonl`
-- Web-only logs: `web/logs/{sessionId}.jsonl`
-- Error manifests: `web/logs/{sessionId}.fix.json`
-- Use `/fix` to read and act on all log sources
+- All logs: `learning/logs/activity.jsonl` (tool calls, session events, warnings, errors)
+- Use `/fix` to read and act on the log
 
 ## Project Locality
 

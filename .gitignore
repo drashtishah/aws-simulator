@@ -1,14 +1,8 @@
 # Player-specific data (created by /setup)
 learning/
 
-# Claude Code local settings
-.claude/settings.local.json
-
 # Node dependencies
 node_modules/
 
-# Web app logs
-web/logs/
-
-# Shared hook logs
+# All logs (shared hooks + web app)
 learning/logs/

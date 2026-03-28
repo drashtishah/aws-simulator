@@ -109,12 +109,10 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Observability
 
-- [ ] Web-only logs in web/logs/{sessionId}.jsonl
-- [ ] Fix manifests in web/logs/{sessionId}.fix.json (only on failure)
-- [ ] Shared hook logs in learning/logs/tools.jsonl and sessions.jsonl
+- [ ] All events logged to learning/logs/activity.jsonl (shared hook + web logger)
 - [ ] Hook script at .claude/hooks/log-hook.js
-- [ ] Hooks configured in .claude/settings.local.json (PostToolUse, Stop)
-- [ ] web/logs/ and learning/logs/ in .gitignore
+- [ ] Hooks configured in .claude/settings.local.json (PreToolUse, PostToolUse, Stop)
+- [ ] learning/logs/ in .gitignore
 - [ ] Warning thresholds: context >80%, latency >30s, tool loop >5
 - [ ] Autosave verification after each turn
 - [ ] Autosave fail count resets on success, logs error at count >= 3

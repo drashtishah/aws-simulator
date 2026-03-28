@@ -40,7 +40,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  sessions/*.json |       | Reads:            |       |  skill files     |
 +------------------+       |  catalog.csv      |       |  workspace-map   |
                            |  sims/registry    |       |  learning/logs/  |
-                           |  sims/{id}/*      |       |  web/logs/*.fix  |
+                           |  sims/{id}/*      |       |                  |
                            |  profile.json     |       |                  |
                            |  sessions/*.json  |       | Writes:          |
                            |  journal.md       |       |  skill files     |
@@ -79,7 +79,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /feedback ----> writes feedback.md + sessions/{id}.json (during play)
                 |
                 v
-/fix ---------> reads feedback.md
+/fix ---------> reads feedback.md + learning/logs/activity.jsonl
             --> reads + writes skill files (.claude/skills/**)
             --> clears feedback.md
 ```
@@ -93,6 +93,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/journal.md` | setup, play | (reference) | Markdown: per-sim learning entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
+| `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, warnings, fix manifests |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 
 ## Impact Analysis Guide

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const LOGS_DIR = path.resolve(__dirname, '..', 'logs');
+const LOGS_DIR = path.resolve(__dirname, '..', '..', 'learning', 'logs');
 
 // Warning thresholds
 const CONTEXT_WARN_PCT = 0.80;
@@ -26,7 +26,7 @@ function logEvent(sessionId, event) {
     ...event
   }) + '\n';
 
-  const logFile = path.join(LOGS_DIR, sessionId + '.jsonl');
+  const logFile = path.join(LOGS_DIR, 'activity.jsonl');
   try {
     fs.appendFileSync(logFile, line);
   } catch (err) {
@@ -85,26 +85,16 @@ function checkThresholds(sessionId, event) {
 function generateFixManifest(sessionId, outcome, rootCause, errorChain, suggestedFixes) {
   if (outcome === 'success') return;
 
-  ensureLogsDir();
-
-  const manifest = {
-    session_id: sessionId,
+  logEvent(sessionId, {
+    event: 'fix_manifest',
     outcome,
     root_cause: rootCause,
     error_chain: errorChain || [],
     suggested_fixes: suggestedFixes || []
-  };
-
-  const fixFile = path.join(LOGS_DIR, sessionId + '.fix.json');
-  try {
-    fs.writeFileSync(fixFile, JSON.stringify(manifest, null, 2));
-  } catch (err) {
-    console.error('Failed to write fix manifest:', err.message);
-  }
+  });
 }
 
 module.exports = {
   logEvent,
-  generateFixManifest,
-  LOGS_DIR
+  generateFixManifest
 };

@@ -20,8 +20,7 @@ process.stdin.on('end', () => {
       tool: data.tool_name || null
     }) + '\n';
 
-    const file = data.tool_name ? 'tools.jsonl' : 'sessions.jsonl';
-    fs.appendFileSync(path.join(dir, file), line);
+    fs.appendFileSync(path.join(dir, 'activity.jsonl'), line);
   } catch {
     // Silently ignore parse errors to avoid breaking the hook chain
   }
