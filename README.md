@@ -10,38 +10,30 @@ Powered by the [AWS MCP server](https://docs.aws.amazon.com/aws-mcp/latest/userg
 
 ## Requirements
 
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- [Node.js](https://nodejs.org/) (v18 or later)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (installed and authenticated)
 
 ## Getting Started
 
-Open a terminal and clone the repository:
+Clone the repository and start the web app:
 
 ```
 git clone --depth 1 https://github.com/drashtishah/aws-simulator.git
 cd aws-simulator
+npm install && npm start
 ```
 
-Start Claude Code:
+Open `http://localhost:3200` in your browser. Pick a simulation. Investigate.
+
+Alternatively, play directly in Claude Code:
 
 ```
 claude
-```
-
-Initialize your workspace:
-
-```
 /setup
-```
-
-This creates your learning profile. Nothing is written until you run it.
-
-Start playing:
-
-```
 /play
 ```
 
-The simulator presents available incidents based on your current level. You pick one. You investigate.
+The terminal experience is identical. Both entry points read and write the same files. You can switch between them freely.
 
 ## Example Simulation
 
