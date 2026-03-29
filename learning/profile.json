@@ -1,0 +1,48 @@
+{
+  "current_level": 3,
+  "rank_title": "Pager Duty Intern",
+  "question_hexagon": {
+    "gather": 0,
+    "diagnose": 0,
+    "correlate": 0,
+    "impact": 0,
+    "trace": 0,
+    "fix": 0
+  },
+  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full", "009-credential-chain", "011-nat-gateway-cost", "022-bedrock-guardrail-medical", "002-s3-public-exposure", "004-lambda-access-denied", "007-dynamodb-scan", "014-sqs-double-process"],
+  "unlocked_levels": [1, 2, 3],
+  "service_exposure": {
+    "ec2": 2,
+    "vpc": 2,
+    "cloudwatch": 8,
+    "lambda": 5,
+    "iam": 4,
+    "rds": 1,
+    "sts": 1,
+    "secrets-manager": 1,
+    "nat-gateway": 1,
+    "s3": 2,
+    "bedrock": 1,
+    "sns": 1,
+    "cloudtrail": 1,
+    "dynamodb": 2,
+    "sqs": 1
+  },
+  "question_patterns": {
+    "first_action_frequency": {
+      "logs": 3,
+      "permissions": 0,
+      "architecture": 4,
+      "metrics": 1,
+      "recent_changes": 2,
+      "immediate_fix": 0
+    },
+    "avg_questions_before_fix": 5.6,
+    "audit_trail_check_rate": 0.35,
+    "multi_service_investigation_rate": 0.81
+  },
+  "weaknesses": ["sts"],
+  "strengths": ["lambda", "rds", "bedrock", "s3", "cloudtrail", "iam", "dynamodb", "sqs"],
+  "total_sessions": 10,
+  "last_session": "2026-03-27"
+}
