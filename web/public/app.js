@@ -222,6 +222,8 @@
       return 0;
     });
 
+    const completedSims = (profile.completed_sims || []);
+
     grid.innerHTML = sorted.map(sim => {
       const maxDiff = 3;
       const dots = Array.from({ length: maxDiff }, (_, i) =>
@@ -233,8 +235,10 @@
       ).join('');
 
       const time = sim.estimated_minutes ? sim.estimated_minutes + ' min' : '';
+      const done = completedSims.includes(sim.id);
 
-      return '<div class="sim-card fade-in" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '">' +
+      return '<div class="sim-card fade-in' + (done ? ' sim-completed' : '') + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '">' +
+        (done ? '<span class="sim-completed-badge">Completed</span>' : '') +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
         '<div class="sim-card-meta">' +
         '<div class="difficulty-dots">' + dots + '</div>' +
@@ -281,13 +285,14 @@
     showTyping(true);
 
     const themeId = getSetting('narrativeTheme', 'still-life');
+    const model = getSetting('model', 'sonnet');
     const endpoint = isResume ? '/api/game/resume' : '/api/game/start';
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ simId, themeId })
+        body: JSON.stringify({ simId, themeId, model })
       });
 
       await streamResponse(response, {
@@ -519,7 +524,7 @@
       select.innerHTML = uiThemes.map(t =>
         '<option value="' + escapeAttr(t) + '">' + escapeHtml(formatThemeName(t)) + '</option>'
       ).join('');
-      select.value = getSetting('uiTheme', 'snowy-mountain');
+      select.value = getSetting('uiTheme', 'dracula');
     } catch {
       // ignore
     }
@@ -529,12 +534,15 @@
       narrativeThemes = await fetchJSON('/api/themes');
       const select = document.getElementById('select-narrative-theme');
       select.innerHTML = narrativeThemes.map(t =>
-        '<option value="' + escapeAttr(t.id) + '">' + escapeHtml(t.name) + ' - ' + escapeHtml(t.tagline) + '</option>'
+        '<option value="' + escapeAttr(t.id) + '">' + escapeHtml(t.name) + '</option>'
       ).join('');
       select.value = getSetting('narrativeTheme', 'still-life');
     } catch {
       // ignore
     }
+
+    // Model selector
+    document.getElementById('select-model').value = getSetting('model', 'sonnet');
   }
 
   function formatThemeName(id) {
@@ -567,7 +575,7 @@
 
   function init() {
     // Load UI theme
-    const uiTheme = getSetting('uiTheme', 'snowy-mountain');
+    const uiTheme = getSetting('uiTheme', 'dracula');
     loadUiTheme(uiTheme);
 
     // Tab navigation
@@ -598,6 +606,10 @@
 
     document.getElementById('select-narrative-theme').addEventListener('change', (e) => {
       setSetting('narrativeTheme', e.target.value);
+    });
+
+    document.getElementById('select-model').addEventListener('change', (e) => {
+      setSetting('model', e.target.value);
     });
 
     // Chat controls

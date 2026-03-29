@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AWS Incident Simulator</title>
   <link rel="stylesheet" href="/style.css">
-  <link id="ui-theme" rel="stylesheet" href="/ui-themes/snowy-mountain.css">
+  <link id="ui-theme" rel="stylesheet" href="/ui-themes/dracula.css">
 </head>
 <body>
 
@@ -114,6 +114,14 @@
       <div class="modal-field">
         <label for="select-narrative-theme">Narrative Voice</label>
         <select id="select-narrative-theme"></select>
+      </div>
+      <div class="modal-field">
+        <label for="select-model">Model</label>
+        <select id="select-model">
+          <option value="sonnet">Sonnet</option>
+          <option value="opus">Opus</option>
+          <option value="haiku">Haiku</option>
+        </select>
       </div>
       <button class="btn btn-secondary modal-close" id="btn-close-settings">Close</button>
     </div>

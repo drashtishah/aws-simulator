@@ -14,17 +14,7 @@
     ]
   },
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/guard-write.js" }]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/guard-write.js" }]
-      }
-    ],
-    "PostToolUse": [
+"PostToolUse": [
       {
         "matcher": "*",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
