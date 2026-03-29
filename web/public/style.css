@@ -276,7 +276,7 @@ a:hover {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-sm);
-  border-left: 3px solid var(--border);
+  border-left: 3px solid var(--border-subtle);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
@@ -284,6 +284,11 @@ a:hover {
 
 .sim-card.sim-completed {
   filter: saturate(0.4);
+  border-left-color: var(--accent-green);
+}
+
+.sim-card.sim-in-progress {
+  border-left-color: var(--accent-primary);
 }
 
 .sim-completed-badge {
@@ -306,15 +311,6 @@ a:hover {
   box-shadow: 0 0 0 3px var(--accent-primary);
 }
 
-.sim-card[data-category="networking"] { border-left-color: var(--category-networking); }
-.sim-card[data-category="security"] { border-left-color: var(--category-security); }
-.sim-card[data-category="data"] { border-left-color: var(--category-data); }
-.sim-card[data-category="reliability"] { border-left-color: var(--category-reliability); }
-.sim-card[data-category="compute"] { border-left-color: var(--category-compute); }
-.sim-card[data-category="observability"] { border-left-color: var(--category-observability); }
-.sim-card[data-category="operations"] { border-left-color: var(--category-operations); }
-.sim-card[data-category="performance"] { border-left-color: var(--category-performance); }
-.sim-card[data-category="cost"] { border-left-color: var(--category-cost); }
 
 .sim-card-title {
   font-weight: 600;
@@ -369,10 +365,6 @@ a:hover {
   font-family: "JetBrains Mono", "SF Mono", monospace;
 }
 
-.sim-card-time {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
 
 .sim-empty {
   text-align: center;

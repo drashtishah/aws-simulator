@@ -187,6 +187,14 @@
       registry = { sims: [] };
     }
 
+    let inProgressIds = [];
+    try {
+      const sessions = await fetchJSON('/api/sessions');
+      inProgressIds = sessions.filter(s => s.status === 'in_progress').map(s => s.sim_id);
+    } catch {
+      // ignore
+    }
+
     const grid = document.getElementById('sim-grid');
     const empty = document.getElementById('sim-empty');
     const picker = document.getElementById('sim-picker');
@@ -234,18 +242,19 @@
         '<span class="service-tag">' + escapeHtml(s) + '</span>'
       ).join('');
 
-      const time = sim.estimated_minutes ? sim.estimated_minutes + ' min' : '';
       const done = completedSims.includes(sim.id);
+      const inProgress = inProgressIds.includes(sim.id);
+      const statusClass = done ? 'sim-completed' : inProgress ? 'sim-in-progress' : 'sim-new';
 
-      return '<div class="sim-card fade-in' + (done ? ' sim-completed' : '') + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '">' +
+      return '<div class="sim-card fade-in ' + statusClass + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '">' +
         (done ? '<span class="sim-completed-badge">Completed</span>' : '') +
+        (inProgress ? '<span class="sim-completed-badge">Resume</span>' : '') +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
         '<div class="sim-card-meta">' +
         '<div class="difficulty-dots">' + dots + '</div>' +
         '<span class="sim-card-category">' + escapeHtml(sim.category || '') + '</span>' +
         '</div>' +
         '<div class="sim-card-services">' + services + '</div>' +
-        (time ? '<div class="sim-card-time">' + escapeHtml(time) + '</div>' : '') +
         '</div>';
     }).join('');
 
