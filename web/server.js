@@ -2,12 +2,12 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
+const paths = require('./lib/paths');
 
-const ROOT = path.resolve(__dirname, '..');
 const app = express();
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(paths.PUBLIC_DIR));
 
 // --- Startup validation ---
 
@@ -19,7 +19,7 @@ function validateStartup() {
     process.exit(1);
   }
 
-  const registryPath = path.join(ROOT, 'sims', 'registry.json');
+  const registryPath = paths.REGISTRY;
   if (!fs.existsSync(registryPath)) {
     console.error('Error: sims/registry.json not found. Run /create-sim first or check your clone.');
     process.exit(1);
@@ -59,7 +59,7 @@ function stripFrontmatter(content) {
 // --- Data API endpoints ---
 
 app.get('/api/profile', (req, res) => {
-  const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
+  const profile = readJSON(paths.PROFILE, {
     current_level: 1,
     strengths: [],
     weaknesses: []
@@ -68,16 +68,15 @@ app.get('/api/profile', (req, res) => {
 });
 
 app.get('/api/registry', (req, res) => {
-  const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { version: 1, sims: [] });
+  const registry = readJSON(paths.REGISTRY, { version: 1, sims: [] });
   res.json(registry);
 });
 
 app.get('/api/themes', (req, res) => {
-  const themesDir = path.join(ROOT, 'themes');
   try {
-    const files = fs.readdirSync(themesDir).filter(f => f.endsWith('.md') && !f.startsWith('_'));
+    const files = fs.readdirSync(paths.THEMES_DIR).filter(f => f.endsWith('.md') && !f.startsWith('_'));
     const themes = files.map(f => {
-      const content = fs.readFileSync(path.join(themesDir, f), 'utf8');
+      const content = fs.readFileSync(path.join(paths.THEMES_DIR, f), 'utf8');
       const { meta } = stripFrontmatter(content);
       return {
         id: meta.id || f.replace('.md', ''),
@@ -87,13 +86,13 @@ app.get('/api/themes', (req, res) => {
     });
     res.json(themes);
   } catch (err) {
-    console.error(`GET /api/themes: failed to read ${themesDir}: ${err.message}`);
+    console.error(`GET /api/themes: failed to read ${paths.THEMES_DIR}: ${err.message}`);
     res.json([]);
   }
 });
 
 app.get('/api/sims/:id/manifest', (req, res) => {
-  const manifestPath = path.join(ROOT, 'sims', req.params.id, 'manifest.json');
+  const manifestPath = paths.manifest(req.params.id);
   if (!fs.existsSync(manifestPath)) {
     return res.status(404).json({ error: 'Sim not found' });
   }
@@ -103,7 +102,7 @@ app.get('/api/sims/:id/manifest', (req, res) => {
 });
 
 app.get('/api/sims/:id/artifacts/:file', (req, res) => {
-  const filePath = path.join(ROOT, 'sims', req.params.id, 'artifacts', req.params.file);
+  const filePath = path.join(paths.simDir(req.params.id), 'artifacts', req.params.file);
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Artifact not found' });
   }
@@ -111,19 +110,18 @@ app.get('/api/sims/:id/artifacts/:file', (req, res) => {
 });
 
 app.get('/api/sessions', (req, res) => {
-  const sessionsDir = path.join(ROOT, 'learning', 'sessions');
   try {
-    const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
-    const sessions = files.map(f => readJSON(path.join(sessionsDir, f), null)).filter(Boolean);
+    const files = fs.readdirSync(paths.SESSIONS_DIR).filter(f => f.endsWith('.json'));
+    const sessions = files.map(f => readJSON(path.join(paths.SESSIONS_DIR, f), null)).filter(Boolean);
     res.json(sessions);
   } catch (err) {
-    console.error(`GET /api/sessions: failed to read ${sessionsDir}: ${err.message}`);
+    console.error(`GET /api/sessions: failed to read ${paths.SESSIONS_DIR}: ${err.message}`);
     res.json([]);
   }
 });
 
 app.get('/api/journal-summary', (req, res) => {
-  const journalPath = path.join(ROOT, 'learning', 'journal.md');
+  const journalPath = paths.JOURNAL;
   try {
     const content = fs.readFileSync(journalPath, 'utf8');
     if (!content.trim()) return res.json([]);
@@ -148,13 +146,12 @@ app.get('/api/journal-summary', (req, res) => {
 });
 
 app.get('/api/ui-themes', (req, res) => {
-  const themesDir = path.join(__dirname, 'public', 'ui-themes');
   try {
-    const files = fs.readdirSync(themesDir).filter(f => f.endsWith('.css'));
+    const files = fs.readdirSync(paths.UI_THEMES_DIR).filter(f => f.endsWith('.css'));
     const themes = files.map(f => f.replace('.css', ''));
     res.json(themes);
   } catch (err) {
-    console.error(`GET /api/ui-themes: failed to read ${themesDir}: ${err.message}`);
+    console.error(`GET /api/ui-themes: failed to read ${paths.UI_THEMES_DIR}: ${err.message}`);
     res.json([]);
   }
 });
@@ -174,7 +171,7 @@ app.post('/api/game/start', async (req, res) => {
   const { simId, themeId, model } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
-  const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
+  const registry = readJSON(paths.REGISTRY, { sims: [] });
   const simExists = registry.sims.some(s => s.id === simId);
   if (!simExists) return res.status(400).json({ error: 'Invalid simId' });
 

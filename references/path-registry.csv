@@ -83,7 +83,7 @@ file,path,line_number
 .claude/skills/setup/SKILL.md,learning/catalog.csv,85
 .claude/skills/setup/SKILL.md,sims/registry.json,89
 CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,17
-CLAUDE.md,learning/logs/activity.jsonl,49
+CLAUDE.md,learning/logs/activity.jsonl,23
 references/contributing.md,references/web-app-checklist.md,20
 references/contributing.md,references/workspace-map.md,21
 references/contributing.md,web/lib/prompt-builder.js,22
@@ -94,8 +94,16 @@ references/contributing.md,web/test/e2e/fixtures.js,54
 references/contributing.md,web/test/e2e/visual.spec.js-snapshots/,56
 references/contributing.md,themes/{id}.md,65
 references/contributing.md,web/public/ui-themes/{id}.css,66
-references/contributing.md,learning/logs/activity.jsonl,70
-references/contributing.md,.claude/settings.local.json,75
+references/contributing.md,web/lib/claude-process.js,71
+references/contributing.md,web/lib/logger.js,71
+references/contributing.md,web/lib/paths.js,71
+references/contributing.md,web/lib/prompt-builder.js,71
+references/contributing.md,web/server.js,71
+references/contributing.md,references/path-registry.csv,74
+references/contributing.md,scripts/extract_paths.py,74
+references/contributing.md,web/test/path-registry.test.js,74
+references/contributing.md,learning/logs/activity.jsonl,78
+references/contributing.md,.claude/settings.local.json,83
 references/web-app-checklist.md,.claude/skills/,9
 references/web-app-checklist.md,learning/,9
 references/web-app-checklist.md,sims/,9

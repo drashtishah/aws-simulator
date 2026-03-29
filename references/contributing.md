@@ -65,6 +65,14 @@ Update visual regression baselines: `npx playwright test visual.spec.js -u`
 - New narrative theme: add `themes/{id}.md` with YAML frontmatter (id, name, tagline)
 - New UI color theme: add `web/public/ui-themes/{id}.css` defining all CSS variables from dracula.css
 
+## Updating Paths
+
+**Code files (JS):**
+All project paths are centralized in `web/lib/paths.js`. To rename or move a directory, update the constant or helper there. Consumers (`web/server.js`, `web/lib/prompt-builder.js`, `web/lib/claude-process.js`, `web/lib/logger.js`) import from this file. Test files define their own ROOT and are self-contained.
+
+**Text files (markdown, JSON):**
+Paths in backticks (`.md`) and string values (`.json`) are tracked by `scripts/extract_paths.py`, which writes `references/path-registry.csv`. Run `npm test` to regenerate the CSV and validate all paths resolve on disk. The test (`web/test/path-registry.test.js`) checks: concrete paths exist, template paths have valid directory prefixes, source files exist.
+
 ## Debugging
 
 - All logs: `learning/logs/activity.jsonl` (tool calls, session events, warnings, errors)

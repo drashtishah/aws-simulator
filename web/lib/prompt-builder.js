@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
-const ROOT = path.resolve(__dirname, '..', '..');
+const paths = require('./paths');
 
 /**
  * Build a fully populated system prompt for a simulation.
@@ -9,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
  */
 function buildPrompt(simId, themeId) {
   // 1. Read the template from agent-prompts.md (between triple-backtick fences)
-  const templatePath = path.join(ROOT, '.claude', 'skills', 'play', 'references', 'agent-prompts.md');
+  const templatePath = paths.AGENT_PROMPTS;
   const templateFile = fs.readFileSync(templatePath, 'utf8');
   const fenceMatch = templateFile.match(/```\n([\s\S]*?)\n```/);
   if (!fenceMatch) {
@@ -18,30 +17,30 @@ function buildPrompt(simId, themeId) {
   let prompt = fenceMatch[1];
 
   // 2. Read manifest
-  const manifestPath = path.join(ROOT, 'sims', simId, 'manifest.json');
+  const manifestPath = paths.manifest(simId);
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Sim "${simId}" not found: ${manifestPath}`);
   }
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
   // 3. Read story.md
-  const storyPath = path.join(ROOT, 'sims', simId, 'story.md');
+  const storyPath = paths.story(simId);
   const story = fs.readFileSync(storyPath, 'utf8');
 
   // 4. Read artifact files
-  const artifactsDir = path.join(ROOT, 'sims', simId);
+  const artifactsDir = paths.simDir(simId);
   const contextTxt = readArtifact(artifactsDir, 'artifacts/context.txt');
   const archHint = readArtifact(artifactsDir, 'artifacts/architecture-hint.txt');
   const archResolution = readArtifact(artifactsDir, 'artifacts/architecture-resolution.txt');
 
   // 5. Read theme files
-  const basePath = path.join(ROOT, 'themes', '_base.md');
+  const basePath = paths.THEME_BASE;
   if (!fs.existsSync(basePath)) {
     throw new Error('themes/_base.md not found');
   }
   const baseContent = stripFrontmatter(fs.readFileSync(basePath, 'utf8'));
 
-  const themePath = path.join(ROOT, 'themes', `${themeId}.md`);
+  const themePath = paths.theme(themeId);
   if (!fs.existsSync(themePath)) {
     throw new Error(`Theme "${themeId}" not found: ${themePath}`);
   }

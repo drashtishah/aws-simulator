@@ -3,8 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { buildPrompt } = require('./prompt-builder');
-
-const ROOT = path.resolve(__dirname, '..', '..');
+const paths = require('./paths');
 
 let logger;
 try {
@@ -132,7 +131,7 @@ function parseStreamJson(stdout) {
 function spawnClaude(args, stdinData) {
   return new Promise((resolve, reject) => {
     const proc = spawn('claude', args, {
-      cwd: ROOT,
+      cwd: paths.ROOT,
       env: cleanEnv(),
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -355,7 +354,7 @@ async function endSession(sessionId) {
 }
 
 function verifyAutosave(simId, turnStartTime) {
-  const sessionFile = path.join(ROOT, 'learning', 'sessions', `${simId}.json`);
+  const sessionFile = paths.sessionFile(simId);
 
   if (!fs.existsSync(sessionFile)) {
     return { ok: false, failedCheck: 'file_missing' };

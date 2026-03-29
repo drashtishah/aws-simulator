@@ -1,7 +1,7 @@
 const fs = require('fs');
-const path = require('path');
+const paths = require('./paths');
 
-const LOGS_DIR = path.resolve(__dirname, '..', '..', 'learning', 'logs');
+const LOGS_DIR = paths.LOGS_DIR;
 
 // Warning thresholds
 const CONTEXT_WARN_PCT = 0.80;
@@ -26,7 +26,7 @@ function logEvent(sessionId, event) {
     ...event
   }) + '\n';
 
-  const logFile = path.join(LOGS_DIR, 'activity.jsonl');
+  const logFile = paths.LOG_FILE;
   try {
     fs.appendFileSync(logFile, line);
   } catch (err) {
