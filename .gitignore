@@ -9,3 +9,6 @@ learning/logs/
 
 # Test artifacts (screenshots, traces from failed tests)
 web/test/e2e/test-results/
+
+# Local docs and plans
+docs/
