@@ -32,18 +32,10 @@
 
     <!-- Dashboard View -->
     <div id="view-dashboard" class="view active">
-      <div id="resume-banner" class="resume-banner" style="display: none;">
-        <div class="resume-banner-text">
-          <div class="resume-banner-title" id="resume-title">In progress</div>
-          <div class="resume-banner-detail" id="resume-detail"></div>
-        </div>
-        <button class="btn btn-primary" id="btn-resume">Resume</button>
-      </div>
-
       <div class="dashboard-stats" id="dashboard-stats">
         <div class="stat-card">
-          <div class="stat-value" id="stat-level">1</div>
-          <div class="stat-label">Level</div>
+          <div class="stat-value stat-value-title" id="stat-rank-title">Pager Duty Intern</div>
+          <div class="stat-label">Rank</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="stat-completed">0</div>
@@ -51,14 +43,16 @@
         </div>
       </div>
 
-      <div class="dashboard-section" id="section-skills" style="display: none;">
-        <h2>Strengths and Weaknesses</h2>
-        <div id="skills-content"></div>
+      <div class="dashboard-section" id="section-hexagon">
+        <h2>Investigation Profile</h2>
+        <div class="hexagon-container" id="hexagon-container">
+          <svg id="hexagon-svg" viewBox="0 0 300 300" width="300" height="300"></svg>
+        </div>
       </div>
 
-      <div class="dashboard-section" id="section-journal" style="display: none;">
-        <h2>Recent Sessions</h2>
-        <div id="journal-content"></div>
+      <div class="dashboard-section" id="section-services">
+        <h2>Services Encountered</h2>
+        <div class="services-list" id="services-list"></div>
       </div>
     </div>
 

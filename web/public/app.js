@@ -8,7 +8,7 @@
   let currentSessionId = null;
   let currentSimId = null;
   let registry = { sims: [] };
-  let profile = { current_level: 1, strengths: [], weaknesses: [] };
+  let profile = { current_level: 1, completed_sims: [] };
   let narrativeThemes = [];
   let isScrollPinned = true;
 
@@ -95,87 +95,96 @@
   // --- Dashboard ---
 
   async function loadDashboard() {
+    let progress;
     try {
-      profile = await fetchJSON('/api/profile');
+      progress = await fetchJSON('/api/progress');
     } catch {
-      profile = { current_level: 1, strengths: [], weaknesses: [], completed_sims: [] };
+      progress = {
+        rank: 'Pager Duty Intern',
+        rankTitle: 'Pager Duty Intern',
+        hexagon: { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 },
+        simsCompleted: 0,
+        servicesEncountered: []
+      };
     }
 
-    document.getElementById('stat-level').textContent = profile.current_level || 1;
-    const completed = (profile.completed_sims || []).length;
-    document.getElementById('stat-completed').textContent = completed;
+    document.getElementById('stat-rank-title').textContent = progress.rankTitle;
+    document.getElementById('stat-completed').textContent = progress.simsCompleted;
 
-    // Strengths and weaknesses
-    const skillsSection = document.getElementById('section-skills');
-    const skillsContent = document.getElementById('skills-content');
-    const strengths = profile.strengths || [];
-    const weaknesses = profile.weaknesses || [];
+    // Hexagon SVG
+    renderHexagon(progress.hexagon);
 
-    if (strengths.length || weaknesses.length) {
-      skillsSection.style.display = 'block';
-      let html = '';
-      if (strengths.length) {
-        html += '<div style="margin-bottom: 8px;"><span class="label">Strengths:</span> <div class="skill-tags" style="display: inline-flex;">';
-        html += strengths.map(s => '<span class="skill-tag">' + escapeHtml(s) + '</span>').join('');
-        html += '</div></div>';
-      }
-      if (weaknesses.length) {
-        html += '<div><span class="label">Weaknesses:</span> <div class="skill-tags" style="display: inline-flex;">';
-        html += weaknesses.map(s => '<span class="skill-tag">' + escapeHtml(s) + '</span>').join('');
-        html += '</div></div>';
-      }
-      skillsContent.innerHTML = html;
+    // Services encountered
+    const servicesList = document.getElementById('services-list');
+    if (progress.servicesEncountered.length) {
+      servicesList.innerHTML = progress.servicesEncountered.map(name =>
+        '<span class="service-encountered-tag">' + escapeHtml(name) + '</span>'
+      ).join('');
     } else {
-      skillsSection.style.display = 'none';
+      servicesList.innerHTML = '<span class="text-muted">No services encountered yet. Play a simulation to begin.</span>';
+    }
+  }
+
+  function renderHexagon(hexagon) {
+    const svg = document.getElementById('hexagon-svg');
+    const cx = 150, cy = 150, radius = 110;
+    const types = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
+    const labels = ['Gather', 'Diagnose', 'Correlate', 'Impact', 'Trace', 'Fix'];
+
+    // Calculate points for each axis
+    function getPoint(index, value, maxVal) {
+      const angle = (Math.PI * 2 * index / 6) - Math.PI / 2;
+      const r = (value / maxVal) * radius;
+      return {
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle)
+      };
     }
 
-    // Journal summary
-    try {
-      const journal = await fetchJSON('/api/journal-summary');
-      const journalSection = document.getElementById('section-journal');
-      const journalContent = document.getElementById('journal-content');
+    // Build SVG content
+    let svgContent = '';
 
-      if (journal.length) {
-        journalSection.style.display = 'block';
-        journalContent.innerHTML = journal.map(entry =>
-          '<div class="journal-entry">' +
-          '<div class="journal-date">' + escapeHtml(entry.date) + '</div>' +
-          '<div class="journal-title">' + escapeHtml(entry.title) + '</div>' +
-          (entry.takeaway ? '<div class="journal-takeaway">"' + escapeHtml(entry.takeaway) + '"</div>' : '') +
-          '</div>'
-        ).join('');
-      } else {
-        journalSection.style.display = 'none';
+    // Background grid rings (at 25%, 50%, 75%, 100%)
+    for (const pct of [0.25, 0.5, 0.75, 1.0]) {
+      const points = [];
+      for (let i = 0; i < 6; i++) {
+        const p = getPoint(i, pct * 10, 10);
+        points.push(p.x + ',' + p.y);
       }
-    } catch {
-      document.getElementById('section-journal').style.display = 'none';
+      svgContent += '<polygon points="' + points.join(' ') + '" class="hexagon-grid-ring" />';
     }
 
-    // Resume banner
-    try {
-      const sessions = await fetchJSON('/api/sessions');
-      const banner = document.getElementById('resume-banner');
-      const inProgress = sessions.find(s => s.status === 'in_progress');
-
-      if (inProgress) {
-        banner.style.display = 'flex';
-        document.getElementById('resume-title').textContent = 'In progress: ' + (inProgress.sim_id || '');
-        const criteria = inProgress.criteria_met || [];
-        const total = criteria.length + (inProgress.criteria_remaining || []).length;
-        document.getElementById('resume-detail').textContent =
-          criteria.length + ' of ' + total + ' criteria met.';
-
-        document.getElementById('btn-resume').onclick = () => {
-          currentSimId = inProgress.sim_id;
-          switchView('play');
-          startSim(inProgress.sim_id, true);
-        };
-      } else {
-        banner.style.display = 'none';
-      }
-    } catch {
-      document.getElementById('resume-banner').style.display = 'none';
+    // Axis lines
+    for (let i = 0; i < 6; i++) {
+      const p = getPoint(i, 10, 10);
+      svgContent += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x + '" y2="' + p.y + '" class="hexagon-axis-line" />';
     }
+
+    // Data polygon
+    const dataPoints = [];
+    for (let i = 0; i < 6; i++) {
+      const val = hexagon[types[i]] || 0;
+      const p = getPoint(i, val, 10);
+      dataPoints.push(p.x + ',' + p.y);
+    }
+    svgContent += '<polygon points="' + dataPoints.join(' ') + '" class="hexagon-polygon" />';
+
+    // Data points (dots)
+    for (let i = 0; i < 6; i++) {
+      const val = hexagon[types[i]] || 0;
+      const p = getPoint(i, val, 10);
+      svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot" />';
+    }
+
+    // Labels
+    for (let i = 0; i < 6; i++) {
+      const p = getPoint(i, 12, 10);
+      const anchor = p.x < cx - 5 ? 'end' : p.x > cx + 5 ? 'start' : 'middle';
+      const dy = p.y < cy ? '-4' : p.y > cy ? '12' : '4';
+      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label">' + labels[i] + '</text>';
+    }
+
+    svg.innerHTML = svgContent;
   }
 
   // --- Sim Picker ---
@@ -220,15 +229,7 @@
 
     empty.style.display = 'none';
 
-    // Sort: weakness-targeting first
-    const weaknesses = (profile.weaknesses || []).map(w => w.toLowerCase());
-    const sorted = [...sims].sort((a, b) => {
-      const aWeak = (a.services || []).some(s => weaknesses.includes(s.toLowerCase()));
-      const bWeak = (b.services || []).some(s => weaknesses.includes(s.toLowerCase()));
-      if (aWeak && !bWeak) return -1;
-      if (!aWeak && bWeak) return 1;
-      return 0;
-    });
+    const sorted = [...sims];
 
     const completedSims = (profile.completed_sims || []);
 
