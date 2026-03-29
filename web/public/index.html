@@ -75,7 +75,11 @@
       <!-- Chat (hidden until sim starts) -->
       <div id="chat" class="chat-container">
         <div class="chat-header">
-          <button class="chat-back" id="btn-back-to-sims">Back to sims</button>
+          <button class="chat-back" id="btn-back-to-sims" aria-label="Back to simulations">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+          </button>
           <span class="chat-sim-title" id="chat-sim-title"></span>
         </div>
         <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">

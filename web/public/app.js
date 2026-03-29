@@ -424,7 +424,7 @@
     const div = document.createElement('div');
     div.className = 'chat-message system';
     div.innerHTML = '<button class="btn btn-secondary" id="btn-return-dashboard" style="margin-right: 8px;">Return to Dashboard</button>' +
-      '<button class="chat-back" id="btn-back-complete">Back to sims</button>';
+      '<button class="btn btn-secondary" id="btn-back-complete">Back to sims</button>';
     messages.appendChild(div);
     scrollToBottom();
 

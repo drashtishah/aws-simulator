@@ -396,10 +396,19 @@ a:hover {
 .chat-back {
   background: none;
   border: none;
-  color: var(--accent-blue);
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 0.9rem;
-  padding: 4px 0;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.chat-back:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
 }
 
 .chat-sim-title {
