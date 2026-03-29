@@ -525,15 +525,73 @@
 
   // --- Settings ---
 
+  function initCustomSelect(el, options, currentValue, onChange) {
+    const trigger = el.querySelector('.custom-select-trigger');
+    const optionsList = el.querySelector('.custom-select-options');
+
+    function render() {
+      const current = options.find(o => o.value === currentValue) || options[0];
+      if (current) trigger.textContent = current.label;
+
+      optionsList.innerHTML = options.map(o =>
+        '<div class="custom-select-option' + (o.value === currentValue ? ' selected' : '') +
+        '" data-value="' + escapeAttr(o.value) + '" role="option">' +
+        escapeHtml(o.label) + '</div>'
+      ).join('');
+    }
+
+    trigger.addEventListener('click', () => {
+      document.querySelectorAll('.custom-select.open').forEach(s => {
+        if (s !== el) s.classList.remove('open');
+      });
+      el.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', el.classList.contains('open'));
+    });
+
+    optionsList.addEventListener('click', (e) => {
+      const opt = e.target.closest('.custom-select-option');
+      if (!opt) return;
+      currentValue = opt.dataset.value;
+      el.classList.remove('open');
+      trigger.setAttribute('aria-expanded', 'false');
+      render();
+      onChange(currentValue);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!el.contains(e.target)) {
+        el.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    trigger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        trigger.click();
+      } else if (e.key === 'Escape') {
+        el.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    render();
+    return {
+      setValue(val) { currentValue = val; render(); }
+    };
+  }
+
   async function loadSettings() {
     // UI themes
     try {
       const uiThemes = await fetchJSON('/api/ui-themes');
-      const select = document.getElementById('select-ui-theme');
-      select.innerHTML = uiThemes.map(t =>
-        '<option value="' + escapeAttr(t) + '">' + escapeHtml(formatThemeName(t)) + '</option>'
-      ).join('');
-      select.value = getSetting('uiTheme', 'dracula');
+      const options = uiThemes.map(t => ({ value: t, label: formatThemeName(t) }));
+      initCustomSelect(
+        document.getElementById('select-ui-theme'),
+        options,
+        getSetting('uiTheme', 'dracula'),
+        (val) => { setSetting('uiTheme', val); loadUiTheme(val); }
+      );
     } catch {
       // ignore
     }
@@ -541,17 +599,29 @@
     // Narrative themes
     try {
       narrativeThemes = await fetchJSON('/api/themes');
-      const select = document.getElementById('select-narrative-theme');
-      select.innerHTML = narrativeThemes.map(t =>
-        '<option value="' + escapeAttr(t.id) + '">' + escapeHtml(t.name) + '</option>'
-      ).join('');
-      select.value = getSetting('narrativeTheme', 'still-life');
+      const options = narrativeThemes.map(t => ({ value: t.id, label: t.name }));
+      initCustomSelect(
+        document.getElementById('select-narrative-theme'),
+        options,
+        getSetting('narrativeTheme', 'still-life'),
+        (val) => { setSetting('narrativeTheme', val); }
+      );
     } catch {
       // ignore
     }
 
     // Model selector
-    document.getElementById('select-model').value = getSetting('model', 'sonnet');
+    const modelOptions = [
+      { value: 'sonnet', label: 'Sonnet' },
+      { value: 'opus', label: 'Opus' },
+      { value: 'haiku', label: 'Haiku' }
+    ];
+    initCustomSelect(
+      document.getElementById('select-model'),
+      modelOptions,
+      getSetting('model', 'sonnet'),
+      (val) => { setSetting('model', val); }
+    );
   }
 
   function formatThemeName(id) {
@@ -605,20 +675,6 @@
       if (e.target === e.currentTarget) {
         e.currentTarget.classList.remove('active');
       }
-    });
-
-    document.getElementById('select-ui-theme').addEventListener('change', (e) => {
-      const themeId = e.target.value;
-      setSetting('uiTheme', themeId);
-      loadUiTheme(themeId);
-    });
-
-    document.getElementById('select-narrative-theme').addEventListener('change', (e) => {
-      setSetting('narrativeTheme', e.target.value);
-    });
-
-    document.getElementById('select-model').addEventListener('change', (e) => {
-      setSetting('model', e.target.value);
     });
 
     // Chat controls
