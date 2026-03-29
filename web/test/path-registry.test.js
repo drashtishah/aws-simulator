@@ -1,0 +1,95 @@
+const { describe, it } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.resolve(__dirname, '..', '..');
+const CSV_PATH = path.join(ROOT, 'references', 'path-registry.csv');
+
+function parseCSV() {
+  const content = fs.readFileSync(CSV_PATH, 'utf8').trim().replace(/\r\n/g, '\n');
+  const lines = content.split('\n');
+  const header = lines[0];
+  assert.equal(header, 'file,path,line_number', 'CSV header should match expected format');
+
+  return lines.slice(1).map(line => {
+    // Handle quoted fields (csv may quote fields with commas)
+    const parts = line.match(/(".*?"|[^,]+)/g) || [];
+    return {
+      file: (parts[0] || '').replace(/"/g, ''),
+      path: (parts[1] || '').replace(/"/g, ''),
+      line_number: parseInt(parts[2], 10)
+    };
+  });
+}
+
+describe('path-registry', () => {
+  it('CSV exists and is non-empty', () => {
+    assert.ok(fs.existsSync(CSV_PATH), 'references/path-registry.csv should exist');
+    const rows = parseCSV();
+    assert.ok(rows.length > 0, 'CSV should have at least one data row');
+  });
+
+  it('all concrete paths resolve to real files or directories', () => {
+    const rows = parseCSV();
+    const failures = [];
+
+    for (const row of rows) {
+      // Skip template paths (contain {}) and glob patterns (contain *)
+      if (row.path.includes('{') || row.path.includes('*')) continue;
+
+      const fullPath = path.join(ROOT, row.path);
+      if (!fs.existsSync(fullPath)) {
+        failures.push(`${row.file}:${row.line_number} references "${row.path}" which does not exist`);
+      }
+    }
+
+    if (failures.length > 0) {
+      assert.fail(
+        `${failures.length} broken path reference(s):\n` +
+        failures.map(f => '  - ' + f).join('\n')
+      );
+    }
+  });
+
+  it('template paths have valid directory prefixes', () => {
+    const rows = parseCSV();
+    const failures = [];
+
+    for (const row of rows) {
+      if (!row.path.includes('{')) continue;
+
+      // Extract prefix before the first template variable
+      const braceIndex = row.path.indexOf('{');
+      const prefix = row.path.slice(0, braceIndex);
+
+      // The prefix directory should exist (e.g., "sims/" from "sims/{id}/manifest.json")
+      if (prefix) {
+        const prefixPath = path.join(ROOT, prefix);
+        if (!fs.existsSync(prefixPath)) {
+          failures.push(`${row.file}:${row.line_number} references "${row.path}" but prefix "${prefix}" does not exist`);
+        }
+      }
+    }
+
+    if (failures.length > 0) {
+      assert.fail(
+        `${failures.length} template path(s) with missing prefix:\n` +
+        failures.map(f => '  - ' + f).join('\n')
+      );
+    }
+  });
+
+  it('all source files in the CSV still exist', () => {
+    const rows = parseCSV();
+    const sourceFiles = [...new Set(rows.map(r => r.file))];
+    const missing = sourceFiles.filter(f => !fs.existsSync(path.join(ROOT, f)));
+
+    if (missing.length > 0) {
+      assert.fail(
+        `${missing.length} source file(s) in CSV no longer exist (regenerate with: npm run extract-paths):\n` +
+        missing.map(f => '  - ' + f).join('\n')
+      );
+    }
+  });
+});

@@ -5,7 +5,8 @@
     "start": "node web/server.js",
     "test": "node --test web/test/*.test.js",
     "test:e2e": "npx playwright test web/test/e2e/",
-    "test:all": "npm test && npm run test:e2e"
+    "test:all": "npm test && npm run test:e2e",
+    "extract-paths": "python3 scripts/extract_paths.py"
   },
   "dependencies": {
     "express": "^4.21.0"
