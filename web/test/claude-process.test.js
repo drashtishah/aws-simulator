@@ -90,6 +90,27 @@ describe('parseStreamJson', () => {
     }
   });
 
+  it('extracts model from init message', () => {
+    const stdout = [
+      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-m1', model: 'claude-sonnet-4-20250514' }),
+      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Hello.' }] } }),
+      JSON.stringify({ type: 'result' })
+    ].join('\n');
+
+    const result = parseStreamJson(stdout);
+    assert.equal(result.claudeModel, 'claude-sonnet-4-20250514');
+  });
+
+  it('returns null claudeModel when init has no model field', () => {
+    const stdout = [
+      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-m2' }),
+      JSON.stringify({ type: 'result' })
+    ].join('\n');
+
+    const result = parseStreamJson(stdout);
+    assert.equal(result.claudeModel, null);
+  });
+
   it('handles empty stdout gracefully', () => {
     const result = parseStreamJson('');
     assert.equal(result.claudeSessionId, null);

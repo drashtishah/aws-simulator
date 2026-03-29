@@ -31,6 +31,7 @@ function cleanEnv() {
 function parseStreamJson(stdout) {
   const lines = stdout.split('\n').filter(l => l.trim());
   let claudeSessionId = null;
+  let claudeModel = null;
   const textParts = [];
   let usage = null;
 
@@ -44,6 +45,7 @@ function parseStreamJson(stdout) {
 
     if (parsed.type === 'system' && parsed.subtype === 'init') {
       claudeSessionId = parsed.session_id;
+      if (parsed.model) claudeModel = parsed.model;
     } else if (parsed.type === 'assistant' && parsed.message) {
       const content = parsed.message.content || [];
       for (const block of content) {
@@ -125,7 +127,7 @@ function parseStreamJson(stdout) {
     }
   }
 
-  return { claudeSessionId, events, sessionComplete, usage };
+  return { claudeSessionId, claudeModel, events, sessionComplete, usage };
 }
 
 function spawnClaude(args, stdinData) {
@@ -220,9 +222,19 @@ async function startSession(simId, themeId, options = {}) {
     event: 'session_start',
     sim_id: simId,
     theme: themeId,
-    model,
+    model_requested: model,
+    model_actual: parsed.claudeModel || 'unknown',
     claude_session_id: parsed.claudeSessionId
   });
+
+  if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
+    logger.logEvent(sessionId, {
+      level: 'warn',
+      event: 'MODEL_MISMATCH',
+      model_requested: model,
+      model_actual: parsed.claudeModel
+    });
+  }
 
   // Verify autosave
   const autosaveResult = verifyAutosave(simId, turnStart);
