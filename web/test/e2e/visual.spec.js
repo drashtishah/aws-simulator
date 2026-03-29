@@ -8,7 +8,7 @@ test.describe('Visual Regression', () => {
     // Mask dynamic content that changes between runs
     await page.waitForTimeout(500);
     await expect(page).toHaveScreenshot('dashboard-desktop.png', {
-      mask: [page.locator('#stat-level'), page.locator('#stat-completed')],
+      mask: [page.locator('#stat-rank-title'), page.locator('#stat-completed')],
     });
   });
 
@@ -17,7 +17,7 @@ test.describe('Visual Regression', () => {
     await page.goto('/');
     await page.waitForTimeout(500);
     await expect(page).toHaveScreenshot('dashboard-mobile.png', {
-      mask: [page.locator('#stat-level'), page.locator('#stat-completed')],
+      mask: [page.locator('#stat-rank-title'), page.locator('#stat-completed')],
     });
   });
 

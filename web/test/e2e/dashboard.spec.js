@@ -1,107 +1,56 @@
 const { test, expect } = require('@playwright/test');
 
 test.describe('Dashboard', () => {
-  test('shows level and completed count from profile API', async ({ page }) => {
+  test('shows rank title and completed count', async ({ page }) => {
     await page.goto('/');
-    // Wait for profile data to load
-    await expect(page.locator('#stat-level')).not.toHaveText('');
-    const level = await page.locator('#stat-level').textContent();
-    expect(Number(level)).toBeGreaterThanOrEqual(1);
+    await expect(page.locator('#stat-rank-title')).not.toHaveText('');
+    const title = await page.locator('#stat-rank-title').textContent();
+    expect(title.length).toBeGreaterThan(0);
   });
 
-  test('shows strengths and weaknesses when present in profile', async ({ page }) => {
-    // Mock profile with strengths and weaknesses
-    await page.route('**/api/profile', async (route) => {
+  test('shows hexagon SVG visualization', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#hexagon-svg')).toBeVisible();
+    // Should have grid rings, axis lines, and labels
+    const polygons = page.locator('#hexagon-svg polygon');
+    await expect(polygons.first()).toBeAttached();
+    const labels = page.locator('#hexagon-svg text');
+    const labelCount = await labels.count();
+    expect(labelCount).toBe(6);
+  });
+
+  test('shows services encountered section', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#section-services')).toBeVisible();
+  });
+
+  test('shows services from progress API', async ({ page }) => {
+    await page.route('**/api/progress', async (route) => {
       await route.fulfill({
         status: 200,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          current_level: 2,
-          strengths: ['networking', 'security'],
-          weaknesses: ['data'],
-          completed_sims: ['sim-1']
+          rank: 'Config Whisperer',
+          rankTitle: 'Config Whisperer',
+          hexagon: { gather: 5, diagnose: 5, correlate: 0, impact: 0, trace: 0, fix: 0 },
+          rawHexagon: { gather: 5, diagnose: 5 },
+          simsCompleted: 3,
+          servicesEncountered: ['Amazon EC2', 'AWS Lambda']
         }),
       });
     });
     await page.goto('/');
-    await expect(page.locator('#section-skills')).toBeVisible();
-    await expect(page.locator('#skills-content')).toContainText('networking');
-    await expect(page.locator('#skills-content')).toContainText('data');
+    await expect(page.locator('#stat-rank-title')).toHaveText('Config Whisperer');
+    await expect(page.locator('#stat-completed')).toHaveText('3');
+    await expect(page.locator('#services-list')).toContainText('Amazon EC2');
+    await expect(page.locator('#services-list')).toContainText('AWS Lambda');
   });
 
-  test('hides skills section when no strengths or weaknesses', async ({ page }) => {
-    await page.route('**/api/profile', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          current_level: 1,
-          strengths: [],
-          weaknesses: [],
-          completed_sims: []
-        }),
-      });
-    });
+  test('does not show old removed elements', async ({ page }) => {
     await page.goto('/');
-    // Give time for dashboard to load
-    await page.waitForTimeout(500);
-    await expect(page.locator('#section-skills')).not.toBeVisible();
-  });
-
-  test('shows journal entries when present', async ({ page }) => {
-    await page.route('**/api/journal-summary', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-          { title: 'S3 Bucket Crisis', date: '2026-03-25', takeaway: 'Always check bucket policies' }
-        ]),
-      });
-    });
-    await page.goto('/');
-    await expect(page.locator('#section-journal')).toBeVisible();
-    await expect(page.locator('#journal-content')).toContainText('S3 Bucket Crisis');
-  });
-
-  test('hides journal section when empty', async ({ page }) => {
-    await page.route('**/api/journal-summary', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([]),
-      });
-    });
-    await page.goto('/');
-    await page.waitForTimeout(500);
-    await expect(page.locator('#section-journal')).not.toBeVisible();
-  });
-
-  test('resume banner visible when in-progress session exists', async ({ page }) => {
-    await page.route('**/api/sessions', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([
-          { sim_id: 'test-sim', status: 'in_progress', criteria_met: ['c1'], criteria_remaining: ['c2', 'c3'] }
-        ]),
-      });
-    });
-    await page.goto('/');
-    await expect(page.locator('#resume-banner')).toBeVisible();
-    await expect(page.locator('#resume-title')).toContainText('test-sim');
-    await expect(page.locator('#resume-detail')).toContainText('1 of 3');
-  });
-
-  test('resume banner hidden when no sessions', async ({ page }) => {
-    await page.route('**/api/sessions', async (route) => {
-      await route.fulfill({
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify([]),
-      });
-    });
-    await page.goto('/');
-    await page.waitForTimeout(500);
-    await expect(page.locator('#resume-banner')).not.toBeVisible();
+    await expect(page.locator('#section-skills')).not.toBeAttached();
+    await expect(page.locator('#section-journal')).not.toBeAttached();
+    await expect(page.locator('#resume-banner')).not.toBeAttached();
+    await expect(page.locator('#stat-level')).not.toBeAttached();
   });
 });

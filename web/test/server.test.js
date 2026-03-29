@@ -76,7 +76,7 @@ function buildApp() {
 
   app.get('/api/profile', (req, res) => {
     const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
-      current_level: 1, strengths: [], weaknesses: []
+      current_level: 1, completed_sims: []
     });
     res.json(profile);
   });
@@ -260,8 +260,6 @@ describe('GET /api/profile', () => {
     assert.equal(res.status, 200);
     assert.equal(typeof res.body.current_level, 'number');
     assert.ok(Array.isArray(res.body.completed_sims));
-    assert.ok(Array.isArray(res.body.strengths));
-    assert.ok(Array.isArray(res.body.weaknesses));
   });
 
   it('returns completed_sims as an array with entries', async () => {

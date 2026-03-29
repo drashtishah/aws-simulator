@@ -62,8 +62,8 @@ function stripFrontmatter(content) {
 app.get('/api/profile', (req, res) => {
   const profile = readJSON(paths.PROFILE, {
     current_level: 1,
-    strengths: [],
-    weaknesses: []
+    completed_sims: [],
+    question_hexagon: {}
   });
   res.json(profile);
 });
