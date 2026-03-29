@@ -5,7 +5,7 @@ Before making changes, read `references/workspace-map.md` to understand componen
 1. Read `learning/feedback.md`. If there are no entries beyond the header, say "No feedback to process." and stop.
 
 2. Group feedback entries by target:
-   - Feedback about sim content, narrative, artifacts, difficulty --> target: `create-sim` skill and `references/sim-template.md`
+   - Feedback about sim content, narrative, artifacts, difficulty --> target: `create-sim` skill and `.claude/skills/create-sim/references/sim-template.md`
    - Feedback about play flow, coaching, hints, console behavior --> target: `play` skill and its references
    - Feedback about both or unclear --> present to user for classification
 

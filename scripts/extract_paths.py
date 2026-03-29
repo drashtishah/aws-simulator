@@ -133,6 +133,9 @@ def resolve_relative_path(raw: str, rel_path: str) -> str:
 
     For example, `artifacts/foo.json` in `sims/001-ec2/manifest.json` becomes
     `sims/001-ec2/artifacts/foo.json`.
+
+    Only resolves against the immediate parent directory. Does not search
+    other directories, so ambiguous references are flagged by the test.
     """
     # If it already exists from root, keep it
     if (ROOT / raw).exists():
@@ -144,17 +147,6 @@ def resolve_relative_path(raw: str, rel_path: str) -> str:
         candidate = source_dir + '/' + raw
         if (ROOT / candidate).exists():
             return candidate
-
-    # For files inside .claude/, try resolving against each skill directory.
-    # Commands often reference skill files with shorthand like "references/sim-template.md".
-    if rel_path.startswith('.claude/'):
-        skills_dir = ROOT / '.claude' / 'skills'
-        if skills_dir.is_dir():
-            for skill in skills_dir.iterdir():
-                if skill.is_dir():
-                    candidate = str(Path('.claude/skills') / skill.name / raw)
-                    if (ROOT / candidate).exists():
-                        return candidate
 
     # Return original (the test will flag it if it doesn't exist)
     return raw
