@@ -477,7 +477,11 @@
     const messages = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = 'chat-message ' + type + ' fade-in';
-    div.textContent = content;
+    if (type === 'narrator' || type === 'coaching') {
+      div.innerHTML = renderMarkdown(content);
+    } else {
+      div.textContent = content;
+    }
     messages.appendChild(div);
 
     if (isScrollPinned) {

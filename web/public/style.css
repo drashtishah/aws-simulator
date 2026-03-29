@@ -477,6 +477,59 @@ a:hover {
   max-width: 100%;
 }
 
+/* Markdown content inside chat messages */
+.chat-message h1, .chat-message h2, .chat-message h3 {
+  margin: 8px 0 4px;
+  font-size: 1rem;
+}
+
+.chat-message h2 {
+  font-size: 1.05rem;
+}
+
+.chat-message p {
+  margin: 4px 0;
+}
+
+.chat-message ul, .chat-message ol {
+  margin: 4px 0;
+  padding-left: 20px;
+}
+
+.chat-message li {
+  margin: 2px 0;
+}
+
+.chat-message code {
+  background: var(--bg-deep);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+.chat-message pre {
+  background: var(--bg-deep);
+  padding: 8px 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.chat-message pre code {
+  background: none;
+  padding: 0;
+}
+
+.chat-message hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 8px 0;
+}
+
+.chat-message strong {
+  font-weight: 600;
+}
+
 .typing-indicator {
   align-self: flex-start;
   background: var(--narrator-bg);
