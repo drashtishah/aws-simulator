@@ -57,7 +57,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 ## File I/O
 
 - [ ] JSON.parse wrapped in try/catch for all external file reads
-- [ ] profile.json returns default `{ current_level: 1, strengths: [], weaknesses: [] }` if missing/corrupt
+- [ ] profile.json returns default `{ skill_polygon: {}, completed_sims: [] }` if missing/corrupt
 - [ ] registry.json returns `{ sims: [] }` if missing/corrupt
 - [ ] sessions directory missing returns empty array
 - [ ] journal.md empty or missing returns empty array
@@ -85,7 +85,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 - [ ] localStorage reads wrapped in try/catch
 - [ ] Default UI theme: dracula
-- [ ] Default narrative theme: still-life
+- [ ] Default narrative theme: calm-mentor
 - [ ] Theme CSS loaded via `<link>` tag with id="ui-theme"
 - [ ] Sim picker grid uses `repeat(auto-fill, minmax(280px, 1fr))`
 - [ ] Chat messages use `role="log" aria-live="polite"`
@@ -100,7 +100,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Data Contracts
 
-- [ ] profile.json: current_level, strengths, weaknesses, completed_sims fields
+- [ ] profile.json: rank_title, skill_polygon, polygon_last_advanced, completed_sims, challenge_runs, rank_history
 - [ ] session state: sim_id, status, criteria_met, criteria_remaining, last_active, investigation_summary, hints_used, questions_asked, story_beats_fired, services_queried
 - [ ] journal.md: entries split by `## ` headers, Date and Key Takeaway fields
 - [ ] registry.json: version, sims array with id, title, difficulty, category, services, estimated_minutes

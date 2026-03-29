@@ -233,6 +233,17 @@ a:hover {
   font-family: inherit;
 }
 
+.hexagon-dot-fading { opacity: 0.4; }
+.hexagon-label-fading { opacity: 0.4; }
+
+.next-rank-title { font-weight: 600; margin-bottom: 0.5rem; }
+.next-rank-requirements { display: flex; flex-direction: column; gap: 0.25rem; }
+.next-rank-req { font-size: 0.85rem; opacity: 0.8; }
+
+.rank-history-entry { display: flex; justify-content: space-between; padding: 0.25rem 0; }
+.rank-history-title { font-weight: 500; }
+.rank-history-date { opacity: 0.6; font-size: 0.85rem; }
+
 .services-list {
   display: flex;
   flex-wrap: wrap;
