@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 const paths = require('./lib/paths');
+const { currentRank, normalizeHexagon, parseCatalog } = require('./lib/progress');
 
 const app = express();
 
@@ -154,6 +155,36 @@ app.get('/api/ui-themes', (req, res) => {
     console.error(`GET /api/ui-themes: failed to read ${paths.UI_THEMES_DIR}: ${err.message}`);
     res.json([]);
   }
+});
+
+app.get('/api/progress', (req, res) => {
+  const profile = readJSON(paths.PROFILE, {
+    current_level: 1,
+    question_hexagon: {},
+    completed_sims: []
+  });
+
+  const hexagon = profile.question_hexagon || {};
+  const rank = currentRank(hexagon);
+  const normalized = normalizeHexagon(hexagon);
+
+  let servicesEncountered = [];
+  try {
+    const content = fs.readFileSync(paths.CATALOG, 'utf8');
+    const catalog = parseCatalog(content);
+    servicesEncountered = catalog.filter(s => s.sims_completed > 0).map(s => s.full_name);
+  } catch {
+    // catalog may not exist yet
+  }
+
+  res.json({
+    rank,
+    rankTitle: rank,
+    hexagon: normalized,
+    rawHexagon: hexagon,
+    simsCompleted: (profile.completed_sims || []).length,
+    servicesEncountered
+  });
 });
 
 // --- Game API endpoints (added in Step 5) ---

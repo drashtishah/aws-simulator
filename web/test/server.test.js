@@ -5,6 +5,8 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 
+const { currentRank, normalizeHexagon, parseCatalog } = require('../lib/progress');
+
 const ROOT = path.resolve(__dirname, '..', '..');
 
 // --- Helpers ---
@@ -164,6 +166,36 @@ function buildApp() {
     } catch {
       res.json([]);
     }
+  });
+
+  app.get('/api/progress', (req, res) => {
+    const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
+      current_level: 1,
+      question_hexagon: {},
+      completed_sims: []
+    });
+
+    const hexagon = profile.question_hexagon || {};
+    const rank = currentRank(hexagon);
+    const normalized = normalizeHexagon(hexagon);
+
+    let servicesEncountered = [];
+    try {
+      const content = fs.readFileSync(path.join(ROOT, 'learning', 'catalog.csv'), 'utf8');
+      const catalog = parseCatalog(content);
+      servicesEncountered = catalog.filter(s => s.sims_completed > 0).map(s => s.full_name);
+    } catch {
+      // catalog may not exist yet
+    }
+
+    res.json({
+      rank,
+      rankTitle: rank,
+      hexagon: normalized,
+      rawHexagon: hexagon,
+      simsCompleted: (profile.completed_sims || []).length,
+      servicesEncountered
+    });
   });
 
   // Game endpoints return 503 without claude-process (acceptable for unit tests)
@@ -378,6 +410,27 @@ describe('GET /api/ui-themes', () => {
   it('does not include snowy-mountain theme', async () => {
     const res = await request(app, 'GET', '/api/ui-themes');
     assert.ok(!res.body.includes('snowy-mountain'), 'snowy-mountain should be removed');
+  });
+});
+
+describe('GET /api/progress', () => {
+  const app = buildApp();
+
+  it('returns progress data with rank and hexagon', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    assert.equal(res.status, 200);
+    assert.ok(typeof res.body.rank === 'string');
+    assert.ok(typeof res.body.rankTitle === 'string');
+    assert.ok(typeof res.body.hexagon === 'object');
+    assert.ok(typeof res.body.simsCompleted === 'number');
+    assert.ok(Array.isArray(res.body.servicesEncountered));
+  });
+
+  it('hexagon has all six question types', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    for (const t of ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix']) {
+      assert.ok(typeof res.body.hexagon[t] === 'number', t + ' should be a number');
+    }
   });
 });
 
