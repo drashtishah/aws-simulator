@@ -68,9 +68,6 @@ def normalize_path(raw: str) -> Optional[str]:
     # Strip trailing punctuation from markdown context
     cleaned = cleaned.rstrip('.,;:)`')
 
-    # Normalize JS template literals that appear in markdown: ${var} -> {var}
-    cleaned = re.sub(r'\$\{(\w+)\}', r'{\1}', cleaned)
-
     # Must contain a slash
     if '/' not in cleaned:
         return None

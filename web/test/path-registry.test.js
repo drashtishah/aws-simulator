@@ -35,8 +35,8 @@ describe('path-registry', () => {
     const failures = [];
 
     for (const row of rows) {
-      // Skip template paths (contain {}) and glob patterns (contain *)
-      if (row.path.includes('{') || row.path.includes('*')) continue;
+      // Skip template paths (contain {} or ${}), and glob patterns (contain *)
+      if (row.path.includes('{') || row.path.includes('*') || row.path.includes('$')) continue;
 
       const fullPath = path.join(ROOT, row.path);
       if (!fs.existsSync(fullPath)) {
@@ -57,11 +57,13 @@ describe('path-registry', () => {
     const failures = [];
 
     for (const row of rows) {
-      if (!row.path.includes('{')) continue;
+      if (!row.path.includes('{') && !row.path.includes('$')) continue;
 
-      // Extract prefix before the first template variable
-      const braceIndex = row.path.indexOf('{');
-      const prefix = row.path.slice(0, braceIndex);
+      // Extract prefix before the first template variable ($ or {)
+      const dollarIdx = row.path.indexOf('$');
+      const braceIdx = row.path.indexOf('{');
+      const templateIdx = [dollarIdx, braceIdx].filter(i => i >= 0).reduce((a, b) => Math.min(a, b), row.path.length);
+      const prefix = row.path.slice(0, templateIdx);
 
       // The prefix directory should exist (e.g., "sims/" from "sims/{id}/manifest.json")
       if (prefix) {

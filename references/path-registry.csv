@@ -82,7 +82,8 @@ file,path,line_number
 .claude/skills/setup/SKILL.md,learning/catalog.csv,77
 .claude/skills/setup/SKILL.md,learning/catalog.csv,85
 .claude/skills/setup/SKILL.md,sims/registry.json,89
-CLAUDE.md,learning/logs/activity.jsonl,47
+CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,17
+CLAUDE.md,learning/logs/activity.jsonl,49
 references/contributing.md,references/web-app-checklist.md,20
 references/contributing.md,references/workspace-map.md,21
 references/contributing.md,web/lib/prompt-builder.js,22
