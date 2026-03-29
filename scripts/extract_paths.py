@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Extract internal path references from all project files into a CSV registry.
+"""Extract path references from markdown and JSON files into a CSV registry.
 
-Scans JS, MD, JSON, CSS, and HTML files for hardcoded path references to
-project directories (learning/, sims/, themes/, web/, .claude/, references/).
+Scans .md and .json files for strings that look like file/directory paths
+(anything containing a slash). These are files where paths must be hardcoded
+since there's no import/variable mechanism. JS files are excluded because
+they can use a constants module instead.
+
 Outputs a sorted, deduplicated CSV to references/path-registry.csv.
 
 Usage:
@@ -12,61 +15,42 @@ Usage:
 import csv
 import os
 import re
-import sys
 from dataclasses import dataclass, astuple
-from pathlib import Path, PurePosixPath
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import List, Optional, Set
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SCAN_EXTENSIONS: Set[str] = {'.js', '.md', '.json', '.css', '.html'}
+SCAN_EXTENSIONS: Set[str] = {'.md', '.json'}
 
-EXCLUDE_DIRS: Set[str] = {'node_modules', '.git', 'learning', 'test-results'}
+EXCLUDE_DIRS: Set[str] = {'node_modules', '.git', 'learning', 'sims', 'test-results'}
 
 EXCLUDE_FILES: Set[str] = {'package-lock.json'}
 
-# Prefixes that anchor a path as an internal project reference
-PATH_PREFIXES: Tuple[str, ...] = (
-    'learning/', 'sims/', 'themes/', 'web/', '.claude/', 'references/',
-)
 
-# Known bare filenames mapped to their canonical project paths
-KNOWN_FILES: Dict[str, str] = {
-    'profile.json': 'learning/profile.json',
-    'registry.json': 'sims/registry.json',
-    'catalog.csv': 'learning/catalog.csv',
-    'activity.jsonl': 'learning/logs/activity.jsonl',
-    'journal.md': 'learning/journal.md',
-    'feedback.md': 'learning/feedback.md',
-    'manifest.json': 'sims/{id}/manifest.json',
-    'story.md': 'sims/{id}/story.md',
-    'resolution.md': 'sims/{id}/resolution.md',
-    'agent-prompts.md': '.claude/skills/play/references/agent-prompts.md',
-    'coaching-patterns.md': '.claude/skills/play/references/coaching-patterns.md',
-    'sim-template.md': '.claude/skills/create-sim/references/sim-template.md',
-    'exam-topics.md': '.claude/skills/create-sim/references/exam-topics.md',
-    'game-design.md': '.claude/skills/create-sim/references/game-design.md',
-    'story-structure.md': '.claude/skills/create-sim/references/story-structure.md',
-    'manifest-schema.json': '.claude/skills/create-sim/assets/manifest-schema.json',
-    'workspace-map.md': 'references/workspace-map.md',
-    'contributing.md': 'references/contributing.md',
-    'web-app-checklist.md': 'references/web-app-checklist.md',
-    '_base.md': 'themes/_base.md',
-    '.mcp.json': '.mcp.json',
-    'CLAUDE.md': 'CLAUDE.md',
-}
-
-# JS variable patterns to replace with template tokens
-JS_VAR_REPLACEMENTS: List[Tuple[str, str]] = [
-    (r'req\.params\.id', '{id}'),
-    (r'req\.params\.file', '{file}'),
-    (r'simId', '{simId}'),
-    (r'themeId', '{themeId}'),
-    (r'sessionId', '{sessionId}'),
-    (r'manifest\.id', '{simId}'),
-    (r'id', '{id}'),
-    (r'f', '{file}'),
+# Patterns that look like paths but aren't project references
+DENY_PATTERNS: List[str] = [
+    'http://',
+    'https://',
+    '//',           # protocol-relative URLs
+    '#',            # anchors
+    '/tmp/',
+    '/usr/',
+    '/bin/',
+    '/etc/',
+    'node_modules/',
+    'npm/',
+    '@',            # npm scoped packages like @anthropic-ai/sdk
+    'arn:',         # AWS ARNs
+    'AWS/',         # CloudWatch namespaces like AWS/EC2
+    'aws/',         # lowercase variant
+    '::/0',         # IPv6 CIDR
 ]
+
+# A valid project path: lowercase word chars, digits, dots, hyphens, underscores,
+# braces (for templates), slashes, and dollar signs (for template literals).
+# No spaces, no colons, no parentheses, no commas, no uppercase letters.
+PATH_CHAR_RE = re.compile(r'^[a-z0-9./\-_{}\$]+$')
 
 
 @dataclass(frozen=True)
@@ -81,11 +65,7 @@ def collect_files(root: Path) -> List[Path]:
     """Walk the repo tree and return scannable files."""
     files: List[Path] = []
     for dirpath, dirnames, filenames in os.walk(root):
-        # Filter out excluded directories in-place
-        dirnames[:] = [
-            d for d in dirnames
-            if d not in EXCLUDE_DIRS
-        ]
+        dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
         for fname in filenames:
             if fname in EXCLUDE_FILES:
                 continue
@@ -98,230 +78,136 @@ def collect_files(root: Path) -> List[Path]:
 def normalize_path(raw: str) -> Optional[str]:
     """Clean and normalize a raw extracted path string.
 
-    Returns None if the path is external or invalid.
+    Returns None if the path is not a project-internal reference.
     """
-    # Strip surrounding quotes and backticks
-    cleaned = raw.strip('\'"`\t ')
+    cleaned = raw.strip()
 
     # Strip trailing punctuation from markdown context
-    cleaned = cleaned.rstrip('.,;:)')
+    cleaned = cleaned.rstrip('.,;:)`')
 
-    # Strip trailing backtick that regex might include
-    cleaned = cleaned.rstrip('`')
-
-    # Skip external/absolute paths
-    if cleaned.startswith(('/tmp', 'http://', 'https://', '#')):
-        return None
-
-    # Normalize JS template literals: ${varName} -> {varName}
+    # Normalize JS template literals that appear in markdown: ${var} -> {var}
     cleaned = re.sub(r'\$\{(\w+)\}', r'{\1}', cleaned)
 
-    # Skip paths that are just variable references
-    if cleaned.startswith('$') or cleaned.startswith('{'):
-        return None
-
-    # Map server-relative HTML paths
-    if cleaned.startswith('/') and not cleaned.startswith('/.'):
-        cleaned = 'web/public' + cleaned
-
-    # Collapse parent-directory segments
-    try:
-        collapsed = str(PurePosixPath(cleaned))
-    except (ValueError, TypeError):
-        return cleaned
-
-    # Strip leading ./
-    if collapsed.startswith('./'):
-        collapsed = collapsed[2:]
-
-    # Must start with a known prefix or be a known file
-    if not any(collapsed.startswith(p) or collapsed.rstrip('/') + '/' == p for p in PATH_PREFIXES):
-        if collapsed not in KNOWN_FILES and collapsed not in KNOWN_FILES.values():
+    # Deny-list check
+    for pattern in DENY_PATTERNS:
+        if pattern in cleaned:
             return None
 
-    # Skip bare directory names without any content (e.g., just "web" or "sims")
-    if '/' not in collapsed and '.' not in collapsed:
+    # Must contain a slash to be a path
+    if '/' not in cleaned:
         return None
 
-    return collapsed if collapsed else None
+    # Must look like a filesystem path (no spaces, colons, parens, etc.)
+    if not PATH_CHAR_RE.match(cleaned):
+        return None
+
+    # Skip IP addresses and CIDR ranges (e.g., 10.0.0.0/16, 0.0.0.0/0)
+    if re.match(r'\d+\.\d+\.\d+', cleaned):
+        return None
+
+    # Strip leading ./ if present
+    if cleaned.startswith('./'):
+        cleaned = cleaned[2:]
+
+    # Skip absolute system paths
+    if cleaned.startswith('/'):
+        return None
+
+    # The top-level directory (first segment before /) must exist at the project root.
+    # This filters out things like "type/simulation", "endpoint/foo", "app/bar"
+    # that look like paths but are tags, API routes, or ARN fragments.
+    top_dir = cleaned.split('/')[0]
+    if top_dir and not (ROOT / top_dir).exists():
+        return None
+
+    # Skip paths that are just a trailing slash (bare word + /)
+    # but keep directory references like "learning/"
+    if not cleaned.replace('/', ''):
+        return None
+
+    return cleaned if cleaned else None
 
 
-def parse_path_join_args(args_str: str) -> Optional[str]:
-    """Parse path.join/resolve arguments into a normalized path string.
+def resolve_relative_path(raw: str, rel_path: str) -> str:
+    """If a path doesn't resolve from root, try resolving relative to the source file.
 
-    Handles mixed string literals and variable references.
-    Returns None if the result is just ROOT or entirely dynamic.
+    For example, `artifacts/foo.json` in `sims/001-ec2/manifest.json` becomes
+    `sims/001-ec2/artifacts/foo.json`.
     """
-    # Split on commas, respecting quotes
-    parts: List[str] = []
-    for arg in re.split(r',\s*', args_str.strip()):
-        arg = arg.strip()
+    # If it already exists from root, keep it
+    if (ROOT / raw).exists():
+        return raw
 
-        # Skip ROOT, __dirname, process.cwd() etc.
-        if arg in ('ROOT', '__dirname', "'..'", "'..'", 'process.cwd()'):
-            continue
+    # Try relative to the source file's directory
+    source_dir = str(Path(rel_path).parent)
+    if source_dir and source_dir != '.':
+        candidate = source_dir + '/' + raw
+        if (ROOT / candidate).exists():
+            return candidate
 
-        # String literal
-        str_match = re.match(r"""^['"`]([^'"`]*)['"`]$""", arg)
-        if str_match:
-            parts.append(str_match.group(1))
-            continue
+    # For files inside .claude/, try resolving against each skill directory.
+    # Commands often reference skill files with shorthand like "references/sim-template.md".
+    if rel_path.startswith('.claude/'):
+        skills_dir = ROOT / '.claude' / 'skills'
+        if skills_dir.is_dir():
+            for skill in skills_dir.iterdir():
+                if skill.is_dir():
+                    candidate = str(Path('.claude/skills') / skill.name / raw)
+                    if (ROOT / candidate).exists():
+                        return candidate
 
-        # Template literal segment like `${simId}.json`
-        tmpl_match = re.match(r'^`([^`]*)`$', arg)
-        if tmpl_match:
-            val = tmpl_match.group(1)
-            # Replace ${varName} with {varName}
-            val = re.sub(r'\$\{(\w+)\}', r'{\1}', val)
-            parts.append(val)
-            continue
-
-        # Variable reference: replace with template token
-        replaced = False
-        for pattern, token in JS_VAR_REPLACEMENTS:
-            if re.fullmatch(pattern, arg):
-                parts.append(token)
-                replaced = True
-                break
-        if not replaced:
-            # Unknown variable: use generic placeholder
-            parts.append('{var}')
-
-    if not parts:
-        return None
-
-    joined = '/'.join(parts)
-    return normalize_path(joined)
-
-
-def extract_from_js(content: str, rel_path: str) -> List[PathEntry]:
-    """Extract path references from a JavaScript file."""
-    entries: List[PathEntry] = []
-    lines = content.split('\n')
-
-    for line_num, line in enumerate(lines, start=1):
-        # Pattern 1: path.join(...) and path.resolve(...)
-        for match in re.finditer(r'path\.(?:join|resolve)\(([^)]+)\)', line):
-            result = parse_path_join_args(match.group(1))
-            if result:
-                entries.append(PathEntry(file=rel_path, path=result, line_number=line_num))
-
-        # Pattern 2: String literal paths (including template literals with ${})
-        for match in re.finditer(
-            r"""['"`]((?:learning|sims|themes|web|\.claude|references)/[^'"\s]+?)['"`]""",
-            line,
-        ):
-            normalized = normalize_path(match.group(1))
-            if normalized:
-                entries.append(PathEntry(file=rel_path, path=normalized, line_number=line_num))
-
-    return entries
+    # Return original (the test will flag it if it doesn't exist)
+    return raw
 
 
 def extract_from_md(content: str, rel_path: str) -> List[PathEntry]:
-    """Extract path references from a Markdown file."""
+    """Extract path references from a Markdown file.
+
+    Matches any backtick-wrapped string that contains a slash.
+    """
     entries: List[PathEntry] = []
     lines = content.split('\n')
 
-    # If the file is inside .claude/ (skill or command), "references/" paths
-    # that don't match top-level reference files are skill-relative
-    is_claude_internal = rel_path.startswith('.claude/')
-    skill_match = re.match(r'(\.claude/skills/[^/]+/)', rel_path)
-    skill_base = skill_match.group(1) if skill_match else None
-
-    # Top-level reference files that actually live in references/
-    TOP_LEVEL_REFS = ('references/workspace-map', 'references/contributing', 'references/web-app-checklist')
-
     for line_num, line in enumerate(lines, start=1):
-        # Pattern 1: Backtick-wrapped paths with known prefixes
-        for match in re.finditer(
-            r'`((?:learning|sims|themes|web|\.claude|references)/[^`\n]+)`',
-            line,
-        ):
-            raw = match.group(1)
-            # Inside .claude/, "references/X" where X is not a top-level ref file
-            # is a skill-relative reference. Resolve to skill path if known,
-            # otherwise mark as template since the exact skill is ambiguous.
-            if is_claude_internal and raw.startswith('references/') and not any(raw.startswith(t) for t in TOP_LEVEL_REFS):
-                if skill_base:
-                    raw = skill_base + raw
-                else:
-                    # Command file referencing a skill's references/ dir
-                    raw = '.claude/skills/{skill}/' + raw
-            normalized = normalize_path(raw)
-            if normalized:
-                entries.append(PathEntry(file=rel_path, path=normalized, line_number=line_num))
-
-        # Pattern 2: Known bare filenames in backticks
-        for match in re.finditer(r'`([A-Za-z_][\w.-]+\.\w+)`', line):
-            fname = match.group(1)
-            if fname in KNOWN_FILES:
-                entries.append(PathEntry(
-                    file=rel_path,
-                    path=KNOWN_FILES[fname],
-                    line_number=line_num,
-                ))
-
-        # Pattern 3: Bare directory references in backticks
-        for match in re.finditer(
-            r'`((?:learning|sims|themes|web|\.claude|references)/)`',
-            line,
-        ):
+        # Backtick-wrapped strings containing at least one slash
+        for match in re.finditer(r'`([^`\n]*?/[^`\n]*?)`', line):
             normalized = normalize_path(match.group(1))
             if normalized:
-                entries.append(PathEntry(file=rel_path, path=normalized, line_number=line_num))
+                resolved = resolve_relative_path(normalized, rel_path)
+                entries.append(PathEntry(
+                    file=rel_path,
+                    path=resolved,
+                    line_number=line_num,
+                ))
 
     return entries
 
 
 def extract_from_json(content: str, rel_path: str) -> List[PathEntry]:
-    """Extract path references from a JSON file."""
+    """Extract path references from a JSON file.
+
+    Matches any JSON string value that contains a slash.
+    """
     entries: List[PathEntry] = []
     lines = content.split('\n')
 
     for line_num, line in enumerate(lines, start=1):
-        for match in re.finditer(
-            r'"((?:learning|sims|themes|web|\.claude|references)/[^"]+)"',
-            line,
-        ):
+        # JSON string values containing at least one slash
+        for match in re.finditer(r'"([^"]*?/[^"]*?)"', line):
             normalized = normalize_path(match.group(1))
             if normalized:
-                entries.append(PathEntry(file=rel_path, path=normalized, line_number=line_num))
+                resolved = resolve_relative_path(normalized, rel_path)
+                entries.append(PathEntry(
+                    file=rel_path,
+                    path=resolved,
+                    line_number=line_num,
+                ))
 
     return entries
-
-
-def extract_from_html(content: str, rel_path: str) -> List[PathEntry]:
-    """Extract path references from an HTML file."""
-    entries: List[PathEntry] = []
-    lines = content.split('\n')
-
-    for line_num, line in enumerate(lines, start=1):
-        for match in re.finditer(r'(?:href|src)="(/[^"]+)"', line):
-            raw = match.group(1)
-            # Skip external URLs and anchors
-            if raw.startswith(('http://', 'https://', '#', '//')):
-                continue
-            normalized = normalize_path(raw)
-            if normalized:
-                entries.append(PathEntry(file=rel_path, path=normalized, line_number=line_num))
-
-    return entries
-
-
-# Map extensions to their extractor function
-EXTRACTORS: Dict[str, Callable[[str, str], List[PathEntry]]] = {
-    '.js': extract_from_js,
-    '.md': extract_from_md,
-    '.json': extract_from_json,
-    '.html': extract_from_html,
-    '.css': lambda content, rel_path: [],  # CSS has no path refs in this project
-}
 
 
 def write_csv(entries: List[PathEntry], output: Path) -> None:
     """Write sorted, deduplicated entries to CSV."""
-    # Deduplicate
     unique = sorted(set(entries), key=lambda e: (e.file, e.line_number, e.path))
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -339,11 +225,15 @@ def main() -> None:
     files = collect_files(ROOT)
     all_entries: List[PathEntry] = []
 
+    extractors = {
+        '.md': extract_from_md,
+        '.json': extract_from_json,
+    }
+
     for fpath in files:
         rel = str(fpath.relative_to(ROOT))
-        ext = fpath.suffix
 
-        extractor = EXTRACTORS.get(ext)
+        extractor = extractors.get(fpath.suffix)
         if not extractor:
             continue
 
@@ -357,7 +247,6 @@ def main() -> None:
 
     write_csv(all_entries, output_path)
 
-    # Summary
     unique_entries = set(all_entries)
     source_files = {e.file for e in unique_entries}
     print(f"Wrote {len(unique_entries)} entries from {len(source_files)} files to {output_path.relative_to(ROOT)}")
