@@ -229,7 +229,36 @@
 
     empty.style.display = 'none';
 
-    const sorted = [...sims];
+    // Sort: sims covering weakest hexagon axes first
+    let hexagon = {};
+    try {
+      const progress = await fetchJSON('/api/progress');
+      hexagon = progress.rawHexagon || {};
+    } catch {
+      // ignore
+    }
+
+    // Map sim categories to question types they exercise
+    const categoryToTypes = {
+      security: ['trace', 'impact'],
+      performance: ['gather', 'diagnose', 'correlate'],
+      reliability: ['correlate', 'impact'],
+      networking: ['gather', 'diagnose'],
+      compute: ['gather', 'diagnose'],
+      data: ['gather', 'correlate'],
+      observability: ['gather', 'trace'],
+      operations: ['trace', 'fix'],
+      cost: ['impact', 'fix']
+    };
+
+    const sorted = [...sims].sort((a, b) => {
+      const aTypes = categoryToTypes[(a.category || '').toLowerCase()] || ['gather'];
+      const bTypes = categoryToTypes[(b.category || '').toLowerCase()] || ['gather'];
+      const aGap = aTypes.reduce((sum, t) => sum + (hexagon[t] || 0), 0) / aTypes.length;
+      const bGap = bTypes.reduce((sum, t) => sum + (hexagon[t] || 0), 0) / bTypes.length;
+      if (aGap !== bGap) return aGap - bGap;
+      return (a.difficulty || 1) - (b.difficulty || 1);
+    });
 
     const completedSims = (profile.completed_sims || []);
 
