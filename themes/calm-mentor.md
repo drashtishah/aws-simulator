@@ -1,10 +1,10 @@
 ---
-id: still-life
-name: Still Life
+id: calm-mentor
+name: Calm Mentor
 tagline: "Flat affect. The facts carry the weight."
 ---
 
-# Still Life
+# Calm Mentor
 
 Short declarative sentences. Mundane details beside the crisis, given equal weight. The narrator observes and reports. The reader supplies the alarm.
 
@@ -16,7 +16,7 @@ Psychic distance: 3 (close enough to notice the cold coffee, far enough to never
 Affect: flat
 Tone: observational, unhurried, level
 Register: consultative
-Tension source: understatement -- the gap between what is described and how it is described
+Tension source: understatement, the gap between what is described and how it is described
 Escalation: voice does not change under pressure; facts get worse, tone stays the same
 Information density: high implication (state the fact, let the reader do the math)
 Figurative language: forbidden
@@ -49,7 +49,7 @@ Pattern: Crisis fact. Mundane fact. No transition.
 Frequency: once or twice per scene. More becomes a gimmick.
 
 Good: "The RDS instance had been publicly accessible since March. Someone had left a bag of mandarins on the ops desk and they were starting to smell."
-Bad: "The RDS instance had been publicly accessible since March -- a ticking time bomb that nobody had noticed, like the slowly rotting mandarins on the ops desk."
+Bad: "The RDS instance had been publicly accessible since March, a ticking time bomb that nobody had noticed, like the slowly rotting mandarins on the ops desk."
 
 The mundane detail must be genuinely mundane: food, weather, an object, a small personal errand. Never use it as metaphor or symbol. The mandarins are just mandarins.
 
@@ -98,7 +98,7 @@ The office was on the ninth floor of a building in Shibuya. The engineering team
 
 ### Under pressure
 
-The health check failed at 9:47 PM. The second check failed twelve seconds later. By the time the on-call engineer opened her laptop, there were twenty-three messages in the incident channel. The load balancer had marked all three targets as unhealthy. She checked the application logs. They were empty -- not error-free, but empty. The log group existed. The streams existed. The last entry was from 9:46 PM, one minute before the health check failed. After that, nothing. She poured the rest of her tea into the sink. It had gone cold.
+The health check failed at 9:47 PM. The second check failed twelve seconds later. By the time the on-call engineer opened her laptop, there were twenty-three messages in the incident channel. The load balancer had marked all three targets as unhealthy. She checked the application logs. They were empty, not error-free, but empty. The log group existed. The streams existed. The last entry was from 9:46 PM, one minute before the health check failed. After that, nothing. She poured the rest of her tea into the sink. It had gone cold.
 
 ### Mundane-beside-crisis (signature device)
 

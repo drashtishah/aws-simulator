@@ -26,8 +26,8 @@ Ask the player:
 ```
 How would you like to play?
 
-1. Terminal -- play right here in Claude Code
-2. Web app -- open the simulator in your browser
+1. Terminal: play right here in Claude Code
+2. Web app: open the simulator in your browser
 ```
 
 Wait for the player's response.
@@ -53,14 +53,13 @@ Read `learning/profile.json`. If the file is missing or empty, create it with th
 
 ```json
 {
-  "current_level": 1,
-  "rank_title": "Pager Duty Intern",
-  "question_hexagon": {
+  "rank_title": "Responder",
+  "skill_polygon": {
     "gather": 0, "diagnose": 0, "correlate": 0,
     "impact": 0, "trace": 0, "fix": 0
   },
+  "polygon_last_advanced": {},
   "completed_sims": [],
-  "unlocked_levels": [1],
   "service_exposure": {},
   "question_patterns": {
     "first_action_frequency": {
@@ -71,10 +70,14 @@ Read `learning/profile.json`. If the file is missing or empty, create it with th
     "audit_trail_check_rate": 0.0,
     "multi_service_investigation_rate": 0.0
   },
+  "challenge_runs": [],
+  "rank_history": [{ "rank": "responder", "achieved": "{today}" }],
   "total_sessions": 0,
   "last_session": null
 }
 ```
+
+Load the progression config from `references/progression.yaml`. Apply decay: for each axis in `skill_polygon`, check if `polygon_last_advanced[axis]` is older than `decay.decay_after_days` and the axis value is at or above `decay.min_value_to_decay`. If so, subtract `decay.decay_amount` (floor at `decay.floor`). If any axes decayed, recompute rank and inform the player: "Your {axis label} skill has faded. Sims targeting it will appear first." Update `learning/profile.json` with decayed polygon values.
 
 ### 2. Check for In-Progress Sessions
 
@@ -86,36 +89,40 @@ List files in `learning/sessions/`. If any `.json` files exist with `"status": "
 
 ### 3. Filter Eligible Simulations
 
-Read `sims/registry.json`. A sim is eligible if ALL of these are true:
+Read `sims/registry.json`. Compute the player's current rank from `skill_polygon` using the rank gates in `references/progression.yaml`. The rank's `max_difficulty` determines the highest sim difficulty the player can access.
 
-- `difficulty` <= `profile.current_level` (or difficulty is in `profile.unlocked_levels`)
+A sim is eligible if ALL of these are true:
+
+- `difficulty` <= `maxDifficulty(profile.skill_polygon, config)` (where config is from `references/progression.yaml`)
 - `id` is NOT in `profile.completed_sims`
 - All entries in `prerequisites` (if any) are in `profile.completed_sims`
 
-If no sims are eligible, tell the user: "No eligible simulations at your current level. Run create-sim to generate more." Then stop.
+If no sims are eligible, tell the user: "No eligible simulations at your current rank. Run `/create-sim` to generate more." Then stop.
 
-### 3b. Select Theme
+### 3b. Set Theme
 
-Read the `themes/` directory. List all `.md` files except `_base.md`. Read YAML frontmatter from each to extract `id`, `name`, and `tagline`.
+Set `theme_id` to `"calm-mentor"`. Skip theme selection (only one voice is available).
 
-Present to the player:
+### 3c. Choose Assist Mode
+
+Ask the player:
 
 ```
-Choose a narrative voice for this session:
+How would you like to investigate?
 
-1. Still Life -- "Flat affect. The facts carry the weight."
-2. Slow Burn -- "The narrator has all the time in the world. The system does not."
-3. Field Notes -- "Observed at 14:32. Behavior consistent with prior specimens."
+1. Standard: hints appear after unproductive investigation
+2. Guided: proactive hints walk through a recommended investigation order
 ```
 
-Wait for choice. Store `theme_id` for Step 7.
+Wait for the player's response. Store `assist_mode` for Step 7.
 
 ### 4. Present Available Simulations
 
-Sort eligible sims with low-knowledge services first:
+Sort eligible sims using the config-driven `scoreSim()` function from `web/lib/progression.js`. The score is a weighted sum of three factors (weights from `references/progression.yaml` sorting section):
 
-1. Read `learning/catalog.csv`. For each eligible sim, sum the knowledge scores of its services. Sims with lowest total score appear first (these cover the services the player knows least).
-2. Remaining eligible sims sorted by difficulty ascending.
+1. **Weakness weight**: sims covering the player's weakest polygon axes score lower (appear first). Uses `category_map` from config to map sim category to polygon axes.
+2. **Service gap weight**: sims covering unpracticed services score lower.
+3. **Retention weight**: sims refreshing stale service knowledge score lower.
 
 Present each sim:
 
@@ -151,13 +158,14 @@ Read `.claude/skills/play/references/agent-prompts.md` for the consolidated prom
 
 Populate the template following the population instructions in agent-prompts.md:
 
-- Read `themes/_base.md` and `themes/{theme_id}.md` (selected in Step 3b)
+- Read `themes/_base.md` and `themes/calm-mentor.md`
 - Inject `_base.md` content into the "Structural Rules" section
 - Strip YAML frontmatter from the theme file and inject full content as `{theme.voice}` into the "Narrative Voice" section
 - Story.md facts are rendered through the theme at delivery time, not pre-inserted as prose
 - Insert narrator fields: personality (structured object), company, story facts, briefing card, architecture diagrams, fix criteria, hints, story beats, learning objectives, sim_id
 - Insert console data: for each entry in `manifest.team.consoles[]`, insert the service name, capabilities, and full contents of all referenced artifacts
-- This populated prompt governs the rest of the session -- it defines both Narrator Mode and Console Mode behavior
+- **Assist mode**: if `assist_mode` is "guided", add to the narrator instructions: "After the opening narration, suggest a first investigation step ('You might start by checking...'). After each console query, suggest what to look at next." If "standard": current behavior (hints only after 2+ unproductive questions).
+- This populated prompt governs the rest of the session, defining both Narrator Mode and Console Mode behavior
 
 ### 8. Handle Resume
 
@@ -353,11 +361,12 @@ Read and update `learning/profile.json`:
 1. Add the sim `id` to `completed_sims`
 2. Update `service_exposure`: for each service in the sim, increment its count
 3. Update `question_patterns` with data from this session
-4. **Level progression**: if 2 or more sims completed at `current_level`, add `current_level + 1` to `unlocked_levels` and set `current_level` to `current_level + 1`
-5. **Update question hexagon**: add effective counts from the session's `question_profile` to `profile.question_hexagon`. For each question type, add the effective count from this session to the running total.
-6. **Derive rank**: compute rank from the hexagon shape using the rank thresholds (Pager Duty Intern, Config Whisperer, Root Cause Wrangler, Incident Commander, Chaos Architect). Write rank to `profile.rank_title`.
-7. Increment `total_sessions` by 1
-8. Set `last_session` to today's date (YYYY-MM-DD)
+4. **Update skill polygon**: add effective counts from the session's `question_profile` to `profile.skill_polygon`. For each axis (from `references/progression.yaml`), add the effective count from this session to the running total.
+5. **Update polygon_last_advanced**: for any axis that gained points in this session, set `polygon_last_advanced[axis]` to today's date (YYYY-MM-DD).
+6. **Apply challenge modifier bonuses**: if challenge modifiers were active during this session, add +1 to each axis listed in the modifier's `bonus_axes` (from `references/progression.yaml`).
+7. **Derive rank**: compute rank from the polygon shape using the rank gates in `references/progression.yaml`. Write rank title to `profile.rank_title`. If the rank changed from the previous value, append `{ "rank": "{rank_id}", "achieved": "{today}" }` to `profile.rank_history`.
+8. Increment `total_sessions` by 1
+9. Set `last_session` to today's date (YYYY-MM-DD)
 
 ### 18. Update Services Catalog
 

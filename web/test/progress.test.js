@@ -2,103 +2,84 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
 const {
-  QUESTION_TYPES,
+  getQuestionTypes,
   currentRank,
   normalizeHexagon,
-  levelTitle,
   parseCatalog,
   serviceProgress
 } = require('../lib/progress');
 
-describe('QUESTION_TYPES', () => {
+describe('getQuestionTypes', () => {
   it('has six types', () => {
-    assert.equal(QUESTION_TYPES.length, 6);
+    assert.equal(getQuestionTypes().length, 6);
   });
 
   it('includes all expected types', () => {
+    const types = getQuestionTypes();
     for (const t of ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix']) {
-      assert.ok(QUESTION_TYPES.includes(t), t + ' should be in QUESTION_TYPES');
+      assert.ok(types.includes(t), t + ' should be in question types');
     }
   });
 });
 
-describe('currentRank', () => {
-  it('returns Pager Duty Intern for empty hexagon', () => {
-    assert.equal(currentRank({}), 'Pager Duty Intern');
+describe('currentRank (via progress.js wrapper)', () => {
+  it('returns Responder for empty polygon', () => {
+    assert.equal(currentRank({}), 'Responder');
   });
 
-  it('returns Pager Duty Intern for null', () => {
-    assert.equal(currentRank(null), 'Pager Duty Intern');
+  it('returns Responder for null', () => {
+    assert.equal(currentRank(null), 'Responder');
   });
 
-  it('returns Config Whisperer when gather >= 3 and diagnose >= 3', () => {
-    assert.equal(currentRank({ gather: 3, diagnose: 3 }), 'Config Whisperer');
+  it('returns Investigator when gather >= 3 and diagnose >= 3', () => {
+    assert.equal(currentRank({ gather: 3, diagnose: 3 }), 'Investigator');
   });
 
-  it('returns Root Cause Wrangler when correlate >= 3 and 3 axes >= 3', () => {
-    assert.equal(currentRank({ gather: 3, diagnose: 3, correlate: 3 }), 'Root Cause Wrangler');
+  it('returns Analyst when correlate >= 3 and 3 axes >= 3', () => {
+    assert.equal(currentRank({ gather: 3, diagnose: 3, correlate: 3 }), 'Analyst');
   });
 
   it('returns Incident Commander when all 6 axes >= 3', () => {
-    const hex = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
-    assert.equal(currentRank(hex), 'Incident Commander');
+    const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
+    assert.equal(currentRank(poly), 'Incident Commander');
   });
 
   it('returns Chaos Architect when all 6 axes >= 6', () => {
-    const hex = { gather: 6, diagnose: 6, correlate: 6, impact: 6, trace: 6, fix: 6 };
-    assert.equal(currentRank(hex), 'Chaos Architect');
+    const poly = { gather: 6, diagnose: 6, correlate: 6, impact: 6, trace: 6, fix: 6 };
+    assert.equal(currentRank(poly), 'Chaos Architect');
   });
 
   it('returns Incident Commander, not Chaos Architect, at 5', () => {
-    const hex = { gather: 5, diagnose: 5, correlate: 5, impact: 5, trace: 5, fix: 5 };
-    assert.equal(currentRank(hex), 'Incident Commander');
+    const poly = { gather: 5, diagnose: 5, correlate: 5, impact: 5, trace: 5, fix: 5 };
+    assert.equal(currentRank(poly), 'Incident Commander');
   });
 
-  it('returns Pager Duty Intern when only one axis is high', () => {
-    assert.equal(currentRank({ gather: 10 }), 'Pager Duty Intern');
+  it('returns Responder when only one axis is high', () => {
+    assert.equal(currentRank({ gather: 10 }), 'Responder');
   });
 });
 
-describe('normalizeHexagon', () => {
+describe('normalizeHexagon (via progress.js wrapper)', () => {
   it('normalizes to 0-10 scale by default', () => {
-    const hex = { gather: 10, diagnose: 5, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const norm = normalizeHexagon(hex);
+    const poly = { gather: 10, diagnose: 5, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const norm = normalizeHexagon(poly);
     assert.equal(norm.gather, 10);
     assert.equal(norm.diagnose, 5);
     assert.equal(norm.correlate, 0);
   });
 
-  it('handles empty hexagon', () => {
+  it('handles empty polygon', () => {
     const norm = normalizeHexagon({});
-    for (const t of QUESTION_TYPES) {
+    for (const t of getQuestionTypes()) {
       assert.equal(norm[t], 0);
     }
   });
 
   it('normalizes to custom scale', () => {
-    const hex = { gather: 4, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const norm = normalizeHexagon(hex, 5);
+    const poly = { gather: 4, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const norm = normalizeHexagon(poly, 5);
     assert.equal(norm.gather, 5);
     assert.equal(norm.diagnose, 2.5);
-  });
-});
-
-describe('levelTitle', () => {
-  it('returns title for level 1', () => {
-    assert.equal(levelTitle(1), 'Pager Duty Intern');
-  });
-
-  it('returns title for level 3', () => {
-    assert.equal(levelTitle(3), 'Root Cause Wrangler');
-  });
-
-  it('returns highest title for levels beyond max', () => {
-    assert.equal(levelTitle(99), 'Chaos Architect');
-  });
-
-  it('returns level 1 title for zero or negative', () => {
-    assert.equal(levelTitle(0), 'Pager Duty Intern');
-    assert.equal(levelTitle(-1), 'Pager Duty Intern');
   });
 });
 

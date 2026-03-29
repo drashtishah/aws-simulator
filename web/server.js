@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
 const paths = require('./lib/paths');
-const { currentRank, normalizeHexagon, parseCatalog } = require('./lib/progress');
+const { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression, parseCatalog } = require('./lib/progress');
 
 const app = express();
 
@@ -61,9 +61,8 @@ function stripFrontmatter(content) {
 
 app.get('/api/profile', (req, res) => {
   const profile = readJSON(paths.PROFILE, {
-    current_level: 1,
     completed_sims: [],
-    question_hexagon: {}
+    skill_polygon: {}
   });
   res.json(profile);
 });
@@ -158,15 +157,24 @@ app.get('/api/ui-themes', (req, res) => {
 });
 
 app.get('/api/progress', (req, res) => {
+  const config = getConfig();
   const profile = readJSON(paths.PROFILE, {
-    current_level: 1,
-    question_hexagon: {},
+    skill_polygon: {},
     completed_sims: []
   });
 
-  const hexagon = profile.question_hexagon || {};
-  const rank = currentRank(hexagon);
-  const normalized = normalizeHexagon(hexagon);
+  const polygon = progression.initPolygon(profile.skill_polygon || {}, config);
+  const rank = progression.currentRank(polygon, config);
+  const normalized = progression.normalizePolygon(polygon, config);
+  const axes = progression.axisNames(config);
+  const axisLabels = {};
+  for (const a of axes) {
+    axisLabels[a] = config.axes[a].label;
+  }
+
+  // Find next rank (one tier above current)
+  const rankIdx = config.ranks.findIndex(r => r.id === rank.id);
+  const nextRank = rankIdx > 0 ? config.ranks[rankIdx - 1] : null;
 
   let servicesEncountered = [];
   try {
@@ -178,10 +186,20 @@ app.get('/api/progress', (req, res) => {
   }
 
   res.json({
-    rank,
-    rankTitle: rank,
+    rank: rank.title,
+    rankTitle: rank.title,
+    polygon: normalized,
+    rawPolygon: polygon,
     hexagon: normalized,
-    rawHexagon: hexagon,
+    axisNames: axes,
+    axisLabels,
+    maxDifficulty: rank.max_difficulty,
+    polygonLastAdvanced: profile.polygon_last_advanced || {},
+    rankHistory: profile.rank_history || [],
+    challengeRuns: profile.challenge_runs || [],
+    categoryMap: config.category_map,
+    nextRank,
+    assist: config.assist || {},
     simsCompleted: (profile.completed_sims || []).length,
     servicesEncountered
   });
@@ -199,7 +217,7 @@ try {
 app.post('/api/game/start', async (req, res) => {
   if (!claudeProcess) return res.status(503).json({ error: 'Game engine not available' });
 
-  const { simId, themeId, model } = req.body;
+  const { simId, themeId, model, assistMode } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
   const registry = readJSON(paths.REGISTRY, { sims: [] });
@@ -212,7 +230,7 @@ app.post('/api/game/start', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const result = await claudeProcess.startSession(simId, themeId || 'still-life', { model: model || 'sonnet' });
+    const result = await claudeProcess.startSession(simId, themeId || 'calm-mentor', { model: model || 'sonnet', assistMode });
     res.write(`data: ${JSON.stringify({ type: 'session', sessionId: result.sessionId })}\n\n`);
 
     for (const event of result.events) {
@@ -294,7 +312,7 @@ app.post('/api/game/resume', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const result = await claudeProcess.startSession(simId, themeId || 'still-life', {
+    const result = await claudeProcess.startSession(simId, themeId || 'calm-mentor', {
       model: model || 'sonnet',
       resume: true,
       resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}.json for session state.`
@@ -335,6 +353,7 @@ function startServer(port) {
 }
 
 validateStartup();
+const config = getConfig();
 startServer(3200);
 
 module.exports = app;

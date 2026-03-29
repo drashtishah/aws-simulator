@@ -8,8 +8,8 @@
   let currentSessionId = null;
   let currentSimId = null;
   let registry = { sims: [] };
-  let profile = { current_level: 1, completed_sims: [] };
-  let narrativeThemes = [];
+  let profile = { completed_sims: [] };
+  let progressData = null;
   let isScrollPinned = true;
 
   // --- Settings (localStorage with fallback) ---
@@ -100,19 +100,34 @@
       progress = await fetchJSON('/api/progress');
     } catch {
       progress = {
-        rank: 'Pager Duty Intern',
-        rankTitle: 'Pager Duty Intern',
-        hexagon: { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 },
+        rank: 'Responder',
+        rankTitle: 'Responder',
+        polygon: {},
+        rawPolygon: {},
+        axisNames: ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'],
+        axisLabels: { gather: 'Gather', diagnose: 'Diagnose', correlate: 'Correlate', impact: 'Impact', trace: 'Trace', fix: 'Fix' },
         simsCompleted: 0,
-        servicesEncountered: []
+        servicesEncountered: [],
+        polygonLastAdvanced: {},
+        rankHistory: [],
+        challengeRuns: [],
+        maxDifficulty: 1,
+        assist: {}
       };
     }
+    progressData = progress;
 
     document.getElementById('stat-rank-title').textContent = progress.rankTitle;
     document.getElementById('stat-completed').textContent = progress.simsCompleted;
 
-    // Hexagon SVG
-    renderHexagon(progress.hexagon);
+    // Dynamic polygon SVG
+    renderPolygon(progress.polygon, progress.axisNames, progress.axisLabels, progress.polygonLastAdvanced);
+
+    // Next rank preview
+    renderNextRank(progress);
+
+    // Rank history
+    renderRankHistory(progress.rankHistory || []);
 
     // Services encountered
     const servicesList = document.getElementById('services-list');
@@ -125,15 +140,27 @@
     }
   }
 
-  function renderHexagon(hexagon) {
+  function renderPolygon(polygon, axes, axisLabels, polygonLastAdvanced) {
     const svg = document.getElementById('hexagon-svg');
     const cx = 150, cy = 150, radius = 110;
-    const types = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
-    const labels = ['Gather', 'Diagnose', 'Correlate', 'Impact', 'Trace', 'Fix'];
+    const n = axes.length;
+    if (n === 0) return;
 
-    // Calculate points for each axis
+    // Check which axes are fading (> 21 days since last advanced)
+    const fadingAxes = new Set();
+    if (polygonLastAdvanced) {
+      const now = new Date();
+      for (const axis of axes) {
+        const last = polygonLastAdvanced[axis];
+        if (last) {
+          const daysSince = (now - new Date(last)) / (1000 * 60 * 60 * 24);
+          if (daysSince >= 21) fadingAxes.add(axis);
+        }
+      }
+    }
+
     function getPoint(index, value, maxVal) {
-      const angle = (Math.PI * 2 * index / 6) - Math.PI / 2;
+      const angle = (Math.PI * 2 * index / n) - Math.PI / 2;
       const r = (value / maxVal) * radius;
       return {
         x: cx + r * Math.cos(angle),
@@ -141,13 +168,12 @@
       };
     }
 
-    // Build SVG content
     let svgContent = '';
 
-    // Background grid rings (at 25%, 50%, 75%, 100%)
+    // Background grid rings
     for (const pct of [0.25, 0.5, 0.75, 1.0]) {
       const points = [];
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < n; i++) {
         const p = getPoint(i, pct * 10, 10);
         points.push(p.x + ',' + p.y);
       }
@@ -155,36 +181,115 @@
     }
 
     // Axis lines
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < n; i++) {
       const p = getPoint(i, 10, 10);
       svgContent += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x + '" y2="' + p.y + '" class="hexagon-axis-line" />';
     }
 
     // Data polygon
     const dataPoints = [];
-    for (let i = 0; i < 6; i++) {
-      const val = hexagon[types[i]] || 0;
+    for (let i = 0; i < n; i++) {
+      const val = polygon[axes[i]] || 0;
       const p = getPoint(i, val, 10);
       dataPoints.push(p.x + ',' + p.y);
     }
     svgContent += '<polygon points="' + dataPoints.join(' ') + '" class="hexagon-polygon" />';
 
-    // Data points (dots)
-    for (let i = 0; i < 6; i++) {
-      const val = hexagon[types[i]] || 0;
+    // Data points (dots), with fading indicator
+    for (let i = 0; i < n; i++) {
+      const axis = axes[i];
+      const val = polygon[axis] || 0;
       const p = getPoint(i, val, 10);
-      svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot" />';
+      const fadingClass = fadingAxes.has(axis) ? ' hexagon-dot-fading' : '';
+      svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot' + fadingClass + '" />';
     }
 
-    // Labels
-    for (let i = 0; i < 6; i++) {
+    // Labels, with fading indicator
+    for (let i = 0; i < n; i++) {
+      const axis = axes[i];
+      const label = (axisLabels && axisLabels[axis]) || axis;
       const p = getPoint(i, 12, 10);
       const anchor = p.x < cx - 5 ? 'end' : p.x > cx + 5 ? 'start' : 'middle';
       const dy = p.y < cy ? '-4' : p.y > cy ? '12' : '4';
-      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label">' + labels[i] + '</text>';
+      const fadingClass = fadingAxes.has(axis) ? ' hexagon-label-fading' : '';
+      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label' + fadingClass + '">' + escapeHtml(label) + '</text>';
     }
 
     svg.innerHTML = svgContent;
+  }
+
+  function renderNextRank(progress) {
+    const container = document.getElementById('next-rank-info');
+    if (!container) return;
+
+    const nextRank = progress.nextRank;
+    if (!nextRank) {
+      container.innerHTML = '<span class="text-muted">You have achieved the highest rank.</span>';
+      return;
+    }
+
+    const rawPolygon = progress.rawPolygon || {};
+    const gate = nextRank.gate || {};
+    let requirements = [];
+
+    if (gate.all_axes_min !== undefined) {
+      const axes = progress.axisNames || [];
+      for (const axis of axes) {
+        const current = rawPolygon[axis] || 0;
+        const needed = gate.all_axes_min;
+        if (current < needed) {
+          const label = (progress.axisLabels && progress.axisLabels[axis]) || axis;
+          requirements.push(label + ': ' + current + '/' + needed);
+        }
+      }
+    }
+    if (gate.axes_min) {
+      for (const [axis, needed] of Object.entries(gate.axes_min)) {
+        const current = rawPolygon[axis] || 0;
+        if (current < needed) {
+          const label = (progress.axisLabels && progress.axisLabels[axis]) || axis;
+          requirements.push(label + ': ' + current + '/' + needed);
+        }
+      }
+    }
+    if (gate.count_axes_above) {
+      const axes = progress.axisNames || [];
+      const above = axes.filter(a => (rawPolygon[a] || 0) >= gate.count_axes_above.min).length;
+      if (above < gate.count_axes_above.count) {
+        requirements.push(gate.count_axes_above.count + ' axes at ' + gate.count_axes_above.min + '+ (currently ' + above + ')');
+      }
+    }
+
+    if (requirements.length === 0) {
+      container.innerHTML = '<span class="text-muted">You have achieved the highest rank.</span>';
+      return;
+    }
+
+    container.innerHTML = '<div class="next-rank-title">' + escapeHtml(nextRank.title) + '</div>' +
+      '<div class="next-rank-requirements">' +
+      requirements.map(r => '<div class="next-rank-req">' + escapeHtml(r) + '</div>').join('') +
+      '</div>';
+  }
+
+  function renderRankHistory(history) {
+    const container = document.getElementById('rank-history-list');
+    if (!container) return;
+
+    if (!history.length) {
+      container.innerHTML = '<span class="text-muted">No rank changes yet.</span>';
+      return;
+    }
+
+    container.innerHTML = history.map(entry =>
+      '<div class="rank-history-entry">' +
+      '<span class="rank-history-title">' + escapeHtml(formatRankId(entry.rank)) + '</span>' +
+      '<span class="rank-history-date">' + escapeHtml(entry.achieved) + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  function formatRankId(id) {
+    return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   // --- Sim Picker ---
@@ -229,33 +334,23 @@
 
     empty.style.display = 'none';
 
-    // Sort: sims covering weakest hexagon axes first
-    let hexagon = {};
+    // Sort using server-provided sort scores, or fallback to weakness-first
+    let progress;
     try {
-      const progress = await fetchJSON('/api/progress');
-      hexagon = progress.rawHexagon || {};
+      progress = progressData || await fetchJSON('/api/progress');
     } catch {
-      // ignore
+      progress = { rawPolygon: {}, maxDifficulty: 1, categoryMap: {}, axisNames: [] };
     }
 
-    // Map sim categories to question types they exercise
-    const categoryToTypes = {
-      security: ['trace', 'impact'],
-      performance: ['gather', 'diagnose', 'correlate'],
-      reliability: ['correlate', 'impact'],
-      networking: ['gather', 'diagnose'],
-      compute: ['gather', 'diagnose'],
-      data: ['gather', 'correlate'],
-      observability: ['gather', 'trace'],
-      operations: ['trace', 'fix'],
-      cost: ['impact', 'fix']
-    };
+    const rawPolygon = progress.rawPolygon || {};
+    const pMaxDiff = progress.maxDifficulty || 1;
+    const categoryMap = progress.categoryMap || {};
 
     const sorted = [...sims].sort((a, b) => {
-      const aTypes = categoryToTypes[(a.category || '').toLowerCase()] || ['gather'];
-      const bTypes = categoryToTypes[(b.category || '').toLowerCase()] || ['gather'];
-      const aGap = aTypes.reduce((sum, t) => sum + (hexagon[t] || 0), 0) / aTypes.length;
-      const bGap = bTypes.reduce((sum, t) => sum + (hexagon[t] || 0), 0) / bTypes.length;
+      const aTypes = categoryMap[(a.category || '').toLowerCase()] || ['gather'];
+      const bTypes = categoryMap[(b.category || '').toLowerCase()] || ['gather'];
+      const aGap = aTypes.reduce((sum, t) => sum + (rawPolygon[t] || 0), 0) / aTypes.length;
+      const bGap = bTypes.reduce((sum, t) => sum + (rawPolygon[t] || 0), 0) / bTypes.length;
       if (aGap !== bGap) return aGap - bGap;
       return (a.difficulty || 1) - (b.difficulty || 1);
     });
@@ -263,7 +358,7 @@
     const completedSims = (profile.completed_sims || []);
 
     grid.innerHTML = sorted.map(sim => {
-      const maxDiff = 3;
+      const maxDiff = 4;
       const dots = Array.from({ length: maxDiff }, (_, i) =>
         '<span class="difficulty-dot' + (i >= (sim.difficulty || 1) ? ' empty' : '') + '"></span>'
       ).join('');
@@ -323,15 +418,16 @@
     setInputEnabled(false);
     showTyping(true);
 
-    const themeId = getSetting('narrativeTheme', 'still-life');
+    const themeId = 'calm-mentor';
     const model = getSetting('model', 'sonnet');
+    const assistMode = getSetting('assistMode', 'standard');
     const endpoint = isResume ? '/api/game/resume' : '/api/game/start';
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ simId, themeId, model })
+        body: JSON.stringify({ simId, themeId, model, assistMode })
       });
 
       await streamResponse(response, {
@@ -630,19 +726,17 @@
       // ignore
     }
 
-    // Narrative themes
-    try {
-      narrativeThemes = await fetchJSON('/api/themes');
-      const options = narrativeThemes.map(t => ({ value: t.id, label: t.name }));
-      initCustomSelect(
-        document.getElementById('select-narrative-theme'),
-        options,
-        getSetting('narrativeTheme', 'still-life'),
-        (val) => { setSetting('narrativeTheme', val); }
-      );
-    } catch {
-      // ignore
-    }
+    // Assist mode
+    const assistOptions = [
+      { value: 'standard', label: 'Standard' },
+      { value: 'guided', label: 'Guided' }
+    ];
+    initCustomSelect(
+      document.getElementById('select-assist-mode'),
+      assistOptions,
+      getSetting('assistMode', 'standard'),
+      (val) => { setSetting('assistMode', val); }
+    );
 
     // Model selector
     const modelOptions = [

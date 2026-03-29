@@ -21,12 +21,21 @@ test.describe('Settings', () => {
     expect(text.length).toBeGreaterThan(0);
   });
 
-  test('narrative theme dropdown populated from API', async ({ page }) => {
+  test('assist mode dropdown has standard and guided options', async ({ page }) => {
     await page.click('#btn-settings');
-    const trigger = page.locator('#select-narrative-theme .custom-select-trigger');
+    const dropdown = page.locator('#select-assist-mode');
+    const trigger = dropdown.locator('.custom-select-trigger');
     await expect(trigger).toBeVisible();
-    const text = await trigger.textContent();
-    expect(text.length).toBeGreaterThan(0);
+    await trigger.click();
+    const options = dropdown.locator('.custom-select-option');
+    const count = await options.count();
+    expect(count).toBe(2);
+    const texts = [];
+    for (let i = 0; i < count; i++) {
+      texts.push(await options.nth(i).textContent());
+    }
+    expect(texts).toContain('Standard');
+    expect(texts).toContain('Guided');
   });
 
   test('custom dropdown opens and selects option', async ({ page }) => {

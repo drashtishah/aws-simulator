@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 
-const { currentRank, normalizeHexagon, parseCatalog } = require('../lib/progress');
+const { currentRank, normalizeHexagon, parseCatalog, getQuestionTypes, getConfig, progression } = require('../lib/progress');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -76,7 +76,7 @@ function buildApp() {
 
   app.get('/api/profile', (req, res) => {
     const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
-      current_level: 1, completed_sims: []
+      completed_sims: [], skill_polygon: {}
     });
     res.json(profile);
   });
@@ -169,15 +169,24 @@ function buildApp() {
   });
 
   app.get('/api/progress', (req, res) => {
+    const config = getConfig();
     const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
-      current_level: 1,
-      question_hexagon: {},
-      completed_sims: []
+      completed_sims: [],
+      skill_polygon: {}
     });
 
-    const hexagon = profile.question_hexagon || {};
-    const rank = currentRank(hexagon);
-    const normalized = normalizeHexagon(hexagon);
+    const polygon = progression.initPolygon(profile.skill_polygon || {}, config);
+    const rank = progression.currentRank(polygon, config);
+    const normalized = progression.normalizePolygon(polygon, config);
+    const axes = progression.axisNames(config);
+    const axisLabels = {};
+    for (const a of axes) {
+      axisLabels[a] = config.axes[a].label;
+    }
+
+    // Find next rank
+    const rankIdx = config.ranks.findIndex(r => r.id === rank.id);
+    const nextRank = rankIdx > 0 ? config.ranks[rankIdx - 1] : null;
 
     let servicesEncountered = [];
     try {
@@ -189,24 +198,34 @@ function buildApp() {
     }
 
     res.json({
-      rank,
-      rankTitle: rank,
+      rank: rank.title,
+      rankTitle: rank.title,
+      polygon: normalized,
+      rawPolygon: polygon,
+      axisNames: axes,
+      axisLabels,
       hexagon: normalized,
-      rawHexagon: hexagon,
       simsCompleted: (profile.completed_sims || []).length,
-      servicesEncountered
+      servicesEncountered,
+      maxDifficulty: rank.max_difficulty,
+      polygonLastAdvanced: profile.polygon_last_advanced || {},
+      rankHistory: profile.rank_history || [],
+      challengeRuns: profile.challenge_runs || [],
+      categoryMap: config.category_map,
+      nextRank,
+      assist: config.assist
     });
   });
 
   // Game endpoints return 503 without claude-process (acceptable for unit tests)
   app.post('/api/game/start', (req, res) => {
-    const { simId, themeId, model } = req.body;
+    const { simId, themeId, model, assistMode } = req.body;
     if (!simId) return res.status(400).json({ error: 'simId is required' });
     const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
     const simExists = registry.sims.some(s => s.id === simId);
     if (!simExists) return res.status(400).json({ error: 'Invalid simId' });
     // Would normally start Claude process; return mock for testing
-    res.json({ simId, themeId: themeId || 'still-life', model: model || 'sonnet' });
+    res.json({ simId, themeId: themeId || 'calm-mentor', model: model || 'sonnet', assistMode: assistMode || 'standard' });
   });
 
   app.post('/api/game/message', (req, res) => {
@@ -258,7 +277,7 @@ describe('GET /api/profile', () => {
   it('returns the player profile', async () => {
     const res = await request(app, 'GET', '/api/profile');
     assert.equal(res.status, 200);
-    assert.equal(typeof res.body.current_level, 'number');
+    assert.ok(typeof res.body.skill_polygon === 'object');
     assert.ok(Array.isArray(res.body.completed_sims));
   });
 
@@ -267,9 +286,9 @@ describe('GET /api/profile', () => {
     assert.ok(res.body.completed_sims.length > 0, 'completed_sims should not be empty');
   });
 
-  it('returns current_level as a positive integer', async () => {
+  it('returns rank_title as a string', async () => {
     const res = await request(app, 'GET', '/api/profile');
-    assert.ok(res.body.current_level >= 1);
+    assert.ok(typeof res.body.rank_title === 'string');
   });
 });
 
@@ -414,21 +433,38 @@ describe('GET /api/ui-themes', () => {
 describe('GET /api/progress', () => {
   const app = buildApp();
 
-  it('returns progress data with rank and hexagon', async () => {
+  it('returns progress data with rank, polygon, and new fields', async () => {
     const res = await request(app, 'GET', '/api/progress');
     assert.equal(res.status, 200);
     assert.ok(typeof res.body.rank === 'string');
     assert.ok(typeof res.body.rankTitle === 'string');
-    assert.ok(typeof res.body.hexagon === 'object');
+    assert.ok(typeof res.body.polygon === 'object');
+    assert.ok(typeof res.body.rawPolygon === 'object');
+    assert.ok(Array.isArray(res.body.axisNames));
+    assert.ok(typeof res.body.axisLabels === 'object');
     assert.ok(typeof res.body.simsCompleted === 'number');
     assert.ok(Array.isArray(res.body.servicesEncountered));
+    assert.ok(typeof res.body.maxDifficulty === 'number');
+    assert.ok(typeof res.body.categoryMap === 'object');
+    assert.ok(typeof res.body.assist === 'object');
   });
 
-  it('hexagon has all six question types', async () => {
+  it('polygon has all six question types', async () => {
     const res = await request(app, 'GET', '/api/progress');
     for (const t of ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix']) {
-      assert.ok(typeof res.body.hexagon[t] === 'number', t + ' should be a number');
+      assert.ok(typeof res.body.polygon[t] === 'number', t + ' should be a number in polygon');
     }
+  });
+
+  it('includes hexagon alias for backwards compatibility', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    assert.ok(typeof res.body.hexagon === 'object');
+  });
+
+  it('includes rank history and challenge runs', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    assert.ok(Array.isArray(res.body.rankHistory));
+    assert.ok(Array.isArray(res.body.challengeRuns));
   });
 });
 
@@ -463,12 +499,12 @@ describe('POST /api/game/start', () => {
     assert.equal(res.body.model, 'sonnet');
   });
 
-  it('defaults themeId to still-life when not provided', async () => {
+  it('defaults themeId to calm-mentor when not provided', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
     const simId = registry.sims[0].id;
     const res = await request(app, 'POST', '/api/game/start', { simId });
     assert.equal(res.status, 200);
-    assert.equal(res.body.themeId, 'still-life');
+    assert.equal(res.body.themeId, 'calm-mentor');
   });
 });
 

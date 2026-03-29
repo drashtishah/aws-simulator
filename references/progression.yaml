@@ -1,0 +1,151 @@
+# references/progression.yaml
+# The progression system is fully defined here.
+# To add a question axis: add to axes, update rank gates, update category_map.
+# To add a rank: insert into ranks (order matters, first match wins).
+# To add a challenge modifier: append to modifiers.
+# To change decay: edit the decay section.
+
+# --- Question axes ---
+# These define the skill polygon. Currently 6 (hexagon), but the system
+# supports any number. Add an axis here and it appears on the polygon,
+# in the profile, in classification, and in rank evaluation automatically.
+axes:
+  gather:
+    label: Gather
+    description: Information collection
+    keywords: ["show me", "what is the", "list", "describe", "get"]
+  diagnose:
+    label: Diagnose
+    description: Root cause identification
+    keywords: ["why", "what caused", "what's wrong", "explain the error"]
+  correlate:
+    label: Correlate
+    description: Cross-service analysis
+    keywords: ["related to", "connected", "at the same time", "both", "between"]
+  impact:
+    label: Impact
+    description: Blast radius assessment
+    keywords: ["who's affected", "blast radius", "how many users", "production"]
+  trace:
+    label: Trace
+    description: Change investigation and audit
+    keywords: ["what changed", "who deployed", "CloudTrail", "when did", "recent"]
+  fix:
+    label: Fix
+    description: Remediation proposals
+    keywords: []  # Detected by action type, not keywords
+
+# --- Rank tiers ---
+# Evaluated top-to-bottom; first match wins (put strictest first).
+# gate: a condition object evaluated against the player's polygon.
+#   "all_axes_min: N" means every axis must be >= N.
+#   "axes_min: {axis: N}" means specific axes must meet thresholds.
+#   "count_axes_above: {min: N, count: M}" means M+ axes must be >= N.
+# max_difficulty: highest sim difficulty this rank can access.
+# unlocks: list of feature keys enabled at this rank.
+ranks:
+  - id: chaos-architect
+    title: Chaos Architect
+    gate: { all_axes_min: 6 }
+    max_difficulty: 4
+    unlocks: [challenge_modifiers, custom_constraints]
+
+  - id: incident-commander
+    title: Incident Commander
+    gate: { all_axes_min: 3 }
+    max_difficulty: 4
+    unlocks: [challenge_modifiers]
+
+  - id: analyst
+    title: Analyst
+    gate:
+      axes_min: { correlate: 3 }
+      count_axes_above: { min: 3, count: 3 }
+    max_difficulty: 3
+    unlocks: []
+
+  - id: investigator
+    title: Investigator
+    gate:
+      axes_min: { gather: 3, diagnose: 3 }
+    max_difficulty: 2
+    unlocks: []
+
+  - id: responder
+    title: Responder
+    gate: {}  # Always matches (default)
+    max_difficulty: 1
+    unlocks: []
+
+# --- Category to axes mapping ---
+# Maps sim categories to which polygon axes they exercise.
+# Used for weakness-targeted sorting and hexagon display.
+# If you add a new axis, update the categories that exercise it.
+category_map:
+  security: [trace, impact]
+  performance: [gather, diagnose, correlate]
+  reliability: [correlate, impact]
+  networking: [gather, diagnose]
+  compute: [gather, diagnose]
+  data: [gather, correlate]
+  observability: [gather, trace]
+  operations: [trace, fix]
+  cost: [impact, fix]
+
+# --- Decay ---
+# Skills fade without practice. Axes decay independently.
+decay:
+  warn_after_days: 21     # Mark axis as "fading" after this many days
+  decay_after_days: 42    # Decrement axis value after this many days
+  decay_amount: 1         # How much to subtract per decay tick
+  min_value_to_decay: 3   # Only decay axes at or above this value
+  floor: 0                # Never decay below this
+
+# --- Challenge modifiers ---
+# Opt-in constraints for replayability. Each modifier is independent.
+# requires_unlock: the feature key from ranks.unlocks that gates this modifier.
+# bonus_axes: which axes get +1 bonus if the sim is completed with this active.
+modifiers:
+  - id: fog-of-war
+    title: Fog of War
+    description: One service console is hidden. Deduce from other evidence.
+    requires_unlock: challenge_modifiers
+    bonus_axes: [correlate, diagnose]
+
+  - id: clock-pressure
+    title: Clock Pressure
+    description: 15-minute investigation deadline.
+    requires_unlock: challenge_modifiers
+    bonus_axes: [gather, fix]
+
+  - id: signal-noise
+    title: Signal Noise
+    description: Extra misleading log entries in artifacts.
+    requires_unlock: challenge_modifiers
+    bonus_axes: [diagnose, trace]
+
+  - id: solo-responder
+    title: Solo Responder
+    description: No hints available.
+    requires_unlock: challenge_modifiers
+    bonus_axes: [correlate, trace]
+
+# --- Sorting weights ---
+# Controls how eligible sims are ranked for presentation.
+# Higher weight = more influence on sort order.
+sorting:
+  weakness_weight: 3      # Priority for sims targeting weak polygon axes
+  service_gap_weight: 2   # Priority for sims covering unpracticed services
+  retention_weight: 1     # Priority for sims refreshing stale knowledge
+  retention_stale_days: 14  # Service considered stale after this many days
+  retention_score_cap: 4    # Only boost if knowledge_score < this
+
+# --- Assist mode ---
+assist:
+  standard:
+    label: Standard
+    description: Hints appear after unproductive investigation.
+  guided:
+    label: Guided
+    description: Proactive hints walk through a recommended investigation order.
+    penalty: none  # No scoring penalty for using guided mode

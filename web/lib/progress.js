@@ -1,61 +1,30 @@
 'use strict';
 
-const QUESTION_TYPES = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
+const path = require('path');
+const progression = require('./progression');
 
-const LEVEL_TITLES = [
-  'Pager Duty Intern',
-  'Config Whisperer',
-  'Root Cause Wrangler',
-  'Incident Commander',
-  'Chaos Architect'
-];
+// Load progression config once at module load
+const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'progression.yaml');
+let _config;
 
-const RANK_THRESHOLDS = [
-  {
-    title: 'Chaos Architect',
-    test: (hex) => QUESTION_TYPES.every(t => (hex[t] || 0) >= 6)
-  },
-  {
-    title: 'Incident Commander',
-    test: (hex) => QUESTION_TYPES.every(t => (hex[t] || 0) >= 3)
-  },
-  {
-    title: 'Root Cause Wrangler',
-    test: (hex) => {
-      const atLeast3 = QUESTION_TYPES.filter(t => (hex[t] || 0) >= 3).length;
-      return (hex.correlate || 0) >= 3 && atLeast3 >= 3;
-    }
-  },
-  {
-    title: 'Config Whisperer',
-    test: (hex) => (hex.gather || 0) >= 3 && (hex.diagnose || 0) >= 3
-  },
-  {
-    title: 'Pager Duty Intern',
-    test: () => true
+function getConfig() {
+  if (!_config) {
+    _config = progression.loadConfig(CONFIG_PATH);
   }
-];
-
-function currentRank(hexagon) {
-  for (const rank of RANK_THRESHOLDS) {
-    if (rank.test(hexagon || {})) return rank.title;
-  }
-  return RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1].title;
+  return _config;
 }
 
-function normalizeHexagon(hexagon, maxScale) {
-  maxScale = maxScale || 10;
-  const max = Math.max(...QUESTION_TYPES.map(t => hexagon[t] || 0), 1);
-  const result = {};
-  for (const t of QUESTION_TYPES) {
-    result[t] = Math.round(((hexagon[t] || 0) / max) * maxScale * 10) / 10;
-  }
-  return result;
+// Derived from config for backwards compatibility
+function getQuestionTypes() {
+  return progression.axisNames(getConfig());
 }
 
-function levelTitle(level) {
-  const idx = Math.max(0, Math.min((level || 1) - 1, LEVEL_TITLES.length - 1));
-  return LEVEL_TITLES[idx];
+function currentRank(polygon) {
+  return progression.currentRank(polygon || {}, getConfig()).title;
+}
+
+function normalizeHexagon(polygon, maxScale) {
+  return progression.normalizePolygon(polygon || {}, getConfig(), maxScale || 10);
 }
 
 function parseCatalog(csvContent) {
@@ -101,12 +70,12 @@ function serviceProgress(catalog) {
 }
 
 module.exports = {
-  QUESTION_TYPES,
-  LEVEL_TITLES,
-  RANK_THRESHOLDS,
+  getConfig,
+  getQuestionTypes,
   currentRank,
   normalizeHexagon,
-  levelTitle,
   parseCatalog,
-  serviceProgress
+  serviceProgress,
+  // Re-export progression engine for direct access
+  progression,
 };
