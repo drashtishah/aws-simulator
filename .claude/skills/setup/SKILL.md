@@ -21,22 +21,31 @@ If `learning/profile.json` does not exist, create it:
 
 ```json
 {
-  "current_level": 1,
+  "rank_title": "Responder",
+  "skill_polygon": {
+    "gather": 0, "diagnose": 0, "correlate": 0,
+    "impact": 0, "trace": 0, "fix": 0
+  },
+  "polygon_last_advanced": {},
   "completed_sims": [],
-  "unlocked_levels": [1],
   "service_exposure": {},
   "question_patterns": {
-    "first_action_frequency": {},
+    "first_action_frequency": {
+      "logs": 0, "permissions": 0, "architecture": 0,
+      "metrics": 0, "recent_changes": 0, "immediate_fix": 0
+    },
     "avg_questions_before_fix": 0,
     "audit_trail_check_rate": 0,
     "multi_service_investigation_rate": 0
   },
-  "weaknesses": [],
-  "strengths": [],
+  "challenge_runs": [],
+  "rank_history": [{ "rank": "responder", "achieved": "{today}" }],
   "total_sessions": 0,
   "last_session": null
 }
 ```
+
+Replace `{today}` with the current date in YYYY-MM-DD format.
 
 If it already exists, leave it. Do not overwrite.
 
@@ -98,11 +107,11 @@ This is not a blocker. The MCP server enriches sim creation but is not required 
 
 Print the number of available sims and current profile state. Use flat, quiet tone:
 
-> Everything is in order. {n} simulations are loaded. Your profile is fresh -- level 1, nothing completed. Run /play when you are ready.
+> Everything is in order. {n} simulations are loaded. Your profile is fresh, rank Responder, nothing completed. Run /play when you are ready.
 
 If the profile already had progress:
 
-> Workspace verified. {n} simulations loaded. You have completed {completed} so far, currently at level {level}. Run /play to continue.
+> Workspace verified. {n} simulations loaded. You have completed {completed} so far, currently ranked {rank_title}. Run /play to continue.
 
 ---
 
