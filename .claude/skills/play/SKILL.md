@@ -54,6 +54,11 @@ Read `learning/profile.json`. If the file is missing or empty, create it with th
 ```json
 {
   "current_level": 1,
+  "rank_title": "Pager Duty Intern",
+  "question_hexagon": {
+    "gather": 0, "diagnose": 0, "correlate": 0,
+    "impact": 0, "trace": 0, "fix": 0
+  },
   "completed_sims": [],
   "unlocked_levels": [1],
   "service_exposure": {},
@@ -66,8 +71,6 @@ Read `learning/profile.json`. If the file is missing or empty, create it with th
     "audit_trail_check_rate": 0.0,
     "multi_service_investigation_rate": 0.0
   },
-  "weaknesses": [],
-  "strengths": [],
   "total_sessions": 0,
   "last_session": null
 }
@@ -109,10 +112,10 @@ Wait for choice. Store `theme_id` for Step 7.
 
 ### 4. Present Available Simulations
 
-Sort eligible sims with weakness-targeting sims first:
+Sort eligible sims with low-knowledge services first:
 
-1. Sims whose `services` array overlaps with `profile.weaknesses` -- show these first
-2. Remaining eligible sims sorted by difficulty ascending
+1. Read `learning/catalog.csv`. For each eligible sim, sum the knowledge scores of its services. Sims with lowest total score appear first (these cover the services the player knows least).
+2. Remaining eligible sims sorted by difficulty ascending.
 
 Present each sim:
 
@@ -317,6 +320,7 @@ Analyze the player's investigation using the patterns and rules in coaching-patt
 - Check investigation depth (questions before fix)
 - Check hint usage
 - Analyze debrief engagement: questions asked, zones explored, depth score (see "Debrief Engagement" section in coaching-patterns.md)
+- Finalize question_profile effectiveness: for each question type, mark effective=true if the question led to discovering new information or satisfying a criterion. Write the final question_profile to session state.
 
 Generate coaching feedback by applying ALL matching rules from coaching-patterns.md. Present the feedback to the player in a structured format:
 
@@ -350,9 +354,10 @@ Read and update `learning/profile.json`:
 2. Update `service_exposure`: for each service in the sim, increment its count
 3. Update `question_patterns` with data from this session
 4. **Level progression**: if 2 or more sims completed at `current_level`, add `current_level + 1` to `unlocked_levels` and set `current_level` to `current_level + 1`
-5. Update `weaknesses` and `strengths` per coaching-patterns.md rules
-6. Increment `total_sessions` by 1
-7. Set `last_session` to today's date (YYYY-MM-DD)
+5. **Update question hexagon**: add effective counts from the session's `question_profile` to `profile.question_hexagon`. For each question type, add the effective count from this session to the running total.
+6. **Derive rank**: compute rank from the hexagon shape using the rank thresholds (Pager Duty Intern, Config Whisperer, Root Cause Wrangler, Incident Commander, Chaos Architect). Write rank to `profile.rank_title`.
+7. Increment `total_sessions` by 1
+8. Set `last_session` to today's date (YYYY-MM-DD)
 
 ### 18. Update Services Catalog
 
@@ -378,8 +383,8 @@ Append an entry to `learning/journal.md`:
 - **Category**: {category}
 - **Services**: {comma-separated services}
 - **Questions asked**: {questions_asked}
-- **Hints used**: {hints_used}
 - **Criteria met**: {count met} / {count total}
+- **Question types**: gather: {count}, diagnose: {count}, correlate: {count}, impact: {count}, trace: {count}, fix: {count}
 
 ### Coaching summary
 

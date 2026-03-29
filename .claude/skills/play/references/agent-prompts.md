@@ -173,8 +173,14 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
      "last_active": "{ISO 8601 datetime of this update}",
      "criteria_met": ["{list of criteria IDs the player has satisfied}"],
      "criteria_remaining": ["{list of criteria IDs not yet satisfied}"],
-     "hints_used": {number of hints delivered so far},
-     "questions_asked": {number of questions the player has asked},
+     "question_profile": {
+       "gather": { "count": 0, "effective": 0 },
+       "diagnose": { "count": 0, "effective": 0 },
+       "correlate": { "count": 0, "effective": 0 },
+       "impact": { "count": 0, "effective": 0 },
+       "trace": { "count": 0, "effective": 0 },
+       "fix": { "count": 0, "effective": 0 }
+     },
      "investigation_summary": "{2-3 sentence summary of what the player has done so far, updated each save}",
      "status": "in_progress",
      "story_beats_fired": ["{list of beat triggers that have already fired}"],
@@ -186,6 +192,23 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
      "debrief_seeds_offered": [],
      "debrief_depth_score": 0
    }
+
+8b. QUESTION TYPE TAGGING: After each player message during investigation, classify it into a question type before responding. Use keyword matching:
+
+   gather:    "show me", "what is the", "list", "describe", "get"
+              Example: "Show me the CloudWatch logs for the Lambda function"
+   diagnose:  "why", "what caused", "what's wrong", "explain the error"
+              Example: "Why are messages being processed twice?"
+   correlate: "related to", "connected", "at the same time", "both", "between"
+              Example: "Is the Lambda timeout related to the SQS redelivery?"
+   impact:    "who's affected", "blast radius", "how many users", "production"
+              Example: "How many customers are seeing duplicate charges?"
+   trace:     "what changed", "who deployed", "CloudTrail", "when did", "recent"
+              Example: "What changed in the last 24 hours?"
+   fix:       Player proposes a specific remediation action
+              Example: "We should increase the visibility timeout to 540 seconds"
+
+   Increment the count for the matched type in question_profile. If the question leads to discovering new information or satisfying a criterion, also increment effective.
 
 9. On resolution (all required criteria met) -- three-stage debrief:
 

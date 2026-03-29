@@ -211,22 +211,38 @@ Bad notes are vague or generic:
 
 After scoring, update `learning/profile.json`:
 
-### Weakness Detection
+### Service Progress
 
-Add a service to `weaknesses` if:
-- The player never queried that service's console during a sim where it was involved
-- The player scored 0 points for that service in this sim
-- The service is already in weaknesses and the player did not improve this sim
+Service-level progress is tracked in `learning/catalog.csv` via knowledge scores (0-8 per service). The play skill updates scores after each sim per the scoring rules above. No separate strengths/weaknesses arrays are maintained.
 
-Remove a service from `weaknesses` if:
-- The player scored +2 for that service in this sim
-- The player demonstrated clear understanding during investigation
+### Question Type Classification
 
-### Strength Detection
+After each player message during investigation, classify it into one of six question types using keyword matching:
 
-Add a service to `strengths` if:
-- The player scored +2 for that service AND correctly identified the issue on first attempt
-- The player asked expert-level diagnostic questions about the service
+| Type | Keywords | Example |
+|---|---|---|
+| gather | "show me", "what is the", "list", "describe", "get" | "Show me the CloudWatch logs for the Lambda function" |
+| diagnose | "why", "what caused", "what's wrong", "explain the error" | "Why are messages being processed twice?" |
+| correlate | "related to", "connected", "at the same time", "both", "between" | "Is the Lambda timeout related to the SQS redelivery?" |
+| impact | "who's affected", "blast radius", "how many users", "production" | "How many customers are seeing duplicate charges?" |
+| trace | "what changed", "who deployed", "CloudTrail", "when did", "recent" | "What changed in the last 24 hours?" |
+| fix | Player proposes a specific remediation action | "We should increase the visibility timeout to 540 seconds" |
+
+A question is "effective" if it led to discovering new information (the response contained data the player had not seen before) or contributed to satisfying a fix criterion.
+
+### Rank Derivation
+
+After updating the question hexagon in profile.json, derive the player's rank:
+
+| Rank | Requirement |
+|---|---|
+| Pager Duty Intern | Default (all axes < 3) |
+| Config Whisperer | gather >= 3 AND diagnose >= 3 |
+| Root Cause Wrangler | correlate >= 3 AND any 3 axes >= 3 |
+| Incident Commander | all 6 axes >= 3 |
+| Chaos Architect | all 6 axes >= 6 |
+
+The rank is written to `profile.rank_title`. Rank reflects the shape of the hexagon, not the number of sims completed.
 
 ### Question Pattern Tracking
 
