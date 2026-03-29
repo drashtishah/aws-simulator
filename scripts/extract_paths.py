@@ -3,8 +3,10 @@
 
 Scans .md and .json files for strings that look like file/directory paths
 (anything containing a slash). These are files where paths must be hardcoded
-since there's no import/variable mechanism. JS files are excluded because
-they can use a constants module instead.
+since there's no import/variable mechanism.
+
+The script only extracts and reports. It does not validate, resolve, or
+rewrite paths. The test (web/test/path-registry.test.js) handles validation.
 
 Outputs a sorted, deduplicated CSV to references/path-registry.csv.
 
@@ -26,26 +28,6 @@ SCAN_EXTENSIONS: Set[str] = {'.md', '.json'}
 EXCLUDE_DIRS: Set[str] = {'node_modules', '.git', 'learning', 'sims', 'test-results'}
 
 EXCLUDE_FILES: Set[str] = {'package-lock.json'}
-
-
-# Patterns that look like paths but aren't project references
-DENY_PATTERNS: List[str] = [
-    'http://',
-    'https://',
-    '//',           # protocol-relative URLs
-    '#',            # anchors
-    '/tmp/',
-    '/usr/',
-    '/bin/',
-    '/etc/',
-    'node_modules/',
-    'npm/',
-    '@',            # npm scoped packages like @anthropic-ai/sdk
-    'arn:',         # AWS ARNs
-    'AWS/',         # CloudWatch namespaces like AWS/EC2
-    'aws/',         # lowercase variant
-    '::/0',         # IPv6 CIDR
-]
 
 # A valid project path: lowercase word chars, digits, dots, hyphens, underscores,
 # braces (for templates), slashes, and dollar signs (for template literals).
@@ -78,7 +60,8 @@ def collect_files(root: Path) -> List[Path]:
 def normalize_path(raw: str) -> Optional[str]:
     """Clean and normalize a raw extracted path string.
 
-    Returns None if the path is not a project-internal reference.
+    Returns None if the string is clearly not a project path.
+    Does not check whether the path exists on disk.
     """
     cleaned = raw.strip()
 
@@ -88,68 +71,31 @@ def normalize_path(raw: str) -> Optional[str]:
     # Normalize JS template literals that appear in markdown: ${var} -> {var}
     cleaned = re.sub(r'\$\{(\w+)\}', r'{\1}', cleaned)
 
-    # Deny-list check
-    for pattern in DENY_PATTERNS:
-        if pattern in cleaned:
-            return None
-
-    # Must contain a slash to be a path
+    # Must contain a slash
     if '/' not in cleaned:
         return None
 
-    # Must look like a filesystem path (no spaces, colons, parens, etc.)
+    # Must look like a filesystem path
     if not PATH_CHAR_RE.match(cleaned):
         return None
 
-    # Skip IP addresses and CIDR ranges (e.g., 10.0.0.0/16, 0.0.0.0/0)
+    # Skip IP addresses and CIDR ranges (e.g., 10.0.0.0/16)
     if re.match(r'\d+\.\d+\.\d+', cleaned):
         return None
 
-    # Strip leading ./ if present
+    # Strip leading ./
     if cleaned.startswith('./'):
         cleaned = cleaned[2:]
 
-    # Skip absolute system paths
+    # Skip absolute paths
     if cleaned.startswith('/'):
         return None
 
-    # The top-level directory (first segment before /) must exist at the project root.
-    # This filters out things like "type/simulation", "endpoint/foo", "app/bar"
-    # that look like paths but are tags, API routes, or ARN fragments.
-    top_dir = cleaned.split('/')[0]
-    if top_dir and not (ROOT / top_dir).exists():
-        return None
-
-    # Skip paths that are just a trailing slash (bare word + /)
-    # but keep directory references like "learning/"
+    # Skip empty paths
     if not cleaned.replace('/', ''):
         return None
 
     return cleaned if cleaned else None
-
-
-def resolve_relative_path(raw: str, rel_path: str) -> str:
-    """If a path doesn't resolve from root, try resolving relative to the source file.
-
-    For example, `artifacts/foo.json` in `sims/001-ec2/manifest.json` becomes
-    `sims/001-ec2/artifacts/foo.json`.
-
-    Only resolves against the immediate parent directory. Does not search
-    other directories, so ambiguous references are flagged by the test.
-    """
-    # If it already exists from root, keep it
-    if (ROOT / raw).exists():
-        return raw
-
-    # Try relative to the source file's directory
-    source_dir = str(Path(rel_path).parent)
-    if source_dir and source_dir != '.':
-        candidate = source_dir + '/' + raw
-        if (ROOT / candidate).exists():
-            return candidate
-
-    # Return original (the test will flag it if it doesn't exist)
-    return raw
 
 
 def extract_from_md(content: str, rel_path: str) -> List[PathEntry]:
@@ -161,14 +107,12 @@ def extract_from_md(content: str, rel_path: str) -> List[PathEntry]:
     lines = content.split('\n')
 
     for line_num, line in enumerate(lines, start=1):
-        # Backtick-wrapped strings containing at least one slash
         for match in re.finditer(r'`([^`\n]*?/[^`\n]*?)`', line):
             normalized = normalize_path(match.group(1))
             if normalized:
-                resolved = resolve_relative_path(normalized, rel_path)
                 entries.append(PathEntry(
                     file=rel_path,
-                    path=resolved,
+                    path=normalized,
                     line_number=line_num,
                 ))
 
@@ -184,14 +128,12 @@ def extract_from_json(content: str, rel_path: str) -> List[PathEntry]:
     lines = content.split('\n')
 
     for line_num, line in enumerate(lines, start=1):
-        # JSON string values containing at least one slash
         for match in re.finditer(r'"([^"]*?/[^"]*?)"', line):
             normalized = normalize_path(match.group(1))
             if normalized:
-                resolved = resolve_relative_path(normalized, rel_path)
                 entries.append(PathEntry(
                     file=rel_path,
-                    path=resolved,
+                    path=normalized,
                     line_number=line_num,
                 ))
 

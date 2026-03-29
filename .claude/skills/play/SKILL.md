@@ -236,7 +236,7 @@ After the player has used `max_hints_before_nudge` hints without progress, offer
 
 "Here is what the infrastructure looks like."
 
-Then display the contents of `artifacts/architecture-hint.txt`. This is the last nudge before giving direct guidance toward the answer. The diagram has NO problem markers -- it shows the infrastructure layout without revealing the root cause.
+Then display the contents of `sims/{id}/artifacts/architecture-hint.txt`. This is the last nudge before giving direct guidance toward the answer. The diagram has NO problem markers -- it shows the infrastructure layout without revealing the root cause.
 
 ### 13. Fix Validation
 

@@ -37,7 +37,7 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 3. Sort by `sims_completed` ascending (least practiced first)
 4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter by `category` column
 5. Note which certifications each service appears in (`cert_relevance` column)
-6. Also consult `references/exam-topics.md` to identify services not yet in the catalog that are relevant to the player's current cert targets
+6. Also consult `.claude/skills/create-sim/references/exam-topics.md` to identify services not yet in the catalog that are relevant to the player's current cert targets
 
 ### Phase 2: Research Incident Patterns
 
@@ -47,7 +47,7 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
    - `"AWS {service} security vulnerability common"`
    - `"AWS {service} production issue root cause"`
 7. Look for patterns that involve 2-3 services interacting (not single-service trivial issues)
-8. Cross-reference findings against `references/exam-topics.md` to ensure exam domain coverage
+8. Cross-reference findings against `.claude/skills/create-sim/references/exam-topics.md` to ensure exam domain coverage
 9. Prioritize patterns that cover multiple exam domains or certifications
 9b. **If `mcp_available: true`:** For each service in the proposed scenarios, use the following tools to collect reference data for Phase 4 artifact generation:
 
@@ -139,7 +139,7 @@ Where:
 - `slug`: kebab-case (e.g., `resource-explorer`)
 - `full_name`: official AWS name (e.g., `AWS Resource Explorer`)
 - `category`: compute, storage, database, networking, security, serverless, containers, integration, management, developer-tools, analytics, ml-ai, migration
-- `cert_relevance`: semicolon-separated cert codes from `references/exam-topics.md`, or empty if not exam-relevant
+- `cert_relevance`: semicolon-separated cert codes from `.claude/skills/create-sim/references/exam-topics.md`, or empty if not exam-relevant
 
 Report additions: "Added {N} new services to catalog: {list}."
 
@@ -163,14 +163,14 @@ Report additions: "Added {N} new services to catalog: {list}."
 
 For each approved scenario, execute steps 12-19:
 
-12. Read `references/sim-template.md` -- study the complete annotated example
+12. Read `.claude/skills/create-sim/references/sim-template.md` -- study the complete annotated example
 13. Read `sims/registry.json` to determine the next available sim ID number
 14. Create the sim directory: `sims/{id}-{slug}/`
 
 #### 15. Generate manifest.json
 
 - Follow the exact structure in `sim-template.md`
-- Validate against `assets/manifest-schema.json`
+- Validate against `.claude/skills/create-sim/assets/manifest-schema.json`
 - ID format: 3-digit zero-padded number + kebab-case slug (e.g., `002-rds-failover-cascade`)
 - Company: generate a realistic name matching the industry (never "Acme Corp")
 - Narrator personality: structured object with `role`, `demeanor`, and `recurring_concern` fields
@@ -180,11 +180,11 @@ For each approved scenario, execute steps 12-19:
 - Every service in the `services` array MUST have a corresponding console entry
 - Fix criteria: at least 2, with at least 1 marked `required: true`
 - Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters. Describe each criterion in plain English so a beginner understands what action to take, then name the specific AWS API or setting.
-- Exam topics: reference real domains from `references/exam-topics.md`
+- Exam topics: reference real domains from `.claude/skills/create-sim/references/exam-topics.md`
 - Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS -- no MCP needed for basic definitions. Do not define common English words.
-- Narrative arc: map this sim's story to the Campbell monomyth using `references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short factual pacing cue describing what that phase looks like in THIS specific sim. No styled prose -- plain facts only. The `call` field should reference "story.md Opening" rather than duplicating its facts.
+- Narrative arc: map this sim's story to the Campbell monomyth using `.claude/skills/create-sim/references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short factual pacing cue describing what that phase looks like in THIS specific sim. No styled prose -- plain facts only. The `call` field should reference "story.md Opening" rather than duplicating its facts.
 - System narration: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only). Source from `mcp_research.service_interactions`.
-- Hints: generate as objects with `hint`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
+- Hints: generate as objects with `hint`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `.claude/skills/create-sim/references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
 - SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it. Follow the beginner-friendly writing rule below.
 - Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`. Follow the beginner-friendly writing rule below.
 - SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`. Follow the beginner-friendly writing rule below.
@@ -193,8 +193,8 @@ For each approved scenario, execute steps 12-19:
 
 #### 16. Generate story.md
 
-- Consult `references/story-structure.md` for story beat pacing
-- YAML frontmatter with tags: `type/simulation`, `service/{slug}` for each service, `difficulty/{level-name}`, `category/{category}`
+- Consult `.claude/skills/create-sim/references/story-structure.md` for story beat pacing
+- YAML frontmatter with tags: type/simulation, service/{slug} for each service, difficulty/{level-name}, category/{category}
 - Difficulty tag mapping: 1=starter, 2=associate, 3=professional, 4=expert
 - Opening section (structured facts, not prose):
   - company, industry, product, scale
@@ -292,7 +292,7 @@ Artifact rules:
 
 #### 19. Validate the package
 
-- Verify `manifest.json` structure matches `assets/manifest-schema.json`
+- Verify `manifest.json` structure matches `.claude/skills/create-sim/assets/manifest-schema.json`
 - Confirm every artifact referenced in manifest `consoles[].artifacts` exists
 - Confirm every service in `manifest.services` has a corresponding console entry
 - Confirm `context.txt` exists and follows the briefing card format (6 fields, one per line)

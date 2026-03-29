@@ -14,6 +14,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 
 - No emojis
 - No `--` as punctuation (use commas, periods, or colons instead)
+- All file paths in markdown and JSON must be root-relative (e.g., `.claude/skills/create-sim/references/exam-topics.md`, not `references/exam-topics.md`). Run `npm run extract-paths` then `npm test` to validate.
 - Workspace architecture in references/workspace-map.md
 
 ## Permissions and Hooks (.claude/settings.local.json)
@@ -39,7 +40,6 @@ Ships with the repo so players get a zero-config experience on clone.
 
 | Hook | Script | Purpose |
 |------|--------|---------|
-| PreToolUse (Write, Edit) | guard-write.js | Blocks writes to web/ and node_modules/ |
 | PostToolUse (*) | log-hook.js | Logs every tool call to learning/logs/activity.jsonl |
 | Stop | log-hook.js | Logs session end to learning/logs/activity.jsonl |
 
