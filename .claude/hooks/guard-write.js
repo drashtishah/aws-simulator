@@ -25,7 +25,7 @@ const OWNERSHIP = {
     dirs: ['learning/sessions']
   },
   fix: {
-    files: ['learning/feedback.md', 'metrics.config.json'],
+    files: ['learning/feedback.md', 'scripts/metrics.config.json'],
     dirs: ['.claude/skills/', 'learning/logs']
   }
 };

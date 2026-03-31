@@ -87,7 +87,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> reads + writes skill files (.claude/skills/**)
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
-            --> updates metrics.config.json (last_fix_analyzed timestamp)
+            --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
 ```
 
 ## Shared Data Files
@@ -101,7 +101,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, prompts, failures, compaction |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
-| `metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
+| `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 
 ## Tests

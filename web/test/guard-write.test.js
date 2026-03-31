@@ -103,8 +103,8 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, true);
     });
 
-    it('allows metrics.config.json (owned)', () => {
-      const r = checkAccess(path.join(ROOT, 'metrics.config.json'), 'fix', ROOT);
+    it('allows scripts/metrics.config.json (owned)', () => {
+      const r = checkAccess(path.join(ROOT, 'scripts/metrics.config.json'), 'fix', ROOT);
       assert.equal(r.allowed, true);
     });
 

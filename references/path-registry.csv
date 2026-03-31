@@ -27,16 +27,19 @@ file,path,line_number
 .claude/skills/fix/SKILL.md,references/workspace-map.md,18
 .claude/skills/fix/SKILL.md,learning/feedback.md,22
 .claude/skills/fix/SKILL.md,learning/logs/activity.jsonl,26
+.claude/skills/fix/SKILL.md,scripts/metrics.config.json,26
 .claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,36
 .claude/skills/fix/SKILL.md,.claude/skills/create-sim/references/sim-template.md,72
 .claude/skills/fix/SKILL.md,.claude/skills/play/references/agent-prompts.md,73
 .claude/skills/fix/SKILL.md,.claude/skills/play/references/coaching-patterns.md,73
 .claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,89
 .claude/skills/fix/SKILL.md,learning/feedback.md,102
+.claude/skills/fix/SKILL.md,scripts/metrics.config.json,103
 .claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,107
 .claude/skills/fix/SKILL.md,learning/logs/activity.jsonl,121
 .claude/skills/fix/SKILL.md,learning/feedback.md,122
 .claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,122
+.claude/skills/fix/SKILL.md,scripts/metrics.config.json,122
 .claude/skills/play/SKILL.md,sims/{id}/,8
 .claude/skills/play/SKILL.md,learning/,18
 .claude/skills/play/SKILL.md,learning/profile.json,19
@@ -105,7 +108,9 @@ CLAUDE.md,references/code-health.md,23
 CLAUDE.md,learning/logs/activity.jsonl,27
 references/code-health.md,scripts/code-health.js,9
 references/code-health.md,learning/logs/health-scores.jsonl,15
+references/code-health.md,scripts/metrics.config.json,31
 references/code-health.md,scripts/code-health.js,42
+references/code-health.md,scripts/metrics.config.json,43
 references/code-health.md,learning/logs/health-scores.jsonl,44
 references/contributing.md,references/web-app-checklist.md,20
 references/contributing.md,references/workspace-map.md,21
@@ -141,6 +146,7 @@ references/workspace-map.md,learning/feedback.md,100
 references/workspace-map.md,learning/logs/activity.jsonl,102
 references/workspace-map.md,learning/logs/health-scores.jsonl,103
 references/workspace-map.md,scripts/code-health.js,104
+references/workspace-map.md,scripts/metrics.config.json,104
 references/workspace-map.md,sims/registry.json,105
 references/workspace-map.md,web/test/server.test.js,111
 references/workspace-map.md,web/test/logger.test.js,112

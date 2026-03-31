@@ -23,7 +23,7 @@ Read `learning/feedback.md`. Note whether there are entries beyond the header (t
 
 ### 2. Analyze activity logs
 
-Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `metrics.config.json`. If not null, filter to entries with `ts` after that timestamp. If null, process all entries. Analyze for:
+Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metrics.config.json`. If not null, filter to entries with `ts` after that timestamp. If null, process all entries. Analyze for:
 
 - **Session abandonment**: SessionStart events without a matching SessionEnd with `reason: "prompt_input_exit"` in the same session_id. Count abandoned sessions.
 - **Context pressure**: PreCompact events with `trigger: "auto"`. Group by session_id. Flag sessions with 2+ auto-compactions.
@@ -100,7 +100,7 @@ h. Repeat for each remaining group.
 
 After all changes applied:
 - Clear processed entries from `learning/feedback.md` (keep lines 1-9: frontmatter header intact)
-- Update `last_fix_analyzed` in `metrics.config.json` to current ISO timestamp
+- Update `last_fix_analyzed` in `scripts/metrics.config.json` to current ISO timestamp
 
 ### 9. Final health comparison
 
@@ -119,5 +119,5 @@ Commit all skill changes: `git commit -m "improve: apply feedback and fix regres
 1. No emojis.
 2. Always run health checks after each edit group. Never skip the comparison.
 3. Never edit `learning/logs/activity.jsonl` directly. It is append-only by hooks.
-4. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `metrics.config.json`.
+4. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `scripts/metrics.config.json`.
 5. Do not push automatically. Let the user decide.

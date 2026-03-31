@@ -28,7 +28,7 @@ Run with `npm run health`.
 
 ## Composite
 
-Weighted average of all six scores. Weights are configurable in `metrics.config.json`.
+Weighted average of all six scores. Weights are configurable in `scripts/metrics.config.json`.
 
 ## Interpreting changes
 
@@ -40,5 +40,5 @@ Weighted average of all six scores. Weights are configurable in `metrics.config.
 ## Files
 
 - `scripts/code-health.js`: the scorer (do not modify during refactors)
-- `metrics.config.json`: weights and logging toggle
+- `scripts/metrics.config.json`: weights and last_fix_analyzed timestamp
 - `learning/logs/health-scores.jsonl`: historical scores (created by `/fix` after each edit group)

@@ -15,7 +15,7 @@ const DEFAULT_WEIGHTS = {
 
 function loadWeights() {
   try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'metrics.config.json'), 'utf8'));
+    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
     return cfg.health_scores && cfg.health_scores.weights
       ? cfg.health_scores.weights
       : DEFAULT_WEIGHTS;
