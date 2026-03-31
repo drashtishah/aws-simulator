@@ -6,7 +6,8 @@
     "test": "python3 scripts/extract_paths.py && node --test web/test/*.test.js",
     "test:e2e": "npx playwright test web/test/e2e/",
     "test:all": "npm test && npm run test:e2e",
-    "extract-paths": "python3 scripts/extract_paths.py"
+    "extract-paths": "python3 scripts/extract_paths.py",
+    "health": "node scripts/code-health.js"
   },
   "dependencies": {
     "express": "^4.21.0",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.9.0",
-    "@playwright/test": "^1.45.0"
+    "@playwright/test": "^1.45.0",
+    "acorn": "^8.16.0"
   }
 }

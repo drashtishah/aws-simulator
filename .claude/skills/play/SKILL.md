@@ -43,7 +43,10 @@ If the player chooses **web app**:
 
 If the player chooses **terminal**, continue to Step 0b and the rest of the skill.
 
-### 0b. Disable MCP Tools
+### 0b. Set skill context
+Run: `mkdir -p .claude/state && echo "play" > .claude/state/active-skill.txt`
+
+### 0c. Disable MCP Tools
 
 The `aws-knowledge-mcp-server` MCP tools are for sim creation, not gameplay. Do NOT call any `aws___` prefixed tools during the play session. If the player asks about AWS documentation or service details, answer from the sim's artifacts and glossary only.
 
@@ -416,6 +419,8 @@ If `feedback_notes` in the session state is non-empty:
 2. Do NOT apply feedback inline -- the `/fix` command handles skill improvements separately.
 
 ### 22. Wrap Up
+
+Run: `rm -f .claude/state/active-skill.txt`
 
 Tell the user: "Sim complete. Start a new Claude Code session to play the next one."
 

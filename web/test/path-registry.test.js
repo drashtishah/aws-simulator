@@ -38,6 +38,9 @@ describe('path-registry', () => {
       // Skip template paths (contain {} or ${}), and glob patterns (contain *)
       if (row.path.includes('{') || row.path.includes('*') || row.path.includes('$')) continue;
 
+      // Skip runtime-generated paths under learning/logs/ (created by hooks, not present on fresh clone)
+      if (row.path.startsWith('learning/logs/')) continue;
+
       const fullPath = path.join(ROOT, row.path);
       if (!fs.existsSync(fullPath)) {
         failures.push(`${row.file}:${row.line_number} references "${row.path}" which does not exist`);

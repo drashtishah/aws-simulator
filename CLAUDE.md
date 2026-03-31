@@ -8,7 +8,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 - `/play`: run a simulation; the main game loop
 - `/create-sim`: generate new sim packages (for authors, not players)
 - `/feedback`: log a note during play about the sim system
-- `/fix`: apply accumulated feedback to skills
+- `/fix`: analyze feedback, activity logs, and code health, then apply improvements to skills
 
 ## Conventions
 
@@ -17,6 +17,10 @@ Interactive AWS incident-response game played through Claude Code skills.
 - All file paths in markdown and JSON must be root-relative (e.g., `.claude/skills/create-sim/references/exam-topics.md`, not references/exam-topics.md). Run `npm run extract-paths` then `npm test` to validate.
 - Backticks in markdown are for file paths and code only. Do not backtick-wrap YAML tags, labels, or other slash-separated values that are not filesystem paths.
 - Workspace architecture in references/workspace-map.md
+
+## Code Health
+
+Run `npm run health` before and after refactors. See `references/code-health.md` for details.
 
 ## Logging
 

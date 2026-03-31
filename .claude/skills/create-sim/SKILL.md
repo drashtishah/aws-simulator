@@ -11,6 +11,8 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 
 ## Prerequisites
 
+Run: `mkdir -p .claude/state && echo "create-sim" > .claude/state/active-skill.txt`
+
 Before starting, confirm these files exist:
 - `learning/catalog.csv` -- Player service catalog and progress
 - `sims/registry.json` -- Simulation registry
@@ -344,7 +346,9 @@ git add sims/index.md
 feat: add sim {id} -- {short title}
 ```
 
-24. Done. Do not push automatically -- let the user decide when to push.
+24. Run: `rm -f .claude/state/active-skill.txt`
+
+25. Done. Do not push automatically -- let the user decide when to push.
 
 ---
 

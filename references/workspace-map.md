@@ -33,19 +33,22 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  (command)       |       |  catalog.csv      |
 |                  |       +-------------------+       +------------------+
 | Reads:           |                                   |     /fix         |
-|  sessions/*.json |       +-------------------+       |  (command)       |
+|  sessions/*.json |       +-------------------+       |  (skill)         |
 |                  |       |   web/ app        |       |                  |
 | Writes:          |       |  (Express + UI)   |       | Reads:           |
 |  feedback.md     |       |                   |       |  feedback.md     |
-|  sessions/*.json |       | Reads:            |       |  skill files     |
-+------------------+       |  catalog.csv      |       |  workspace-map   |
-                           |  sims/registry    |       |  learning/logs/  |
-                           |  sims/{id}/*      |       |                  |
-                           |  profile.json     |       |                  |
-                           |  sessions/*.json  |       | Writes:          |
-                           |  journal.md       |       |  skill files     |
-                           |  agent-prompts    |       |  feedback.md     |
-                           |  themes/*.md      |       +------------------+
+|  sessions/*.json |       | Reads:            |       |  activity.jsonl  |
++------------------+       |  catalog.csv      |       |  health scores   |
+                           |  sims/registry    |       |  skill files     |
+                           |  sims/{id}/*      |       |  workspace-map   |
+                           |  profile.json     |       |  metrics.config  |
+                           |  sessions/*.json  |       |                  |
+                           |  journal.md       |       | Writes:          |
+                           |  agent-prompts    |       |  skill files     |
+                           |  themes/*.md      |       |  feedback.md     |
+                           |  coaching-patt.   |       |  health-scores   |
+                           |                   |       |  metrics.config  |
+                           | Writes:           |       +------------------+
                            |  coaching-patt.   |
                            |                   |
                            | Writes:           |
@@ -79,9 +82,12 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /feedback ----> writes feedback.md + sessions/{id}.json (during play)
                 |
                 v
-/fix ---------> reads feedback.md + learning/logs/activity.jsonl
+/fix ---------> reads feedback.md + learning/logs/activity.jsonl + health scores
+            --> runs node scripts/code-health.js (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
+            --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
+            --> updates metrics.config.json (last_fix_analyzed timestamp)
 ```
 
 ## Shared Data Files
@@ -93,7 +99,9 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/journal.md` | setup, play | (reference) | Markdown: per-sim learning entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
-| `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, warnings, fix manifests |
+| `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, prompts, failures, compaction |
+| `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
+| `metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 
 ## Tests
@@ -104,6 +112,8 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | Unit | `web/test/logger.test.js` | `npm test` | logEvent, generateFixManifest, checkThresholds (context, latency, tool loop) |
 | Unit | `web/test/claude-process.test.js` | `npm test` | parseStreamJson, verifyAutosave, sendMessage SESSION_LOST, endSession cleanup |
 | Unit | `web/test/prompt-builder.test.js` | `npm test` | buildPrompt, all themes, all sims, error messages, marker injection |
+| Unit | `web/test/log-hook.test.js` | `npm test` | buildRecord event enrichment, all 9 event types |
+| Unit | `web/test/guard-write.test.js` | `npm test` | checkAccess for protected files, dirs, safe paths |
 | E2E | `web/test/e2e/navigation.spec.js` | `npm run test:e2e` (Playwright) | Tab switching, aria-selected, settings modal open/close |
 | E2E | `web/test/e2e/dashboard.spec.js` | `npm run test:e2e` | Profile stats, skills, journal, resume banner |
 | E2E | `web/test/e2e/sim-picker.spec.js` | `npm run test:e2e` | Card rendering, keyboard nav, empty state, category borders |
@@ -112,6 +122,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | E2E | `web/test/e2e/layout.spec.js` | `npm run test:e2e` | CSS layout assertions, responsive breakpoints, alignment |
 | E2E | `web/test/e2e/visual.spec.js` | `npm run test:e2e` | Screenshot baselines at desktop/mobile, visual regression |
 | E2E | `web/test/e2e/accessibility.spec.js` | `npm run test:e2e` | axe-core WCAG 2.1 AA scans, ARIA attributes, keyboard nav |
+| Unit | `web/test/code-health.test.js` | `npm test` | AST parsing, scoring functions, determinism, composite calculation |
 | All | | `npm run test:all` | Runs unit then e2e |
 
 Configuration: `playwright.config.js` at project root. Screenshots on failure, traces on failure. Mock SSE fixtures in `web/test/e2e/fixtures.js`.

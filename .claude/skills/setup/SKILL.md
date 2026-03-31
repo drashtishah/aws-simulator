@@ -11,6 +11,9 @@ Prepares the workspace for a new player. Run once after cloning.
 
 ## Steps
 
+### 0. Set skill context
+Run: `mkdir -p .claude/state && echo "setup" > .claude/state/active-skill.txt`
+
 ### 1. Check learning directory
 
 If `learning/` does not exist, create it. If `learning/sessions/` does not exist, create it.
@@ -114,6 +117,9 @@ If the profile already had progress:
 > Workspace verified. {n} simulations loaded. You have completed {completed} so far, currently ranked {rank_title}. Run /play to continue.
 
 ---
+
+### 9. Clear skill context
+Run: `rm -f .claude/state/active-skill.txt`
 
 ## Rules
 

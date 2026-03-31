@@ -14,13 +14,54 @@
     ]
   },
   "hooks": {
-"PostToolUse": [
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/guard-write.js" }]
+      }
+    ],
+    "PostToolUse": [
       {
         "matcher": "*",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
       }
     ],
     "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "PostCompact": [
       {
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
       }
