@@ -59,6 +59,19 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                            |  catalog.csv      |
                            |  journal.md       |
                            +-------------------+
+
++------------------+
+|     /git         |
+|  (skill)         |
+|                  |
+| Reads:           |
+|  git history     |
+|  GitHub Issues   |
+|                  |
+| Writes:          |
+|  git commits     |
+|  GitHub Issues   |
++------------------+
 ```
 
 ## Data Flow
@@ -89,6 +102,12 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
             --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
+
+/git ---------> reads git history (git log --grep for action lines)
+            --> reads GitHub Issues (gh issue list)
+            --> writes git commits (contextual commit messages with action lines)
+            --> writes GitHub Issues (gh issue create, auto-close via Closes #N)
+            --> referenced by: /fix, /create-sim, /upgrade, /sim-test (commit procedure)
 
 sim-test ----> run: executes node --test + design contract checks
            --> agent: reads test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
@@ -178,3 +197,4 @@ When changing a component, check what else reads/writes the same data:
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
 | `journal.md` format | play (writes entries), web/ server.js `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
+| `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
