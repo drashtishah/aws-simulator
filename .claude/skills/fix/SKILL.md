@@ -75,6 +75,10 @@ Ask the user which findings should drive skill improvements.
 
 If no feedback entries AND no actionable log insights AND no health regressions, say "Nothing to process." and stop.
 
+### 6b. Create GitHub Issues
+
+For each group of actionable findings that will drive changes, create a GitHub Issue per `.claude/skills/git/references/issue-workflow.md`. Use the `bug` label for regressions and failures, `enhancement` for improvements. Record the issue numbers for commit references in Phase 3.
+
 ---
 
 ## Phase 3: Plan and Apply
@@ -102,7 +106,8 @@ g. Log the post-edit scores to `learning/logs/health-scores.jsonl`:
    ```json
    {"ts":"2026-03-31T...","source":"fix","group":"{group name}","modularity":0,"encapsulation":0,"size_balance":0,"dep_depth":0,"complexity":0,"test_sync":0,"composite":0}
    ```
-h. Repeat for each remaining group.
+h. **Commit this change.** Follow the procedure in `.claude/skills/git/references/commit-procedure.md`. The commit should reference the GitHub Issue for this group (use `Closes #N` if this is the last commit for that issue, `Ref #N` otherwise). Include `intent` and `decision` action lines describing why this specific change was made.
+i. Repeat for each remaining group.
 
 ---
 
@@ -122,9 +127,9 @@ Run `node scripts/code-health.js` one final time. Report overall before/after co
 
 Run `sim-test run` to verify all unit tests and design contracts pass after changes. Do not run `sim-test agent` or `sim-test personas` (those are separate workflows).
 
-### 12. Commit and clean up
+### 12. Clean up
 
-Commit all skill changes: `git commit -m "improve: apply feedback and fix regressions"`
+All changes were already committed per-change in step 8h. Verify with `git log --oneline -10` that each change has its own contextual commit referencing an issue.
 
 ---
 
