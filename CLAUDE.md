@@ -9,6 +9,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 - `/create-sim`: generate new sim packages (for authors, not players)
 - `/feedback`: log a note during play about the sim system
 - `/fix`: analyze feedback, activity logs, and code health, then apply improvements to skills
+- `/git`: contextual commits, rollback, GitHub Issues, and git history recall
 
 ## Conventions
 
@@ -25,3 +26,14 @@ Run `npm run health` before and after refactors. See `references/code-health.md`
 ## Logging
 
 All events (tool calls, session lifecycle, warnings, errors) go to one file: `learning/logs/activity.jsonl`. Both the shared hooks (terminal /play) and the web server logger write here. The `/fix` skill reads this file to diagnose issues.
+
+## Git Discipline
+
+All code changes (except during /play sessions) follow the commit procedure in `.claude/skills/git/references/commit-procedure.md`. This means:
+
+- Create or reference a GitHub Issue before starting work
+- Commit after each small, logical change with contextual action lines
+- Run `npm test` after every commit
+- If tests fail: revert, diagnose, fix forward
+
+For standalone git operations (rollback, recall, issue triage): use /git
