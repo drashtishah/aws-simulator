@@ -25,7 +25,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "*",
+        "matcher": "Edit|Write|Bash|Agent",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
       }
     ],
@@ -65,6 +65,26 @@
       }
     ],
     "PostCompact": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "TaskCreated": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "FileChanged": [
+      {
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      }
+    ],
+    "CwdChanged": [
       {
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
       }

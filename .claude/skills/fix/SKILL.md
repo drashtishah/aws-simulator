@@ -1,6 +1,16 @@
 ---
 name: fix
 description: Apply accumulated feedback to improve the simulation skills. Analyzes three sources: player feedback notes, activity log patterns, and code health scores. Runs health checks after each change to track improvement. Use when user says "fix", "apply feedback", or "improve skills".
+effort: medium
+paths:
+  - learning/**
+  - .claude/skills/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/fix/ownership.json"
 ---
 
 # fix Skill
@@ -12,8 +22,6 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 ## Phase 1: Gather
 
 ### 0. Set skill context
-
-Run: `mkdir -p .claude/state && echo "fix" > .claude/state/active-skill.txt`
 
 Before making changes, read `references/workspace-map.md` to understand component dependencies and impact.
 
@@ -65,7 +73,7 @@ Ask the user which findings should drive skill improvements.
 
 ### 6. Check for actionable work
 
-If no feedback entries AND no actionable log insights AND no health regressions, say "Nothing to process." and run `rm -f .claude/state/active-skill.txt`, then stop.
+If no feedback entries AND no actionable log insights AND no health regressions, say "Nothing to process." and stop.
 
 ---
 
@@ -115,8 +123,6 @@ Run `node scripts/code-health.js` one final time. Report overall before/after co
 Run `sim-test run` to verify all unit tests and design contracts pass after changes. Do not run `sim-test agent` or `sim-test personas` (those are separate workflows).
 
 ### 12. Commit and clean up
-
-Run: `rm -f .claude/state/active-skill.txt`
 
 Commit all skill changes: `git commit -m "improve: apply feedback and fix regressions"`
 

@@ -1,7 +1,20 @@
 ---
 name: play
 description: Run an AWS incident simulation as an interactive session. Presents available sims based on learning level, loads narrator and console behavioral context, tracks investigation and validates fixes, updates learning profile and player catalog. Use when user says "play", "start sim", "run simulation", "practice AWS", or "let's play".
+effort: high
+paths:
+  - sims/**
+  - learning/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/play/ownership.json"
 ---
+
+## Player State (injected at load)
+!`cat learning/profile.json 2>/dev/null || echo '{"rank_title":"Responder","total_sessions":0}'`
 
 # play Skill
 
@@ -43,10 +56,7 @@ If the player chooses **web app**:
 
 If the player chooses **terminal**, continue to Step 0b and the rest of the skill.
 
-### 0b. Set skill context
-Run: `mkdir -p .claude/state && echo "play" > .claude/state/active-skill.txt`
-
-### 0c. Disable MCP Tools
+### 0b. Disable MCP Tools
 
 The `aws-knowledge-mcp-server` MCP tools are for sim creation, not gameplay. Do NOT call any `aws___` prefixed tools during the play session. If the player asks about AWS documentation or service details, answer from the sim's artifacts and glossary only.
 
@@ -419,8 +429,6 @@ If `feedback_notes` in the session state is non-empty:
 2. Do NOT apply feedback inline -- the `/fix` command handles skill improvements separately.
 
 ### 22. Wrap Up
-
-Run: `rm -f .claude/state/active-skill.txt`
 
 Tell the user: "Sim complete. Start a new Claude Code session to play the next one."
 

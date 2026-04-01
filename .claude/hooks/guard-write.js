@@ -1,38 +1,10 @@
 #!/usr/bin/env node
 // PreToolUse guard: context-aware file protection.
-// Reads active skill from .claude/state/active-skill.txt (set by skills on start).
-// When no skill is active (development mode), only NEVER_WRITABLE files are blocked.
+// Global mode (no --ownership flag): checks NEVER_WRITABLE only.
+// Skill mode (--ownership path): also checks skill-scoped ownership.
 
 const fs = require('fs');
 const path = require('path');
-
-const OWNERSHIP = {
-  play: {
-    files: ['learning/profile.json', 'learning/catalog.csv', 'learning/journal.md'],
-    dirs: ['learning/sessions']
-  },
-  'create-sim': {
-    files: ['sims/registry.json', 'sims/index.md', 'learning/catalog.csv'],
-    dirs: ['sims/']
-  },
-  setup: {
-    files: ['learning/profile.json', 'learning/catalog.csv', 'learning/journal.md',
-            'learning/feedback.md'],
-    dirs: ['learning/sessions']
-  },
-  feedback: {
-    files: ['learning/feedback.md'],
-    dirs: ['learning/sessions']
-  },
-  fix: {
-    files: ['learning/feedback.md', 'scripts/metrics.config.json'],
-    dirs: ['.claude/skills/', 'learning/logs']
-  },
-  test: {
-    files: [],
-    dirs: ['test-results/']
-  }
-};
 
 // Files NEVER writable regardless of context
 const NEVER_WRITABLE = [
@@ -51,18 +23,12 @@ const NEVER_WRITABLE_DIRS = [
   'test-specs'
 ];
 
-function getActiveSkill(root) {
-  try {
-    return fs.readFileSync(path.join(root, '.claude', 'state', 'active-skill.txt'), 'utf8').trim();
-  } catch {
-    return null;
-  }
-}
-
-function checkAccess(filePath, activeSkill, root) {
+function checkAccess(filePath, ownership, root) {
+  // As of Claude Code v2.1.89, file_path arrives as absolute for Write/Edit/Read.
+  // path.resolve handles both: relative -> joined with root; absolute -> returned as-is.
   const resolved = path.resolve(root, filePath);
 
-  // Always blocked, no matter what skill is active
+  // Always blocked
   const neverFiles = NEVER_WRITABLE.map(f => path.join(root, f));
   if (neverFiles.some(p => resolved === p)) {
     return { allowed: false, reason: path.basename(resolved) + ' is auto-generated or append-only. Do not edit directly.' };
@@ -75,36 +41,7 @@ function checkAccess(filePath, activeSkill, root) {
     return { allowed: false, reason: (matchedDir || 'Directory') + '/ is protected. Do not edit directly.' };
   }
 
-  // If no skill is active (development context), allow everything else
-  if (!activeSkill) {
-    return { allowed: true };
-  }
-
-  // Test files are not editable during skill execution
-  const testDir = path.join(root, 'web', 'test');
-  if (resolved.startsWith(testDir + path.sep)) {
-    return { allowed: false, reason: 'Test files are not editable during skill execution.' };
-  }
-
-  // Skill is active: check ownership
-  const owned = OWNERSHIP[activeSkill];
-  if (!owned) {
-    return { allowed: true }; // Unknown skill: fall back to dev mode
-  }
-
-  // Check owned files
-  const ownedFiles = owned.files.map(f => path.join(root, f));
-  if (ownedFiles.some(p => resolved === p)) {
-    return { allowed: true };
-  }
-
-  // Check owned directories
-  const ownedDirs = owned.dirs.map(d => path.resolve(root, d));
-  if (ownedDirs.some(d => resolved.startsWith(d + path.sep) || resolved === d)) {
-    return { allowed: true };
-  }
-
-  // Skills can always edit skill files, commands, and references
+  // Always editable (skill files, commands, references)
   const alwaysEditable = [
     path.join(root, '.claude', 'skills'),
     path.join(root, '.claude', 'commands'),
@@ -114,10 +51,33 @@ function checkAccess(filePath, activeSkill, root) {
     return { allowed: true };
   }
 
+  // If no ownership provided (global mode / dev mode), allow everything else
+  if (!ownership) {
+    return { allowed: true };
+  }
+
+  // Test files not editable during skill execution
+  const testDir = path.join(root, 'web', 'test');
+  if (resolved.startsWith(testDir + path.sep)) {
+    return { allowed: false, reason: 'Test files are not editable during skill execution.' };
+  }
+
+  // Check owned files
+  const ownedFiles = (ownership.files || []).map(f => path.join(root, f));
+  if (ownedFiles.some(p => resolved === p)) {
+    return { allowed: true };
+  }
+
+  // Check owned directories
+  const ownedDirs = (ownership.dirs || []).map(d => path.resolve(root, d));
+  if (ownedDirs.some(d => resolved.startsWith(d + path.sep) || resolved === d)) {
+    return { allowed: true };
+  }
+
   return {
     allowed: false,
-    reason: 'The ' + activeSkill + ' skill does not own ' + path.relative(root, resolved) +
-      '. Allowed: ' + owned.files.concat(owned.dirs).join(', ')
+    reason: 'Skill does not own ' + path.relative(root, resolved) +
+      '. Allowed: ' + (ownership.files || []).concat(ownership.dirs || []).join(', ')
   };
 }
 
@@ -131,9 +91,16 @@ if (require.main === module) {
       if (!filePath) process.exit(0);
 
       const root = process.cwd();
-      const activeSkill = getActiveSkill(root);
-      const result = checkAccess(filePath, activeSkill, root);
 
+      // Read ownership from --ownership flag if provided
+      let ownership = null;
+      const ownershipIdx = process.argv.indexOf('--ownership');
+      if (ownershipIdx !== -1 && process.argv[ownershipIdx + 1]) {
+        const ownershipPath = path.resolve(root, process.argv[ownershipIdx + 1]);
+        ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf8'));
+      }
+
+      const result = checkAccess(filePath, ownership, root);
       if (!result.allowed) {
         process.stderr.write('BLOCKED: ' + result.reason);
         process.exit(2);
@@ -145,4 +112,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { checkAccess, getActiveSkill };
+module.exports = { checkAccess };

@@ -1,7 +1,65 @@
 {
-  "last_check_timestamp": null,
-  "github": {},
-  "changelogs": {},
-  "blogs": {},
-  "documentation": {}
+  "last_check_timestamp": "2026-04-01T12:00:00Z",
+  "github": {
+    "https://github.com/anthropics/claude-code": {
+      "last_release_tag": "v2.1.89",
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/anthropics/skills": {
+      "last_release_tag": null,
+      "last_commit_sha": "98669c1",
+      "last_commit_date": "2026-03-25T15:10:46Z"
+    },
+    "https://github.com/modelcontextprotocol/modelcontextprotocol": {
+      "last_release_tag": "2025-11-25",
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/modelcontextprotocol/docs": {
+      "last_release_tag": null,
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/anthropics/anthropic-sdk-typescript": {
+      "last_release_tag": "sdk-v0.81.0",
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/anthropics/claude-cookbooks": {
+      "last_release_tag": null,
+      "last_commit_sha": "ca0dd33",
+      "last_commit_date": "2026-04-01T04:53:34Z"
+    },
+    "https://github.com/obra/superpowers": {
+      "last_release_tag": "v5.0.7",
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/obra/superpowers-skills": {
+      "last_release_tag": null,
+      "last_commit_sha": null,
+      "last_commit_date": null
+    },
+    "https://github.com/anthropics/courses": {
+      "last_release_tag": null,
+      "last_commit_sha": null,
+      "last_commit_date": null
+    }
+  },
+  "changelogs": {
+    "Claude Code CHANGELOG": { "last_version": "2.1.89", "last_date": "2026-04-01" },
+    "Claude Platform Release Notes": { "last_date": "2026-03-30" },
+    "MCP Specification Changelog": { "last_version": "2025-06-18", "last_date": "2025-06-18" }
+  },
+  "blogs": {
+    "Anthropic News": { "last_date": "2026-03-31" },
+    "Anthropic Research": { "last_date": "2026-03-31" },
+    "Nate's Newsletter": { "last_date": "2026-03-02" }
+  },
+  "documentation": {
+    "Claude Code Docs - Hooks": { "content_hash": "25_events_4_hook_types" },
+    "Claude Code Docs - Skills": { "content_hash": "effort_paths_shell_context_agent_hooks" },
+    "MCP Docs": { "content_hash": "elicitation_structured_output_resource_links" }
+  }
 }

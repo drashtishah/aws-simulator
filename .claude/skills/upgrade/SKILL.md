@@ -42,12 +42,12 @@ Load sources from: .claude/skills/upgrade/references/sources.json
 For each repo in sources.github_repos:
   If check_releases is true:
     Run: gh api "repos/{owner}/{repo}/releases?per_page=5" --jq '.[] | {tag_name, published_at, body, html_url}'
-    Compare tag_name against state.github["{owner}/{repo}"].last_release_tag
+    Compare tag_name against state.github["https://github.com/{owner}/{repo}"].last_release_tag
     For NEW releases only: extract version, date, full release notes body
 
   If check_commits is true:
     Run: gh api "repos/{owner}/{repo}/commits?per_page=10&since={state.github[key].last_commit_date or 14_days_ago}" --jq '.[] | {sha, commit: {message: .commit.message, date: .commit.author.date}, html_url}'
-    Compare SHA against state.github["{owner}/{repo}"].last_commit_sha
+    Compare SHA against state.github["https://github.com/{owner}/{repo}"].last_commit_sha
     For NEW commits only: extract SHA, message, date
 
 WORKSPACE CONTEXT:
@@ -249,9 +249,9 @@ After outputting the report, update `.claude/skills/upgrade/state/last-check.jso
 
 ```
 For each github repo checked:
-  state.github["{owner}/{repo}"].last_release_tag = latest tag seen
-  state.github["{owner}/{repo}"].last_commit_sha = latest SHA seen
-  state.github["{owner}/{repo}"].last_commit_date = latest commit date
+  state.github["https://github.com/{owner}/{repo}"].last_release_tag = latest tag seen
+  state.github["https://github.com/{owner}/{repo}"].last_commit_sha = latest SHA seen
+  state.github["https://github.com/{owner}/{repo}"].last_commit_date = latest commit date
 
 For each changelog:
   state.changelogs[name].last_date = latest entry date seen

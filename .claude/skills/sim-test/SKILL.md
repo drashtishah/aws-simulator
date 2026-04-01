@@ -1,6 +1,16 @@
 ---
 name: sim-test
 description: Extend the sim-test CLI with new browser specs, persona profiles, design contracts, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend sim-test".
+effort: medium
+paths:
+  - test-specs/**
+  - scripts/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/sim-test/ownership.json"
 ---
 
 # sim-test Skill
@@ -8,10 +18,6 @@ description: Extend the sim-test CLI with new browser specs, persona profiles, d
 Extend the testing CLI with new browser specs, persona profiles, design contracts, or commands.
 
 ---
-
-## Phase 0: Set skill context
-
-Run: `mkdir -p .claude/state && echo "sim-test" > .claude/state/active-skill.txt`
 
 ## Phase 1: Understand what needs extending
 
@@ -56,10 +62,6 @@ Choose one of these options depending on what is needed.
 - Run `sim-test --help` to confirm command appears (if adding a command)
 - Run the new spec/persona/command with --dry-run if available
 - Run `npm test` to verify unit tests still pass
-
-## Phase 4: Clean up
-
-Run: `rm -f .claude/state/active-skill.txt`
 
 ---
 

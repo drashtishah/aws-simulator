@@ -1,6 +1,15 @@
 ---
 name: setup
 description: Initialize the local workspace for a new player. Creates the learning directory, profile, journal, and feedback files. Verifies sim packages and MCP configuration. Use when user says "setup", "initialize", or on first clone.
+effort: low
+paths:
+  - learning/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/setup/ownership.json"
 ---
 
 # setup Skill
@@ -10,9 +19,6 @@ Prepares the workspace for a new player. Run once after cloning.
 ---
 
 ## Steps
-
-### 0. Set skill context
-Run: `mkdir -p .claude/state && echo "setup" > .claude/state/active-skill.txt`
 
 ### 1. Check learning directory
 
@@ -117,9 +123,6 @@ If the profile already had progress:
 > Workspace verified. {n} simulations loaded. You have completed {completed} so far, currently ranked {rank_title}. Run /play to continue.
 
 ---
-
-### 9. Clear skill context
-Run: `rm -f .claude/state/active-skill.txt`
 
 ## Rules
 

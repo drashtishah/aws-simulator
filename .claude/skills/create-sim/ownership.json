@@ -1,0 +1,4 @@
+{
+  "files": ["sims/registry.json", "sims/index.md", "learning/catalog.csv"],
+  "dirs": ["sims/"]
+}

@@ -44,14 +44,31 @@ describe('guard-write coverage', () => {
     );
   });
 
-  it('OWNERSHIP includes test skill with test-results/ dir', () => {
-    assert.ok(
-      guardSource.includes("test:"),
-      'guard-write.js OWNERSHIP should include test skill'
+  it('ownership.json exists for each skill with a SKILL.md', () => {
+    const skillsDir = path.join(ROOT, '.claude', 'skills');
+    const skillDirs = fs.readdirSync(skillsDir).filter(d =>
+      fs.statSync(path.join(skillsDir, d)).isDirectory() &&
+      fs.existsSync(path.join(skillsDir, d, 'SKILL.md'))
+    );
+    for (const dir of skillDirs) {
+      const ownershipPath = path.join(skillsDir, dir, 'ownership.json');
+      assert.ok(
+        fs.existsSync(ownershipPath),
+        dir + '/ownership.json should exist'
+      );
+      const ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf8'));
+      assert.ok(Array.isArray(ownership.files), dir + '/ownership.json should have files array');
+      assert.ok(Array.isArray(ownership.dirs), dir + '/ownership.json should have dirs array');
+    }
+  });
+
+  it('sim-test ownership includes test-results/ dir', () => {
+    const ownership = JSON.parse(
+      fs.readFileSync(path.join(ROOT, '.claude', 'skills', 'sim-test', 'ownership.json'), 'utf8')
     );
     assert.ok(
-      guardSource.includes("'test-results/'"),
-      'test skill should own test-results/ directory'
+      ownership.dirs.includes('test-results/'),
+      'sim-test ownership should include test-results/ directory'
     );
   });
 

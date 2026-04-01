@@ -53,6 +53,26 @@ function buildRecord(data) {
     case 'PostCompact':
       base.trigger = data.trigger || null;
       break;
+
+    case 'PermissionDenied':
+      base.tool_denied = data.tool_name || null;
+      base.reason = data.reason || null;
+      break;
+
+    case 'TaskCreated':
+      base.task_id = data.task_id || null;
+      base.task_subject = data.subject || null;
+      break;
+
+    case 'FileChanged':
+      base.file_path = data.file_path || null;
+      base.change_type = data.change_type || null;
+      break;
+
+    case 'CwdChanged':
+      base.old_cwd = data.old_cwd || null;
+      base.new_cwd = data.new_cwd || null;
+      break;
   }
 
   return base;

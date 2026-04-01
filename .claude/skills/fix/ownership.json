@@ -1,0 +1,4 @@
+{
+  "files": ["learning/feedback.md", "learning/CHANGELOG.md", "scripts/metrics.config.json"],
+  "dirs": [".claude/skills/", "learning/logs"]
+}

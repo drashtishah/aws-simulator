@@ -1,6 +1,15 @@
 ---
 name: create-sim
 description: Generate AWS incident simulation packages for the play skill. Searches web for realistic incident patterns, proposes topics for approval, then generates complete sim packages (manifest, story, artifacts, resolution). Use when user says "create-sim", "generate sims", "make new simulations", or "add more scenarios".
+effort: high
+paths:
+  - sims/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/create-sim/ownership.json"
 ---
 
 # create-sim Skill
@@ -10,8 +19,6 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 ---
 
 ## Prerequisites
-
-Run: `mkdir -p .claude/state && echo "create-sim" > .claude/state/active-skill.txt`
 
 Before starting, confirm these files exist:
 - `learning/catalog.csv` -- Player service catalog and progress
@@ -346,9 +353,7 @@ git add sims/index.md
 feat: add sim {id} -- {short title}
 ```
 
-24. Run: `rm -f .claude/state/active-skill.txt`
-
-25. Done. Do not push automatically -- let the user decide when to push.
+24. Done. Do not push automatically -- let the user decide when to push.
 
 ---
 
