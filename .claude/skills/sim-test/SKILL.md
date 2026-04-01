@@ -63,6 +63,10 @@ Choose one of these options depending on what is needed.
 - Run the new spec/persona/command with --dry-run if available
 - Run `npm test` to verify unit tests still pass
 
+## Phase 4: Commit
+
+Follow `.claude/skills/git/references/commit-procedure.md`. If a GitHub Issue exists for this work, reference it in the commit message.
+
 ---
 
 ## Rules
