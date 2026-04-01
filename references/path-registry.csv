@@ -117,6 +117,15 @@ file,path,line_number
 .claude/skills/sim-test/SKILL.md,design/,70
 .claude/skills/sim-test/SKILL.md,test-specs/,70
 .claude/skills/sim-test/SKILL.md,test-results/,72
+.claude/skills/upgrade/SKILL.md,.claude/settings.local.json,18
+.claude/skills/upgrade/SKILL.md,.claude/hooks/guard-write.js,19
+.claude/skills/upgrade/SKILL.md,.claude/hooks/log-hook.js,20
+.claude/skills/upgrade/SKILL.md,references/workspace-map.md,21
+.claude/skills/upgrade/SKILL.md,references/testing-system.md,23
+.claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/references/workspace-context.md,26
+.claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/references/sources.json,32
+.claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/state/last-check.json,32
+.claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/state/last-check.json,248
 CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,17
 CLAUDE.md,references/code-health.md,23
 CLAUDE.md,learning/logs/activity.jsonl,27

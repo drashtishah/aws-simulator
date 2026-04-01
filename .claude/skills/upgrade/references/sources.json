@@ -1,0 +1,145 @@
+{
+  "github_repos": [
+    {
+      "name": "claude-code",
+      "owner": "anthropics",
+      "repo": "claude-code",
+      "priority": "HIGH",
+      "check_releases": true,
+      "check_commits": false,
+      "why": "Core CLI: hooks, skills, MCP, agent teams, permissions"
+    },
+    {
+      "name": "skills",
+      "owner": "anthropics",
+      "repo": "skills",
+      "priority": "HIGH",
+      "check_releases": true,
+      "check_commits": true,
+      "why": "Official skill patterns, SKILL.md spec changes"
+    },
+    {
+      "name": "MCP Specification",
+      "owner": "modelcontextprotocol",
+      "repo": "modelcontextprotocol",
+      "priority": "HIGH",
+      "check_releases": true,
+      "check_commits": false,
+      "why": "MCP protocol changes affect aws-knowledge + chrome-devtools servers"
+    },
+    {
+      "name": "MCP Docs",
+      "owner": "modelcontextprotocol",
+      "repo": "docs",
+      "priority": "MEDIUM",
+      "check_commits": true,
+      "check_releases": false,
+      "why": "MCP best practices, new server patterns"
+    },
+    {
+      "name": "anthropic-sdk-typescript",
+      "owner": "anthropics",
+      "repo": "anthropic-sdk-typescript",
+      "priority": "MEDIUM",
+      "check_releases": true,
+      "check_commits": false,
+      "why": "SDK changes relevant to web/ Claude subprocess integration"
+    },
+    {
+      "name": "claude-cookbooks",
+      "owner": "anthropics",
+      "repo": "claude-cookbooks",
+      "priority": "MEDIUM",
+      "check_commits": true,
+      "check_releases": false,
+      "why": "Patterns for skills, hooks, agent workflows"
+    },
+    {
+      "name": "superpowers",
+      "owner": "obra",
+      "repo": "superpowers",
+      "priority": "MEDIUM",
+      "check_releases": true,
+      "check_commits": false,
+      "why": "Superpowers plugin updates (installed in this workspace)"
+    },
+    {
+      "name": "superpowers-skills",
+      "owner": "obra",
+      "repo": "superpowers-skills",
+      "priority": "LOW",
+      "check_commits": true,
+      "check_releases": false,
+      "why": "Community skills that might offer patterns worth adopting"
+    },
+    {
+      "name": "courses",
+      "owner": "anthropics",
+      "repo": "courses",
+      "priority": "LOW",
+      "check_commits": true,
+      "check_releases": false,
+      "why": "New educational patterns applicable to sim-based learning"
+    }
+  ],
+  "changelogs": [
+    {
+      "name": "Claude Code CHANGELOG",
+      "url": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "priority": "HIGH",
+      "why": "Detailed feature-level changes to hooks, skills, MCP, agent APIs"
+    },
+    {
+      "name": "Claude Docs Release Notes",
+      "url": "https://docs.claude.com/en/release-notes/overview",
+      "priority": "HIGH",
+      "why": "High-level capability announcements"
+    },
+    {
+      "name": "MCP Changelog",
+      "url": "https://modelcontextprotocol.io/specification/2025-06-18/changelog",
+      "priority": "HIGH",
+      "why": "Protocol-level changes affecting all 4 MCP servers"
+    }
+  ],
+  "blogs": [
+    {
+      "name": "Anthropic News",
+      "url": "https://www.anthropic.com/news",
+      "priority": "MEDIUM",
+      "why": "Product announcements, new model capabilities"
+    },
+    {
+      "name": "Anthropic Research",
+      "url": "https://www.anthropic.com/research",
+      "priority": "LOW",
+      "why": "Research that may eventually affect agent behavior"
+    },
+    {
+      "name": "Nate's Newsletter",
+      "url": "https://natesnewsletter.substack.com/",
+      "priority": "MEDIUM",
+      "why": "AI strategy and practical implementation patterns: memory/context, prompt engineering, agent workflows. 132k+ subscribers."
+    }
+  ],
+  "documentation": [
+    {
+      "name": "Claude Code Docs",
+      "url": "https://code.claude.com/docs/en",
+      "priority": "HIGH",
+      "why": "Skills, hooks, MCP, settings documentation"
+    },
+    {
+      "name": "MCP Docs",
+      "url": "https://modelcontextprotocol.io",
+      "priority": "HIGH",
+      "why": "MCP server development and integration patterns"
+    },
+    {
+      "name": "Skills Documentation",
+      "url": "https://support.claude.com/en/articles/12512176-what-are-skills",
+      "priority": "MEDIUM",
+      "why": "Skill authoring spec and best practices"
+    }
+  ]
+}
