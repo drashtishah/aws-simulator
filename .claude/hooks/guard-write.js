@@ -27,6 +27,10 @@ const OWNERSHIP = {
   fix: {
     files: ['learning/feedback.md', 'scripts/metrics.config.json'],
     dirs: ['.claude/skills/', 'learning/logs']
+  },
+  test: {
+    files: [],
+    dirs: ['test-results/']
   }
 };
 
@@ -34,12 +38,17 @@ const OWNERSHIP = {
 const NEVER_WRITABLE = [
   'references/path-registry.csv',
   'learning/logs/activity.jsonl',
-  'package-lock.json'
+  'package-lock.json',
+  'scripts/sim-test.js',
+  'scripts/generate-design-refs.js',
+  'scripts/extract-design-contracts.js'
 ];
 
 // Directories NEVER writable
 const NEVER_WRITABLE_DIRS = [
-  'node_modules'
+  'node_modules',
+  'design',
+  'test-specs'
 ];
 
 function getActiveSkill(root) {
@@ -60,12 +69,21 @@ function checkAccess(filePath, activeSkill, root) {
   }
   const neverDirs = NEVER_WRITABLE_DIRS.map(d => path.join(root, d));
   if (neverDirs.some(p => resolved.startsWith(p + path.sep) || resolved === p)) {
-    return { allowed: false, reason: 'node_modules/ is managed by npm. Do not edit directly.' };
+    const matchedDir = NEVER_WRITABLE_DIRS.find(d =>
+      resolved.startsWith(path.join(root, d) + path.sep) || resolved === path.join(root, d)
+    );
+    return { allowed: false, reason: (matchedDir || 'Directory') + '/ is protected. Do not edit directly.' };
   }
 
   // If no skill is active (development context), allow everything else
   if (!activeSkill) {
     return { allowed: true };
+  }
+
+  // Test files are not editable during skill execution
+  const testDir = path.join(root, 'web', 'test');
+  if (resolved.startsWith(testDir + path.sep)) {
+    return { allowed: false, reason: 'Test files are not editable during skill execution.' };
   }
 
   // Skill is active: check ownership

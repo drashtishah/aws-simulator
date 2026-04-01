@@ -83,11 +83,20 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                 |
                 v
 /fix ---------> reads feedback.md + learning/logs/activity.jsonl + health scores
+            --> reads test-results/summary.json (if exists) for recent test failures
             --> runs node scripts/code-health.js (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
             --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
+
+sim-test ----> run: executes node --test + design contract checks
+           --> agent: reads test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
+           --> personas: reads test-specs/personas/*.json, prints prompts for exploration
+           --> personas --feedback: reads test-results/personas/, appends to feedback.md
+           --> design generate: captures screenshots + a11y, updates design/manifest.json
+           --> design extract: parses Stitch HTML into design/contracts/*.json
+           --> summary: aggregates test-results/ into test-results/summary.json
 ```
 
 ## Shared Data Files
@@ -103,29 +112,53 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
+| `design/manifest.json` | `scripts/generate-design-refs.js` | `web/test/design-integrity.test.js` | JSON: SHA256 checksums of design files |
+| `design/thresholds.json` | (manual) | `sim-test design check` | JSON: pass/fail thresholds for design contracts |
+| `test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
 
 ## Tests
 
-| Type | Location | Runner | What it covers |
-|------|----------|--------|----------------|
-| Unit | `web/test/server.test.js` | `npm test` (node --test) | All API endpoints, SSE game routes, 503/400 responses |
-| Unit | `web/test/logger.test.js` | `npm test` | logEvent, generateFixManifest, checkThresholds (context, latency, tool loop) |
-| Unit | `web/test/claude-process.test.js` | `npm test` | parseStreamJson, verifyAutosave, sendMessage SESSION_LOST, endSession cleanup |
-| Unit | `web/test/prompt-builder.test.js` | `npm test` | buildPrompt, all themes, all sims, error messages, marker injection |
-| Unit | `web/test/log-hook.test.js` | `npm test` | buildRecord event enrichment, all 9 event types |
-| Unit | `web/test/guard-write.test.js` | `npm test` | checkAccess for protected files, dirs, safe paths |
-| E2E | `web/test/e2e/navigation.spec.js` | `npm run test:e2e` (Playwright) | Tab switching, aria-selected, settings modal open/close |
-| E2E | `web/test/e2e/dashboard.spec.js` | `npm run test:e2e` | Profile stats, skills, journal, resume banner |
-| E2E | `web/test/e2e/sim-picker.spec.js` | `npm run test:e2e` | Card rendering, keyboard nav, empty state, category borders |
-| E2E | `web/test/e2e/chat.spec.js` | `npm run test:e2e` | Chat flow, message types, send/quit, session complete |
-| E2E | `web/test/e2e/settings.spec.js` | `npm run test:e2e` | Dropdowns, theme switching, localStorage persistence |
-| E2E | `web/test/e2e/layout.spec.js` | `npm run test:e2e` | CSS layout assertions, responsive breakpoints, alignment |
-| E2E | `web/test/e2e/visual.spec.js` | `npm run test:e2e` | Screenshot baselines at desktop/mobile, visual regression |
-| E2E | `web/test/e2e/accessibility.spec.js` | `npm run test:e2e` | axe-core WCAG 2.1 AA scans, ARIA attributes, keyboard nav |
-| Unit | `web/test/code-health.test.js` | `npm test` | AST parsing, scoring functions, determinism, composite calculation |
-| All | | `npm run test:all` | Runs unit then e2e |
+All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `references/testing-system.md` for full architecture.
 
-Configuration: `playwright.config.js` at project root. Screenshots on failure, traces on failure. Mock SSE fixtures in `web/test/e2e/fixtures.js`.
+### Layer 1: Deterministic (`sim-test run`)
+
+| Type | Location | What it covers |
+|------|----------|----------------|
+| Unit | `web/test/server.test.js` | All API endpoints, SSE game routes, 503/400 responses |
+| Unit | `web/test/logger.test.js` | logEvent, generateFixManifest, checkThresholds (context, latency, tool loop) |
+| Unit | `web/test/claude-process.test.js` | parseStreamJson, verifyAutosave, sendMessage SESSION_LOST, endSession cleanup |
+| Unit | `web/test/prompt-builder.test.js` | buildPrompt, all themes, all sims, error messages, marker injection |
+| Unit | `web/test/log-hook.test.js` | buildRecord event enrichment, all 9 event types |
+| Unit | `web/test/guard-write.test.js` | checkAccess for protected files, dirs, safe paths, skill locks |
+| Unit | `web/test/design-integrity.test.js` | SHA256 checksums for design files, manifest validation |
+| Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers design/, test-specs/, CLI scripts |
+| Unit | `web/test/code-health.test.js` | AST parsing, scoring functions, determinism, composite calculation |
+| Design | `design/contracts/*.json` | Structural contract validation against `design/thresholds.json` |
+
+### Layer 2: Agent Browser (`sim-test agent`)
+
+| Spec | Location | What it covers |
+|------|----------|----------------|
+| navigation | `test-specs/browser/navigation.yaml` | Tab switching, aria-selected, settings modal open/close |
+| dashboard | `test-specs/browser/dashboard.yaml` | Rank title, hexagon SVG, services section |
+| sim-picker | `test-specs/browser/sim-picker.yaml` | Card rendering, keyboard nav, empty state, category borders |
+| chat | `test-specs/browser/chat.yaml` | Chat flow, message types, send/quit, session complete |
+| settings | `test-specs/browser/settings.yaml` | Dropdowns, theme switching, keyboard navigation |
+| layout | `test-specs/browser/layout.yaml` | CSS layout assertions, responsive breakpoints, alignment |
+| accessibility | `test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
+| design-match | `test-specs/browser/design-match.yaml` | Screenshots vs Stitch design references |
+
+### Layer 3: Agent Persona (`sim-test personas`)
+
+| Persona | Location | Focus areas |
+|---------|----------|-------------|
+| impatient-beginner | `test-specs/personas/impatient-beginner.json` | Error handling, loading states, race conditions |
+| hostile-user | `test-specs/personas/hostile-user.json` | XSS, input validation, API error handling |
+| screen-reader-user | `test-specs/personas/screen-reader-user.json` | ARIA roles, live regions, focus management |
+| power-user | `test-specs/personas/power-user.json` | State consistency, performance, concurrent operations |
+| mobile-first-user | `test-specs/personas/mobile-first-user.json` | Responsive layout, touch targets, viewport overflow |
+
+Results written to `test-results/` (gitignored). Use `sim-test summary` to aggregate.
 
 ## Impact Analysis Guide
 

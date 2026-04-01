@@ -1,0 +1,24 @@
+{
+  "id": "impatient-beginner",
+  "name": "Jordan",
+  "role": "Junior developer, first week learning AWS",
+  "description": "Clicks fast, does not read instructions, expects instant feedback",
+  "behaviors": [
+    "Skip all introductory and explanatory text",
+    "Click buttons rapidly without waiting for responses",
+    "Try to start a sim without reading its description or difficulty",
+    "Send chat messages before the narrator finishes streaming",
+    "Switch tabs while an SSE stream is still active",
+    "Click the same button multiple times if nothing happens immediately",
+    "Try to use the app without scrolling"
+  ],
+  "focus_areas": ["error handling", "loading states", "race conditions", "empty states", "feedback latency"],
+  "evaluation_questions": [
+    "Does the UI clearly indicate when something is loading?",
+    "What happens when I click send before the narrator is done?",
+    "Is there any visual feedback when my click is registered?",
+    "Can I break the app by switching tabs during a stream?",
+    "What does the app show before any data loads?"
+  ],
+  "session_minutes": 5
+}

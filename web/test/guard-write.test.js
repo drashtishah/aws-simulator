@@ -37,6 +37,31 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
+    it('blocks design/ directory (protected)', () => {
+      const r = checkAccess(path.join(ROOT, 'design/manifest.json'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks test-specs/ directory (protected)', () => {
+      const r = checkAccess(path.join(ROOT, 'test-specs/browser/navigation.yaml'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks scripts/sim-test.js (never writable)', () => {
+      const r = checkAccess(path.join(ROOT, 'scripts/sim-test.js'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks scripts/generate-design-refs.js (never writable)', () => {
+      const r = checkAccess(path.join(ROOT, 'scripts/generate-design-refs.js'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks scripts/extract-design-contracts.js (never writable)', () => {
+      const r = checkAccess(path.join(ROOT, 'scripts/extract-design-contracts.js'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
     it('allows learning/feedback.md (not in never-writable)', () => {
       const r = checkAccess(path.join(ROOT, 'learning/feedback.md'), null, ROOT);
       assert.equal(r.allowed, true);
@@ -126,6 +151,45 @@ describe('checkAccess', () => {
     it('blocks web/ files (fix does not own web/)', () => {
       const r = checkAccess(path.join(ROOT, 'web/lib/foo.js'), 'fix', ROOT);
       assert.equal(r.allowed, false);
+    });
+  });
+
+  describe('test skill context', () => {
+    it('allows test-results/ directory (owned)', () => {
+      const r = checkAccess(path.join(ROOT, 'test-results/browser/nav.json'), 'test', ROOT);
+      assert.equal(r.allowed, true);
+    });
+
+    it('blocks web/ files (not owned by test)', () => {
+      const r = checkAccess(path.join(ROOT, 'web/lib/foo.js'), 'test', ROOT);
+      assert.equal(r.allowed, false);
+    });
+  });
+
+  describe('test-file lock during skill execution', () => {
+    it('blocks web/test/ files when a skill is active', () => {
+      const r = checkAccess(path.join(ROOT, 'web/test/server.test.js'), 'play', ROOT);
+      assert.equal(r.allowed, false);
+      assert.ok(r.reason.includes('Test files are not editable'));
+    });
+
+    it('allows web/test/ files when no skill is active', () => {
+      const r = checkAccess(path.join(ROOT, 'web/test/server.test.js'), null, ROOT);
+      assert.equal(r.allowed, true);
+    });
+  });
+
+  describe('directory error messages', () => {
+    it('shows design/ in error for design directory', () => {
+      const r = checkAccess(path.join(ROOT, 'design/contracts/foo.json'), null, ROOT);
+      assert.equal(r.allowed, false);
+      assert.ok(r.reason.includes('design/'));
+    });
+
+    it('shows test-specs/ in error for test-specs directory', () => {
+      const r = checkAccess(path.join(ROOT, 'test-specs/browser/nav.yaml'), null, ROOT);
+      assert.equal(r.allowed, false);
+      assert.ok(r.reason.includes('test-specs/'));
     });
   });
 

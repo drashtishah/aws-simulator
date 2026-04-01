@@ -10,7 +10,10 @@
       "WebFetch",
       "Bash",
       "Agent",
-      "mcp__aws-knowledge-mcp-server"
+      "mcp__aws-knowledge-mcp-server",
+      "mcp__stitch",
+      "mcp__chrome-devtools",
+      "mcp__shadcn-ui"
     ]
   },
   "hooks": {

@@ -1,0 +1,72 @@
+---
+name: sim-test
+description: Extend the sim-test CLI with new browser specs, persona profiles, design contracts, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend sim-test".
+---
+
+# sim-test Skill
+
+Extend the testing CLI with new browser specs, persona profiles, design contracts, or commands.
+
+---
+
+## Phase 0: Set skill context
+
+Run: `mkdir -p .claude/state && echo "sim-test" > .claude/state/active-skill.txt`
+
+## Phase 1: Understand what needs extending
+
+- Read `references/testing-system.md` for architecture overview
+- Run `sim-test --help` to see current commands
+- List `test-specs/browser/` and `test-specs/personas/` for current coverage
+
+## Phase 2: Expand
+
+Choose one of these options depending on what is needed.
+
+### Option A: Add a browser spec
+
+1. Create YAML file in `test-specs/browser/{name}.yaml`
+2. Follow schema: name, description, setup, steps (id, action, target, check)
+3. Check types: has_class, not_has_class, attribute, text_contains, visible, css_property, min_count, screenshot_compare
+4. Action types: click, type, keyboard, emulate, wait
+5. Validate: `sim-test agent --spec {name} --dry-run`
+
+### Option B: Add a persona profile
+
+1. Create JSON file in `test-specs/personas/{id}.json`
+2. Required fields: id, name, role, description, behaviors, focus_areas, evaluation_questions, session_minutes
+3. Validate: `sim-test personas --id {id} --dry-run`
+
+### Option C: Add a design contract
+
+1. Create JSON file in `design/contracts/{view}.json`
+2. Required sections: name, elements (selector, required, tag, min_count), aria (selector, role, attributes)
+3. Or generate from Stitch HTML: `sim-test design extract`
+4. Validate: `sim-test design check`
+
+### Option D: Add a CLI command
+
+1. Only possible in dev mode (no active skill), since `scripts/sim-test.js` is NEVER_WRITABLE during skill execution
+2. Register with commander: `.command('name').description('...').option('--json').action(async (opts) => { ... })`
+3. Must support --json flag, exit codes (0/1/2), --help
+4. Add corresponding npm script alias in `package.json`
+
+## Phase 3: Verify
+
+- Run `sim-test --help` to confirm command appears (if adding a command)
+- Run the new spec/persona/command with --dry-run if available
+- Run `npm test` to verify unit tests still pass
+
+## Phase 4: Clean up
+
+Run: `rm -f .claude/state/active-skill.txt`
+
+---
+
+## Rules
+
+1. No emojis.
+2. Never edit `scripts/sim-test.js`, `scripts/generate-design-refs.js`, or `scripts/extract-design-contracts.js` during skill execution. They are NEVER_WRITABLE.
+3. Never edit files in `design/` or `test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
+4. Always validate new specs with --dry-run before committing.
+5. The test skill owns `test-results/` directory only.

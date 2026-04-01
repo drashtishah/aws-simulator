@@ -1,0 +1,101 @@
+name: settings
+description: >
+  Settings modal with custom dropdown components for theme, assist mode,
+  and model selection. Verifies dropdowns are not native select elements,
+  theme switching updates the stylesheet, and keyboard navigation works
+  within dropdown menus.
+setup:
+  navigate: /
+steps:
+  - id: custom-dropdowns-not-native
+    action: click
+    target: "#settings-button"
+    check:
+      - selector: "#settings-modal select"
+        visible: false
+      - selector: "#settings-modal .custom-dropdown"
+        visible: true
+        min_count: 1
+
+  - id: theme-dropdown-populated
+    action: click
+    target: "#theme-dropdown .dropdown-trigger"
+    check:
+      - selector: "#theme-dropdown .dropdown-option"
+        visible: true
+        min_count: 2
+
+  - id: assist-mode-options
+    action: click
+    target: "#assist-mode-dropdown .dropdown-trigger"
+    check:
+      - selector: "#assist-mode-dropdown .dropdown-option"
+        visible: true
+        min_count: 2
+
+  - id: dropdown-open-select-open
+    action: click
+    target: "#theme-dropdown .dropdown-trigger"
+    check:
+      - selector: "#theme-dropdown .dropdown-menu"
+        visible: true
+
+  - id: dropdown-open-select
+    action: click
+    target: "#theme-dropdown .dropdown-option:nth-child(2)"
+    check:
+      - selector: "#theme-dropdown .dropdown-trigger"
+        text_contains: " "
+      - selector: "#theme-dropdown .dropdown-menu"
+        visible: false
+
+  - id: model-options
+    action: click
+    target: "#model-dropdown .dropdown-trigger"
+    check:
+      - selector: "#model-dropdown .dropdown-option"
+        visible: true
+        min_count: 1
+
+  - id: theme-changes-stylesheet-open
+    action: click
+    target: "#theme-dropdown .dropdown-trigger"
+    check:
+      - selector: "#theme-dropdown .dropdown-menu"
+        visible: true
+
+  - id: theme-changes-stylesheet
+    action: click
+    target: "#theme-dropdown [data-value='light']"
+    check:
+      - selector: "link[data-theme]"
+        attribute: { href: "light" }
+
+  - id: default-theme-dracula
+    check:
+      - selector: "#theme-dropdown .dropdown-trigger"
+        text_contains: "Dracula"
+
+  - id: keyboard-navigation-dropdown-open
+    action: click
+    target: "#theme-dropdown .dropdown-trigger"
+    check:
+      - selector: "#theme-dropdown .dropdown-menu"
+        visible: true
+
+  - id: keyboard-navigation-dropdown-nav
+    action: keyboard
+    key: "ArrowDown"
+
+  - id: keyboard-navigation-dropdown-nav2
+    action: keyboard
+    key: "ArrowDown"
+
+  - id: keyboard-navigation-dropdown
+    action: keyboard
+    key: "Enter"
+    check:
+      - selector: "#theme-dropdown .dropdown-menu"
+        visible: false
+      - selector: "#theme-dropdown .dropdown-trigger"
+        text_contains: " "

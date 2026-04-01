@@ -1,0 +1,96 @@
+name: accessibility
+description: >
+  ARIA roles, attributes, and focus management. Replaces axe-core
+  automated checks with agent-based ARIA inspection. Verifies tab
+  navigation reaches all interactive elements, correct roles on chat
+  message regions, modal dialog semantics, tablist structure, and
+  visible focus outlines.
+setup:
+  navigate: /
+steps:
+  - id: tab-navigation-reachable-first
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ":focus"
+        visible: true
+
+  - id: tab-navigation-reachable-second
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ":focus"
+        visible: true
+
+  - id: chat-messages-role-log-nav
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: chat-messages-role-log
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-messages"
+        attribute: { role: "log", aria-live: "polite" }
+
+  - id: settings-modal-nav-back
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: settings-modal-role-dialog
+    action: click
+    target: "#settings-button"
+    check:
+      - selector: "#settings-modal"
+        attribute: { role: "dialog", aria-modal: "true", aria-label: "Settings" }
+
+  - id: nav-tablist-roles
+    action: click
+    target: "#settings-close"
+    check:
+      - selector: "#main-nav"
+        attribute: { role: "tablist" }
+      - selector: "[data-tab='dashboard']"
+        attribute: { role: "tab" }
+      - selector: "[data-tab='play']"
+        attribute: { role: "tab" }
+
+  - id: settings-button-aria-label
+    check:
+      - selector: "#settings-button"
+        attribute: { aria-label: "Open settings" }
+
+  - id: chat-input-aria-label-nav
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: chat-input-aria-label
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-input textarea"
+        attribute: { aria-label: "Type your response" }
+
+  - id: focus-visible-outline-nav
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: focus-visible-outline
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ":focus-visible"
+        css_property: { outline-style: "solid" }
+        visible: true

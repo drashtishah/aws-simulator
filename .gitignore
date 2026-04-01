@@ -10,6 +10,9 @@ learning/logs/
 # Test artifacts (screenshots, traces from failed tests)
 web/test/e2e/test-results/
 
+# sim-test output
+test-results/
+
 # Runtime skill state
 .claude/state/
 

@@ -31,7 +31,11 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 - **System failures**: StopFailure events (rate_limit, billing, server_error, max_output_tokens). These are infrastructure issues, not sim bugs.
 - **Player engagement**: Count UserPromptSubmit events per session. Report average.
 
-### 3. Run code health baseline
+### 3. Check recent test results
+
+If `test-results/summary.json` exists, read it for recent test failures. Note any browser spec failures or high-severity persona findings. These inform which skill areas need attention.
+
+### 4. Run code health baseline
 
 Run `node scripts/code-health.js` and capture the six scores + composite. Also read the last entry in `learning/logs/health-scores.jsonl` (if the file exists and has entries) to compute deltas. Flag any metric that dropped by 5+ points since the last recorded score.
 
@@ -39,7 +43,7 @@ Run `node scripts/code-health.js` and capture the six scores + composite. Also r
 
 ## Phase 2: Report
 
-### 4. Present unified report
+### 5. Present unified report
 
 Present a unified report to the user with three sections:
 
@@ -59,7 +63,7 @@ Current composite: {score}
 
 Ask the user which findings should drive skill improvements.
 
-### 5. Check for actionable work
+### 6. Check for actionable work
 
 If no feedback entries AND no actionable log insights AND no health regressions, say "Nothing to process." and run `rm -f .claude/state/active-skill.txt`, then stop.
 
@@ -67,14 +71,14 @@ If no feedback entries AND no actionable log insights AND no health regressions,
 
 ## Phase 3: Plan and Apply
 
-### 6. Group actionable items by target
+### 7. Group actionable items by target
 
 - Sim content, narrative, artifacts, difficulty: target `create-sim` skill (`.claude/skills/create-sim/SKILL.md`) and `.claude/skills/create-sim/references/sim-template.md`
 - Play flow, coaching, hints, console behavior: target `play` skill (`.claude/skills/play/SKILL.md`) and its references (`.claude/skills/play/references/agent-prompts.md`, `.claude/skills/play/references/coaching-patterns.md`)
 - Code structure, modularity, complexity regressions: target the specific files flagged by health scores
 - Ambiguous items: present to user for classification
 
-### 7. Apply changes with per-edit health tracking
+### 8. Apply changes with per-edit health tracking
 
 For each group of related changes:
 
@@ -96,17 +100,21 @@ h. Repeat for each remaining group.
 
 ## Phase 4: Finalize
 
-### 8. Clear processed state
+### 9. Clear processed state
 
 After all changes applied:
 - Clear processed entries from `learning/feedback.md` (keep lines 1-9: frontmatter header intact)
 - Update `last_fix_analyzed` in `scripts/metrics.config.json` to current ISO timestamp
 
-### 9. Final health comparison
+### 10. Final health comparison
 
 Run `node scripts/code-health.js` one final time. Report overall before/after comparison (baseline from step 3 vs final). Log to `learning/logs/health-scores.jsonl` with `"source": "fix-final"`.
 
-### 10. Commit and clean up
+### 11. Verify deterministic tests
+
+Run `sim-test run` to verify all unit tests and design contracts pass after changes. Do not run `sim-test agent` or `sim-test personas` (those are separate workflows).
+
+### 12. Commit and clean up
 
 Run: `rm -f .claude/state/active-skill.txt`
 

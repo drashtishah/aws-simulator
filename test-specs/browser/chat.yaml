@@ -1,0 +1,124 @@
+name: chat
+description: >
+  Chat interface during an active simulation session. Covers SSE message
+  rendering for narrator and console roles, player message sending,
+  empty message prevention, keyboard shortcuts, textarea auto-resize,
+  back and quit navigation, and session-complete UI state. Requires mock
+  game routes that return canned SSE streams for narrator and console
+  messages.
+setup:
+  navigate: /
+steps:
+  - id: chat-container-on-sim-start-nav
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: chat-container-on-sim-start
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-container"
+        visible: true
+      - selector: "#chat-messages"
+        visible: true
+      - selector: "#chat-input"
+        visible: true
+
+  - id: sim-title-shown
+    check:
+      - selector: "#chat-header .sim-title"
+        visible: true
+        text_contains: "sim"
+
+  - id: narrator-message-visible
+    check:
+      - selector: ".message.narrator"
+        visible: true
+        min_count: 1
+      - selector: ".message.narrator .message-body"
+        text_contains: " "
+
+  - id: console-message-visible
+    check:
+      - selector: ".message.console"
+        visible: true
+        min_count: 1
+      - selector: ".message.console .message-body"
+        has_class: console
+
+  - id: player-message-sent-type
+    action: type
+    target: "#chat-input textarea"
+    text: "describe the error logs"
+
+  - id: player-message-sent
+    action: click
+    target: "#send-button"
+    check:
+      - selector: ".message.player"
+        visible: true
+        text_contains: "describe the error logs"
+
+  - id: empty-message-blocked
+    action: click
+    target: "#send-button"
+    check:
+      - selector: "#send-button"
+        attribute: { disabled: "true" }
+
+  - id: enter-sends-type
+    action: type
+    target: "#chat-input textarea"
+    text: "check cloudwatch"
+
+  - id: enter-sends-shift-enter-does-not
+    action: keyboard
+    key: "Enter"
+    check:
+      - selector: ".message.player:last-child"
+        text_contains: "check cloudwatch"
+
+  - id: textarea-auto-resizes
+    action: type
+    target: "#chat-input textarea"
+    text: "line one\nline two\nline three\nline four"
+    check:
+      - selector: "#chat-input textarea"
+        css_property: { height: "auto" }
+        visible: true
+
+  - id: back-button-returns
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+      - selector: "#chat-container"
+        visible: false
+
+  - id: quit-button-start-sim
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-container"
+        visible: true
+
+  - id: quit-button-confirms
+    action: click
+    target: "#quit-button"
+    check:
+      - selector: "#quit-confirm-dialog"
+        visible: true
+        text_contains: "quit"
+
+  - id: session-complete-ui
+    check:
+      - selector: "#session-complete-banner"
+        visible: true
+      - selector: "#chat-input textarea"
+        attribute: { disabled: "true" }
+      - selector: "#send-button"
+        attribute: { disabled: "true" }

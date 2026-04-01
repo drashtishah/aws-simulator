@@ -1,0 +1,102 @@
+name: sim-picker
+description: >
+  Simulation picker grid on the play tab. Covers card rendering with
+  details, keyboard navigation and activation, empty state when no
+  sims are available, card border colors by difficulty, and difficulty
+  dot indicators.
+setup:
+  navigate: /
+steps:
+  - id: sim-grid-renders-cards
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: ".sim-grid .sim-card"
+        visible: true
+        min_count: 1
+
+  - id: card-shows-details
+    check:
+      - selector: ".sim-card .card-title"
+        visible: true
+      - selector: ".sim-card .card-service"
+        visible: true
+      - selector: ".sim-card .card-difficulty"
+        visible: true
+
+  - id: cards-keyboard-focusable
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ".sim-card:focus"
+        visible: true
+
+  - id: card-click-starts-chat
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-container"
+        visible: true
+
+  - id: enter-key-nav-back
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: enter-key-focus-card
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ".sim-card:focus"
+        visible: true
+
+  - id: enter-key-starts-sim
+    action: keyboard
+    key: "Enter"
+    check:
+      - selector: "#chat-container"
+        visible: true
+
+  - id: space-key-nav-back
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: space-key-focus-card
+    action: keyboard
+    key: "Tab"
+    check:
+      - selector: ".sim-card:focus"
+        visible: true
+
+  - id: space-key-starts-sim
+    action: keyboard
+    key: " "
+    check:
+      - selector: "#chat-container"
+        visible: true
+
+  - id: empty-state-no-sims
+    check:
+      - selector: ".sim-grid .empty-state"
+        visible: true
+        text_contains: "No simulations available"
+
+  - id: cards-have-border-color
+    check:
+      - selector: ".sim-card[data-difficulty='easy']"
+        css_property: { border-left-color: "rgb(80, 250, 123)" }
+      - selector: ".sim-card[data-difficulty='medium']"
+        css_property: { border-left-color: "rgb(255, 184, 108)" }
+      - selector: ".sim-card[data-difficulty='hard']"
+        css_property: { border-left-color: "rgb(255, 85, 85)" }
+
+  - id: difficulty-dots-render
+    check:
+      - selector: ".sim-card .difficulty-dots .dot.filled"
+        visible: true
+        min_count: 1

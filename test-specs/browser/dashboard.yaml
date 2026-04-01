@@ -1,0 +1,46 @@
+name: dashboard
+description: >
+  Dashboard view showing player rank, hexagon progress visualization,
+  and AWS services section populated from the API. Verifies that
+  deprecated elements have been removed.
+setup:
+  navigate: /
+steps:
+  - id: rank-title-shown
+    check:
+      - selector: "#dashboard-view .rank-title"
+        visible: true
+        text_contains: " "
+
+  - id: hexagon-svg-visible
+    check:
+      - selector: "#dashboard-view svg.hexagon"
+        visible: true
+
+  - id: hexagon-has-labels
+    check:
+      - selector: "svg.hexagon text"
+        visible: true
+        min_count: 6
+
+  - id: services-section-visible
+    check:
+      - selector: "#services-section"
+        visible: true
+      - selector: "#services-section .section-title"
+        text_contains: "Services"
+
+  - id: services-from-api
+    check:
+      - selector: "#services-section .service-item"
+        visible: true
+        min_count: 1
+      - selector: "#services-section .service-item .service-name"
+        visible: true
+
+  - id: no-removed-elements
+    check:
+      - selector: "#legacy-progress-bar"
+        visible: false
+      - selector: "#old-level-display"
+        visible: false

@@ -1,0 +1,88 @@
+name: layout
+description: >
+  CSS layout properties, spacing, and responsive breakpoints. Checks
+  topbar height, main container max-width, flex layout on stats, grid
+  layout on sim cards, chat alignment, button touch targets, modal
+  centering, and responsive behavior at narrow viewports.
+setup:
+  navigate: /
+steps:
+  - id: topbar-height
+    check:
+      - selector: "#topbar"
+        css_property: { height: "52px" }
+
+  - id: main-max-width
+    check:
+      - selector: "#main-content"
+        css_property: { max-width: "960px" }
+
+  - id: stats-flex
+    check:
+      - selector: ".stats-row"
+        css_property: { display: "flex" }
+        visible: true
+
+  - id: sim-grid-layout
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: ".sim-grid"
+        css_property: { display: "grid" }
+        visible: true
+
+  - id: chat-alignment
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-messages"
+        css_property: { display: "flex", flex-direction: "column" }
+
+  - id: button-touch-targets
+    check:
+      - selector: "#send-button"
+        css_property: { min-height: "44px", min-width: "44px" }
+
+  - id: modal-nav-back
+    action: click
+    target: "#chat-back-button"
+    check:
+      - selector: "#play-view"
+        visible: true
+
+  - id: modal-centered
+    action: click
+    target: "#settings-button"
+    check:
+      - selector: "#settings-modal"
+        css_property: { position: "fixed" }
+        visible: true
+
+  - id: responsive-single-column-close
+    action: click
+    target: "#settings-close"
+    check:
+      - selector: "#settings-modal"
+        visible: false
+
+  - id: responsive-single-column
+    action: emulate
+    viewport: "375x667"
+    check:
+      - selector: ".sim-grid"
+        css_property: { grid-template-columns: "1fr" }
+
+  - id: responsive-short-title
+    action: emulate
+    viewport: "375x667"
+    check:
+      - selector: "#topbar .app-title"
+        css_property: { overflow: "hidden" }
+
+  - id: chat-input-at-bottom
+    action: click
+    target: ".sim-card:first-child"
+    check:
+      - selector: "#chat-input"
+        css_property: { position: "sticky" }
+        visible: true

@@ -119,21 +119,22 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Tests
 
-- [ ] `npm test` passes all unit tests (78 tests across 4 files)
-- [ ] `npm run test:e2e` passes all Playwright tests (70 tests across 8 files)
-- [ ] `npm run test:all` passes everything
+- [ ] `sim-test run` passes all unit tests + design contracts
+- [ ] `sim-test agent` passes all 8 YAML browser specs
+- [ ] `sim-test personas` produces findings for all 5 personas
 - [ ] All API endpoints have unit tests (GET and POST routes)
 - [ ] Game endpoints tested for 400 (validation) and 503 (no claude-process)
 - [ ] Logger thresholds tested (context, latency, tool loop)
 - [ ] parseStreamJson tested for all marker types (console, coaching, complete)
 - [ ] verifyAutosave tested for all failure modes
 - [ ] buildPrompt tested with all registered sims and themes
-- [ ] E2E: navigation, dashboard, sim picker, chat, settings all covered
-- [ ] E2E: layout assertions for responsive breakpoints (1280px, 480px, 375px)
-- [ ] E2E: visual regression baselines in `web/test/e2e/visual.spec.js-snapshots/`
-- [ ] E2E: axe-core WCAG 2.1 AA scans pass on dashboard, play, settings views
-- [ ] E2E: keyboard navigation reachable for all interactive elements
-- [ ] E2E: mock SSE fixtures avoid dependency on Claude CLI for browser tests
+- [ ] Browser specs: navigation, dashboard, sim picker, chat, settings all covered
+- [ ] Browser specs: layout assertions for responsive breakpoints (1280px, 480px, 375px)
+- [ ] Browser specs: ARIA roles, attributes, keyboard navigation covered
+- [ ] Browser specs: design match screenshots vs Stitch references
+- [ ] Design contracts: `design/manifest.json` checksums validated
+- [ ] Design contracts: `design/thresholds.json` scores within bounds
+- [ ] Guard coverage: `design/` and `test-specs/` in NEVER_WRITABLE_DIRS
 - [ ] Color contrast meets WCAG 2.1 AA (4.5:1 minimum)
 - [ ] All catch blocks in server.js log descriptive errors (endpoint, entity ID, cause)
-- [ ] Screenshot baselines updated after CSS changes: `npx playwright test visual.spec.js -u`
+- [ ] Design references updated after CSS changes: `sim-test design generate`

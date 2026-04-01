@@ -1,0 +1,81 @@
+name: navigation
+description: >
+  Tab switching between dashboard and play views, ARIA state management
+  on tab elements, settings modal open and close behavior, and topbar
+  content rendering.
+setup:
+  navigate: /
+steps:
+  - id: dashboard-active-on-load
+    check:
+      - selector: "[data-tab='dashboard']"
+        has_class: active
+        visible: true
+
+  - id: dashboard-aria-selected
+    check:
+      - selector: "[data-tab='dashboard']"
+        attribute: { aria-selected: "true" }
+      - selector: "[data-tab='play']"
+        attribute: { aria-selected: "false" }
+
+  - id: play-tab-switch
+    action: click
+    target: "[data-tab='play']"
+    check:
+      - selector: "[data-tab='play']"
+        has_class: active
+        attribute: { aria-selected: "true" }
+      - selector: "[data-tab='dashboard']"
+        not_has_class: active
+        attribute: { aria-selected: "false" }
+      - selector: "#play-view"
+        visible: true
+
+  - id: dashboard-tab-back
+    action: click
+    target: "[data-tab='dashboard']"
+    check:
+      - selector: "[data-tab='dashboard']"
+        has_class: active
+        attribute: { aria-selected: "true" }
+      - selector: "#dashboard-view"
+        visible: true
+
+  - id: settings-modal-open
+    action: click
+    target: "#settings-button"
+    check:
+      - selector: "#settings-modal"
+        visible: true
+        has_class: open
+
+  - id: settings-modal-close-outside
+    action: click
+    target: "#settings-overlay"
+    check:
+      - selector: "#settings-modal"
+        not_has_class: open
+        visible: false
+
+  - id: settings-modal-close-button
+    action: click
+    target: "#settings-button"
+    check:
+      - selector: "#settings-modal"
+        visible: true
+
+  - id: settings-modal-close-button-confirm
+    action: click
+    target: "#settings-close"
+    check:
+      - selector: "#settings-modal"
+        visible: false
+
+  - id: topbar-content
+    check:
+      - selector: "#topbar .app-title"
+        text_contains: "AWS Incident Simulator"
+        visible: true
+      - selector: "#topbar #settings-button"
+        visible: true

@@ -27,18 +27,27 @@ tags:
 
 ### Running Tests
 
-- `npm test`: unit tests (node:test, 78 tests, zero test-framework dependencies)
-- `npm run test:e2e`: Playwright E2E tests (70 tests, headless Chromium)
-- `npm run test:all`: runs both sequentially
-- All tests must pass before any change is committed
+- `npm test`: runs `sim-test run` (unit tests + design contract checks)
+- `npm run test:agent`: runs `sim-test agent` (YAML browser specs via Chrome DevTools MCP)
+- `npm run test:personas`: runs `sim-test personas` (persona exploration sessions)
+- All deterministic tests must pass before any change is committed
 
-### Playwright CLI
+### sim-test CLI
 
-- `npx playwright test --headed`: see the browser during tests
-- `npx playwright test --debug`: step through with the Inspector
-- `npx playwright test -u`: update visual regression screenshot baselines
-- `npx playwright show-trace <trace.zip>`: open trace viewer for a failed test
-- `npx playwright codegen http://localhost:3200`: record browser actions to generate test code
+- `sim-test run`: all deterministic tests (unit + design contracts)
+- `sim-test run --unit`: unit tests only
+- `sim-test run --design`: design contract checks only
+- `sim-test agent`: execute YAML browser specs via Chrome DevTools MCP
+- `sim-test agent --spec nav`: run a single spec by name prefix
+- `sim-test agent --dry-run`: parse and validate specs without executing
+- `sim-test personas`: run all persona exploration sessions
+- `sim-test personas --id hostile`: run a single persona by ID
+- `sim-test personas --feedback`: append persona findings to `learning/feedback.md`
+- `sim-test design generate`: capture screenshots and a11y trees from live app
+- `sim-test design extract`: parse Stitch HTML into contract JSON
+- `sim-test design check`: verify contracts against thresholds
+- `sim-test summary`: aggregate all results into `test-results/summary.json`
+- All commands support `--json` for structured output
 
 ### TDD for New Features
 
@@ -50,14 +59,15 @@ tags:
 ### Test Architecture
 
 - Unit tests: `web/test/*.test.js` (node:test + assert/strict)
-- E2E tests: `web/test/e2e/*.spec.js` (Playwright)
-- E2E fixtures: `web/test/e2e/fixtures.js` (mock SSE routes, page objects)
-- Config: `playwright.config.js` (webServer auto-starts, screenshots on failure, traces on failure)
-- Visual baselines: `web/test/e2e/visual.spec.js-snapshots/`
+- Design contracts: `design/contracts/*.json` (structural assertions)
+- Browser specs: `test-specs/browser/*.yaml` (agent-driven via Chrome DevTools MCP)
+- Persona profiles: `test-specs/personas/*.json` (exploratory testing)
+- Results: `test-results/` (gitignored, written by sim-test commands)
+- Architecture reference: `references/testing-system.md`
 
 ### After CSS Changes
 
-Update visual regression baselines: `npx playwright test visual.spec.js -u`
+Run `sim-test agent --spec design` to compare live app against Stitch design references.
 
 ## Adding New Content (Zero Code Changes)
 

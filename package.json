@@ -3,19 +3,23 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node web/server.js",
-    "test": "python3 scripts/extract_paths.py && node --test web/test/*.test.js",
-    "test:e2e": "npx playwright test web/test/e2e/",
-    "test:all": "npm test && npm run test:e2e",
+    "test": "python3 scripts/extract_paths.py && node scripts/sim-test.js run",
+    "test:agent": "node scripts/sim-test.js agent",
+    "test:personas": "node scripts/sim-test.js personas",
+    "test:summary": "node scripts/sim-test.js summary",
     "extract-paths": "python3 scripts/extract_paths.py",
-    "health": "node scripts/code-health.js"
+    "health": "node scripts/code-health.js",
+    "design:generate": "node scripts/sim-test.js design generate",
+    "design:extract": "node scripts/sim-test.js design extract",
+    "design:check": "node scripts/sim-test.js design check",
+    "feedback:personas": "node scripts/sim-test.js personas --feedback"
   },
   "dependencies": {
     "express": "^4.21.0",
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.9.0",
-    "@playwright/test": "^1.45.0",
-    "acorn": "^8.16.0"
+    "acorn": "^8.16.0",
+    "commander": "^12.1.0"
   }
 }

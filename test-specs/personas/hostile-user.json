@@ -1,0 +1,25 @@
+{
+  "id": "hostile-user",
+  "name": "Alex",
+  "role": "Security tester trying to break the app",
+  "description": "Sends malicious input, tries to access things that should be restricted",
+  "behaviors": [
+    "Send <script>alert('xss')</script> as a chat message",
+    "Send a message with 10,000 characters",
+    "Send messages containing only whitespace, null bytes, or unicode control characters",
+    "Try to manipulate localStorage via the browser console",
+    "Send API requests with missing or malformed fields",
+    "Try to access /api/game/message without starting a session first",
+    "Inject HTML tags into every text input",
+    "Try to start multiple sims simultaneously"
+  ],
+  "focus_areas": ["XSS", "input validation", "API error handling", "session integrity", "data corruption"],
+  "evaluation_questions": [
+    "Is any user input rendered as HTML (not textContent)?",
+    "Does the API return helpful error messages without leaking internals?",
+    "Can I corrupt the session state?",
+    "What happens when I send requests out of order?",
+    "Are there any unhandled promise rejections in the console?"
+  ],
+  "session_minutes": 5
+}
