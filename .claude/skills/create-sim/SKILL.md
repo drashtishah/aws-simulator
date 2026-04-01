@@ -35,6 +35,10 @@ Tell the user:
 
 Wait for the user's response. Store their answer as `mcp_available: true/false` and use it throughout the workflow.
 
+### 0. Create GitHub Issue
+
+Create a GitHub Issue for this sim creation session per `.claude/skills/git/references/issue-workflow.md`. Use the `enhancement` label. Title: `feat: create sim for <topic or service>`. Record the issue number for commit references.
+
 ---
 
 ## Workflow
@@ -341,19 +345,17 @@ tags:
 
 ### Phase 6: Commit
 
-22. Stage all new sim files:
-```bash
-git add sims/{id}-{slug}/
-git add sims/registry.json
-git add sims/index.md
-```
+22. Follow the commit procedure in `.claude/skills/git/references/commit-procedure.md`. Stage the sim directory and registry files. Use `Closes #N` referencing the issue from step 0. Include action lines:
 
-23. Commit with message format:
-```
-feat: add sim {id} -- {short title}
-```
+    feat(sim): add sim {id} -- {short title}
 
-24. Done. Do not push automatically -- let the user decide when to push.
+    Closes #N
+
+    intent(sim): <what knowledge gap this sim fills>
+    decision(sim): <key design choices for this scenario>
+    learned(sim): <anything discovered during research>
+
+23. Done. Do not push automatically. Let the user decide when to push.
 
 ---
 
