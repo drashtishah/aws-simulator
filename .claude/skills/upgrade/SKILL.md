@@ -278,3 +278,7 @@ Anti-patterns to reject:
 - "Check out the new release" (no technique extracted)
 - "This could be useful" (no specific file named)
 - "Several updates available" (no specifics)
+
+## Git Discipline
+
+When implementing recommendations from the upgrade report, follow `.claude/skills/git/references/commit-procedure.md` after each change. Create GitHub Issues per `.claude/skills/git/references/issue-workflow.md` for each recommendation being implemented.
