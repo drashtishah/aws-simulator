@@ -1,0 +1,375 @@
+# Eval Scoring Spec: 60 checks across 11 categories
+# Each check: id, check (description), requires (session|transcript|llm), rule or prompt
+
+categories:
+  scoring_integrity:
+    - id: si_scores_lte_2
+      check: All service scores are at most 2
+      requires: session
+      rule: all_values_lte_2
+      target: scoring.service_scores
+
+    - id: si_unqueried_zero
+      check: Unqueried services have a score of 0
+      requires: session
+      rule: unqueried_services_zero
+      target: scoring.service_scores
+
+    - id: si_total_equals_sum
+      check: Total score equals sum of individual service scores
+      requires: session
+      rule: total_equals_sum
+      target: scoring.service_scores
+
+    - id: si_scores_gte_0
+      check: All service scores are non-negative
+      requires: session
+      rule: all_values_gte_0
+      target: scoring.service_scores
+
+  console_purity:
+    - id: cp_no_analysis_phrases
+      check: Console output contains no analysis phrases like "this means" or "the issue is"
+      requires: transcript
+      rule: not_contains_any
+      target: console_data
+      patterns:
+        - "this means"
+        - "the issue is"
+        - "this indicates"
+        - "this suggests"
+        - "the problem is"
+
+    - id: cp_no_hint_text
+      check: Console output contains no hint or coaching text
+      requires: transcript
+      rule: not_contains_any
+      target: console_data
+      patterns:
+        - "you should"
+        - "try looking"
+        - "consider checking"
+        - "have you tried"
+
+    - id: cp_no_narrator_commentary
+      check: Console output contains no narrator commentary or flavor text
+      requires: transcript
+      rule: not_contains_any
+      target: console_data
+      patterns:
+        - "narrator:"
+        - "note:"
+        - "hint:"
+
+    - id: cp_valid_structure
+      check: Console data is valid JSON-like structured output
+      requires: transcript
+      rule: valid_console_structure
+      target: console_data
+
+  leak_prevention:
+    - id: lp_no_root_cause
+      check: Narrator never mentions manifest root_cause field value
+      requires: transcript
+      rule: not_contains_manifest_field
+      field: root_cause
+
+    - id: lp_no_what_broke
+      check: Narrator never mentions manifest what_broke field value
+      requires: transcript
+      rule: not_contains_manifest_field
+      field: what_broke
+
+    - id: lp_no_criteria_ids
+      check: Narrator never quotes fix criteria IDs
+      requires: transcript
+      rule: not_contains_manifest_field
+      field: criteria_ids
+
+    - id: lp_no_service_weights
+      check: Narrator never reveals service scoring weights
+      requires: transcript
+      rule: not_contains_manifest_field
+      field: service_weights
+
+    - id: lp_no_manifest_keys
+      check: Narrator never references internal manifest key names
+      requires: transcript
+      rule: not_contains_any
+      target: narrator_text
+      patterns:
+        - "root_cause"
+        - "what_broke"
+        - "criteria_ids"
+        - "service_weights"
+        - "manifest"
+
+  coaching_accuracy:
+    - id: ca_coaching_after_unproductive
+      check: Coaching text only appears after unproductive questions
+      requires: transcript
+      rule: coaching_follows_unproductive
+
+    - id: ca_correct_service_ref
+      check: Coaching references the correct service for the current investigation
+      requires: transcript
+      rule: coaching_refs_correct_service
+
+    - id: ca_no_coaching_on_productive
+      check: No coaching appears on turns with productive questions
+      requires: transcript
+      rule: no_coaching_on_productive
+
+    - id: ca_coaching_tone
+      check: Coaching text uses supportive, non-directive tone
+      requires: llm
+      prompt: Review each coaching message in the transcript. Does the coaching use a supportive, guiding tone rather than giving direct answers? Rate pass if all coaching is non-directive.
+
+    - id: ca_classification_matches_keywords
+      check: Question classification matches keyword rules
+      requires: session
+      rule: classification_matches_keywords
+      target: question_profile
+
+    - id: ca_effective_lte_count
+      check: Effective count is less than or equal to total count per axis
+      requires: session
+      rule: effective_lte_total_per_axis
+      target: question_profile
+
+    - id: ca_coaching_not_repetitive
+      check: Coaching messages vary and do not repeat the same phrasing
+      requires: llm
+      prompt: Check all coaching messages across the transcript. Are they varied in phrasing, or do they repeat the same template? Rate pass if coaching shows variety.
+
+  hint_delivery:
+    - id: hd_correct_order
+      check: Hints appear in the correct sequential order
+      requires: transcript
+      rule: hints_in_order
+
+    - id: hd_skip_queried
+      check: Hints skip services the player has already queried
+      requires: transcript
+      rule: hints_skip_queried_services
+
+    - id: hd_max_one_per_turn
+      check: At most one hint is delivered per turn
+      requires: transcript
+      rule: max_one_hint_per_turn
+
+    - id: hd_relevant_service
+      check: Each hint references a service relevant to the current scenario
+      requires: transcript
+      rule: hint_refs_relevant_service
+
+    - id: hd_no_premature_hints
+      check: No hints appear before the player has had a chance to investigate
+      requires: transcript
+      rule: no_hints_before_turn_3
+
+  question_classification:
+    - id: qc_counts_gte_0
+      check: Each axis has question count greater than or equal to 0
+      requires: session
+      rule: all_values_gte_0
+      target: question_profile.counts
+
+    - id: qc_effective_lte_count
+      check: Effective count is at most total count per axis
+      requires: session
+      rule: effective_lte_total_per_axis
+      target: question_profile
+
+    - id: qc_total_matches_sum
+      check: Total questions match the sum of axis counts
+      requires: session
+      rule: question_counts_match_total
+      target: question_profile
+
+    - id: qc_at_least_one_axis
+      check: At least one axis has questions recorded
+      requires: session
+      rule: at_least_one_axis_has_questions
+      target: question_profile
+
+  session_integrity:
+    - id: sei_has_source
+      check: Session has source field
+      requires: session
+      rule: field_exists
+      field: source
+
+    - id: sei_has_play_mode
+      check: Session has play_mode field
+      requires: session
+      rule: field_exists
+      field: play_mode
+
+    - id: sei_has_status
+      check: Session has status field
+      requires: session
+      rule: field_exists
+      field: status
+
+    - id: sei_last_active_recent
+      check: last_active is a recent ISO date
+      requires: session
+      rule: last_active_recent
+      field: last_active
+
+    - id: sei_services_queried_array
+      check: services_queried is a valid array
+      requires: session
+      rule: is_array
+      field: services_queried
+
+  debrief_quality:
+    - id: dq_phase_transition
+      check: Debrief phase transitions correctly from investigation
+      requires: transcript
+      rule: debrief_follows_investigation
+
+    - id: dq_offers_seed_questions
+      check: Debrief offers seed questions for further exploration
+      requires: transcript
+      rule: debrief_has_seed_questions
+
+    - id: dq_covers_multiple_zones
+      check: Debrief covers multiple service zones
+      requires: session
+      rule: debrief_covers_zones
+      target: services_queried
+
+    - id: dq_depth_score_tracks
+      check: Debrief depth score tracks player exploration level
+      requires: session
+      rule: depth_score_correlates_with_exploration
+
+    - id: dq_summarizes_findings
+      check: Debrief accurately summarizes what the player discovered
+      requires: llm
+      prompt: Compare the debrief section of the transcript with the services the player queried and the questions they asked. Does the debrief accurately reflect what was discovered? Rate pass if the summary is faithful to the session.
+
+    - id: dq_no_new_info
+      check: Debrief does not introduce new diagnostic information not found during play
+      requires: llm
+      prompt: Review the debrief portion of the transcript. Does it introduce any new technical facts or diagnostic clues that were not surfaced during the investigation phase? Rate pass if debrief only references previously revealed information.
+
+  narrator_behavior:
+    - id: nb_no_emojis
+      check: Narrator text contains no emojis
+      requires: transcript
+      rule: no_emojis
+      target: narrator_text
+
+    - id: nb_no_double_dash
+      check: Narrator text contains no double-dash punctuation
+      requires: transcript
+      rule: not_contains_any
+      target: narrator_text
+      patterns:
+        - " -- "
+        - "--"
+
+    - id: nb_stays_in_character
+      check: Narrator maintains consistent in-character voice throughout
+      requires: llm
+      prompt: Review the narrator responses in the transcript. Does the narrator maintain a consistent persona and stay in character throughout the session, never breaking the fourth wall or referencing game mechanics directly? Rate pass if character is maintained.
+
+    - id: nb_console_markers_wellformed
+      check: Console markers are well-formed with proper delimiters
+      requires: transcript
+      rule: console_markers_wellformed
+
+    - id: nb_no_cross_service_refs
+      check: Narrator does not reference services the player has not queried
+      requires: transcript
+      rule: no_cross_service_refs
+
+    - id: nb_appropriate_length
+      check: Narrator responses are appropriate length, not excessively long or short
+      requires: llm
+      prompt: Review narrator response lengths across the transcript. Are responses appropriately sized for the context, avoiding walls of text or overly terse replies? Rate pass if response lengths are reasonable and consistent.
+
+  progression:
+    - id: pr_has_all_axes
+      check: Question profile has all 6 hexagon axes
+      requires: session
+      rule: has_all_axes
+      target: question_profile
+      axes:
+        - gather
+        - diagnose
+        - correlate
+        - impact
+        - trace
+        - fix
+
+    - id: pr_story_beats_include_start
+      check: Story beats include a "start" beat
+      requires: session
+      rule: array_contains
+      target: story_beats
+      value: start
+
+    - id: pr_criteria_coverage
+      check: criteria_met plus criteria_remaining cover all manifest criteria
+      requires: session
+      rule: criteria_sets_cover_manifest
+
+    - id: pr_criteria_met_valid
+      check: criteria_met contains only valid criteria IDs from the manifest
+      requires: session
+      rule: criteria_met_subset_of_manifest
+
+  narrator_quality:
+    - id: nq_narrative_coherence
+      check: Narrator maintains narrative coherence across turns
+      requires: llm
+      prompt: Review the full transcript for narrative coherence. Do the narrator responses build on previous context, maintain consistent facts, and create a logical progression? Rate pass if the narrative is coherent throughout.
+
+    - id: nq_immersion
+      check: Narrator creates and maintains immersion in the incident scenario
+      requires: llm
+      prompt: Evaluate the narrator responses for immersion quality. Does the narrator make the player feel like they are investigating a real AWS incident with appropriate urgency and technical atmosphere? Rate pass if immersion is maintained.
+
+    - id: nq_pacing
+      check: Narrator paces information delivery appropriately
+      requires: llm
+      prompt: Review the pacing of information delivery across the transcript. Does the narrator reveal information at an appropriate rate, neither overwhelming the player nor withholding too much? Rate pass if pacing supports good gameplay.
+
+    - id: nq_tone_consistency
+      check: Narrator maintains consistent tone throughout the session
+      requires: llm
+      prompt: Evaluate the narrator tone across all responses. Is the tone consistent, professional, and appropriate for an incident response scenario? Rate pass if tone does not shift unexpectedly.
+
+    - id: nq_information_density
+      check: Narrator responses contain appropriate information density
+      requires: llm
+      prompt: Review each narrator response for information density. Does each response provide meaningful content without filler or padding? Rate pass if responses are information-rich without being overwhelming.
+
+    - id: nq_player_agency
+      check: Narrator respects and supports player agency in investigation
+      requires: llm
+      prompt: Evaluate whether the narrator respects the player's choices and direction of investigation. Does it follow the player's lead rather than railroading toward a specific path? Rate pass if player agency is supported.
+
+    - id: nq_technical_accuracy
+      check: Narrator provides technically accurate AWS service descriptions
+      requires: llm
+      prompt: Review the technical content in narrator responses. Are AWS service names, behaviors, and error patterns described accurately? Rate pass if technical details are correct or plausibly realistic for the scenario.
+
+    - id: nq_adaptive_difficulty
+      check: Narrator adapts response complexity to player skill signals
+      requires: llm
+      prompt: Evaluate whether the narrator adjusts its complexity based on the player's demonstrated knowledge level. Does it explain more when the player seems confused and offer deeper detail when the player is advanced? Rate pass if adaptation is present.
+
+    - id: nq_scenario_fidelity
+      check: Narrator responses are consistent with the specific incident scenario
+      requires: llm
+      prompt: Review narrator responses against the scenario context. Are all details consistent with the specific incident being simulated, with no contradictions or anachronisms? Rate pass if scenario fidelity is maintained.
+
+    - id: nq_engagement
+      check: Narrator encourages continued investigation and engagement
+      requires: llm
+      prompt: Evaluate whether the narrator encourages the player to keep investigating through hooks, open questions, or acknowledgment of progress. Does it maintain player engagement without being pushy? Rate pass if engagement techniques are effective and natural.
