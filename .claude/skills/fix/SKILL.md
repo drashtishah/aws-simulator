@@ -44,6 +44,15 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 
 If `test-results/summary.json` exists, read it for recent test failures. Note any browser spec failures or high-severity persona findings. These inform which skill areas need attention.
 
+### 3b. Check open GitHub Issues
+
+Run `gh issue list --state open --json number,title,labels,body --limit 50`. Group issues by label:
+- `bug`: prioritize these
+- `enhancement`: include if related to current feedback themes
+- `chore`: include if low-effort
+
+Note issue numbers for any that align with feedback or log findings. These will be referenced in Phase 3 commits.
+
 ### 4. Run code health baseline
 
 Run `node scripts/code-health.js` and capture the six scores + composite. Also read the last entry in `learning/logs/health-scores.jsonl` (if the file exists and has entries) to compute deltas. Flag any metric that dropped by 5+ points since the last recorded score.

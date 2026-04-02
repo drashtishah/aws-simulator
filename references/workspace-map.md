@@ -60,18 +60,18 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                            |  journal.md       |
                            +-------------------+
 
-+------------------+
-|     /git         |
-|  (skill)         |
-|                  |
-| Reads:           |
-|  git history     |
-|  GitHub Issues   |
-|                  |
-| Writes:          |
-|  git commits     |
-|  GitHub Issues   |
-+------------------+
++------------------+       +------------------+
+|     /git         |       |  /fight-team     |
+|  (skill)         |       |  (skill)         |
+|                  |       |                  |
+| Reads:           |       | Reads:           |
+|  git history     |       |  everything      |
+|  GitHub Issues   |       |  (workspace-wide |
+|                  |       |   review)        |
+| Writes:          |       |                  |
+|  git commits     |       | Writes:          |
+|  GitHub Issues   |       |  GitHub Issues   |
++------------------+       +------------------+
 ```
 
 ## Data Flow
@@ -108,6 +108,10 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> writes git commits (contextual commit messages with action lines)
             --> writes GitHub Issues (gh issue create, auto-close via Closes #N)
             --> referenced by: /fix, /create-sim, /upgrade, /sim-test (commit procedure)
+
+/fight-team --> reads everything (workspace-wide adversarial review)
+            --> writes GitHub Issues (actionable findings from debate)
+            --> /fix picks up issues in its gather phase (step 3b)
 
 sim-test ----> run: executes node --test + design contract checks
            --> agent: reads test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
@@ -198,3 +202,4 @@ When changing a component, check what else reads/writes the same data:
 | `journal.md` format | play (writes entries), web/ server.js `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
+| GitHub Issues | /git (creates), /fix (reads in step 3b, creates in step 6b), /fight-team (creates from debate findings) |
