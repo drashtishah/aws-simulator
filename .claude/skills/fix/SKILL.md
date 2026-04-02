@@ -76,9 +76,14 @@ Ask the user which findings should drive skill improvements.
 
 If no feedback entries AND no actionable log insights AND no health regressions, say "Nothing to process." and stop.
 
-### 6b. Create GitHub Issues
+### 6b. Create tasks and issues
 
-For each group of actionable findings that will drive changes, create a GitHub Issue per `.claude/skills/git/references/issue-workflow.md`. Use the `bug` label for regressions and failures, `enhancement` for improvements. Record the issue numbers for commit references in Phase 3.
+For each group of actionable findings that will drive changes, follow `.claude/skills/git/references/task-to-issue.md`:
+
+1. Create a task per finding group (Stage 1). Use the finding group name as subject.
+2. Present the full task list to the user for confirmation.
+3. Promote confirmed tasks to GitHub Issues (Stage 2). Use `bug` label for regressions and failures, `enhancement` for improvements.
+4. Record the issue numbers for commit references in Phase 3.
 
 ---
 
@@ -104,11 +109,15 @@ For each group of actionable findings that will drive changes, create a GitHub I
 - **What went wrong**: {observed behavior}
 ```
 
-After appending proposals, inform the user: "Eval proposals written. Run `sim-test eval --proposals` to generate draft YAML."
+After appending proposals, create a single task with subject "Review eval proposals" so the pending work is visible in the session. This task does not need a GitHub Issue until `sim-test eval --proposals` is implemented.
+
+Inform the user: "Eval proposals written. Run `sim-test eval --proposals` to generate draft YAML."
 
 ### 8. Apply changes with per-edit health tracking
 
 For each group of related changes:
+
+Before starting each group, mark its task in_progress.
 
 a. Read the target skill's SKILL.md and relevant reference files.
 b. Use the skill-creator skill for guidance on skill editing best practices.
@@ -123,7 +132,8 @@ g. Log the post-edit scores to `learning/logs/health-scores.jsonl`:
    {"ts":"2026-03-31T...","source":"fix","group":"{group name}","modularity":0,"encapsulation":0,"size_balance":0,"dep_depth":0,"complexity":0,"test_sync":0,"composite":0}
    ```
 h. **Commit this change.** Follow the procedure in `.claude/skills/git/references/commit-procedure.md`. The commit should reference the GitHub Issue for this group (use `Closes #N` if this is the last commit for that issue, `Ref #N` otherwise). Include `intent` and `decision` action lines describing why this specific change was made.
-i. Repeat for each remaining group.
+i. Mark this group's task completed.
+j. Repeat for each remaining group.
 
 ---
 

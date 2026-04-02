@@ -281,4 +281,4 @@ Anti-patterns to reject:
 
 ## Git Discipline
 
-When implementing recommendations from the upgrade report, follow `.claude/skills/git/references/commit-procedure.md` after each change. Create GitHub Issues per `.claude/skills/git/references/issue-workflow.md` for each recommendation being implemented.
+When implementing recommendations from the upgrade report, create a task per recommendation and promote to GitHub Issues per `.claude/skills/git/references/task-to-issue.md`. Follow `.claude/skills/git/references/commit-procedure.md` after each change.

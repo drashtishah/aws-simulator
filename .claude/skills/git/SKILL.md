@@ -43,10 +43,13 @@ Three sub-modes based on context:
     gh issue list --state open
 
 **Create** (user provides a description):
-Follow `.claude/skills/git/references/issue-workflow.md` "Creating issues" section.
+Create a task and promote to a GitHub Issue per `.claude/skills/git/references/task-to-issue.md`.
 
 **Plan** (user provides a plan file path):
-Follow `.claude/skills/git/references/issue-workflow.md` "Creating issues from a plan file" section.
+Read the plan, create a task per plan step, then promote to issues per `.claude/skills/git/references/task-to-issue.md`.
+
+**Promote** (user says "promote tasks" or "tasks to issues"):
+Promote any pending tasks that don't yet have an issue number per `.claude/skills/git/references/task-to-issue.md` Stage 2.
 
 ### /git recall <topic>
 

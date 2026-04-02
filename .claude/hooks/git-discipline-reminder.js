@@ -21,8 +21,8 @@ process.stdin.on('end', () => {
 
     process.stdout.write(`[Git Discipline] Code changes starting. Follow the git workflow:
 
-1. Create or reference a GitHub Issue before starting work.
-   See: .claude/skills/git/references/issue-workflow.md
+1. Create tasks for work items, then promote to GitHub Issues.
+   See: .claude/skills/git/references/task-to-issue.md
 
 2. After each logical change, follow the commit procedure.
    See: .claude/skills/git/references/commit-procedure.md

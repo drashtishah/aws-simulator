@@ -19,17 +19,12 @@ The body should include:
 
 ## Creating issues from a plan file
 
-When starting a plan implementation:
+Use the task-to-issue procedure in `.claude/skills/git/references/task-to-issue.md`:
 
 1. Read the plan file
-2. Extract each task's title
-3. Create one issue per task:
-
-        gh issue create --title "feat: <task title>" --label "enhancement" --body "Plan: <plan-file-path>
-        Task: <N>
-        Files: <list of files from task>"
-
-4. Record the mapping of task number to issue number for commit references
+2. Create a task per plan step (Stage 1)
+3. Promote each task to a GitHub Issue (Stage 2)
+4. Record the task-to-issue mapping for commit references
 
 ## Closing issues
 

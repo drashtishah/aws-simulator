@@ -35,9 +35,9 @@ Tell the user:
 
 Wait for the user's response. Store their answer as `mcp_available: true/false` and use it throughout the workflow.
 
-### 0. Create GitHub Issue
+### 0. Create task and issue
 
-Create a GitHub Issue for this sim creation session per `.claude/skills/git/references/issue-workflow.md`. Use the `enhancement` label. Title: `feat: create sim for <topic or service>`. Record the issue number for commit references.
+Create a task and promote to GitHub Issue per `.claude/skills/git/references/task-to-issue.md`. Subject: "Create sim for <topic or service>". Use the `enhancement` label. Record the issue number for commit references.
 
 ---
 
