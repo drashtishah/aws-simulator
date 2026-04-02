@@ -189,7 +189,21 @@ describe('playtest setting wiring', () => {
   });
 });
 
-// --- 7. Theme IDs hardcoded in source exist on disk ---
+// --- 7. sim-test CLI commands ---
+
+describe('sim-test CLI commands', () => {
+  const simTestJs = readFile('scripts/sim-test.js');
+
+  it('has evals command', () => {
+    assert.ok(simTestJs.includes(".command('evals')"), 'sim-test should have evals command');
+  });
+
+  it('does not have old eval command', () => {
+    assert.ok(!simTestJs.includes(".command('eval')"), 'old eval command should be removed');
+  });
+});
+
+// --- 8. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
   it('app.js calm-mentor theme file exists', () => {

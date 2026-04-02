@@ -8,6 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
+const evalRunner = require('./eval-runner');
+
 const ROOT = path.resolve(__dirname, '..');
 const DESIGN_DIR = path.join(ROOT, 'design');
 const SPECS_DIR = path.join(ROOT, 'test-specs', 'browser');
@@ -523,6 +525,206 @@ function handlePersonaFeedback(opts) {
 }
 
 // ---------------------------------------------------------------------------
+// sim-test evals
+// ---------------------------------------------------------------------------
+
+program
+  .command('evals')
+  .description('Run Layer 4 eval scorecard against completed play sessions')
+  .option('--sim <id>', 'Score a specific sim session')
+  .option('--llm', 'Run LLM judgment checks (slower, costs tokens)')
+  .option('--model <model>', 'Model for LLM checks', 'sonnet')
+  .option('--dry-run', 'List all 60 checks by category without running')
+  .option('--json', 'Output structured JSON')
+  .action(async (opts) => {
+    const spec = evalRunner.loadScoringSpec();
+    const checks = evalRunner.allChecks(spec);
+
+    if (opts.dryRun) {
+      const byCategory = {};
+      for (const c of checks) {
+        if (!byCategory[c.category]) byCategory[c.category] = [];
+        byCategory[c.category].push(c);
+      }
+      if (!opts.json) {
+        console.log('Eval scorecard: ' + checks.length + ' checks in ' + Object.keys(byCategory).length + ' categories\n');
+        for (const [cat, catChecks] of Object.entries(byCategory)) {
+          console.log('  ' + cat + ' (' + catChecks.length + '):');
+          for (const c of catChecks) {
+            console.log('    ' + c.id + ': ' + c.check + ' [' + c.requires + ']');
+          }
+        }
+      }
+      jsonOut(opts.json, { command: 'evals', mode: 'dry-run', checks: checks.length, categories: byCategory });
+      process.exit(0);
+    }
+
+    // Find session to score
+    let simId = opts.sim;
+    if (!simId) {
+      const sessions = evalRunner.listCompletedSessions();
+      if (sessions.length === 0) {
+        if (!opts.json) console.log('  No completed sessions found. Play a sim in playtester mode first.');
+        jsonOut(opts.json, { command: 'evals', error: 'no completed sessions' });
+        process.exit(0);
+      }
+      simId = sessions[Math.floor(Math.random() * sessions.length)];
+    }
+
+    if (!opts.json) console.log('Scoring session: ' + simId + '\n');
+
+    const result = evalRunner.runScorecard(simId);
+    if (result.error) {
+      if (!opts.json) console.log('  Error: ' + result.error);
+      jsonOut(opts.json, result);
+      process.exit(2);
+    }
+
+    // Report by category
+    const byCategory = {};
+    for (const r of result.results) {
+      if (!byCategory[r.category]) byCategory[r.category] = { pass: 0, fail: 0, skip: 0, pending: 0 };
+      if (r.status === 'pass') byCategory[r.category].pass++;
+      else if (r.status === 'fail') byCategory[r.category].fail++;
+      else if (r.status === 'skipped') byCategory[r.category].skip++;
+      else if (r.status === 'pending_llm') byCategory[r.category].pending++;
+    }
+
+    if (!opts.json) {
+      for (const [cat, counts] of Object.entries(byCategory)) {
+        const parts = [];
+        if (counts.pass) parts.push(counts.pass + ' pass');
+        if (counts.fail) parts.push(counts.fail + ' fail');
+        if (counts.skip) parts.push(counts.skip + ' skip');
+        if (counts.pending) parts.push(counts.pending + ' pending');
+        console.log('  ' + cat + ': ' + parts.join(', '));
+      }
+
+      const total = result.results.length;
+      const passed = result.results.filter(r => r.status === 'pass').length;
+      const failed = result.results.filter(r => r.status === 'fail').length;
+      const skipped = result.results.filter(r => r.status === 'skipped').length;
+      const pending = result.results.filter(r => r.status === 'pending_llm').length;
+      console.log('\n  Total: ' + passed + '/' + total + ' pass, ' + failed + ' fail, ' + skipped + ' skip, ' + pending + ' pending_llm');
+
+      if (failed > 0) {
+        console.log('\n  Failed checks:');
+        for (const r of result.results.filter(r => r.status === 'fail')) {
+          console.log('    ' + r.id + ': ' + (r.reason || 'failed'));
+        }
+      }
+    }
+
+    // Persist results
+    evalRunner.writeResult(simId, result);
+    evalRunner.appendHistory({
+      ts: new Date().toISOString(),
+      simId,
+      passed: result.results.filter(r => r.status === 'pass').length,
+      failed: result.results.filter(r => r.status === 'fail').length,
+      total: result.results.length
+    });
+
+    jsonOut(opts.json, { command: 'evals', ...result });
+
+    const exitCode = result.results.some(r => r.status === 'fail') ? 1 : 0;
+    process.exit(exitCode);
+  });
+
+// ---------------------------------------------------------------------------
+// sim-test validate
+// ---------------------------------------------------------------------------
+
+program
+  .command('validate')
+  .description('Run all 4 test layers in sequence')
+  .option('--quick', 'Skip persona tests (layers 1-2-4 only)')
+  .option('--json', 'Output structured JSON')
+  .action(async (opts) => {
+    const results = { command: 'validate', ts: timestamp(), layers: {} };
+    let overallExit = 0;
+
+    function run(cmd, label) {
+      try {
+        const out = execSync(cmd, { cwd: ROOT, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 300000 });
+        return { ok: true, output: out };
+      } catch (err) {
+        const code = err.status || 2;
+        if (code > overallExit) overallExit = code;
+        return { ok: false, output: (err.stdout || '') + (err.stderr || ''), code };
+      }
+    }
+
+    // Layer 1: deterministic tests
+    if (!opts.json) console.log('--- Layer 1: Deterministic Tests ---');
+    const l1 = run('node scripts/sim-test.js run --json', 'run');
+    try { results.layers.run = JSON.parse(l1.output); } catch { results.layers.run = { raw: l1.output.slice(0, 500) }; }
+    if (!opts.json) {
+      const r = results.layers.run;
+      if (r.unit) console.log('  unit: ' + r.unit.passed + '/' + r.unit.total + ' passed');
+      if (r.design) console.log('  design: ' + (r.design.passed || 0) + '/' + (r.design.total || 0));
+      console.log('  ' + (r.verdict || 'UNKNOWN'));
+    }
+
+    // Layer 4: evals scorecard
+    if (!opts.json) console.log('--- Layer 4: Evals (scorecard) ---');
+    const completedSessions = evalRunner.listCompletedSessions();
+    if (completedSessions.length > 0) {
+      const l4 = run('node scripts/sim-test.js evals --sim ' + completedSessions[0] + ' --json', 'evals');
+      try { results.layers.evals = JSON.parse(l4.output); } catch { results.layers.evals = { raw: l4.output.slice(0, 500) }; }
+      if (!opts.json) {
+        const r = results.layers.evals;
+        if (r.results) {
+          const passed = r.results.filter(x => x.status === 'pass').length;
+          const failed = r.results.filter(x => x.status === 'fail').length;
+          console.log('  ' + passed + ' pass, ' + failed + ' fail');
+        }
+        console.log('  ' + (l4.ok ? 'PASS' : 'FAIL'));
+      }
+    } else {
+      results.layers.evals = { skipped: true, reason: 'no completed sessions' };
+      if (!opts.json) console.log('  Skipped (no completed sessions)');
+    }
+
+    // Layer 2: agent specs (dry-run only in validate)
+    if (!opts.json) console.log('--- Layer 2: Agent Specs (dry-run) ---');
+    const l2 = run('node scripts/sim-test.js agent --dry-run --json', 'agent');
+    try { results.layers.agent = JSON.parse(l2.output); } catch { results.layers.agent = { raw: l2.output.slice(0, 500) }; }
+    if (!opts.json) {
+      const r = results.layers.agent;
+      if (r.specs) console.log('  ' + r.specs.length + ' specs valid');
+      console.log('  ' + (r.verdict || 'UNKNOWN'));
+    }
+
+    // Layer 3: personas (skip if --quick)
+    if (!opts.quick) {
+      if (!opts.json) console.log('--- Layer 3: Personas (dry-run) ---');
+      const l3 = run('node scripts/sim-test.js personas --dry-run --json', 'personas');
+      try { results.layers.personas = JSON.parse(l3.output); } catch { results.layers.personas = { raw: l3.output.slice(0, 500) }; }
+      if (!opts.json) {
+        const r = results.layers.personas;
+        if (r.personas) console.log('  ' + r.personas.length + ' personas valid');
+        console.log('  ' + (r.verdict || 'UNKNOWN'));
+      }
+    } else {
+      results.layers.personas = { skipped: true };
+      if (!opts.json) console.log('--- Layer 3: Personas (skipped, --quick) ---');
+    }
+
+    // Write summary
+    const summaryPath = path.join(RESULTS_DIR, 'validate.json');
+    ensureDir(RESULTS_DIR);
+    results.verdict = overallExit === 0 ? 'PASS' : overallExit === 1 ? 'FAIL' : 'ERROR';
+    fs.writeFileSync(summaryPath, JSON.stringify(results, null, 2) + '\n');
+
+    jsonOut(opts.json, results);
+    if (!opts.json) {
+      console.log('--- Overall: ' + results.verdict + ' ---');
+    }
+    process.exit(overallExit);
+  });
+
+// ---------------------------------------------------------------------------
 // sim-test summary
 // ---------------------------------------------------------------------------
 
@@ -533,6 +735,27 @@ program
   .action(async (opts) => {
     ensureDir(RESULTS_DIR);
     const summary = { command: 'summary', ts: timestamp(), layers: {} };
+
+    // Layer 4: evals scorecard
+    const historyPath = path.join(ROOT, 'learning', 'logs', 'eval-history.jsonl');
+    if (fs.existsSync(historyPath)) {
+      const lines = fs.readFileSync(historyPath, 'utf8').split('\n').filter(l => l.trim());
+      const entries = lines.map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+      if (entries.length > 0) {
+        const latest = entries[entries.length - 1];
+        summary.layers.evals = {
+          lastRun: latest.ts,
+          simId: latest.simId,
+          passed: latest.passed,
+          failed: latest.failed,
+          total: latest.total,
+          avgScore: latest.total > 0 ? Math.round(latest.passed / latest.total * 100) : 0,
+          runs: entries.length
+        };
+      }
+    } else {
+      summary.layers.evals = { status: 'no eval history' };
+    }
 
     // Layer 2: browser specs
     const browserDir = path.join(RESULTS_DIR, 'browser');
@@ -572,6 +795,11 @@ program
       jsonOut(true, summary);
     } else {
       console.log('  Summary written to test-results/summary.json');
+      if (summary.layers.evals && summary.layers.evals.total) {
+        console.log('  evals: ' + summary.layers.evals.passed + ' passed, ' + summary.layers.evals.failed + ' failed (' + summary.layers.evals.runs + ' run(s))');
+      } else if (summary.layers.evals) {
+        console.log('  evals: ' + (summary.layers.evals.status || 'no history'));
+      }
       if (summary.layers.browser) {
         console.log('  browser: ' + summary.layers.browser.results + ' result files');
       }

@@ -6,6 +6,8 @@
     "test": "python3 scripts/extract_paths.py && node scripts/sim-test.js run",
     "test:agent": "node scripts/sim-test.js agent",
     "test:personas": "node scripts/sim-test.js personas",
+    "test:evals": "node scripts/sim-test.js evals",
+    "test:validate": "node scripts/sim-test.js validate",
     "test:summary": "node scripts/sim-test.js summary",
     "extract-paths": "python3 scripts/extract_paths.py",
     "health": "node scripts/code-health.js",
