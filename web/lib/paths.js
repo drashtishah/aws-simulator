@@ -26,7 +26,9 @@ const simDir = (id) => path.join(SIMS_DIR, id);
 const manifest = (id) => path.join(SIMS_DIR, id, 'manifest.json');
 const story = (id) => path.join(SIMS_DIR, id, 'story.md');
 const theme = (id) => path.join(THEMES_DIR, `${id}.md`);
-const sessionFile = (id) => path.join(SESSIONS_DIR, `${id}.json`);
+const sessionFile = (id) => path.join(SESSIONS_DIR, id, 'session.json');
+const transcriptFile = (id) => path.join(SESSIONS_DIR, id, 'transcript.jsonl');
+const sessionDir = (id) => path.join(SESSIONS_DIR, id);
 
 module.exports = {
   ROOT,
@@ -49,5 +51,7 @@ module.exports = {
   manifest,
   story,
   theme,
-  sessionFile
+  sessionFile,
+  transcriptFile,
+  sessionDir
 };

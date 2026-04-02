@@ -191,7 +191,7 @@ async function startSession(simId, themeId, options = {}) {
   fs.writeFileSync(promptFile, promptText);
 
   const stdinMessage = options.resume
-    ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}.json for session state.`)
+    ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
     : 'Begin the simulation. Deliver the Opening and Briefing Card.';
 
   const args = [
@@ -214,7 +214,9 @@ async function startSession(simId, themeId, options = {}) {
     model,
     promptFile,
     startedAt: turnStart,
-    autosaveFailCount: 0
+    autosaveFailCount: 0,
+    playtest: options.playtest || false,
+    turnCount: 0
   });
 
   logger.logEvent(sessionId, {
@@ -226,6 +228,14 @@ async function startSession(simId, themeId, options = {}) {
     model_actual: parsed.claudeModel || 'unknown',
     claude_session_id: parsed.claudeSessionId
   });
+
+  if (options.playtest) {
+    logger.logEvent(sessionId, {
+      level: 'info',
+      event: 'playtest_mode_active',
+      sim_id: simId
+    });
+  }
 
   if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
     logger.logEvent(sessionId, {
@@ -251,6 +261,20 @@ async function startSession(simId, themeId, options = {}) {
   } else {
     const session = sessions.get(sessionId);
     if (session) session.autosaveFailCount = 0;
+  }
+
+  if (options.playtest) {
+    const transcript = require('./transcript');
+    const narratorText = parsed.events
+      .filter(e => e.type === 'text')
+      .map(e => e.content)
+      .join('\n');
+
+    transcript.appendTurn(simId, {
+      turn: 0,
+      narrator: narratorText || null,
+      mode: 'narrator'
+    });
   }
 
   return {
@@ -312,6 +336,35 @@ async function sendMessage(sessionId, message) {
   }
 
   const parsed = parseStreamJson(result.stdout);
+
+  if (session.playtest) {
+    const transcript = require('./transcript');
+    session.turnCount++;
+
+    const narratorText = parsed.events
+      .filter(e => e.type === 'text')
+      .map(e => e.content)
+      .join('\n');
+    const consoleText = parsed.events
+      .filter(e => e.type === 'console')
+      .map(e => e.content)
+      .join('\n');
+    const coachingText = parsed.events
+      .filter(e => e.type === 'coaching')
+      .map(e => e.content)
+      .join('\n');
+
+    const mode = consoleText ? 'console' : coachingText ? 'coaching' : 'narrator';
+
+    transcript.appendTurn(session.simId, {
+      turn: session.turnCount,
+      player: message,
+      narrator: narratorText || null,
+      console: consoleText || null,
+      coaching: coachingText || null,
+      mode
+    });
+  }
 
   logger.logEvent(sessionId, {
     level: 'info',

@@ -170,7 +170,66 @@ describe('app.js fallback axes match progression.yaml', () => {
   });
 });
 
-// --- 6. Theme IDs hardcoded in source exist on disk ---
+// --- 6. Playtest setting wiring ---
+
+describe('playtest setting wiring', () => {
+  const indexHtml = readFile('web/public/index.html');
+  const appJs = readFile('web/public/app.js');
+
+  it('index.html has playtest select element', () => {
+    assert.ok(indexHtml.includes('select-playtest'), 'settings modal should have playtest dropdown');
+  });
+
+  it('app.js reads playtest setting', () => {
+    assert.ok(appJs.includes("getSetting('playtest'"), 'app.js should read playtest setting');
+  });
+
+  it('app.js sends playtest in startSim body', () => {
+    assert.ok(appJs.includes('playtest'), 'startSim should include playtest in request body');
+  });
+});
+
+// --- 7. sim-test CLI commands ---
+
+describe('sim-test CLI commands', () => {
+  const simTestJs = readFile('scripts/sim-test.js');
+
+  it('has evals command', () => {
+    assert.ok(simTestJs.includes(".command('evals')"), 'sim-test should have evals command');
+  });
+
+  it('does not have old eval command', () => {
+    assert.ok(!simTestJs.includes(".command('eval')"), 'old eval command should be removed');
+  });
+});
+
+// --- 8. Dashboard rendering correctness ---
+
+describe('dashboard rendering correctness', () => {
+  const appJs = readFile('web/public/app.js');
+  const indexHtml = readFile('web/public/index.html');
+
+  it('hexagon SVG viewBox has room for labels beyond the grid', () => {
+    const match = indexHtml.match(/id="hexagon-svg"\s+viewBox="([^"]+)"/);
+    assert.ok(match, 'hexagon SVG should have viewBox');
+    const parts = match[1].split(/\s+/).map(Number);
+    const width = parts[2] || parts[0];
+    assert.ok(width > 300, 'viewBox width should exceed 300 to fit labels: got ' + width);
+  });
+
+  it('highest rank message only shown when nextRank is null', () => {
+    const lines = appJs.split('\n');
+    const highestRankLines = lines.filter(l => l.includes('highest rank'));
+    for (const line of highestRankLines) {
+      assert.ok(
+        !line.includes('requirements.length'),
+        '"highest rank" should not be gated on requirements.length (should only appear when nextRank is null)'
+      );
+    }
+  });
+});
+
+// --- 8. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
   it('app.js calm-mentor theme file exists', () => {

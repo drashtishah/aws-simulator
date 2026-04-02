@@ -6,13 +6,16 @@
     "test": "python3 scripts/extract_paths.py && node scripts/sim-test.js run",
     "test:agent": "node scripts/sim-test.js agent",
     "test:personas": "node scripts/sim-test.js personas",
+    "test:evals": "node scripts/sim-test.js evals",
+    "test:validate": "node scripts/sim-test.js validate",
     "test:summary": "node scripts/sim-test.js summary",
     "extract-paths": "python3 scripts/extract_paths.py",
     "health": "node scripts/code-health.js",
     "design:generate": "node scripts/sim-test.js design generate",
     "design:extract": "node scripts/sim-test.js design extract",
     "design:check": "node scripts/sim-test.js design check",
-    "feedback:personas": "node scripts/sim-test.js personas --feedback"
+    "feedback:personas": "node scripts/sim-test.js personas --feedback",
+    "audit:permissions": "node scripts/audit-permissions.js"
   },
   "dependencies": {
     "express": "^4.21.0",

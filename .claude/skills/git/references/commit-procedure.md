@@ -44,10 +44,26 @@ Use a heredoc for multi-line messages:
 
 This runs path extraction + all deterministic tests (~5-10 seconds).
 
+### 6b. Run eval scorecard (if play-related files changed)
+
+If the commit touches files in `.claude/skills/play/`, `scripts/eval-runner.js`, or `references/eval-scoring.yaml`:
+
+    node scripts/sim-test.js evals --dry-run
+
+This validates the 60-check scorecard parses correctly (~1 second). If completed play sessions exist, run `sim-test evals` to score them.
+
 ### 7. Handle test result
 
 - **Pass**: done. Move to next change or finish.
 - **Fail**: follow `.claude/skills/git/references/rollback-procedure.md`.
+
+### 7b. Feature-complete validation
+
+At the end of /fix or after completing a refactoring task, run full validation:
+
+    node scripts/sim-test.js validate
+
+This runs all 4 test layers in sequence. Judgment evals (Track B) are opt-in and prompted separately.
 
 ## When to use
 

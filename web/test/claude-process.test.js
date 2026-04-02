@@ -184,10 +184,15 @@ describe('parseStreamJson', () => {
 describe('verifyAutosave', () => {
   const sessionsDir = path.join(ROOT, 'learning', 'sessions');
   const testSimId = '__test-autosave-verify__';
-  const testFile = path.join(sessionsDir, `${testSimId}.json`);
+  const testDir = path.join(sessionsDir, testSimId);
+  const testFile = path.join(testDir, 'session.json');
+
+  function ensureDir() {
+    fs.mkdirSync(testDir, { recursive: true });
+  }
 
   function cleanup() {
-    try { fs.unlinkSync(testFile); } catch {}
+    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
   }
 
   it('returns file_missing when session file does not exist', () => {
@@ -197,6 +202,7 @@ describe('verifyAutosave', () => {
   });
 
   it('returns invalid_json for malformed file', () => {
+    ensureDir();
     fs.writeFileSync(testFile, 'not json');
     const result = verifyAutosave(testSimId, new Date(0));
     cleanup();
@@ -205,6 +211,7 @@ describe('verifyAutosave', () => {
   });
 
   it('returns sim_id_mismatch when sim_id differs', () => {
+    ensureDir();
     fs.writeFileSync(testFile, JSON.stringify({ sim_id: 'other-sim', last_active: new Date().toISOString() }));
     const result = verifyAutosave(testSimId, new Date(0));
     cleanup();
@@ -213,6 +220,7 @@ describe('verifyAutosave', () => {
   });
 
   it('returns stale_timestamp when last_active is before turn start', () => {
+    ensureDir();
     const old = new Date('2020-01-01');
     fs.writeFileSync(testFile, JSON.stringify({ sim_id: testSimId, last_active: old.toISOString() }));
     const result = verifyAutosave(testSimId, new Date());
@@ -222,6 +230,7 @@ describe('verifyAutosave', () => {
   });
 
   it('returns ok when file is valid and fresh', () => {
+    ensureDir();
     const now = new Date();
     fs.writeFileSync(testFile, JSON.stringify({ sim_id: testSimId, last_active: now.toISOString() }));
     const result = verifyAutosave(testSimId, new Date(now.getTime() - 1000));
@@ -281,5 +290,39 @@ describe('endSession', () => {
 describe('sessions map', () => {
   it('is exported and is a Map', () => {
     assert.ok(sessions instanceof Map);
+  });
+});
+
+// --- playtest transcript logging ---
+
+describe('playtest transcript logging', () => {
+  it('sendMessage response includes events for transcript extraction', () => {
+    const stdout = [
+      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-play' }),
+      JSON.stringify({
+        type: 'assistant',
+        message: {
+          content: [{
+            type: 'text',
+            text: 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.'
+          }]
+        }
+      }),
+      JSON.stringify({ type: 'result', input_tokens: 100, output_tokens: 50 })
+    ].join('\n');
+
+    const result = parseStreamJson(stdout);
+
+    const narratorText = result.events
+      .filter(e => e.type === 'text')
+      .map(e => e.content)
+      .join('\n');
+    const consoleText = result.events
+      .filter(e => e.type === 'console')
+      .map(e => e.content)
+      .join('\n');
+
+    assert.ok(narratorText.includes('Narrator intro'));
+    assert.ok(consoleText.includes('sg-123'));
   });
 });

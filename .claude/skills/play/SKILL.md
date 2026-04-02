@@ -94,7 +94,7 @@ Load the progression config from `references/progression.yaml`. Apply decay: for
 
 ### 2. Check for In-Progress Sessions
 
-List files in `learning/sessions/`. If any `.json` files exist with `"status": "in_progress"`:
+List directories in `learning/sessions/`. If any directories contain a `session.json` file with `"status": "in_progress"`:
 
 - Read each session file to get the sim_id and investigation_summary
 - Present to the user: "You have an in-progress session: {sim title}. Resume or start fresh?"
@@ -128,6 +128,18 @@ How would you like to investigate?
 ```
 
 Wait for the player's response. Store `assist_mode` for Step 7.
+
+### 3d. Choose Play Mode
+
+Ask the player:
+
+```
+Play as:
+1. Player: normal play
+2. Playtester
+```
+
+Wait for the player's response. Store `play_mode` for Step 7 and Step 11.
 
 ### 4. Present Available Simulations
 
@@ -167,6 +179,23 @@ Read the selected sim's files:
 
 Read `.claude/skills/play/references/agent-prompts.md` for the consolidated prompt template.
 
+### 6b. Select Model Tier
+
+Read `learning/.current-model` (written by the log hook or web server on session start). Derive the tier:
+
+| Model string contains | Tier |
+|---|---|
+| `opus` | large |
+| `sonnet` | medium |
+| `haiku` | small |
+| unknown or missing | medium |
+
+**Tier behavior:**
+
+- **large**: Use the base template as-is. All console artifacts pre-loaded in Step 7.
+- **medium**: After populating the base template, append `.claude/skills/play/references/prompt-overlay-medium.md`. Lazy-load console artifacts: only load artifacts for the first 3 services in the manifest. When the player queries a service whose artifacts were not pre-loaded, read them from `sims/{id}/artifacts/` at that moment and inject as a "console data update."
+- **small**: After populating the base template, append `.claude/skills/play/references/prompt-overlay-small.md`. Lazy-load ALL console artifacts (load none upfront). Include only the glossary and briefing card in the initial prompt. Load everything else on demand.
+
 ### 7. Populate Prompt
 
 Populate the template following the population instructions in agent-prompts.md:
@@ -184,7 +213,7 @@ Populate the template following the population instructions in agent-prompts.md:
 
 If the user chose to resume an in-progress session:
 
-- Read the session state from `learning/sessions/{sim_id}.json`
+- Read the session state from `learning/sessions/{sim_id}/session.json`
 - Restore `theme_id` from session state (do not re-prompt for theme selection)
 - Load `themes/_base.md` and `themes/{theme_id}.md` for prompt population
 - Use the investigation_summary and criteria_met to restore context
@@ -238,7 +267,7 @@ Hints are objects with `hint`, `relevant_services`, and `skip_if_queried` fields
 
 ### 11. Session State Auto-Save
 
-Auto-save session state to `learning/sessions/{sim_id}.json` after every significant interaction. Include `theme_id` in the session state so it persists across resumes.
+Auto-save session state to `learning/sessions/{sim_id}/session.json` after every significant interaction. Include `theme_id` in the session state so it persists across resumes.
 
 - Player asks a question (increment questions_asked)
 - Hint is delivered (increment hints_used)
@@ -330,7 +359,7 @@ On exit: set `debrief_phase` to `"coaching"`. Signal: "SIMULATION COMPLETE. Gene
 
 Read `.claude/skills/play/references/coaching-patterns.md` for analysis rules.
 
-Read the final session state from `learning/sessions/{sim_id}.json`.
+Read the final session state from `learning/sessions/{sim_id}/session.json`.
 
 Analyze the player's investigation using the patterns and rules in coaching-patterns.md:
 
@@ -417,9 +446,9 @@ Append an entry to `learning/journal.md`:
 {Single most important learning}
 ```
 
-### 20. Clean Up Session State
+### 20. Archive Session
 
-Delete the session state file: `learning/sessions/{sim_id}.json`
+Set `status` to `"completed"` in `learning/sessions/{sim_id}/session.json`. Do NOT delete session files. They persist for eval scoring.
 
 ### 21. Report Feedback
 
@@ -440,7 +469,7 @@ Do NOT offer another simulation. One sim per session.
 
 If the user quits, abandons, or closes the session before resolution:
 
-1. The auto-save ensures the latest session state is in `learning/sessions/{sim_id}.json`
+1. The auto-save ensures the latest session state is in `learning/sessions/{sim_id}/session.json`
 2. Do NOT mark the sim as complete
 3. Do NOT update `learning/profile.json` or `learning/catalog.csv`
 4. Do NOT delete the session state file
