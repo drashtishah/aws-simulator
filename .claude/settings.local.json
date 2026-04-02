@@ -21,12 +21,20 @@
       {
         "matcher": "Edit|Write",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/guard-write.js" }]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/git-discipline-reminder.js" }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|Bash|Agent",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/plan-exit-reminder.js" }]
       }
     ],
     "Stop": [
