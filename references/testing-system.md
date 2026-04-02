@@ -6,7 +6,7 @@ tags:
 
 # Testing System Architecture
 
-Reference for the three-layer testing system. Agents interact only through the `sim-test` CLI boundary.
+Reference for the four-layer testing system. Agents interact only through the `sim-test` CLI boundary.
 
 ## Overview
 
@@ -19,6 +19,8 @@ Reference for the three-layer testing system. Agents interact only through the `
   sim-test design check -------->  design/contracts/*.json
   sim-test agent --------------->  test-specs/browser/*.yaml
   sim-test personas ------------>  test-specs/personas/*.json
+  sim-test evals --------------->  references/eval-scoring.yaml
+  sim-test validate ------------>  all layers in sequence
                                 |
   stdout (text or JSON) <--------  test-results/
   exit code (0, 1, 2) <---------  pass / fail / infra error
@@ -63,6 +65,23 @@ sim-test personas --id hostile   # run a specific persona
 sim-test personas --feedback     # push findings to learning/feedback.md
 ```
 
+### Evals (Layer 4)
+
+```
+sim-test evals                        # score a random completed session
+sim-test evals --sim <id>             # score a specific session
+sim-test evals --llm                  # include LLM judgment checks
+sim-test evals --dry-run              # list all 60 checks by category
+sim-test evals --json                 # structured output
+```
+
+### Validate (all layers)
+
+```
+sim-test validate             # run all 4 layers in sequence
+sim-test validate --quick     # skip persona tests
+```
+
 ### Summary
 
 ```
@@ -93,7 +112,12 @@ test-specs/                Protected: declarative test definitions
 test-results/              Writable by test skill (gitignored)
   browser/                 Layer 2 results
   personas/                Layer 3 findings
+  evals/                   Layer 4 eval results (JSON per eval)
+  validate.json            Full validation run results
   summary.json             Aggregated by sim-test summary
+
+references/
+  eval-scoring.yaml           Layer 4: 60-check eval scorecard
 ```
 
 ## File Format Schemas
@@ -138,11 +162,50 @@ Required sections: `name`, `elements` (array of `{selector, required, tag, min_c
 
 Sections: `lighthouse` (`performance`, `accessibility`, `best_practices`, `seo`), `similarity` (`structural`, `visual`), `a11y` (`violations_max`, `contrast_ratio_min`).
 
-## Three Testing Layers
+## Four Testing Layers
 
 1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests and design contract checks. No browser needed.
 2. **Layer 2 (Agent Browser):** `sim-test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
 3. **Layer 3 (Persona):** `sim-test personas` loads profiles and prints prompts. The agent explores freely via Chrome DevTools MCP.
+4. **Layer 4 (Evals):** `sim-test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
+   - **Deterministic checks:** Run against session.json and transcript.jsonl data. Instant, no LLM needed.
+   - **LLM judgment checks:** Optional, evaluate narrator quality with an LLM judge. Triggered with `--llm` flag.
+
+### Eval Scenario Schema
+
+```yaml
+name: string
+id: string
+track: deterministic | judgment
+sim_id: string
+category: scoring | coaching | console | progression | edge-case | enablement
+fixture:                          # Track A
+  session_state: object
+  profile: object
+  manifest_services: array
+assertions:
+  - type: equals | range | contains | not_contains | matches_rule
+    target: string                # dot-path into computed data
+    expected: any
+transcript:                       # Track B
+  - role: player | narrator
+    message: string
+rubric:
+  dimensions:
+    - name: string
+      weight: number
+      criteria: string
+      fail_below: number
+  passing_score: number
+```
+
+### Execution Model
+
+| Level | Trigger | What runs |
+|---|---|---|
+| Per-commit | Automatic | `npm test` |
+| Feature-complete | Automatic (end of /fix) | `sim-test validate` |
+| Model change | User-triggered | `sim-test evals --llm` |
 
 ## Anti-Cheat Enforcement
 
@@ -160,9 +223,7 @@ Sections: `lighthouse` (`performance`, `accessibility`, `best_practices`, `seo`)
 ### What agents cannot do
 
 - Edit design reference files: `NEVER_WRITABLE_DIRS` includes `design/`
-- Edit test specifications: `NEVER_WRITABLE_DIRS` includes `test-specs/`
 - Edit unit test files during skill execution: skill-active check blocks `web/test/`
-- Edit the CLI itself: `NEVER_WRITABLE` includes `scripts/sim-test.js`
 - Edit generation scripts: `NEVER_WRITABLE` includes `scripts/generate-design-refs.js`, `scripts/extract-design-contracts.js`
 
 ## Findings to Feedback Pipeline

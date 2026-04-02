@@ -38,6 +38,7 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 - **Tool failures**: Group PostToolUseFailure events by tool name and error message. Flag patterns where the same Bash command fails 3+ times (player stuck).
 - **System failures**: StopFailure events (rate_limit, billing, server_error, max_output_tokens). These are infrastructure issues, not sim bugs.
 - **Player engagement**: Count UserPromptSubmit events per session. Report average.
+- **Permission bypass audit**: Read `references/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
 
 ### 3. Check recent test results
 
@@ -88,7 +89,22 @@ For each group of actionable findings that will drive changes, create a GitHub I
 - Sim content, narrative, artifacts, difficulty: target `create-sim` skill (`.claude/skills/create-sim/SKILL.md`) and `.claude/skills/create-sim/references/sim-template.md`
 - Play flow, coaching, hints, console behavior: target `play` skill (`.claude/skills/play/SKILL.md`) and its references (`.claude/skills/play/references/agent-prompts.md`, `.claude/skills/play/references/coaching-patterns.md`)
 - Code structure, modularity, complexity regressions: target the specific files flagged by health scores
+- Behavioral expectations, scoring/coaching bugs, edge case failures, log-pattern anomalies (SESSION_AUTOSAVE_FAILED, TOOL_LOOP, CONTEXT_HIGH), persona findings about play-skill behavior: append to `learning/eval-proposals.md` using the proposal format below. Do NOT route here for simple code fixes, sim content quality, web UI issues, or one-off infra errors.
 - Ambiguous items: present to user for classification
+
+**Eval proposal format** (append to `learning/eval-proposals.md`):
+
+```markdown
+### {date}: {one-line description}
+- **Source**: feedback / activity-log / test-result
+- **Track**: deterministic / judgment
+- **Category**: scoring / coaching / console / enablement / edge-case
+- **Sim**: {sim_id or "any"}
+- **What to test**: {expected behavior}
+- **What went wrong**: {observed behavior}
+```
+
+After appending proposals, inform the user: "Eval proposals written. Run `sim-test eval --proposals` to generate draft YAML."
 
 ### 8. Apply changes with per-edit health tracking
 
@@ -123,9 +139,18 @@ After all changes applied:
 
 Run `node scripts/code-health.js` one final time. Report overall before/after comparison (baseline from step 3 vs final). Log to `learning/logs/health-scores.jsonl` with `"source": "fix-final"`.
 
-### 11. Verify deterministic tests
+### 11. Verify all test layers
 
-Run `sim-test run` to verify all unit tests and design contracts pass after changes. Do not run `sim-test agent` or `sim-test personas` (those are separate workflows).
+Run `sim-test validate` to verify all layers pass after changes.
+
+After validate completes, check for completed play sessions:
+
+Ask: "Want to run eval scorecard? (scores completed play sessions, instant for deterministic checks)"
+- Yes: run `sim-test evals`, report the scorecard
+- If scorecard has pending LLM checks, ask: "Run LLM judgment checks too? (~2-3 min, token cost)"
+  - Yes: run `sim-test evals --llm`, report results
+  - No: skip
+- No: skip
 
 ### 12. Clean up
 
