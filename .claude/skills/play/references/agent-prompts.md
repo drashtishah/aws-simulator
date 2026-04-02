@@ -109,7 +109,7 @@ If this breaks: {component.failure_impact}
 
 [RESOLUTION ONLY] What broke: {system_narration.what_broke}
 
-## AWS Console Data
+## AWS Console Data [DEFERRABLE: console-data]
 
 You have access to the following AWS service consoles. When the player queries a service, switch to Console Mode and respond ONLY with data from that service's artifacts in native AWS console format.
 
@@ -174,11 +174,13 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
 
 8. Auto-save session state after EVERY significant interaction. A significant interaction is: a question asked by the player, a hint delivered, a criterion met, or a story beat triggered. Write the session state to:
 
-   learning/sessions/{sim_id}.json
+   learning/sessions/{sim_id}/session.json
 
    Session state format:
    {
      "sim_id": "{sim_id}",
+     "source": "player",
+     "play_mode": "player",
      "started_at": "{ISO 8601 datetime when sim started}",
      "last_active": "{ISO 8601 datetime of this update}",
      "criteria_met": ["{list of criteria IDs the player has satisfied}"],
@@ -206,6 +208,8 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
    Concrete example of populated session state:
    {
      "sim_id": "014-sqs-double-process",
+     "source": "player",
+     "play_mode": "player",
      "started_at": "2026-03-29T10:15:00Z",
      "last_active": "2026-03-29T10:22:00Z",
      "criteria_met": ["identify-visibility-timeout"],
@@ -246,6 +250,14 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
               Example: "We should increase the visibility timeout to 540 seconds"
 
    Increment the count for the matched type in question_profile. If the question leads to discovering new information or satisfying a criterion, also increment effective.
+
+8c. PLAYTEST TRANSCRIPT: If play_mode is "playtester", after each exchange append a JSON line to learning/sessions/{sim_id}/transcript.jsonl:
+
+   {"turn":{N},"ts":"{ISO 8601}","player":"{player message}","narrator":"{your full narrator response}","console":"{console data if any, else null}","coaching":"{coaching text if any, else null}","mode":"{narrator|console|coaching}","service":"{service name if console, else null}"}
+
+   Also write the opening narration as turn 0 with player: null.
+
+   This does not change your behavior. You respond exactly as normal. The transcript is a side-effect log only.
 
 9. On resolution (all required criteria met) -- three-stage debrief:
 
