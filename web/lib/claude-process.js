@@ -229,6 +229,14 @@ async function startSession(simId, themeId, options = {}) {
     claude_session_id: parsed.claudeSessionId
   });
 
+  if (options.playtest) {
+    logger.logEvent(sessionId, {
+      level: 'info',
+      event: 'playtest_mode_active',
+      sim_id: simId
+    });
+  }
+
   if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
     logger.logEvent(sessionId, {
       level: 'warn',
@@ -329,7 +337,7 @@ async function sendMessage(sessionId, message) {
 
   const parsed = parseStreamJson(result.stdout);
 
-  if (session && session.playtest) {
+  if (session.playtest) {
     const transcript = require('./transcript');
     session.turnCount++;
 
