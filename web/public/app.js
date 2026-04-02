@@ -261,7 +261,8 @@
     }
 
     if (requirements.length === 0) {
-      container.innerHTML = '<span class="text-muted">You have achieved the highest rank.</span>';
+      container.innerHTML = '<div class="next-rank-title">' + escapeHtml(nextRank.title) + '</div>' +
+        '<span class="text-muted">All requirements met. Complete a sim to advance.</span>';
       return;
     }
 

@@ -203,6 +203,32 @@ describe('sim-test CLI commands', () => {
   });
 });
 
+// --- 8. Dashboard rendering correctness ---
+
+describe('dashboard rendering correctness', () => {
+  const appJs = readFile('web/public/app.js');
+  const indexHtml = readFile('web/public/index.html');
+
+  it('hexagon SVG viewBox has room for labels beyond the grid', () => {
+    const match = indexHtml.match(/id="hexagon-svg"\s+viewBox="([^"]+)"/);
+    assert.ok(match, 'hexagon SVG should have viewBox');
+    const parts = match[1].split(/\s+/).map(Number);
+    const width = parts[2] || parts[0];
+    assert.ok(width > 300, 'viewBox width should exceed 300 to fit labels: got ' + width);
+  });
+
+  it('highest rank message only shown when nextRank is null', () => {
+    const lines = appJs.split('\n');
+    const highestRankLines = lines.filter(l => l.includes('highest rank'));
+    for (const line of highestRankLines) {
+      assert.ok(
+        !line.includes('requirements.length'),
+        '"highest rank" should not be gated on requirements.length (should only appear when nextRank is null)'
+      );
+    }
+  });
+});
+
 // --- 8. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
