@@ -176,7 +176,7 @@ function buildPrompt(simId, themeId) {
 
   // 7. Append web-specific behavioral instructions
   prompt += `\n\n## Web Session Rules
-- Auto-save session state after every significant interaction to learning/sessions/${manifest.id}.json
+- Auto-save session state after every significant interaction to learning/sessions/${manifest.id}/session.json
 - When switching to Console Mode, prefix your response with [CONSOLE_START] and end with [CONSOLE_END]
 - When delivering coaching analysis, prefix with [COACHING_START] and end with [COACHING_END]
 - When the simulation is resolved and all profile/catalog/journal updates are written, output [SESSION_COMPLETE] as the final line

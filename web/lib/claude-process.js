@@ -191,7 +191,7 @@ async function startSession(simId, themeId, options = {}) {
   fs.writeFileSync(promptFile, promptText);
 
   const stdinMessage = options.resume
-    ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}.json for session state.`)
+    ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
     : 'Begin the simulation. Deliver the Opening and Briefing Card.';
 
   const args = [
@@ -226,6 +226,12 @@ async function startSession(simId, themeId, options = {}) {
     model_actual: parsed.claudeModel || 'unknown',
     claude_session_id: parsed.claudeSessionId
   });
+
+  // Write model to learning/.current-model for play skill tier selection
+  if (parsed.claudeModel) {
+    const modelFile = path.join(paths.ROOT, 'learning', '.current-model');
+    try { fs.writeFileSync(modelFile, parsed.claudeModel); } catch (e) { /* non-critical */ }
+  }
 
   if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
     logger.logEvent(sessionId, {

@@ -123,7 +123,7 @@ describe('buildPrompt', () => {
   it('includes auto-save session rule with correct sim ID', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     assert.ok(
-      prompt.includes(`learning/sessions/${testSimId}.json`),
+      prompt.includes(`learning/sessions/${testSimId}/session.json`),
       'should include session file path with sim ID'
     );
   });

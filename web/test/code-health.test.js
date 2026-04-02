@@ -338,9 +338,9 @@ describe('scoreTestSync (controlled)', () => {
       .map(f => path.join(ROOT, 'web', 'lib', f));
 
     const result = scoreTestSync(libFiles);
-    // paths.js has no test: 5/6 = 83.3
-    assert.equal(result.sub.covered, '5/6');
-    assert.equal(result.score, 83.3);
+    // paths.js has no test: 6/7 = 85.7
+    assert.equal(result.sub.covered, '6/7');
+    assert.equal(result.score, 85.7);
   });
 });
 
