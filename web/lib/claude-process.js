@@ -227,12 +227,6 @@ async function startSession(simId, themeId, options = {}) {
     claude_session_id: parsed.claudeSessionId
   });
 
-  // Write model to learning/.current-model for play skill tier selection
-  if (parsed.claudeModel) {
-    const modelFile = path.join(paths.ROOT, 'learning', '.current-model');
-    try { fs.writeFileSync(modelFile, parsed.claudeModel); } catch (e) { /* non-critical */ }
-  }
-
   if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
     logger.logEvent(sessionId, {
       level: 'warn',

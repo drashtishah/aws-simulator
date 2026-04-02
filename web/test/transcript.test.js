@@ -33,7 +33,6 @@ describe('transcript module', () => {
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sim-transcript-'));
-    const paths = require('../lib/paths');
     transcript = require('../lib/transcript');
     transcript._setSessionsDir(tmpDir);
   });
