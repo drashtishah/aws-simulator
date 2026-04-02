@@ -136,7 +136,7 @@ Ask the player:
 ```
 Play as:
 1. Player: normal play
-2. Playtester: logs full transcript for eval scoring
+2. Playtester
 ```
 
 Wait for the player's response. Store `play_mode` for Step 7 and Step 11.

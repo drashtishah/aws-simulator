@@ -755,7 +755,7 @@
     // Play mode
     const playtestOptions = [
       { value: 'player', label: 'Player' },
-      { value: 'playtester', label: 'Playtester (logs transcript for evals)' }
+      { value: 'playtester', label: 'Playtester' }
     ];
     initCustomSelect(
       document.getElementById('select-playtest'),

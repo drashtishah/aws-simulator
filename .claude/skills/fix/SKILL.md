@@ -152,6 +152,16 @@ Ask: "Want to run eval scorecard? (scores completed play sessions, instant for d
   - No: skip
 - No: skip
 
+Then ask: "Want to run agent browser tests? (starts web server, runs specs via Chrome DevTools)"
+- Yes:
+  1. Start the web server: `npm start &`
+  2. Wait for it to be ready (check `curl -s http://localhost:3200`)
+  3. Run `sim-test agent` to get specs, then execute each spec's steps via Chrome DevTools MCP tools (navigate, click, take_snapshot, evaluate_script)
+  4. Record findings: which steps passed, which had selector mismatches or unexpected state
+  5. Stop the web server when done
+  6. Report findings. If selectors are stale, note them for the next fix cycle.
+- No: skip
+
 ### 12. Clean up
 
 All changes were already committed per-change in step 8h. Verify with `git log --oneline -10` that each change has its own contextual commit referencing an issue.
