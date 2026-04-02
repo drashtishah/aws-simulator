@@ -292,3 +292,37 @@ describe('sessions map', () => {
     assert.ok(sessions instanceof Map);
   });
 });
+
+// --- playtest transcript logging ---
+
+describe('playtest transcript logging', () => {
+  it('sendMessage response includes events for transcript extraction', () => {
+    const stdout = [
+      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-play' }),
+      JSON.stringify({
+        type: 'assistant',
+        message: {
+          content: [{
+            type: 'text',
+            text: 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.'
+          }]
+        }
+      }),
+      JSON.stringify({ type: 'result', input_tokens: 100, output_tokens: 50 })
+    ].join('\n');
+
+    const result = parseStreamJson(stdout);
+
+    const narratorText = result.events
+      .filter(e => e.type === 'text')
+      .map(e => e.content)
+      .join('\n');
+    const consoleText = result.events
+      .filter(e => e.type === 'console')
+      .map(e => e.content)
+      .join('\n');
+
+    assert.ok(narratorText.includes('Narrator intro'));
+    assert.ok(consoleText.includes('sg-123'));
+  });
+});

@@ -170,7 +170,26 @@ describe('app.js fallback axes match progression.yaml', () => {
   });
 });
 
-// --- 6. Theme IDs hardcoded in source exist on disk ---
+// --- 6. Playtest setting wiring ---
+
+describe('playtest setting wiring', () => {
+  const indexHtml = readFile('web/public/index.html');
+  const appJs = readFile('web/public/app.js');
+
+  it('index.html has playtest select element', () => {
+    assert.ok(indexHtml.includes('select-playtest'), 'settings modal should have playtest dropdown');
+  });
+
+  it('app.js reads playtest setting', () => {
+    assert.ok(appJs.includes("getSetting('playtest'"), 'app.js should read playtest setting');
+  });
+
+  it('app.js sends playtest in startSim body', () => {
+    assert.ok(appJs.includes('playtest'), 'startSim should include playtest in request body');
+  });
+});
+
+// --- 7. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
   it('app.js calm-mentor theme file exists', () => {
