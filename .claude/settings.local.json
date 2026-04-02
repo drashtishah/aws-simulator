@@ -25,6 +25,10 @@
       {
         "matcher": "Edit|Write",
         "hooks": [{ "type": "command", "command": "node .claude/hooks/git-discipline-reminder.js" }]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "node .claude/hooks/pre-commit-issues.js" }]
       }
     ],
     "PostToolUse": [
