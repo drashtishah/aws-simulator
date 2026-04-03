@@ -11,98 +11,181 @@
       "Bash",
       "Agent",
       "mcp__aws-knowledge-mcp-server",
-      "mcp__stitch",
-      "mcp__chrome-devtools",
-      "mcp__shadcn-ui"
+      "mcp__chrome-devtools"
     ]
   },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/guard-write.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/guard-write.js"
+          }
+        ]
       },
       {
         "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/git-discipline-reminder.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/git-discipline-reminder.js"
+          }
+        ]
       },
       {
         "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/pre-commit-issues.js" }]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/pre-commit-self-audit.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-commit-issues.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/pre-commit-self-audit.js"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write|Bash|Agent",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       },
       {
         "matcher": "ExitPlanMode",
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/plan-exit-reminder.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/plan-exit-reminder.js"
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "SessionStart": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "SessionEnd": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "StopFailure": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "PreCompact": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "PostCompact": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "PermissionDenied": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "TaskCreated": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "FileChanged": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ],
     "CwdChanged": [
       {
-        "hooks": [{ "type": "command", "command": "node .claude/hooks/log-hook.js" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/log-hook.js"
+          }
+        ]
       }
     ]
   }
