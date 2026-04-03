@@ -2,6 +2,8 @@
 // PreToolUse guard: context-aware file protection.
 // Global mode (no --ownership flag): checks NEVER_WRITABLE only.
 // Skill mode (--ownership path): also checks skill-scoped ownership.
+// Two-layer execution: settings.local.json registers this hook globally (baseline),
+// and each SKILL.md registers it again with --ownership for per-skill scoping.
 
 const fs = require('fs');
 const path = require('path');
