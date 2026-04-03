@@ -111,8 +111,11 @@ app.get('/api/sims/:id/artifacts/:file', (req, res) => {
 
 app.get('/api/sessions', (req, res) => {
   try {
-    const files = fs.readdirSync(paths.SESSIONS_DIR).filter(f => f.endsWith('.json'));
-    const sessions = files.map(f => readJSON(path.join(paths.SESSIONS_DIR, f), null)).filter(Boolean);
+    const entries = fs.readdirSync(paths.SESSIONS_DIR, { withFileTypes: true });
+    const sessions = entries
+      .filter(e => e.isDirectory())
+      .map(e => readJSON(path.join(paths.SESSIONS_DIR, e.name, 'session.json'), null))
+      .filter(Boolean);
     res.json(sessions);
   } catch (err) {
     console.error(`GET /api/sessions: failed to read ${paths.SESSIONS_DIR}: ${err.message}`);
