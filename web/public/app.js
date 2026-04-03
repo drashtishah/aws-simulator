@@ -240,14 +240,14 @@
       svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot' + fadingClass + '" />';
     }
 
-    // Axis descriptions
+    // Axis descriptions: example questions for each type
     const axisDescriptions = {
-      gather: 'Collecting logs, metrics, and evidence',
-      diagnose: 'Identifying root cause from symptoms',
-      correlate: 'Connecting signals across services',
-      impact: 'Assessing blast radius and business cost',
-      trace: 'Following the request path through the system',
-      fix: 'Proposing and validating the remediation'
+      gather: 'What do the logs and metrics show?',
+      diagnose: 'What is causing this behavior?',
+      correlate: 'What else changed around the same time?',
+      impact: 'How many users and services are affected?',
+      trace: 'Where does the request fail in the chain?',
+      fix: 'What would resolve this and how do we verify?'
     };
 
     // Labels, with fading indicator
@@ -263,15 +263,25 @@
 
     svg.innerHTML = svgContent;
 
-    // Render legend below hexagon
-    const legend = document.getElementById('hexagon-legend');
-    if (legend) {
-      legend.innerHTML = axes.map(axis => {
+    // Render interactive hotspots over each label
+    const hotspots = document.getElementById('hexagon-hotspots');
+    if (hotspots) {
+      const svgEl = document.getElementById('hexagon-svg');
+      const svgRect = svgEl.getBoundingClientRect();
+      const vb = { x: -40, y: -10, w: 380, h: 320 };
+      const scaleX = svgRect.width / vb.w;
+      const scaleY = svgRect.height / vb.h;
+
+      hotspots.innerHTML = axes.map((axis, i) => {
         const label = (axisLabels && axisLabels[axis]) || axis;
         const desc = axisDescriptions[axis] || '';
-        return '<div class="hexagon-legend-item"><strong>' + escapeHtml(label) + '</strong>: ' + escapeHtml(desc) + '</div>';
+        const p = getPoint(i, 12, 10);
+        const px = (p.x - vb.x) * scaleX;
+        const py = (p.y - vb.y) * scaleY;
+        return '<div class="hexagon-hotspot" data-tooltip="' + escapeAttr(desc) + '" style="left:' + px + 'px;top:' + py + 'px;transform:translate(-50%,-50%)">' + escapeHtml(label) + '</div>';
       }).join('');
     }
+
   }
 
   function renderNextRank(progress) {

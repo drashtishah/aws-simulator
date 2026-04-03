@@ -233,22 +233,44 @@ a:hover {
   padding: 16px 0;
 }
 
-.hexagon-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 24px;
-  padding: 0 8px;
+.hexagon-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
-.hexagon-legend-item {
+.hexagon-hotspots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hexagon-hotspot {
+  position: absolute;
+  padding: 6px 10px;
+  cursor: pointer;
+  pointer-events: auto;
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  font-family: inherit;
 }
 
-.hexagon-legend-item strong {
-  color: var(--text-secondary);
-  font-weight: 500;
+.hexagon-hotspot[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  z-index: 20;
+  pointer-events: none;
 }
+
 
 .hexagon-grid-ring {
   fill: none;
@@ -273,6 +295,7 @@ a:hover {
 }
 
 .hexagon-label {
+  display: none;
   font-size: var(--text-sm);
   fill: var(--text-secondary);
   font-family: inherit;
