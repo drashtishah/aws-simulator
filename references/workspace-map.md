@@ -24,37 +24,34 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  profile.json    |       |  themes/_base.md  |       |  agent-prompts   |
 |  catalog.csv     |       |  game-design.md   |       |  coaching-patt.  |
 |  journal.md      |       |  manifest-schema  |       |  themes/*.md     |
-|  feedback.md     |       |  catalog.csv      |       | Writes:          |
-|  sessions/ (dir) |       |                   |       |  sessions/*.json |
-+------------------+       | Writes:           |       |  profile.json    |
-                           |  sims/{id}/*      |       |  catalog.csv     |
-+------------------+       |  sims/registry    |       |  journal.md      |
-|   /feedback      |       |  sims/index.md    |       +------------------+
-|  (command)       |       |  catalog.csv      |
+|  feedback.md     |       |  catalog.csv      |       |  .current-model  |
+|  sessions/ (dir) |       |                   |       |  prompt-overlay* |
++------------------+       | Writes:           |       | Writes:          |
+                           |  sims/{id}/*      |       |  sessions/*.json |
++------------------+       |  sims/registry    |       |  profile.json    |
+|   /feedback      |       |  sims/index.md    |       |  catalog.csv     |
+|  (command)       |       |  catalog.csv      |       |  journal.md      |
 |                  |       +-------------------+       +------------------+
-| Reads:           |                                   |     /fix         |
-|  sessions/*.json |       +-------------------+       |  (skill)         |
-|                  |       |   web/ app        |       |                  |
-| Writes:          |       |  (Express + UI)   |       | Reads:           |
-|  feedback.md     |       |                   |       |  feedback.md     |
-|  sessions/*.json |       | Reads:            |       |  activity.jsonl  |
-+------------------+       |  catalog.csv      |       |  health scores   |
-                           |  sims/registry    |       |  skill files     |
-                           |  sims/{id}/*      |       |  workspace-map   |
-                           |  profile.json     |       |  metrics.config  |
-                           |  sessions/*.json  |       |                  |
-                           |  journal.md       |       | Writes:          |
-                           |  agent-prompts    |       |  skill files     |
-                           |  themes/*.md      |       |  feedback.md     |
-                           |  coaching-patt.   |       |  health-scores   |
-                           |                   |       |  metrics.config  |
-                           | Writes:           |       +------------------+
-                           |  coaching-patt.   |
-                           |                   |
-                           | Writes:           |
-                           |  (via Claude      |
-                           |   subprocess)     |
-                           |  sessions/*.json  |
+| Reads:           |
+|  sessions/*.json |       +-------------------+       +------------------+
+|                  |       |   web/ app        |       |     /fix         |
+| Writes:          |       |  (Express + UI)   |       |  (skill)         |
+|  feedback.md     |       |                   |       |                  |
+|  sessions/*.json |       | Reads:            |       | Reads:           |
++------------------+       |  catalog.csv      |       |  feedback.md     |
+                           |  sims/registry    |       |  activity.jsonl  |
+                           |  sims/{id}/*      |       |  health scores   |
+                           |  profile.json     |       |  skill files     |
+                           |  sessions/*.json  |       |  workspace-map   |
+                           |  journal.md       |       |  metrics.config  |
+                           |  agent-prompts    |       |                  |
+                           |  themes/*.md      |       | Writes:          |
+                           |  coaching-patt.   |       |  skill files     |
+                           |                   |       |  feedback.md     |
+                           | Writes:           |       |  eval-proposals  |
+                           |  (via Claude      |       |  health-scores   |
+                           |   subprocess)     |       |  metrics.config  |
+                           |  sessions/*.json  |       +------------------+
                            |  profile.json     |
                            |  catalog.csv      |
                            |  journal.md       |
@@ -87,6 +84,8 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                 |
                 v
 /play --------> reads sims/{id}/* + catalog.csv + profile.json
+            --> reads learning/.current-model (tier selection: opus/sonnet/haiku)
+            --> reads prompt-overlay-{size}.md (tier-specific prompt adjustments)
             --> writes sessions/{id}.json (auto-save every interaction)
             --> on resolution: writes profile.json, catalog.csv, journal.md
             --> deletes sessions/{id}.json
@@ -99,6 +98,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> reads test-results/summary.json (if exists) for recent test failures
             --> runs node scripts/code-health.js (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
+            --> writes learning/eval-proposals.md (staged proposals for eval YAML)
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
             --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
@@ -122,6 +122,12 @@ sim-test ----> run: executes node --test + design contract checks
            --> summary: aggregates test-results/ into test-results/summary.json
 ```
 
+## Transient Files
+
+| File | Created by | Purpose | Lifetime |
+|------|-----------|---------|----------|
+| `/tmp/aws-sim-prompt-{sessionId}.txt` | `web/lib/claude-process.js` | System prompt passed to Claude subprocess via `--append-system-prompt-file` | Duration of Claude subprocess |
+
 ## Shared Data Files
 
 | File | Written by | Read by | Format |
@@ -130,6 +136,8 @@ sim-test ----> run: executes node --test + design contract checks
 | `learning/profile.json` | setup, play | play | JSON: level, completed sims, patterns, strengths, weaknesses |
 | `learning/journal.md` | setup, play | (reference) | Markdown: per-sim learning entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
+| `learning/eval-proposals.md` | fix | sim-test eval | Markdown: staged proposals for Layer 4 eval YAML conversion |
+| `learning/.current-model` | log-hook | play | Plain text: model ID for tier selection (opus/sonnet/haiku) |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, prompts, failures, compaction |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
@@ -138,6 +146,16 @@ sim-test ----> run: executes node --test + design contract checks
 | `design/manifest.json` | `scripts/generate-design-refs.js` | `web/test/design-integrity.test.js` | JSON: SHA256 checksums of design files |
 | `design/thresholds.json` | (manual) | `sim-test design check` | JSON: pass/fail thresholds for design contracts |
 | `test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
+
+## Play Component: Prompt Overlays
+
+The tier system uses `learning/.current-model` to select prompt overlays:
+
+| Model tier | Overlay file | Effect |
+|-----------|-------------|--------|
+| large (opus) | (none, full prompt) | All capabilities enabled |
+| medium (sonnet) | `.claude/skills/play/references/prompt-overlay-medium.md` | Reduced prompt complexity |
+| small (haiku) | `.claude/skills/play/references/prompt-overlay-small.md` | Minimal prompt for constrained models |
 
 ## Tests
 
@@ -156,6 +174,16 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 | Unit | `web/test/design-integrity.test.js` | SHA256 checksums for design files, manifest validation |
 | Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers design/, test-specs/, CLI scripts |
 | Unit | `web/test/code-health.test.js` | AST parsing, scoring functions, determinism, composite calculation |
+| Unit | `web/test/audit-permissions.test.js` | Cross-checks for permission bypass patterns |
+| Unit | `web/test/cross-file-consistency.test.js` | Validates data consistency across files |
+| Unit | `web/test/eval-runner.test.js` | Tests Layer 4 eval YAML generation |
+| Unit | `web/test/git-commit-format.test.js` | Validates commit message format (action lines) |
+| Unit | `web/test/markdown.test.js` | Markdown parsing and format validation |
+| Unit | `web/test/path-registry.test.js` | Path-registry.csv consistency checks |
+| Unit | `web/test/progress.test.js` | Player progress tracking |
+| Unit | `web/test/progression.test.js` | Rank progression and polygon calculations |
+| Unit | `web/test/setup-consistency.test.js` | Validates /setup command integrity |
+| Unit | `web/test/transcript.test.js` | Session transcript format |
 | Design | `design/contracts/*.json` | Structural contract validation against `design/thresholds.json` |
 
 ### Layer 2: Agent Browser (`sim-test agent`)
@@ -203,3 +231,6 @@ When changing a component, check what else reads/writes the same data:
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
 | GitHub Issues | /git (creates), /fix (reads in step 3b, creates in step 6b), /fight-team (creates from debate findings) |
+| `learning/.current-model` | log-hook (writes on SessionStart), play (reads for tier selection) |
+| `learning/eval-proposals.md` | fix (writes proposals), sim-test eval (reads for YAML conversion) |
+| Prompt overlays | play (reads based on tier), prompt-overlay-medium.md and prompt-overlay-small.md in play/references/ |
