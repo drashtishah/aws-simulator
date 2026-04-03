@@ -35,5 +35,6 @@ All code changes (except during /play sessions) follow the commit procedure in `
 - Commit after each small, logical change with contextual action lines
 - Run `npm test` after every commit
 - If tests fail: revert, diagnose, fix forward
+- When the self-audit hook fires before a commit, answer all four questions visibly in your response. Do not skip or summarize.
 
 For standalone git operations (rollback, recall, issue triage): use /git

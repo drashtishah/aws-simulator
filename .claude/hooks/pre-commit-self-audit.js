@@ -17,6 +17,8 @@ process.stdin.on('end', () => {
 4. Are there files I changed that I should not have?
 
 If the answer to #1 is yes, tell the user before committing.
+
+You MUST answer each question above in your response before committing. This is not optional.
 `);
   } catch {
     process.exit(0);
