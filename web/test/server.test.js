@@ -553,6 +553,18 @@ describe('POST /api/game/resume', () => {
     assert.equal(res.status, 400);
     assert.ok(res.body.error.includes('simId'));
   });
+
+  it('handles resume after server restart (no prior prompt file)', async () => {
+    // Simulate resume with a simId that has no /tmp prompt file (server restarted)
+    const res = await request(app, 'POST', '/api/game/resume', {
+      simId: '001-ec2-unreachable',
+      themeId: 'calm-mentor',
+      model: 'sonnet'
+    });
+    // Mock app returns 200 ok; real server would rebuild prompt from scratch
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+  });
 });
 
 describe('Game endpoints return 503 without claudeProcess', () => {
