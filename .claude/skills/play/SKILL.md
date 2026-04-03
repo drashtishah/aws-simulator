@@ -90,7 +90,7 @@ If no sims are eligible, tell the user: "No eligible simulations at your current
 
 ### 3b. Set Theme
 
-Set `theme_id` to `"calm-mentor"`. Skip theme selection (only one voice is available).
+List `.md` files in `themes/` (excluding `_base.md`). If exactly one theme exists, auto-select it and set `theme_id` to its filename without extension. If multiple themes exist, present them as a numbered list and ask the player to choose. Store the selected `theme_id` for Step 7.
 
 ### 3c. Choose Assist Mode
 
