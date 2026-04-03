@@ -7,6 +7,18 @@ const { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression,
 
 const app = express();
 
+// Live reload in development
+if (process.env.NODE_ENV === 'development') {
+  const livereload = require('livereload');
+  const connectLivereload = require('connect-livereload');
+  const lrServer = livereload.createServer({
+    exts: ['html', 'css', 'js'],
+    delay: 100
+  });
+  lrServer.watch(paths.PUBLIC_DIR);
+  app.use(connectLivereload());
+}
+
 app.use(express.json());
 app.use(express.static(paths.PUBLIC_DIR));
 
@@ -188,6 +200,24 @@ app.get('/api/progress', (req, res) => {
     // catalog may not exist yet
   }
 
+  // Build completed sim details with question types
+  const completedSimIds = profile.completed_sims || [];
+  const registry = readJSON(paths.REGISTRY, { sims: [] });
+  const completedSims = completedSimIds.map(id => {
+    const sim = (registry.sims || []).find(s => s.id === id);
+    if (!sim) return { id, title: id, questionTypes: [] };
+    const cat = (sim.category || '').toLowerCase();
+    const questionTypes = config.category_map[cat] || ['gather'];
+    return {
+      id: sim.id,
+      title: sim.title,
+      difficulty: sim.difficulty,
+      category: sim.category,
+      services: sim.services,
+      questionTypes
+    };
+  });
+
   res.json({
     rank: rank.title,
     rankTitle: rank.title,
@@ -203,7 +233,8 @@ app.get('/api/progress', (req, res) => {
     categoryMap: config.category_map,
     nextRank,
     assist: config.assist || {},
-    simsCompleted: (profile.completed_sims || []).length,
+    simsCompleted: completedSimIds.length,
+    completedSims,
     servicesEncountered
   });
 });

@@ -86,6 +86,7 @@
     });
 
     if (view === 'dashboard') {
+      hideCompletedDrilldown();
       loadDashboard();
     } else if (view === 'play') {
       loadSimPicker();
@@ -138,6 +139,41 @@
     } else {
       servicesList.innerHTML = '<span class="text-muted">No services encountered yet. Play a simulation to begin.</span>';
     }
+  }
+
+  function showCompletedDrilldown() {
+    if (!progressData || !progressData.completedSims || !progressData.completedSims.length) return;
+
+    document.getElementById('dashboard-content').style.display = 'none';
+    const drilldown = document.getElementById('completed-drilldown');
+    drilldown.style.display = 'block';
+
+    const grid = document.getElementById('completed-grid');
+    grid.innerHTML = progressData.completedSims.map(sim => {
+      const maxDiff = 4;
+      const dots = Array.from({ length: maxDiff }, (_, i) =>
+        '<span class="difficulty-dot' + (i >= (sim.difficulty || 1) ? ' empty' : '') + '"></span>'
+      ).join('');
+
+      const qTypes = (sim.questionTypes || []).map(t =>
+        '<span class="question-type-tag">' + escapeHtml(t) + '</span>'
+      ).join('');
+
+      return '<div class="sim-card sim-completed fade-in">' +
+        '<span class="sim-completed-badge">Completed</span>' +
+        '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
+        '<div class="sim-card-meta">' +
+        '<div class="difficulty-dots">' + dots + '</div>' +
+        '<span class="sim-card-category">' + escapeHtml(sim.category || '') + '</span>' +
+        '</div>' +
+        '<div class="question-type-tags">' + qTypes + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function hideCompletedDrilldown() {
+    document.getElementById('completed-drilldown').style.display = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
   }
 
   function renderPolygon(polygon, axes, axisLabels, polygonLastAdvanced) {
@@ -850,6 +886,13 @@
         loadSimPicker();
       }
     });
+
+    // Completed drilldown
+    document.getElementById('stat-completed-card').addEventListener('click', showCompletedDrilldown);
+    document.getElementById('stat-completed-card').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCompletedDrilldown(); }
+    });
+    document.getElementById('btn-drilldown-back').addEventListener('click', hideCompletedDrilldown);
 
     // Setup helpers
     setupScrollDetection();
