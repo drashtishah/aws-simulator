@@ -671,9 +671,9 @@ a:hover {
 
 .chat-message {
   max-width: 75%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 18px;
-  line-height: 1.5;
+  line-height: 1.4;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -723,7 +723,7 @@ a:hover {
 
 /* Markdown content inside chat messages */
 .chat-message h1, .chat-message h2, .chat-message h3 {
-  margin: 8px 0 4px;
+  margin: 4px 0 2px;
   font-size: 1rem;
 }
 
@@ -732,7 +732,7 @@ a:hover {
 }
 
 .chat-message p {
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 .chat-message ul, .chat-message ol {
@@ -780,6 +780,7 @@ a:hover {
   border-radius: 18px;
   border-bottom-left-radius: 4px;
   padding: 12px 20px;
+  margin-bottom: 8px;
   display: none;
 }
 
@@ -814,14 +815,14 @@ a:hover {
 .chat-input-area {
   display: flex;
   gap: 8px;
-  padding-top: 12px;
+  padding: 16px 0 8px;
   border-top: 1px solid var(--border-subtle);
   align-items: flex-end;
 }
 
 .chat-input {
   flex: 1;
-  min-height: 44px;
+  min-height: 52px;
   max-height: 120px;
   padding: 10px 16px;
   border: 1px solid var(--border);
@@ -882,18 +883,6 @@ a:hover {
 
 .btn-secondary:hover {
   background: var(--bg-elevated);
-}
-
-.btn-quit {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 0 12px;
-  font-size: var(--text-sm);
-}
-
-.btn-quit:hover {
-  color: var(--accent-red);
 }
 
 /* === Settings Modal === */

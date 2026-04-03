@@ -628,28 +628,15 @@
 
   function handleSessionComplete() {
     appendMessage('system', 'Simulation complete.');
-
-    // Show back-to-sims link and return-to-dashboard button
-    const messages = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = 'chat-message system';
-    div.innerHTML = '<button class="btn btn-secondary" id="btn-return-dashboard" style="margin-right: 8px;">Return to Dashboard</button>' +
-      '<button class="btn btn-secondary" id="btn-back-complete">Back to sims</button>';
-    messages.appendChild(div);
-    scrollToBottom();
-
-    div.querySelector('#btn-return-dashboard').addEventListener('click', () => {
+    currentSessionId = null;
+    setTimeout(() => {
       resetChat();
       switchView('dashboard');
-    });
-    div.querySelector('#btn-back-complete').addEventListener('click', () => {
-      resetChat();
-      loadSimPicker();
-    });
-
-    // Re-fetch profile
+      if (typeof showCompletedDrilldown === 'function') {
+        showCompletedDrilldown();
+      }
+    }, 1500);
     loadDashboard();
-    currentSessionId = null;
   }
 
   async function quitSim() {
@@ -909,8 +896,6 @@
         sendMessage();
       }
     });
-
-    document.getElementById('btn-quit').addEventListener('click', quitSim);
 
     document.getElementById('btn-back-to-sims').addEventListener('click', () => {
       if (currentSessionId) {
