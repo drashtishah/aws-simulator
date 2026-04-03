@@ -1,6 +1,7 @@
 {
   "id": "010-cloudformation-stuck",
   "title": "The Stack That Wouldn't Move",
+  "summary": "A deployment stack won't update, won't roll back, and won't delete. Something vanished over the weekend.",
   "difficulty": 2,
   "category": "operations",
   "services": [
@@ -98,37 +99,58 @@
           {
             "name": "CodePipeline (threadline-prod-pipeline)",
             "role": "Watches the main branch on GitHub, runs CodeBuild, then triggers a CloudFormation UpdateStack on threadline-prod-stack",
-            "connections": ["CodeBuild", "CloudFormation Stack"],
+            "connections": [
+              "CodeBuild",
+              "CloudFormation Stack"
+            ],
             "failure_impact": "If the stack is in a non-updatable state, every pipeline execution fails immediately at the deploy stage"
           },
           {
             "name": "CloudFormation Stack (threadline-prod-stack)",
             "role": "Manages all production resources as a single unit: EC2 auto-scaling group, RDS instance, three Lambda functions, SQS queue, and IAM roles",
-            "connections": ["CodePipeline", "ProdDatabase", "Lambda Functions", "EC2 ASG", "SQS Queue"],
+            "connections": [
+              "CodePipeline",
+              "ProdDatabase",
+              "Lambda Functions",
+              "EC2 ASG",
+              "SQS Queue"
+            ],
             "failure_impact": "If the stack enters UPDATE_ROLLBACK_FAILED, no resource in the stack can be updated through the pipeline until the rollback is resolved"
           },
           {
             "name": "RDS PostgreSQL (threadline-prod-db / ProdDatabase)",
             "role": "Production database storing all Threadline application data, managed by CloudFormation under logical ID ProdDatabase",
-            "connections": ["CloudFormation Stack", "EC2 ASG", "Lambda Functions"],
+            "connections": [
+              "CloudFormation Stack",
+              "EC2 ASG",
+              "Lambda Functions"
+            ],
             "failure_impact": "If deleted outside CloudFormation, the stack's internal state model becomes stale. The next rollback that references this resource will fail."
           },
           {
             "name": "IAM Deploy Role (threadline-deploy-role)",
             "role": "Assumed by CodePipeline during the deploy stage to execute CloudFormation operations",
-            "connections": ["CodePipeline", "CloudFormation Stack"],
+            "connections": [
+              "CodePipeline",
+              "CloudFormation Stack"
+            ],
             "failure_impact": "If the role lacks permissions, stack updates fail with AccessDenied. In this incident, the role had full permissions -- it was a red herring."
           },
           {
             "name": "Lambda Functions (webhook, processor, notifier)",
             "role": "Three application functions managed by the stack. The webhook function update triggered the original failure due to a deprecated nodejs16.x runtime.",
-            "connections": ["CloudFormation Stack", "SQS Queue"],
+            "connections": [
+              "CloudFormation Stack",
+              "SQS Queue"
+            ],
             "failure_impact": "The Lambda update failure was the trigger for the rollback, but not the root cause of the stuck state"
           },
           {
             "name": "CloudTrail",
             "role": "Records all API calls in the account, including the DeleteDBInstance call that caused the incident",
-            "connections": ["All AWS services"],
+            "connections": [
+              "All AWS services"
+            ],
             "failure_impact": "Without CloudTrail, there would be no way to determine who deleted the RDS instance or when"
           }
         ],
@@ -138,27 +160,45 @@
       "hints": [
         {
           "hint": "look at the stack events -- which resource failed during rollback?",
-          "relevant_services": ["cloudformation"],
+          "relevant_services": [
+            "cloudformation"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "does that resource still exist? check if it was modified outside CloudFormation",
-          "relevant_services": ["cloudformation", "iam"],
-          "skip_if_queried": ["cloudformation"]
+          "relevant_services": [
+            "cloudformation",
+            "iam"
+          ],
+          "skip_if_queried": [
+            "cloudformation"
+          ]
         },
         {
           "hint": "CloudFormation tried to roll back to the previous state but the resource it expected to find was gone",
-          "relevant_services": ["cloudformation"],
-          "skip_if_queried": ["cloudformation", "iam"]
+          "relevant_services": [
+            "cloudformation"
+          ],
+          "skip_if_queried": [
+            "cloudformation",
+            "iam"
+          ]
         },
         {
           "hint": "aws cloudformation continue-update-rollback can skip resources that no longer exist",
-          "relevant_services": ["cloudformation"],
-          "skip_if_queried": ["cloudformation"]
+          "relevant_services": [
+            "cloudformation"
+          ],
+          "skip_if_queried": [
+            "cloudformation"
+          ]
         },
         {
           "hint": "use --resources-to-skip to tell CloudFormation to ignore the deleted RDS instance during rollback",
-          "relevant_services": ["cloudformation"],
+          "relevant_services": [
+            "cloudformation"
+          ],
           "skip_if_queried": []
         }
       ],

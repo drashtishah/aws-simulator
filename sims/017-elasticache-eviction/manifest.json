@@ -1,6 +1,7 @@
 {
   "id": "017-elasticache-eviction",
   "title": "The Cache That Forgot Everything",
+  "summary": "Response times spike from milliseconds to eight seconds. The cache is running, the database is running, but something snapped.",
   "difficulty": 2,
   "category": "performance",
   "services": [
@@ -57,31 +58,46 @@
           {
             "name": "ALB (trellis-prod-alb)",
             "role": "Receives HTTPS traffic from patients and provider offices and distributes it to the ECS cluster",
-            "connections": ["ECS cluster (trellis-prod)"],
+            "connections": [
+              "ECS cluster (trellis-prod)"
+            ],
             "failure_impact": "If the ALB is unhealthy, patients and providers cannot access the appointment booking system"
           },
           {
             "name": "ECS cluster (trellis-prod)",
             "role": "Runs three tasks of the appointment-service container that implement the cache-aside pattern",
-            "connections": ["ALB (trellis-prod-alb)", "ElastiCache Redis (trellis-redis-prod)", "RDS PostgreSQL (trellis-prod-db)"],
+            "connections": [
+              "ALB (trellis-prod-alb)",
+              "ElastiCache Redis (trellis-redis-prod)",
+              "RDS PostgreSQL (trellis-prod-db)"
+            ],
             "failure_impact": "If tasks fail, appointment booking and provider schedule queries are unavailable"
           },
           {
             "name": "ElastiCache Redis node (trellis-redis-prod, cache.r6g.large, 13.07 GB maxmemory)",
             "role": "Stores hot data including doctor availability, session tokens, and appointment slot computations with noeviction policy",
-            "connections": ["ECS cluster (trellis-prod)", "CloudWatch"],
+            "connections": [
+              "ECS cluster (trellis-prod)",
+              "CloudWatch"
+            ],
             "failure_impact": "When memory is full with noeviction, all writes return OOM errors and the application falls through to the database for every request"
           },
           {
             "name": "RDS PostgreSQL (trellis-prod-db, db.r6g.xlarge, connection pool max 200)",
             "role": "Serves as the persistent data store for appointments, provider schedules, and patient data",
-            "connections": ["ECS cluster (trellis-prod)", "CloudWatch"],
+            "connections": [
+              "ECS cluster (trellis-prod)",
+              "CloudWatch"
+            ],
             "failure_impact": "When all 200 connections are saturated by cache-miss fallback traffic, query latency spikes and new requests are queued"
           },
           {
             "name": "CloudWatch",
             "role": "Collects ElastiCache metrics (BytesUsedForCache, CacheHits, CacheMisses, Evictions) and RDS metrics (DatabaseConnections, CPUUtilization)",
-            "connections": ["ElastiCache Redis (trellis-redis-prod)", "RDS PostgreSQL (trellis-prod-db)"],
+            "connections": [
+              "ElastiCache Redis (trellis-redis-prod)",
+              "RDS PostgreSQL (trellis-prod-db)"
+            ],
             "failure_impact": "Without alarms on BytesUsedForCache and CacheMisses, memory exhaustion goes undetected until users report slow bookings"
           }
         ],
@@ -132,28 +148,53 @@
       "hints": [
         {
           "hint": "application is slower than usual -- where does it normally get its data from?",
-          "relevant_services": ["elasticache", "rds"],
-          "skip_if_queried": ["elasticache"]
+          "relevant_services": [
+            "elasticache",
+            "rds"
+          ],
+          "skip_if_queried": [
+            "elasticache"
+          ]
         },
         {
           "hint": "what is the current state of the Redis cache -- is it serving requests normally?",
-          "relevant_services": ["elasticache"],
-          "skip_if_queried": ["elasticache"]
+          "relevant_services": [
+            "elasticache"
+          ],
+          "skip_if_queried": [
+            "elasticache"
+          ]
         },
         {
           "hint": "check the ElastiCache memory metrics -- how much memory is in use versus available?",
-          "relevant_services": ["cloudwatch", "elasticache"],
-          "skip_if_queried": ["cloudwatch"]
+          "relevant_services": [
+            "cloudwatch",
+            "elasticache"
+          ],
+          "skip_if_queried": [
+            "cloudwatch"
+          ]
         },
         {
           "hint": "Redis memory is at 100%, maxmemory-policy is noeviction -- when memory is full with noeviction, Redis returns OOM errors on write commands, application falls through to database for every read",
-          "relevant_services": ["elasticache"],
-          "skip_if_queried": ["elasticache", "cloudwatch"]
+          "relevant_services": [
+            "elasticache"
+          ],
+          "skip_if_queried": [
+            "elasticache",
+            "cloudwatch"
+          ]
         },
         {
           "hint": "change maxmemory-policy to allkeys-lru to allow Redis to evict least-recently-used keys, then add CloudWatch alarms on BytesUsedForCache and Evictions metrics, consider scaling to a larger node or enabling cluster mode",
-          "relevant_services": ["elasticache", "cloudwatch"],
-          "skip_if_queried": ["elasticache", "cloudwatch"]
+          "relevant_services": [
+            "elasticache",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "elasticache",
+            "cloudwatch"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

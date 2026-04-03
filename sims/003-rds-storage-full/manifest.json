@@ -1,6 +1,7 @@
 {
   "id": "003-rds-storage-full",
   "title": "The CropSync Harvest Crisis: Database Full",
+  "summary": "Harvest season hits and the farm data platform freezes. New crop readings won't save, but nobody changed the code.",
   "difficulty": 1,
   "category": "data",
   "services": [
@@ -87,25 +88,35 @@
           {
             "name": "ALB (cropsync-prod-lb)",
             "role": "Receives traffic from farmers and IoT sensors and distributes it to the API instances",
-            "connections": ["EC2 instances (cropsync-api-01, cropsync-api-02)"],
+            "connections": [
+              "EC2 instances (cropsync-api-01, cropsync-api-02)"
+            ],
             "failure_impact": "If the ALB fails, no traffic reaches the API and all farmer-facing operations stop"
           },
           {
             "name": "EC2 instances (cropsync-api-01, cropsync-api-02, t3.medium)",
             "role": "Run the CropSync API that handles sensor data ingestion and irrigation schedule management",
-            "connections": ["ALB (cropsync-prod-lb)", "RDS MySQL (cropsync-prod-db)"],
+            "connections": [
+              "ALB (cropsync-prod-lb)",
+              "RDS MySQL (cropsync-prod-db)"
+            ],
             "failure_impact": "If instances fail, API requests return errors and farmers cannot log irrigation schedules"
           },
           {
             "name": "RDS MySQL 8.0 (cropsync-prod-db, db.t3.medium, 20GB gp3)",
             "role": "Stores sensor readings and irrigation schedules as the primary data store",
-            "connections": ["EC2 instances (cropsync-api-01, cropsync-api-02)", "CloudWatch"],
+            "connections": [
+              "EC2 instances (cropsync-api-01, cropsync-api-02)",
+              "CloudWatch"
+            ],
             "failure_impact": "If storage is exhausted, all INSERT and UPDATE operations fail and the platform becomes read-only"
           },
           {
             "name": "CloudWatch",
             "role": "Monitors RDS metrics including FreeStorageSpace, DatabaseConnections, and WriteIOPS",
-            "connections": ["RDS MySQL (cropsync-prod-db)"],
+            "connections": [
+              "RDS MySQL (cropsync-prod-db)"
+            ],
             "failure_impact": "If monitoring is absent, storage exhaustion goes undetected until write failures begin"
           }
         ],
@@ -115,23 +126,41 @@
       "hints": [
         {
           "hint": "application is timing out on database writes -- what could cause a database to reject write operations?",
-          "relevant_services": ["rds"],
-          "skip_if_queried": ["rds"]
+          "relevant_services": [
+            "rds"
+          ],
+          "skip_if_queried": [
+            "rds"
+          ]
         },
         {
           "hint": "check the RDS instance metrics in CloudWatch -- storage-related metrics reveal database health",
-          "relevant_services": ["cloudwatch", "rds"],
-          "skip_if_queried": ["cloudwatch"]
+          "relevant_services": [
+            "cloudwatch",
+            "rds"
+          ],
+          "skip_if_queried": [
+            "cloudwatch"
+          ]
         },
         {
           "hint": "FreeStorageSpace metric is at zero -- RDS instance has run out of disk space, causing all write operations to fail",
-          "relevant_services": ["cloudwatch", "rds"],
-          "skip_if_queried": ["rds"]
+          "relevant_services": [
+            "cloudwatch",
+            "rds"
+          ],
+          "skip_if_queried": [
+            "rds"
+          ]
         },
         {
           "hint": "increase the allocated storage for the RDS instance, and enable storage auto-scaling to prevent recurrence",
-          "relevant_services": ["rds"],
-          "skip_if_queried": ["rds"]
+          "relevant_services": [
+            "rds"
+          ],
+          "skip_if_queried": [
+            "rds"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

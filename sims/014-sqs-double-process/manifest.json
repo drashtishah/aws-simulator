@@ -1,9 +1,14 @@
 {
   "id": "014-sqs-double-process",
   "title": "The Queue Nobody Watched",
+  "summary": "Customers are getting charged twice for the same order. The code processes each message once, or so the team believes.",
   "difficulty": 2,
   "category": "reliability",
-  "services": ["sqs", "lambda", "cloudwatch"],
+  "services": [
+    "sqs",
+    "lambda",
+    "cloudwatch"
+  ],
   "tags": [
     "visibility-timeout",
     "duplicate-processing",
@@ -72,27 +77,49 @@
       "hints": [
         {
           "hint": "how long does the Lambda function take to process a large order? check CloudWatch duration metrics",
-          "relevant_services": ["lambda", "cloudwatch"],
-          "skip_if_queried": ["get_function_configuration", "get_log_events"]
+          "relevant_services": [
+            "lambda",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "get_function_configuration",
+            "get_log_events"
+          ]
         },
         {
           "hint": "what happens to an SQS message if the consumer does not delete it within the visibility timeout?",
-          "relevant_services": ["sqs"],
-          "skip_if_queried": ["get_queue_attributes"]
+          "relevant_services": [
+            "sqs"
+          ],
+          "skip_if_queried": [
+            "get_queue_attributes"
+          ]
         },
         {
           "hint": "compare the SQS visibility timeout with the Lambda function timeout -- is there a mismatch?",
-          "relevant_services": ["sqs", "lambda"],
-          "skip_if_queried": ["get_queue_attributes", "get_function_configuration"]
+          "relevant_services": [
+            "sqs",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "get_queue_attributes",
+            "get_function_configuration"
+          ]
         },
         {
           "hint": "visibility timeout is 30 seconds, Lambda timeout is 90 seconds -- for large orders taking 60+ seconds, SQS makes the message visible again while Lambda is still processing it",
-          "relevant_services": ["sqs", "lambda"],
+          "relevant_services": [
+            "sqs",
+            "lambda"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "set visibility timeout to at least 6x Lambda timeout (540 seconds per AWS recommendation), configure a dead-letter queue, add idempotency checks using order ID",
-          "relevant_services": ["sqs", "lambda"],
+          "relevant_services": [
+            "sqs",
+            "lambda"
+          ],
           "skip_if_queried": []
         }
       ],
@@ -120,49 +147,71 @@
           {
             "name": "API Gateway",
             "role": "Receives orders from mobile and web clients and routes them to the validation Lambda",
-            "connections": ["canopy-api Lambda"],
+            "connections": [
+              "canopy-api Lambda"
+            ],
             "failure_impact": "If the API Gateway fails, no new orders can be placed"
           },
           {
             "name": "canopy-api Lambda",
             "role": "Validates incoming orders and sends a message to the SQS queue for asynchronous processing",
-            "connections": ["API Gateway", "canopy-order-queue (SQS)"],
+            "connections": [
+              "API Gateway",
+              "canopy-order-queue (SQS)"
+            ],
             "failure_impact": "If validation fails, the order is rejected before entering the queue"
           },
           {
             "name": "canopy-order-queue (SQS standard queue)",
             "role": "Holds order messages with a 30-second visibility timeout, decoupling order submission from processing",
-            "connections": ["canopy-api Lambda", "canopy-process-order Lambda"],
+            "connections": [
+              "canopy-api Lambda",
+              "canopy-process-order Lambda"
+            ],
             "failure_impact": "If visibility timeout is shorter than processing time, messages become visible again and are processed a second time"
           },
           {
             "name": "canopy-process-order Lambda",
             "role": "Polls the queue (batch size 1) and processes each order: inventory check, Stripe payment, delivery slot reservation, confirmation email",
-            "connections": ["canopy-order-queue (SQS)", "DynamoDB", "Stripe API", "Internal delivery service", "SES"],
+            "connections": [
+              "canopy-order-queue (SQS)",
+              "DynamoDB",
+              "Stripe API",
+              "Internal delivery service",
+              "SES"
+            ],
             "failure_impact": "If invoked twice for the same message, it produces duplicate charges, duplicate delivery slots, and negative inventory"
           },
           {
             "name": "DynamoDB",
             "role": "Stores order records for tracking and fulfillment",
-            "connections": ["canopy-process-order Lambda"],
+            "connections": [
+              "canopy-process-order Lambda"
+            ],
             "failure_impact": "If DynamoDB writes fail, order state is lost and fulfillment cannot proceed"
           },
           {
             "name": "Stripe API",
             "role": "Handles payment charges for confirmed orders",
-            "connections": ["canopy-process-order Lambda"],
+            "connections": [
+              "canopy-process-order Lambda"
+            ],
             "failure_impact": "If charged twice for the same order, customers see duplicate charges and request refunds"
           },
           {
             "name": "Internal delivery service",
             "role": "Reserves driver time slots for order delivery",
-            "connections": ["canopy-process-order Lambda"],
+            "connections": [
+              "canopy-process-order Lambda"
+            ],
             "failure_impact": "If reserved twice, multiple drivers are assigned the same order"
           },
           {
             "name": "SES",
             "role": "Sends order confirmation emails to customers",
-            "connections": ["canopy-process-order Lambda"],
+            "connections": [
+              "canopy-process-order Lambda"
+            ],
             "failure_impact": "If triggered twice, customers receive duplicate confirmation emails"
           }
         ],

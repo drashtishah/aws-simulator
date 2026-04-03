@@ -321,6 +321,7 @@ Artifact rules:
 {
   "id": "002-rds-failover-cascade",
   "title": "The Title",
+  "summary": "Brief scenario summary for card tooltip, under 200 chars.",
   "difficulty": 3,
   "category": "reliability",
   "services": ["rds", "route53", "cloudwatch"],

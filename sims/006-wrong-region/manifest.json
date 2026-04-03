@@ -1,6 +1,7 @@
 {
   "id": "006-wrong-region",
   "title": "A Function in the Wrong Room",
+  "summary": "A booking API returns nothing but errors after a routine deployment. The function exists, the code is correct, yet every call fails.",
   "difficulty": 1,
   "category": "operations",
   "services": [
@@ -76,28 +77,48 @@
       "hints": [
         {
           "hint": "function exists but API Gateway cannot find it -- what could make a working function invisible to a service that should see it?",
-          "relevant_services": ["lambda"],
+          "relevant_services": [
+            "lambda"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "AWS resources are regional -- a Lambda function in one region does not exist in another, check where the API Gateway is looking",
-          "relevant_services": ["lambda"],
+          "relevant_services": [
+            "lambda"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "check what region the CLI is configured to use with aws configure list, look at the region setting",
-          "relevant_services": ["iam"],
-          "skip_if_queried": ["iam"]
+          "relevant_services": [
+            "iam"
+          ],
+          "skip_if_queried": [
+            "iam"
+          ]
         },
         {
           "hint": "CI/CD pipeline has AWS_DEFAULT_REGION set to us-west-2 but API Gateway is in us-east-1 -- function was deployed to the wrong region",
-          "relevant_services": ["lambda", "cloudwatch"],
-          "skip_if_queried": ["lambda", "iam"]
+          "relevant_services": [
+            "lambda",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "lambda",
+            "iam"
+          ]
         },
         {
           "hint": "redeploy the function to us-east-1, or confirm it exists in us-west-2 with aws lambda get-function --function-name calendine-booking-api --region us-west-2",
-          "relevant_services": ["lambda"],
-          "skip_if_queried": ["lambda", "iam", "cloudwatch"]
+          "relevant_services": [
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "lambda",
+            "iam",
+            "cloudwatch"
+          ]
         }
       ],
       "glossary": {
@@ -122,25 +143,37 @@
           {
             "name": "calendine-booking-api (API Gateway)",
             "role": "Accepts HTTP requests from client browsers for booking creation and calendar operations. Routes requests to a Lambda function via proxy integration.",
-            "connections": ["Invokes Lambda ARN arn:aws:lambda:us-east-1:491783620174:function:calendine-booking-api", "Returns 500 to clients when the Lambda function is not found"],
+            "connections": [
+              "Invokes Lambda ARN arn:aws:lambda:us-east-1:491783620174:function:calendine-booking-api",
+              "Returns 500 to clients when the Lambda function is not found"
+            ],
             "failure_impact": "If the referenced Lambda function does not exist in us-east-1, every API call returns ResourceNotFoundException wrapped in a 500 Internal server error."
           },
           {
             "name": "calendine-booking-api (Lambda function)",
             "role": "Handles booking creation and calendar sync. Reads and writes to DynamoDB table calendine-bookings.",
-            "connections": ["Triggered by API Gateway via proxy integration", "Reads/writes DynamoDB table calendine-bookings"],
+            "connections": [
+              "Triggered by API Gateway via proxy integration",
+              "Reads/writes DynamoDB table calendine-bookings"
+            ],
             "failure_impact": "If deployed to the wrong region, the function works correctly but is invisible to the API Gateway in us-east-1. Zero invocations despite being healthy."
           },
           {
             "name": "GitHub Actions CI/CD pipeline",
             "role": "Builds and deploys the Lambda function code. Uses aws lambda update-function-code with an S3 deployment package.",
-            "connections": ["Deploys to whichever region AWS_DEFAULT_REGION points to", "Reads deployment artifact from calendine-deploy S3 bucket"],
+            "connections": [
+              "Deploys to whichever region AWS_DEFAULT_REGION points to",
+              "Reads deployment artifact from calendine-deploy S3 bucket"
+            ],
             "failure_impact": "If AWS_DEFAULT_REGION is set to the wrong region and no --region flag is specified, the function deploys to a region where no other infrastructure expects it."
           },
           {
             "name": "CloudWatch Logs",
             "role": "Captures API Gateway execution logs in us-east-1 and Lambda invocation logs in whichever region the function runs.",
-            "connections": ["API Gateway logs in /aws/apigateway/calendine-booking-api (us-east-1)", "Lambda logs in /aws/lambda/calendine-booking-api (us-west-2)"],
+            "connections": [
+              "API Gateway logs in /aws/apigateway/calendine-booking-api (us-east-1)",
+              "Lambda logs in /aws/lambda/calendine-booking-api (us-west-2)"
+            ],
             "failure_impact": "Logs exist in both regions but tell different stories. The API Gateway logs show errors; the Lambda logs in us-west-2 show successful test invocations from earlier."
           }
         ],

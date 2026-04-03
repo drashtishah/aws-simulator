@@ -7,6 +7,7 @@
   "required": [
     "id",
     "title",
+    "summary",
     "difficulty",
     "category",
     "services",
@@ -28,6 +29,11 @@
       "minLength": 10,
       "maxLength": 100,
       "description": "Human-readable title. Should include the fictional company name."
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Brief scenario summary shown in card tooltip."
     },
     "difficulty": {
       "type": "integer",

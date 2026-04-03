@@ -1,10 +1,22 @@
 {
   "id": "013-elb-target-drain",
   "title": "The Targets That Disappeared",
+  "summary": "Every deployment causes a brief outage. Old instances vanish before new ones are ready, and users hit dead ends.",
   "difficulty": 2,
   "category": "reliability",
-  "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
-  "tags": ["connection-draining", "deployment", "health-checks", "rolling-update", "deregistration-delay"],
+  "services": [
+    "elb",
+    "auto-scaling",
+    "ec2",
+    "cloudwatch"
+  ],
+  "tags": [
+    "connection-draining",
+    "deployment",
+    "health-checks",
+    "rolling-update",
+    "deregistration-delay"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -67,27 +79,47 @@
       "hints": [
         {
           "hint": "when did the errors start relative to the deployment -- correlate the deployment timeline with the ALB error metrics",
-          "relevant_services": ["elb", "cloudwatch"],
+          "relevant_services": [
+            "elb",
+            "cloudwatch"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "how long does it take a new instance to pass the ALB health check? multiply the health check interval by the healthy threshold",
-          "relevant_services": ["elb"],
-          "skip_if_queried": ["describe_target_health"]
+          "relevant_services": [
+            "elb"
+          ],
+          "skip_if_queried": [
+            "describe_target_health"
+          ]
         },
         {
           "hint": "compare the deregistration delay with the time-to-healthy for new targets -- is there a gap where no healthy targets exist?",
-          "relevant_services": ["elb"],
-          "skip_if_queried": ["describe_target_group_attributes"]
+          "relevant_services": [
+            "elb"
+          ],
+          "skip_if_queried": [
+            "describe_target_group_attributes"
+          ]
         },
         {
           "hint": "deregistration delay is 30 seconds but health checks need 150 seconds (30s interval x 5 threshold) -- old targets drain out 120 seconds before new ones are ready",
-          "relevant_services": ["elb", "auto-scaling"],
-          "skip_if_queried": ["describe_target_group_attributes", "describe_target_health"]
+          "relevant_services": [
+            "elb",
+            "auto-scaling"
+          ],
+          "skip_if_queried": [
+            "describe_target_group_attributes",
+            "describe_target_health"
+          ]
         },
         {
           "hint": "increase deregistration delay to 300 seconds, reduce healthy threshold to 2, deploy during off-peak hours, reduce deployment batch size to 25%",
-          "relevant_services": ["elb", "auto-scaling"],
+          "relevant_services": [
+            "elb",
+            "auto-scaling"
+          ],
           "skip_if_queried": []
         }
       ],
@@ -113,25 +145,37 @@
           {
             "name": "ridgewell-prod-alb (Application Load Balancer)",
             "role": "Internet-facing ALB that receives all dispatcher HTTP requests and distributes them across the target group.",
-            "connections": ["Routes traffic to ridgewell-web-tg target group", "Publishes HealthyHostCount and HTTPCode_ELB_5XX metrics to CloudWatch"],
+            "connections": [
+              "Routes traffic to ridgewell-web-tg target group",
+              "Publishes HealthyHostCount and HTTPCode_ELB_5XX metrics to CloudWatch"
+            ],
             "failure_impact": "When all targets are unhealthy, the ALB enters fail-open mode and routes requests to unready backends, producing 502 errors."
           },
           {
             "name": "ridgewell-web-tg (Target Group)",
             "role": "Groups the four EC2 instances that serve the route optimization application. Configured with a 30-second deregistration delay and health checks at 30-second intervals with a healthy threshold of 5.",
-            "connections": ["Receives traffic from ridgewell-prod-alb", "Registers and deregisters instances from ridgewell-web-asg"],
+            "connections": [
+              "Receives traffic from ridgewell-prod-alb",
+              "Registers and deregisters instances from ridgewell-web-asg"
+            ],
             "failure_impact": "The 30-second deregistration delay is too short. Old targets drain and leave before new targets can pass health checks, creating a capacity gap."
           },
           {
             "name": "ridgewell-web-asg (Auto Scaling Group)",
             "role": "Maintains four c5.xlarge instances across two availability zones. Uses ELB health checks with a 300-second grace period.",
-            "connections": ["Launches instances into ridgewell-web-tg", "CodeDeploy triggers instance replacement in batches of 50%"],
+            "connections": [
+              "Launches instances into ridgewell-web-tg",
+              "CodeDeploy triggers instance replacement in batches of 50%"
+            ],
             "failure_impact": "The 50% batch size means two of four instances are replaced at once, leaving minimal capacity margin during the replacement window."
           },
           {
             "name": "CloudWatch",
             "role": "Collects ALB metrics (HealthyHostCount, HTTPCode_ELB_5XX_Count) and application logs from the EC2 instances.",
-            "connections": ["Receives metrics from ridgewell-prod-alb", "No alarm configured for HealthyHostCount"],
+            "connections": [
+              "Receives metrics from ridgewell-prod-alb",
+              "No alarm configured for HealthyHostCount"
+            ],
             "failure_impact": "Without a HealthyHostCount alarm, the team had no advance warning when healthy capacity dropped to zero."
           }
         ],

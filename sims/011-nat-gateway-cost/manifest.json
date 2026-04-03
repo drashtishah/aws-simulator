@@ -1,6 +1,7 @@
 {
   "id": "011-nat-gateway-cost",
   "title": "Nine Hundred Dollars for Nothing",
+  "summary": "The AWS bill jumps by nine hundred dollars a day. The workload hasn't changed, but something is quietly burning money.",
   "difficulty": 1,
   "category": "cost",
   "services": [
@@ -91,37 +92,55 @@
           {
             "name": "EC2 Pipeline Instances (10.0.2.14, .15, .16)",
             "role": "Three c5.2xlarge instances in the private subnet that ingest sensor data and write approximately 500 GB daily to S3",
-            "connections": ["Private Subnet Route Table", "S3 Bucket"],
+            "connections": [
+              "Private Subnet Route Table",
+              "S3 Bucket"
+            ],
             "failure_impact": "If instances stop, the data pipeline halts and sensor data is not ingested"
           },
           {
             "name": "Private Subnet (10.0.2.0/24)",
             "role": "Hosts the pipeline instances with no direct internet access, all outbound traffic routed through the NAT Gateway",
-            "connections": ["NAT Gateway", "Route Table rtb-0d4e5f6a7b8c9d0e1"],
+            "connections": [
+              "NAT Gateway",
+              "Route Table rtb-0d4e5f6a7b8c9d0e1"
+            ],
             "failure_impact": "If the route table has no path to S3, the pipeline cannot write data"
           },
           {
             "name": "NAT Gateway (nat-0a1b2c3d4e5f67890)",
             "role": "Provides outbound internet access for the private subnet. Currently handles all S3 traffic at $0.045 per GB",
-            "connections": ["Private Subnet", "Internet Gateway", "S3 (via public internet path)"],
+            "connections": [
+              "Private Subnet",
+              "Internet Gateway",
+              "S3 (via public internet path)"
+            ],
             "failure_impact": "If the NAT Gateway fails, all outbound traffic from the private subnet stops, including S3 writes"
           },
           {
             "name": "Route Table (rtb-0d4e5f6a7b8c9d0e1)",
             "role": "Directs all non-local traffic from the private subnet to the NAT Gateway via the 0.0.0.0/0 route",
-            "connections": ["Private Subnet", "NAT Gateway"],
+            "connections": [
+              "Private Subnet",
+              "NAT Gateway"
+            ],
             "failure_impact": "Without a prefix list route for S3, all S3 traffic is sent through the NAT Gateway and incurs data processing charges"
           },
           {
             "name": "S3 Bucket (fieldspar-sensor-lake-prod)",
             "role": "Stores sensor data from the pipeline, approximately 45 TB total, in the same region as the VPC",
-            "connections": ["EC2 Pipeline Instances"],
+            "connections": [
+              "EC2 Pipeline Instances"
+            ],
             "failure_impact": "If the bucket is inaccessible, pipeline writes fail and sensor data is lost or queued"
           },
           {
             "name": "S3 VPC Gateway Endpoint (missing)",
             "role": "Would route S3 traffic directly from the private subnet to S3 without traversing the NAT Gateway, at no cost",
-            "connections": ["Route Table", "S3 Bucket"],
+            "connections": [
+              "Route Table",
+              "S3 Bucket"
+            ],
             "failure_impact": "Its absence is the root cause -- all S3 traffic takes the expensive NAT Gateway path"
           }
         ],
@@ -131,23 +150,39 @@
       "hints": [
         {
           "hint": "look at the bill breakdown -- which service has the highest data transfer charges?",
-          "relevant_services": ["cloudwatch"],
+          "relevant_services": [
+            "cloudwatch"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "how does traffic from a private subnet reach Amazon S3? check the route table for the private subnet",
-          "relevant_services": ["vpc"],
-          "skip_if_queried": ["vpc"]
+          "relevant_services": [
+            "vpc"
+          ],
+          "skip_if_queried": [
+            "vpc"
+          ]
         },
         {
           "hint": "there is a way to route S3 traffic that does not go through the NAT Gateway -- look at VPC endpoints",
-          "relevant_services": ["vpc"],
-          "skip_if_queried": ["vpc"]
+          "relevant_services": [
+            "vpc"
+          ],
+          "skip_if_queried": [
+            "vpc"
+          ]
         },
         {
           "hint": "an S3 VPC gateway endpoint routes traffic directly to S3 within the AWS network, it is free, and no gateway endpoint exists in this VPC",
-          "relevant_services": ["vpc", "s3"],
-          "skip_if_queried": ["vpc", "s3"]
+          "relevant_services": [
+            "vpc",
+            "s3"
+          ],
+          "skip_if_queried": [
+            "vpc",
+            "s3"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

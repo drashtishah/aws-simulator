@@ -1,6 +1,7 @@
 {
   "id": "009-credential-chain",
   "title": "Someone Else's Keys",
+  "summary": "An application starts using credentials that belong to someone who left the company months ago. Nobody changed anything.",
   "difficulty": 1,
   "category": "security",
   "services": [
@@ -72,23 +73,47 @@
       "hints": [
         {
           "hint": "who does the pipeline think it is?",
-          "relevant_services": ["sts"],
-          "skip_if_queried": ["aws sts get-caller-identity"]
+          "relevant_services": [
+            "sts"
+          ],
+          "skip_if_queried": [
+            "aws sts get-caller-identity"
+          ]
         },
         {
           "hint": "run aws sts get-caller-identity on the CI machine",
-          "relevant_services": ["sts"],
-          "skip_if_queried": ["get-caller-identity", "caller identity"]
+          "relevant_services": [
+            "sts"
+          ],
+          "skip_if_queried": [
+            "get-caller-identity",
+            "caller identity"
+          ]
         },
         {
           "hint": "check if there are AWS credential environment variables set on the instance",
-          "relevant_services": ["iam"],
-          "skip_if_queried": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "environment variable", "/etc/environment"]
+          "relevant_services": [
+            "iam"
+          ],
+          "skip_if_queried": [
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "environment variable",
+            "/etc/environment"
+          ]
         },
         {
           "hint": "environment variables take precedence over instance profiles in the credential chain",
-          "relevant_services": ["iam", "sts"],
-          "skip_if_queried": ["credential chain", "credential provider chain", "precedence", "priority"]
+          "relevant_services": [
+            "iam",
+            "sts"
+          ],
+          "skip_if_queried": [
+            "credential chain",
+            "credential provider chain",
+            "precedence",
+            "priority"
+          ]
         }
       ],
       "max_hints_before_nudge": 3,
@@ -114,43 +139,62 @@
           {
             "name": "EC2 instance fenwick-ci-01",
             "role": "Runs the CI/CD deploy script that calls S3, Secrets Manager, and Lambda APIs",
-            "connections": ["Instance profile fenwick-ci-deploy", "Environment variables in /etc/environment", "S3 bucket fenwick-deploy-artifacts", "Secrets Manager secret /prod/db-credentials", "Lambda function fenwick-invoice-processor"],
+            "connections": [
+              "Instance profile fenwick-ci-deploy",
+              "Environment variables in /etc/environment",
+              "S3 bucket fenwick-deploy-artifacts",
+              "Secrets Manager secret /prod/db-credentials",
+              "Lambda function fenwick-invoice-processor"
+            ],
             "failure_impact": "If credentials resolve to an inactive user, every AWS API call returns AccessDenied and deploys fail"
           },
           {
             "name": "Instance profile fenwick-ci-deploy",
             "role": "Provides temporary credentials via IAM role fenwick-ci-deploy-role with correct permissions for the deploy pipeline",
-            "connections": ["EC2 instance fenwick-ci-01"],
+            "connections": [
+              "EC2 instance fenwick-ci-01"
+            ],
             "failure_impact": "If overridden by higher-priority credentials in the chain, the instance profile is never used"
           },
           {
             "name": "Environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in /etc/environment",
             "role": "Hardcoded credentials set eight months ago by a former engineer, taking priority over the instance profile in the credential chain",
-            "connections": ["EC2 instance fenwick-ci-01", "IAM user raj.patel"],
+            "connections": [
+              "EC2 instance fenwick-ci-01",
+              "IAM user raj.patel"
+            ],
             "failure_impact": "These deactivated credentials override the valid instance profile, causing all API calls to fail with AccessDenied"
           },
           {
             "name": "IAM user raj.patel (deactivated, access key inactive)",
             "role": "Former employee whose access keys were deactivated during offboarding",
-            "connections": ["Environment variables in /etc/environment"],
+            "connections": [
+              "Environment variables in /etc/environment"
+            ],
             "failure_impact": "Deactivated keys cause AccessDenied for any API call authenticated with them"
           },
           {
             "name": "S3 bucket fenwick-deploy-artifacts",
             "role": "Stores deployment artifacts uploaded by the CI/CD pipeline",
-            "connections": ["EC2 instance fenwick-ci-01"],
+            "connections": [
+              "EC2 instance fenwick-ci-01"
+            ],
             "failure_impact": "If the deploy script cannot authenticate, artifact uploads fail and the release is blocked"
           },
           {
             "name": "Secrets Manager secret /prod/db-credentials",
             "role": "Stores production database credentials retrieved during deployment",
-            "connections": ["EC2 instance fenwick-ci-01"],
+            "connections": [
+              "EC2 instance fenwick-ci-01"
+            ],
             "failure_impact": "If GetSecretValue fails, the deploy cannot configure database access for the application"
           },
           {
             "name": "Lambda function fenwick-invoice-processor",
             "role": "Invoice processing function updated by the CI/CD deploy pipeline",
-            "connections": ["EC2 instance fenwick-ci-01"],
+            "connections": [
+              "EC2 instance fenwick-ci-01"
+            ],
             "failure_impact": "If UpdateFunctionCode fails, the invoice processor runs stale code"
           }
         ],

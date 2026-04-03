@@ -1,6 +1,7 @@
 {
   "id": "008-s3-cors-presigned",
   "title": "The Upload That Worked Everywhere Else",
+  "summary": "File uploads work perfectly from Postman and curl, but the browser keeps refusing. The presigned URLs are valid.",
   "difficulty": 2,
   "category": "operations",
   "services": [
@@ -89,25 +90,35 @@
           {
             "name": "Browser at app.pollen.io",
             "role": "Sends preflight OPTIONS requests and enforces same-origin policy before cross-origin PUT uploads",
-            "connections": ["API Gateway at api.pollen.io", "CloudFront distribution d-EDFDVBD6EXAMPLE"],
+            "connections": [
+              "API Gateway at api.pollen.io",
+              "CloudFront distribution d-EDFDVBD6EXAMPLE"
+            ],
             "failure_impact": "If the browser receives no CORS headers, it blocks the upload silently with no user-facing error message"
           },
           {
             "name": "API Gateway at api.pollen.io",
             "role": "Generates presigned URLs via Lambda for browser-based document uploads to S3",
-            "connections": ["Browser at app.pollen.io"],
+            "connections": [
+              "Browser at app.pollen.io"
+            ],
             "failure_impact": "If the API Gateway fails, the browser cannot obtain a presigned URL to upload documents"
           },
           {
             "name": "CloudFront distribution d-EDFDVBD6EXAMPLE",
             "role": "Caches responses and forwards requests to S3, but strips Origin header without a CORS origin request policy",
-            "connections": ["Browser at app.pollen.io", "S3 bucket pollen-docs-prod"],
+            "connections": [
+              "Browser at app.pollen.io",
+              "S3 bucket pollen-docs-prod"
+            ],
             "failure_impact": "If CloudFront strips CORS headers, S3 cannot respond to preflight requests and browser uploads fail"
           },
           {
             "name": "S3 bucket pollen-docs-prod",
             "role": "Stores uploaded documents and receives PUT requests via presigned URLs",
-            "connections": ["CloudFront distribution d-EDFDVBD6EXAMPLE"],
+            "connections": [
+              "CloudFront distribution d-EDFDVBD6EXAMPLE"
+            ],
             "failure_impact": "Without CORS configuration, S3 returns 403 on OPTIONS preflight requests from browsers"
           }
         ],
@@ -117,28 +128,58 @@
       "hints": [
         {
           "hint": "the upload works outside the browser -- what is different about browser HTTP requests?",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["what is CORS", "same-origin policy", "preflight"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "what is CORS",
+            "same-origin policy",
+            "preflight"
+          ]
         },
         {
           "hint": "check the browser developer tools Network tab and look at the request headers",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["browser console", "network tab", "OPTIONS request"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "browser console",
+            "network tab",
+            "OPTIONS request"
+          ]
         },
         {
           "hint": "browsers send preflight OPTIONS requests for cross-origin PUT requests",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["preflight", "OPTIONS", "CORS error"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "preflight",
+            "OPTIONS",
+            "CORS error"
+          ]
         },
         {
           "hint": "the S3 bucket has no CORS configuration -- run aws s3api get-bucket-cors",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["get-bucket-cors", "CORS configuration", "CORSRules"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "get-bucket-cors",
+            "CORS configuration",
+            "CORSRules"
+          ]
         },
         {
           "hint": "CloudFront is also stripping the Origin header -- check the cache behavior's origin request policy",
-          "relevant_services": ["cloudfront"],
-          "skip_if_queried": ["origin request policy", "CORS-S3Origin", "CloudFront headers"]
+          "relevant_services": [
+            "cloudfront"
+          ],
+          "skip_if_queried": [
+            "origin request policy",
+            "CORS-S3Origin",
+            "CloudFront headers"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

@@ -1,10 +1,21 @@
 {
   "id": "015-route53-failover-blind",
   "title": "Sixteen Seconds of Nothing",
+  "summary": "The backup site exists and works, but when the primary goes down, traffic goes nowhere. Failover was supposed to be automatic.",
   "difficulty": 2,
   "category": "networking",
-  "services": ["route53", "elb", "cloudwatch"],
-  "tags": ["dns-failover", "health-check", "multi-region", "route53-routing", "disaster-recovery"],
+  "services": [
+    "route53",
+    "elb",
+    "cloudwatch"
+  ],
+  "tags": [
+    "dns-failover",
+    "health-check",
+    "multi-region",
+    "route53-routing",
+    "disaster-recovery"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -86,31 +97,46 @@
           {
             "name": "Route 53 Hosted Zone (spellbook.dev)",
             "role": "Holds the failover record set for docs.spellbook.dev, directing DNS queries to the primary or secondary ALB based on routing policy and health",
-            "connections": ["Primary ALB (us-east-1)", "Secondary ALB (eu-west-1)", "Route 53 Health Check"],
+            "connections": [
+              "Primary ALB (us-east-1)",
+              "Secondary ALB (eu-west-1)",
+              "Route 53 Health Check"
+            ],
             "failure_impact": "If failover routing is misconfigured (EvaluateTargetHealth false), Route 53 always returns the primary regardless of health state"
           },
           {
             "name": "Route 53 Health Check (hc-spellbook-prod-primary)",
             "role": "Probes the primary ALB endpoint from multiple global locations to determine if it is reachable and returning healthy responses",
-            "connections": ["Primary ALB (us-east-1)", "CloudWatch Alarm"],
+            "connections": [
+              "Primary ALB (us-east-1)",
+              "CloudWatch Alarm"
+            ],
             "failure_impact": "If configured with wrong protocol/port/path, the health check reports UNHEALTHY even when the target is actually up -- and if EvaluateTargetHealth is false, the result is ignored entirely"
           },
           {
             "name": "Primary ALB (us-east-1)",
             "role": "Receives HTTPS traffic on port 443 and forwards it to ECS tasks running the documentation platform on port 8080",
-            "connections": ["ECS Cluster (us-east-1)", "Route 53 Hosted Zone"],
+            "connections": [
+              "ECS Cluster (us-east-1)",
+              "Route 53 Hosted Zone"
+            ],
             "failure_impact": "If all targets become unhealthy due to an AZ issue, the ALB returns 503 for every request"
           },
           {
             "name": "Secondary ALB (eu-west-1)",
             "role": "Standby load balancer with four healthy ECS targets, ready to serve traffic if Route 53 fails over",
-            "connections": ["ECS Cluster (eu-west-1)", "Route 53 Hosted Zone"],
+            "connections": [
+              "ECS Cluster (eu-west-1)",
+              "Route 53 Hosted Zone"
+            ],
             "failure_impact": "No impact on its own -- the problem is that Route 53 never sends traffic here during the outage"
           },
           {
             "name": "CloudWatch Alarm (spellbook-route53-health-check)",
             "role": "Monitors the HealthCheckStatus metric and transitions to ALARM when the health check reports unhealthy",
-            "connections": ["Route 53 Health Check"],
+            "connections": [
+              "Route 53 Health Check"
+            ],
             "failure_impact": "AlarmActions is empty -- no SNS topic attached, so the alarm fires into the void and nobody is paged"
           }
         ],
@@ -120,27 +146,49 @@
       "hints": [
         {
           "hint": "is the Route 53 failover actually configured to use the health check? check EvaluateTargetHealth on the record set",
-          "relevant_services": ["route53"],
+          "relevant_services": [
+            "route53"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "what state is the Route 53 health check in? has it been healthy recently?",
-          "relevant_services": ["route53", "cloudwatch"],
-          "skip_if_queried": ["route53"]
+          "relevant_services": [
+            "route53",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "route53"
+          ]
         },
         {
           "hint": "check the health check configuration -- what protocol, port, and path is it monitoring? compare with what the ALB actually listens on",
-          "relevant_services": ["route53", "elb"],
-          "skip_if_queried": ["route53"]
+          "relevant_services": [
+            "route53",
+            "elb"
+          ],
+          "skip_if_queried": [
+            "route53"
+          ]
         },
         {
           "hint": "health check targets HTTP port 80 with path / (returns 301), but ALB listens on HTTPS port 443 -- health check has been UNHEALTHY for weeks, and EvaluateTargetHealth is false",
-          "relevant_services": ["route53", "elb"],
-          "skip_if_queried": ["route53", "elb"]
+          "relevant_services": [
+            "route53",
+            "elb"
+          ],
+          "skip_if_queried": [
+            "route53",
+            "elb"
+          ]
         },
         {
           "hint": "update health check to HTTPS port 443 with path /healthz, enable EvaluateTargetHealth on the failover record set, attach an SNS topic to the CloudWatch alarm",
-          "relevant_services": ["route53", "elb", "cloudwatch"],
+          "relevant_services": [
+            "route53",
+            "elb",
+            "cloudwatch"
+          ],
           "skip_if_queried": []
         }
       ],

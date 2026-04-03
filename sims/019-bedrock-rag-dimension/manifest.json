@@ -1,10 +1,23 @@
 {
   "id": "019-bedrock-rag-dimension",
   "title": "One Thousand and Twenty-Four",
+  "summary": "A knowledge base search returns confident but completely wrong answers. The documents are correct, the model is fine.",
   "difficulty": 2,
   "category": "data",
-  "services": ["bedrock", "opensearch-serverless", "s3", "cloudwatch"],
-  "tags": ["knowledge-base", "rag", "vector-dimension", "opensearch-serverless", "embedding-model", "silent-failure"],
+  "services": [
+    "bedrock",
+    "opensearch-serverless",
+    "s3",
+    "cloudwatch"
+  ],
+  "tags": [
+    "knowledge-base",
+    "rag",
+    "vector-dimension",
+    "opensearch-serverless",
+    "embedding-model",
+    "silent-failure"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -87,37 +100,53 @@
           {
             "name": "terravox-legal-kb (Bedrock Knowledge Base)",
             "role": "Orchestrates the RAG pipeline: receives queries, generates query embeddings, retrieves relevant chunks from the vector store, and passes them to the generation model",
-            "connections": ["Amazon Titan Embeddings V2 for embedding generation", "terravox-legal-vectors OpenSearch Serverless collection for vector storage and retrieval", "terravox-legal-docs-prod S3 bucket as document source"],
+            "connections": [
+              "Amazon Titan Embeddings V2 for embedding generation",
+              "terravox-legal-vectors OpenSearch Serverless collection for vector storage and retrieval",
+              "terravox-legal-docs-prod S3 bucket as document source"
+            ],
             "failure_impact": "If the knowledge base is misconfigured or inactive, the RetrieveAndGenerate API returns errors and the assistant cannot answer questions"
           },
           {
             "name": "Amazon Titan Embeddings V2 (embedding model)",
             "role": "Converts text chunks and queries into numerical vector embeddings. Currently configured to produce 1,024-dimension vectors",
-            "connections": ["terravox-legal-kb triggers embedding generation during sync and at query time"],
+            "connections": [
+              "terravox-legal-kb triggers embedding generation during sync and at query time"
+            ],
             "failure_impact": "If the model dimension does not match the index dimension, vectors are silently truncated during ingestion and search returns random results"
           },
           {
             "name": "terravox-legal-vectors (OpenSearch Serverless collection)",
             "role": "Stores vector embeddings in the terravox-legal-index and performs approximate nearest-neighbor search at query time",
-            "connections": ["terravox-legal-kb writes vectors during sync and reads vectors during retrieval"],
+            "connections": [
+              "terravox-legal-kb writes vectors during sync and reads vectors during retrieval"
+            ],
             "failure_impact": "If the collection is inactive or the index mapping is wrong, ingestion or retrieval fails or produces garbage results"
           },
           {
             "name": "terravox-legal-index (OpenSearch index, knn_vector dimension: 512)",
             "role": "The actual index within the collection that defines the vector field mapping, dimension, HNSW parameters, and stores the indexed vectors",
-            "connections": ["terravox-legal-vectors collection hosts this index"],
+            "connections": [
+              "terravox-legal-vectors collection hosts this index"
+            ],
             "failure_impact": "If the dimension parameter does not match the embedding model output, vectors are truncated on write. The index cannot be altered in place -- it must be deleted and recreated."
           },
           {
             "name": "terravox-legal-docs-prod (S3 bucket)",
             "role": "Stores 280,412 legal documents organized by jurisdiction and case type. Serves as the source for knowledge base ingestion",
-            "connections": ["terravox-legal-kb reads documents during data source sync"],
+            "connections": [
+              "terravox-legal-kb reads documents during data source sync"
+            ],
             "failure_impact": "If documents are missing, corrupted, or the bucket policy blocks Bedrock access, the sync fails or indexes incomplete data"
           },
           {
             "name": "CloudWatch metrics and logs",
             "role": "Monitors API latency, ingestion job status, search latency, and custom retrieval quality metrics",
-            "connections": ["Bedrock publishes ingestion and retrieval metrics", "Lambda publishes query handler logs", "Custom metrics for precision and recall"],
+            "connections": [
+              "Bedrock publishes ingestion and retrieval metrics",
+              "Lambda publishes query handler logs",
+              "Custom metrics for precision and recall"
+            ],
             "failure_impact": "If retrieval precision is not alarmed, quality regressions go undetected while all health metrics remain green"
           }
         ],
@@ -127,22 +156,38 @@
       "hints": [
         {
           "hint": "retrieval returns results for every query but returns the wrong ones -- what could cause a vector search to return near-random matches?",
-          "relevant_services": ["bedrock", "opensearch-serverless"],
+          "relevant_services": [
+            "bedrock",
+            "opensearch-serverless"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "something changed in the embedding pipeline recently -- compare the current embedding model configuration to the OpenSearch index mapping",
-          "relevant_services": ["bedrock", "opensearch-serverless"],
-          "skip_if_queried": ["bedrock", "opensearch-serverless"]
+          "relevant_services": [
+            "bedrock",
+            "opensearch-serverless"
+          ],
+          "skip_if_queried": [
+            "bedrock",
+            "opensearch-serverless"
+          ]
         },
         {
           "hint": "embedding model now produces 1,024-dimension vectors -- how many dimensions does the OpenSearch index expect?",
-          "relevant_services": ["opensearch-serverless"],
-          "skip_if_queried": ["opensearch-serverless"]
+          "relevant_services": [
+            "opensearch-serverless"
+          ],
+          "skip_if_queried": [
+            "opensearch-serverless"
+          ]
         },
         {
           "hint": "index mapping specifies 512 dimensions, model produces 1,024, vectors are being truncated during ingestion destroying their semantic meaning",
-          "relevant_services": ["bedrock", "opensearch-serverless"],
+          "relevant_services": [
+            "bedrock",
+            "opensearch-serverless"
+          ],
           "skip_if_queried": []
         }
       ],

@@ -1,6 +1,7 @@
 {
   "id": "007-dynamodb-scan",
   "title": "Four Million Records, One by One",
+  "summary": "A product catalog search gets slower every week. Four million records, and the team swears the queries used to be fast.",
   "difficulty": 2,
   "category": "performance",
   "services": [
@@ -81,28 +82,60 @@
       "hints": [
         {
           "hint": "order processing was fine until 10:00 AM -- something else started hitting the table around that time",
-          "relevant_services": ["dynamodb", "cloudwatch"],
-          "skip_if_queried": ["ConsumedReadCapacityUnits", "metrics.csv"]
+          "relevant_services": [
+            "dynamodb",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "ConsumedReadCapacityUnits",
+            "metrics.csv"
+          ]
         },
         {
           "hint": "check CloudWatch for ConsumedReadCapacityUnits -- something is reading far more than the order pipeline ever would",
-          "relevant_services": ["cloudwatch", "dynamodb"],
-          "skip_if_queried": ["get_metric_data", "ConsumedReadCapacityUnits"]
+          "relevant_services": [
+            "cloudwatch",
+            "dynamodb"
+          ],
+          "skip_if_queried": [
+            "get_metric_data",
+            "ConsumedReadCapacityUnits"
+          ]
         },
         {
           "hint": "the product-search Lambda was deployed at 9:58 AM -- look at how it reads from the table",
-          "relevant_services": ["lambda", "dynamodb"],
-          "skip_if_queried": ["tidepool-product-search", "lambda-code-snippet"]
+          "relevant_services": [
+            "lambda",
+            "dynamodb"
+          ],
+          "skip_if_queried": [
+            "tidepool-product-search",
+            "lambda-code-snippet"
+          ]
         },
         {
           "hint": "there is a difference between a DynamoDB Scan and a Query -- one reads every item in the table, the other uses an index",
-          "relevant_services": ["dynamodb"],
-          "skip_if_queried": ["Scan", "Query", "scan", "query"]
+          "relevant_services": [
+            "dynamodb"
+          ],
+          "skip_if_queried": [
+            "Scan",
+            "Query",
+            "scan",
+            "query"
+          ]
         },
         {
           "hint": "the search Lambda runs a Scan with a FilterExpression on the category attribute -- there is no GSI on category, so every invocation reads all four million items",
-          "relevant_services": ["dynamodb", "lambda"],
-          "skip_if_queried": ["FilterExpression", "GlobalSecondaryIndexes", "GSI"]
+          "relevant_services": [
+            "dynamodb",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "FilterExpression",
+            "GlobalSecondaryIndexes",
+            "GSI"
+          ]
         }
       ],
       "max_hints_before_nudge": 3,
@@ -129,37 +162,54 @@
           {
             "name": "API Gateway (tidepool-api)",
             "role": "Routes /search and /orders requests to their respective Lambda functions",
-            "connections": ["Lambda: tidepool-product-search", "Lambda: tidepool-order-writer"],
+            "connections": [
+              "Lambda: tidepool-product-search",
+              "Lambda: tidepool-order-writer"
+            ],
             "failure_impact": "If the API Gateway fails, both search and order operations are unavailable"
           },
           {
             "name": "Lambda: tidepool-product-search (v14)",
             "role": "Newly deployed search function that performs full table Scans with FilterExpression on the category attribute",
-            "connections": ["API Gateway (tidepool-api)", "DynamoDB table: tidepool-products"],
+            "connections": [
+              "API Gateway (tidepool-api)",
+              "DynamoDB table: tidepool-products"
+            ],
             "failure_impact": "Each invocation consumes all provisioned RCUs by scanning 4 million items, starving other consumers"
           },
           {
             "name": "Lambda: tidepool-order-writer (v9)",
             "role": "Existing order pipeline function that writes confirmed orders via PutItem",
-            "connections": ["API Gateway (tidepool-api)", "DynamoDB table: tidepool-products", "SQS DLQ: tidepool-orders-dlq"],
+            "connections": [
+              "API Gateway (tidepool-api)",
+              "DynamoDB table: tidepool-products",
+              "SQS DLQ: tidepool-orders-dlq"
+            ],
             "failure_impact": "When throttled by RCU exhaustion, orders fail and are sent to the dead-letter queue"
           },
           {
             "name": "DynamoDB table: tidepool-products",
             "role": "Stores 4,012,387 product items, provisioned at 100 RCU / 100 WCU, no Global Secondary Indexes",
-            "connections": ["Lambda: tidepool-product-search", "Lambda: tidepool-order-writer"],
+            "connections": [
+              "Lambda: tidepool-product-search",
+              "Lambda: tidepool-order-writer"
+            ],
             "failure_impact": "When all RCUs are consumed, every reader and writer receives ProvisionedThroughputExceededException"
           },
           {
             "name": "SQS dead-letter queue: tidepool-orders-dlq",
             "role": "Receives order messages that fail processing after all retries",
-            "connections": ["Lambda: tidepool-order-writer"],
+            "connections": [
+              "Lambda: tidepool-order-writer"
+            ],
             "failure_impact": "Messages in the DLQ represent lost orders that require manual reprocessing"
           },
           {
             "name": "CloudWatch alarm",
             "role": "Fires when ThrottledRequests exceeds 10 for 5 consecutive minutes",
-            "connections": ["DynamoDB table: tidepool-products"],
+            "connections": [
+              "DynamoDB table: tidepool-products"
+            ],
             "failure_impact": "If the alarm is not acted on, throttling continues and the order backlog grows"
           }
         ],

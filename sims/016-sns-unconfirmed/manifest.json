@@ -1,9 +1,14 @@
 {
   "id": "016-sns-unconfirmed",
   "title": "A Notification for No One",
+  "summary": "Alarms fire, but nobody gets notified. Email, Slack, and SMS are all configured, yet every channel is silent.",
   "difficulty": 2,
   "category": "operations",
-  "services": ["sns", "cloudwatch", "lambda"],
+  "services": [
+    "sns",
+    "cloudwatch",
+    "lambda"
+  ],
   "tags": [
     "sns-subscription",
     "alerting",
@@ -92,13 +97,19 @@
           {
             "name": "CloudWatch Alarm (clarabridge-ingest-error-rate)",
             "role": "Monitors the Lambda ingest processor error rate and publishes to the SNS topic when the 5% threshold is crossed",
-            "connections": ["SNS Topic"],
+            "connections": [
+              "SNS Topic"
+            ],
             "failure_impact": "If the alarm is misconfigured or disabled, no notification is triggered regardless of how many errors occur"
           },
           {
             "name": "SNS Topic (clarabridge-ops-alerts)",
             "role": "Receives alarm notifications and fans out delivery attempts to all subscriptions on the topic",
-            "connections": ["Email Subscription", "Lambda Subscription", "SMS Subscription"],
+            "connections": [
+              "Email Subscription",
+              "Lambda Subscription",
+              "SMS Subscription"
+            ],
             "failure_impact": "If the topic policy blocks the CloudWatch service principal, the publish itself fails and no subscription receives anything"
           },
           {
@@ -110,7 +121,9 @@
           {
             "name": "Lambda Subscription (clarabridge-slack-notifier)",
             "role": "Receives the SNS message and posts it to the ops Slack channel via an incoming webhook URL stored in an environment variable",
-            "connections": ["Slack Webhook"],
+            "connections": [
+              "Slack Webhook"
+            ],
             "failure_impact": "If the webhook URL is invalid, the function returns an error. Without a dead-letter queue, the failure is only visible in CloudWatch Logs for the function"
           },
           {
@@ -122,7 +135,9 @@
           {
             "name": "Lambda Function (clarabridge-ingest-processor)",
             "role": "Processes 14 million events per day and writes to DynamoDB tables that feed customer dashboards",
-            "connections": ["DynamoDB"],
+            "connections": [
+              "DynamoDB"
+            ],
             "failure_impact": "When this function fails, customer dashboards show stale data -- the upstream problem that triggered the alarm in the first place"
           }
         ],
@@ -132,27 +147,48 @@
       "hints": [
         {
           "hint": "the CloudWatch alarm fired correctly -- what SNS topic did it publish to, and what subscriptions exist on that topic?",
-          "relevant_services": ["cloudwatch", "sns"],
+          "relevant_services": [
+            "cloudwatch",
+            "sns"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "check the status of each SNS subscription -- are they all confirmed and actively delivering?",
-          "relevant_services": ["sns"],
-          "skip_if_queried": ["sns"]
+          "relevant_services": [
+            "sns"
+          ],
+          "skip_if_queried": [
+            "sns"
+          ]
         },
         {
           "hint": "one subscription is PendingConfirmation -- but the other two paths also failed, check the Slack Lambda logs and the SMS delivery status",
-          "relevant_services": ["sns", "lambda"],
-          "skip_if_queried": ["sns"]
+          "relevant_services": [
+            "sns",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "sns"
+          ]
         },
         {
           "hint": "all three paths broken: email is PendingConfirmation, Slack Lambda getting 403 from rotated webhook, SMS hit the $1.00 default monthly spending limit",
-          "relevant_services": ["sns", "lambda"],
-          "skip_if_queried": ["sns", "lambda"]
+          "relevant_services": [
+            "sns",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "sns",
+            "lambda"
+          ]
         },
         {
           "hint": "confirm the email subscription, update Slack webhook URL in Lambda environment variables, increase SMS spending limit, add CloudWatch alarm on NumberOfNotificationsFailed routed to a separate verified path",
-          "relevant_services": ["sns", "lambda"],
+          "relevant_services": [
+            "sns",
+            "lambda"
+          ],
           "skip_if_queried": []
         }
       ],

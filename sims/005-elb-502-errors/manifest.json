@@ -1,6 +1,7 @@
 {
   "id": "005-elb-502-errors",
   "title": "UrbanFleet Rush Hour Meltdown: The 502 Storm",
+  "summary": "A ride-sharing app crashes at rush hour with a wall of 502 errors. The servers are running, but nobody can reach them.",
   "difficulty": 2,
   "category": "reliability",
   "services": [
@@ -81,22 +82,39 @@
       "hints": [
         {
           "hint": "ALB returning 502 means it cannot get a valid response from backend instances -- why would healthy instances fail the load balancer's health check?",
-          "relevant_services": ["elb"],
-          "skip_if_queried": ["target-group-config.json"]
+          "relevant_services": [
+            "elb"
+          ],
+          "skip_if_queried": [
+            "target-group-config.json"
+          ]
         },
         {
           "hint": "ALB health checks are configured in the target group -- check the health check path and what response it expects",
-          "relevant_services": ["elb"],
-          "skip_if_queried": ["target-group-config.json", "target-health.json"]
+          "relevant_services": [
+            "elb"
+          ],
+          "skip_if_queried": [
+            "target-group-config.json",
+            "target-health.json"
+          ]
         },
         {
           "hint": "compare the health check configuration (path, port, expected status code, thresholds) to what the application actually serves",
-          "relevant_services": ["elb", "ec2"],
-          "skip_if_queried": ["cloudwatch-logs.txt"]
+          "relevant_services": [
+            "elb",
+            "ec2"
+          ],
+          "skip_if_queried": [
+            "cloudwatch-logs.txt"
+          ]
         },
         {
           "hint": "health check configured for port 8080 but application listens on port 3000 -- every check fails because nothing listens on 8080, so ALB deregisters every instance",
-          "relevant_services": ["elb", "ec2"],
+          "relevant_services": [
+            "elb",
+            "ec2"
+          ],
           "skip_if_queried": []
         }
       ],
@@ -125,37 +143,53 @@
           {
             "name": "Application Load Balancer (urbanfleet-prod)",
             "role": "Receives all inbound HTTPS traffic on port 443 and forwards requests to healthy targets in the target group",
-            "connections": ["Target Group (urbanfleet-dispatch-tg)"],
+            "connections": [
+              "Target Group (urbanfleet-dispatch-tg)"
+            ],
             "failure_impact": "If the ALB has no healthy targets, all requests return 502 Bad Gateway errors"
           },
           {
             "name": "Target Group (urbanfleet-dispatch-tg)",
             "role": "Registers EC2 instances on port 3000 and runs health checks on port 8080 to determine target health",
-            "connections": ["Application Load Balancer (urbanfleet-prod)", "EC2 Instances"],
+            "connections": [
+              "Application Load Balancer (urbanfleet-prod)",
+              "EC2 Instances"
+            ],
             "failure_impact": "If health checks fail, instances are deregistered and the ALB has no targets to forward traffic to"
           },
           {
             "name": "EC2 Instances (t3.large, 4 instances across us-east-1a and us-east-1b)",
             "role": "Run the dispatch application on port 3000, serving driver routing and delivery manifest requests",
-            "connections": ["Target Group (urbanfleet-dispatch-tg)", "RDS PostgreSQL (urbanfleet-db)"],
+            "connections": [
+              "Target Group (urbanfleet-dispatch-tg)",
+              "RDS PostgreSQL (urbanfleet-db)"
+            ],
             "failure_impact": "If instances are deregistered due to failed health checks, drivers cannot receive updated delivery manifests"
           },
           {
             "name": "Auto Scaling Group (urbanfleet-dispatch-asg)",
             "role": "Maintains desired capacity of 4 instances (min 2, max 8) with ELB health check type",
-            "connections": ["EC2 Instances", "Target Group (urbanfleet-dispatch-tg)"],
+            "connections": [
+              "EC2 Instances",
+              "Target Group (urbanfleet-dispatch-tg)"
+            ],
             "failure_impact": "If ASG detects ELB-unhealthy instances, it terminates and replaces them, creating a churn cycle when health checks are misconfigured"
           },
           {
             "name": "RDS PostgreSQL (urbanfleet-db, Multi-AZ)",
             "role": "Backend database storing dispatch data, driver routes, and delivery manifests",
-            "connections": ["EC2 Instances"],
+            "connections": [
+              "EC2 Instances"
+            ],
             "failure_impact": "If the database is unreachable, the dispatch application cannot serve any data"
           },
           {
             "name": "CloudWatch",
             "role": "Collects metrics for HTTPCode_ELB_502_Count, HealthyHostCount, and UnHealthyHostCount",
-            "connections": ["Application Load Balancer (urbanfleet-prod)", "Auto Scaling Group (urbanfleet-dispatch-asg)"],
+            "connections": [
+              "Application Load Balancer (urbanfleet-prod)",
+              "Auto Scaling Group (urbanfleet-dispatch-asg)"
+            ],
             "failure_impact": "If metrics are not monitored, health check misconfigurations go undetected until users report errors"
           }
         ],

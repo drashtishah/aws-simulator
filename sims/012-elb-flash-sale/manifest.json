@@ -1,6 +1,7 @@
 {
   "id": "012-elb-flash-sale",
   "title": "The Sale That Started Too Fast",
+  "summary": "A retailer's flash sale crashes the site within sixty seconds of launch. The scaling rules are set, but they can't keep up.",
   "difficulty": 2,
   "category": "reliability",
   "services": [
@@ -97,49 +98,70 @@
           {
             "name": "Internet Gateway",
             "role": "Public traffic entry point for all inbound HTTPS requests to the VPC",
-            "connections": ["Application Load Balancer: vellora-prod-alb"],
+            "connections": [
+              "Application Load Balancer: vellora-prod-alb"
+            ],
             "failure_impact": "If the Internet Gateway is unavailable, no external traffic reaches the ALB"
           },
           {
             "name": "Application Load Balancer: vellora-prod-alb",
             "role": "Internet-facing ALB across 2 AZs that distributes traffic to the target group, not pre-warmed for the flash sale",
-            "connections": ["Internet Gateway", "Target Group: vellora-web-tg"],
+            "connections": [
+              "Internet Gateway",
+              "Target Group: vellora-web-tg"
+            ],
             "failure_impact": "Without pre-warming, the ALB cannot absorb a 10x traffic spike in under a minute, returning 503 errors"
           },
           {
             "name": "Target Group: vellora-web-tg",
             "role": "Routes HTTP traffic on port 8080 to registered EC2 instances, health check on /health every 30 seconds",
-            "connections": ["Application Load Balancer: vellora-prod-alb", "EC2 instances"],
+            "connections": [
+              "Application Load Balancer: vellora-prod-alb",
+              "EC2 instances"
+            ],
             "failure_impact": "If health checks fail or instances are overloaded, the ALB has no healthy targets to forward requests to"
           },
           {
             "name": "Auto Scaling Group: vellora-web-asg",
             "role": "Manages EC2 fleet with min 2, max 20, desired 2, and a 300-second cooldown between scaling actions",
-            "connections": ["EC2 instances", "CloudWatch alarm: vellora-cpu-high", "Simple scaling policy: vellora-cpu-scale-out"],
+            "connections": [
+              "EC2 instances",
+              "CloudWatch alarm: vellora-cpu-high",
+              "Simple scaling policy: vellora-cpu-scale-out"
+            ],
             "failure_impact": "The 300-second cooldown and CPU-based trigger delay scaling by minutes during a sudden traffic spike"
           },
           {
             "name": "EC2 instances: 2x t3.large (vellora-web-01, vellora-web-02)",
             "role": "Run the web storefront application, handling product browsing, cart, and checkout",
-            "connections": ["Target Group: vellora-web-tg", "RDS: vellora-prod-db"],
+            "connections": [
+              "Target Group: vellora-web-tg",
+              "RDS: vellora-prod-db"
+            ],
             "failure_impact": "With only 2 instances at sale start, both hit 98% CPU within seconds of the traffic spike"
           },
           {
             "name": "CloudWatch alarm: vellora-cpu-high",
             "role": "Fires when CPUUtilization exceeds 70% for 2 consecutive 60-second evaluation periods",
-            "connections": ["Auto Scaling Group: vellora-web-asg"],
+            "connections": [
+              "Auto Scaling Group: vellora-web-asg"
+            ],
             "failure_impact": "The 2-minute detection delay means the alarm fires after the damage is already done"
           },
           {
             "name": "Simple scaling policy: vellora-cpu-scale-out",
             "role": "Adds 1 instance per alarm breach, subject to the ASG cooldown period",
-            "connections": ["Auto Scaling Group: vellora-web-asg"],
+            "connections": [
+              "Auto Scaling Group: vellora-web-asg"
+            ],
             "failure_impact": "Adding only 1 instance at a time with a 300-second cooldown cannot match a 10x traffic surge"
           },
           {
             "name": "RDS: vellora-prod-db (db.r5.large, PostgreSQL 15.4, Multi-AZ)",
             "role": "Backend database for product catalog, inventory, and order data",
-            "connections": ["EC2 instances"],
+            "connections": [
+              "EC2 instances"
+            ],
             "failure_impact": "If the database becomes a bottleneck, even scaled-out instances cannot serve requests"
           }
         ],
@@ -149,27 +171,51 @@
       "hints": [
         {
           "hint": "check the ALB metrics dashboard around midnight -- what do RequestCount, 5XX errors, and TargetResponseTime show?",
-          "relevant_services": ["elb", "cloudwatch"],
-          "skip_if_queried": ["describe_load_balancers", "get_metric_data"]
+          "relevant_services": [
+            "elb",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "describe_load_balancers",
+            "get_metric_data"
+          ]
         },
         {
           "hint": "ALBs scale internal capacity gradually -- how quickly can one absorb a traffic increase without intervention?",
-          "relevant_services": ["elb"],
-          "skip_if_queried": ["describe_target_health"]
+          "relevant_services": [
+            "elb"
+          ],
+          "skip_if_queried": [
+            "describe_target_health"
+          ]
         },
         {
           "hint": "check the auto scaling group configuration -- what metric triggers scale-out and what is the cooldown period?",
-          "relevant_services": ["auto-scaling"],
-          "skip_if_queried": ["describe_auto_scaling_groups", "describe_policies"]
+          "relevant_services": [
+            "auto-scaling"
+          ],
+          "skip_if_queried": [
+            "describe_auto_scaling_groups",
+            "describe_policies"
+          ]
         },
         {
           "hint": "the ALB was never pre-warmed before the sale, and the scaling policy uses only CPU -- ALBRequestCountPerTarget reacts faster to traffic spikes",
-          "relevant_services": ["elb", "auto-scaling", "cloudwatch"],
-          "skip_if_queried": ["describe_scaling_activities"]
+          "relevant_services": [
+            "elb",
+            "auto-scaling",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "describe_scaling_activities"
+          ]
         },
         {
           "hint": "two fixes: contact AWS Support to pre-warm the ALB or use LCU reservation, and add a target tracking policy on ALBRequestCountPerTarget with a 60-second cooldown",
-          "relevant_services": ["elb", "auto-scaling"],
+          "relevant_services": [
+            "elb",
+            "auto-scaling"
+          ],
           "skip_if_queried": []
         }
       ],

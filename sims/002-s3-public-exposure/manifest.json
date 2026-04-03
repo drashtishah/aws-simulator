@@ -1,6 +1,7 @@
 {
   "id": "002-s3-public-exposure",
   "title": "The Meridian Health Data Leak",
+  "summary": "A healthcare company's private documents are suddenly accessible to anyone on the internet. The compliance team is panicking.",
   "difficulty": 2,
   "category": "security",
   "services": [
@@ -99,31 +100,45 @@
           {
             "name": "meridian-patient-documents",
             "role": "S3 bucket storing patient intake form PDFs uploaded daily by the intake service",
-            "connections": ["meridian-intake-service", "MedRecords vendor account"],
+            "connections": [
+              "meridian-intake-service",
+              "MedRecords vendor account"
+            ],
             "failure_impact": "Public read access to all objects exposes PHI for every patient whose form is in the bucket"
           },
           {
             "name": "meridian-intake-service",
             "role": "ECS Fargate service that processes patient intake forms and uploads PDFs to S3",
-            "connections": ["meridian-patient-documents", "meridian-prod-db", "meridian-prod-lb"],
+            "connections": [
+              "meridian-patient-documents",
+              "meridian-prod-db",
+              "meridian-prod-lb"
+            ],
             "failure_impact": "Service itself kept running normally -- the upload path was unaffected by the policy change"
           },
           {
             "name": "meridian-ecs-task-role",
             "role": "IAM role assumed by the ECS task, granting PutObject on the bucket and access to RDS",
-            "connections": ["meridian-intake-service", "meridian-patient-documents"],
+            "connections": [
+              "meridian-intake-service",
+              "meridian-patient-documents"
+            ],
             "failure_impact": "Role permissions were correctly scoped; the exposure came from the bucket policy, not this role"
           },
           {
             "name": "meridian-prod-trail",
             "role": "CloudTrail trail logging management and S3 data events for the patient documents bucket",
-            "connections": ["meridian-patient-documents"],
+            "connections": [
+              "meridian-patient-documents"
+            ],
             "failure_impact": "Without this trail, there would be no record of who changed the policy or who accessed the files"
           },
           {
             "name": "meridian-deploy-svc",
             "role": "IAM service account used by CI/CD pipelines to deploy infrastructure changes",
-            "connections": ["meridian-patient-documents"],
+            "connections": [
+              "meridian-patient-documents"
+            ],
             "failure_impact": "This account executed the PutBucketPolicy call that introduced the wildcard Principal"
           }
         ],
@@ -133,23 +148,40 @@
       "hints": [
         {
           "hint": "data is accessible without any AWS credentials -- what kind of policy could allow unauthenticated access to an S3 bucket?",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["s3"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "s3"
+          ]
         },
         {
           "hint": "S3 has two types of access policies: IAM policies (identity-based) and bucket policies (resource-based) -- check the bucket policy",
-          "relevant_services": ["s3", "iam"],
-          "skip_if_queried": ["s3"]
+          "relevant_services": [
+            "s3",
+            "iam"
+          ],
+          "skip_if_queried": [
+            "s3"
+          ]
         },
         {
           "hint": "look at the Principal field in the bucket policy -- who is granted access?",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["s3"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "s3"
+          ]
         },
         {
           "hint": "Principal: * in an S3 bucket policy means anyone on the internet can perform the allowed actions -- that is the root cause",
-          "relevant_services": ["s3"],
-          "skip_if_queried": ["s3"]
+          "relevant_services": [
+            "s3"
+          ],
+          "skip_if_queried": [
+            "s3"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

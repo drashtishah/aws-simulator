@@ -1,10 +1,21 @@
 {
   "id": "021-bedrock-agent-cost",
   "title": "Ten Dollars a Minute",
+  "summary": "An AI assistant that cost eight hundred dollars a week suddenly costs twelve thousand. Nothing in the code changed.",
   "difficulty": 2,
   "category": "cost",
-  "services": ["bedrock", "cloudwatch", "lambda"],
-  "tags": ["bedrock-agents", "token-cost", "reasoning-loop", "cost-optimization", "monitoring-gap"],
+  "services": [
+    "bedrock",
+    "cloudwatch",
+    "lambda"
+  ],
+  "tags": [
+    "bedrock-agents",
+    "token-cost",
+    "reasoning-loop",
+    "cost-optimization",
+    "monitoring-gap"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -89,31 +100,48 @@
           {
             "name": "Bedrock Agent (camber-support-agent)",
             "role": "Orchestrates patient queries by reasoning through which action groups to call and in what order. Uses Claude 3.5 Sonnet as the foundation model.",
-            "connections": ["eligibility-check Lambda", "appointment-schedule Lambda", "comprehensive-benefits Lambda", "CloudWatch (metrics)"],
+            "connections": [
+              "eligibility-check Lambda",
+              "appointment-schedule Lambda",
+              "comprehensive-benefits Lambda",
+              "CloudWatch (metrics)"
+            ],
             "failure_impact": "When the agent enters a multi-step reasoning loop, it generates thousands of internal tokens per query. These tokens are invisible to the user but billed at the output rate."
           },
           {
             "name": "comprehensive-benefits Action Group",
             "role": "Exposes granular API endpoints for plan details, copay breakdowns, deductible info, and network providers. Each endpoint returns a narrow slice of data.",
-            "connections": ["camber-benefits-handler Lambda", "Bedrock Agent orchestration loop"],
+            "connections": [
+              "camber-benefits-handler Lambda",
+              "Bedrock Agent orchestration loop"
+            ],
             "failure_impact": "The granular API design forces the agent to call the action group 5-7 times per comparison query, triggering a full reasoning cycle at each step."
           },
           {
             "name": "camber-benefits-handler Lambda",
             "role": "Executes the comprehensive-benefits action group logic. Calls internal Camber Health APIs for plan data, copay data, and network data.",
-            "connections": ["Camber internal APIs", "Bedrock Agent"],
+            "connections": [
+              "Camber internal APIs",
+              "Bedrock Agent"
+            ],
             "failure_impact": "Each invocation succeeds and returns correct data, but the volume of invocations per query drives Lambda costs up alongside the Bedrock token costs."
           },
           {
             "name": "CloudWatch",
             "role": "Collects Bedrock runtime metrics including InputTokenCount, OutputTokenCount, and InvocationLatency. No alarms were configured on these metrics.",
-            "connections": ["Bedrock Agent", "Cost Explorer"],
+            "connections": [
+              "Bedrock Agent",
+              "Cost Explorer"
+            ],
             "failure_impact": "Without alarms on token consumption or daily cost, the 14.9x cost increase ran for eight days before the weekly cost report surfaced it."
           },
           {
             "name": "Cost Explorer",
             "role": "Provides daily and monthly cost breakdowns by service. The finance lead uses it to review weekly spending.",
-            "connections": ["AWS Billing", "CloudWatch"],
+            "connections": [
+              "AWS Billing",
+              "CloudWatch"
+            ],
             "failure_impact": "Cost Explorer data has a lag of up to 24 hours. It surfaced the problem only when the weekly report was generated, eight days after deployment."
           }
         ],
@@ -123,23 +151,46 @@
       "hints": [
         {
           "hint": "cost increase correlates with a specific date -- what changed in the agent configuration around that time?",
-          "relevant_services": ["bedrock", "cost-explorer"],
-          "skip_if_queried": ["agent-config.json", "cost-explorer.json"]
+          "relevant_services": [
+            "bedrock",
+            "cost-explorer"
+          ],
+          "skip_if_queried": [
+            "agent-config.json",
+            "cost-explorer.json"
+          ]
         },
         {
           "hint": "look at the agent trace for a single query -- how many action group invocations does the agent make per user question?",
-          "relevant_services": ["bedrock"],
-          "skip_if_queried": ["agent-trace.json"]
+          "relevant_services": [
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "agent-trace.json"
+          ]
         },
         {
           "hint": "each action group invocation triggers a full reasoning cycle with chain-of-thought tokens that are billed -- count the total tokens per query",
-          "relevant_services": ["bedrock", "cloudwatch"],
-          "skip_if_queried": ["invocation-logs.json", "metrics.csv"]
+          "relevant_services": [
+            "bedrock",
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "invocation-logs.json",
+            "metrics.csv"
+          ]
         },
         {
           "hint": "the comprehensive-benefits action group causes 6-8 sub-steps per query, each generating ~4,000 reasoning tokens -- per-query cost went from $0.02 to $0.20",
-          "relevant_services": ["bedrock", "lambda"],
-          "skip_if_queried": ["agent-trace.json", "invocation-logs.json", "cloudwatch-logs.txt"]
+          "relevant_services": [
+            "bedrock",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "agent-trace.json",
+            "invocation-logs.json",
+            "cloudwatch-logs.txt"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

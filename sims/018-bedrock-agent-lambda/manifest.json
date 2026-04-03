@@ -1,10 +1,22 @@
 {
   "id": "018-bedrock-agent-lambda",
   "title": "The Agent That Could Not Act",
+  "summary": "An AI agent can reason through every step of a plan, but when it tries to act, nothing happens. The Lambda function never fires.",
   "difficulty": 2,
   "category": "operations",
-  "services": ["bedrock", "lambda", "iam", "cloudwatch"],
-  "tags": ["bedrock-agents", "resource-based-policy", "action-group", "lambda-invoke", "silent-failure"],
+  "services": [
+    "bedrock",
+    "lambda",
+    "iam",
+    "cloudwatch"
+  ],
+  "tags": [
+    "bedrock-agents",
+    "resource-based-policy",
+    "action-group",
+    "lambda-invoke",
+    "silent-failure"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -89,37 +101,52 @@
           {
             "name": "API Gateway (REST API)",
             "role": "Receives user queries from the SaaS frontend and routes them to the Bedrock Agent",
-            "connections": ["Bedrock Agent (clairvue-bi-assistant)"],
+            "connections": [
+              "Bedrock Agent (clairvue-bi-assistant)"
+            ],
             "failure_impact": "If the API Gateway fails, users cannot reach the AI assistant"
           },
           {
             "name": "Bedrock Agent (clairvue-bi-assistant, ABCDE12345)",
             "role": "Orchestrates conversations using Claude 3 Sonnet and the QueryDashboard action group to answer business intelligence questions",
-            "connections": ["API Gateway (REST API)", "Lambda function (clairvue-dashboard-query)"],
+            "connections": [
+              "API Gateway (REST API)",
+              "Lambda function (clairvue-dashboard-query)"
+            ],
             "failure_impact": "If the action group invocation fails silently, the agent falls back to hallucinated responses with no error signal"
           },
           {
             "name": "Lambda function (clairvue-dashboard-query, Python 3.12, arm64)",
             "role": "Handles action group requests by querying the internal dashboard API and returning real metrics",
-            "connections": ["Bedrock Agent (clairvue-bi-assistant)", "Lambda resource-based policy"],
+            "connections": [
+              "Bedrock Agent (clairvue-bi-assistant)",
+              "Lambda resource-based policy"
+            ],
             "failure_impact": "If Lambda rejects the invocation due to a policy mismatch, the agent generates fabricated metrics instead of real data"
           },
           {
             "name": "IAM execution role (AmazonBedrockExecutionRoleForAgents_clairvue)",
             "role": "Grants the Bedrock Agent permission to invoke the foundation model and call Lambda, but its ARN is not the SourceArn Lambda expects",
-            "connections": ["Bedrock Agent (clairvue-bi-assistant)"],
+            "connections": [
+              "Bedrock Agent (clairvue-bi-assistant)"
+            ],
             "failure_impact": "If confused with the agent ARN in the Lambda policy, invocations are silently rejected"
           },
           {
             "name": "Lambda resource-based policy",
             "role": "Controls which services and source ARNs are allowed to invoke the Lambda function",
-            "connections": ["Lambda function (clairvue-dashboard-query)"],
+            "connections": [
+              "Lambda function (clairvue-dashboard-query)"
+            ],
             "failure_impact": "If the SourceArn condition references the IAM role ARN instead of the agent ARN, all Bedrock invocations are rejected"
           },
           {
             "name": "CloudWatch",
             "role": "Collects Lambda invocation metrics and Bedrock agent invocation metrics for monitoring",
-            "connections": ["Lambda function (clairvue-dashboard-query)", "Bedrock Agent (clairvue-bi-assistant)"],
+            "connections": [
+              "Lambda function (clairvue-dashboard-query)",
+              "Bedrock Agent (clairvue-bi-assistant)"
+            ],
             "failure_impact": "Without alarms on zero-invocation conditions, silent failures go undetected for days"
           }
         ],
@@ -129,23 +156,46 @@
       "hints": [
         {
           "hint": "agent responds to every query but answers are wrong, Lambda has zero invocations since Friday -- what would cause Bedrock to skip the Lambda call entirely?",
-          "relevant_services": ["bedrock", "lambda"],
-          "skip_if_queried": ["lambda"]
+          "relevant_services": [
+            "bedrock",
+            "lambda"
+          ],
+          "skip_if_queried": [
+            "lambda"
+          ]
         },
         {
           "hint": "Lambda functions require a resource-based policy to allow external services to invoke them -- check who is allowed to call this function and under what conditions",
-          "relevant_services": ["lambda", "iam"],
-          "skip_if_queried": ["lambda"]
+          "relevant_services": [
+            "lambda",
+            "iam"
+          ],
+          "skip_if_queried": [
+            "lambda"
+          ]
         },
         {
           "hint": "compare the aws:SourceArn value in the Lambda resource-based policy to the actual Bedrock agent ARN in the agent configuration -- are they the same resource?",
-          "relevant_services": ["lambda", "bedrock"],
-          "skip_if_queried": ["lambda", "bedrock"]
+          "relevant_services": [
+            "lambda",
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "lambda",
+            "bedrock"
+          ]
         },
         {
           "hint": "policy references an IAM role ARN, but Bedrock presents the agent ARN as the source when invoking Lambda -- these are different identifiers, function rejects invocation silently, agent falls back to hallucinating",
-          "relevant_services": ["lambda", "iam", "bedrock"],
-          "skip_if_queried": ["lambda", "iam"]
+          "relevant_services": [
+            "lambda",
+            "iam",
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "lambda",
+            "iam"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

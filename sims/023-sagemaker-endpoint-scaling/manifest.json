@@ -1,10 +1,22 @@
 {
   "id": "023-sagemaker-endpoint-scaling",
   "title": "The Endpoint That Stopped Thinking",
+  "summary": "A machine learning endpoint handles morning traffic fine, but freezes under afternoon load. The scaling policy exists but never fires.",
   "difficulty": 3,
   "category": "performance",
-  "services": ["sagemaker", "cloudwatch", "auto-scaling", "lambda"],
-  "tags": ["sagemaker-endpoint", "auto-scaling", "cloudwatch-alarm", "variant-dimension", "503-errors"],
+  "services": [
+    "sagemaker",
+    "cloudwatch",
+    "auto-scaling",
+    "lambda"
+  ],
+  "tags": [
+    "sagemaker-endpoint",
+    "auto-scaling",
+    "cloudwatch-alarm",
+    "variant-dimension",
+    "503-errors"
+  ],
   "estimated_minutes": 35,
   "prerequisites": [],
   "exam_topics": [
@@ -89,37 +101,55 @@
           {
             "name": "API Gateway (api.arcline.io/v2/route)",
             "role": "Receives route optimization requests from driver mobile apps and forwards them to the Lambda function",
-            "connections": ["Lambda Function"],
+            "connections": [
+              "Lambda Function"
+            ],
             "failure_impact": "If the API Gateway is misconfigured or throttled, no requests reach the Lambda function"
           },
           {
             "name": "Lambda Function (arcline-route-handler)",
             "role": "Invokes the SageMaker endpoint with route parameters, retries on failure, and falls back to manual routing notifications via SNS",
-            "connections": ["API Gateway", "SageMaker Endpoint", "SNS Topic"],
+            "connections": [
+              "API Gateway",
+              "SageMaker Endpoint",
+              "SNS Topic"
+            ],
             "failure_impact": "If the Lambda function times out or errors, drivers receive no route and no manual routing notification is sent"
           },
           {
             "name": "SageMaker Endpoint (arcline-route-optimizer)",
             "role": "Hosts the route optimization model on ml.g4dn.xlarge instances and serves real-time predictions through the optimized-v3 production variant",
-            "connections": ["Lambda Function", "CloudWatch Metrics"],
+            "connections": [
+              "Lambda Function",
+              "CloudWatch Metrics"
+            ],
             "failure_impact": "If the single instance is overwhelmed, the model server queue fills and requests return 503 ModelError responses"
           },
           {
             "name": "CloudWatch Alarm (arcline-sagemaker-high-invocations)",
             "role": "Monitors InvocationsPerInstance metric and triggers the scaling policy when the value exceeds 100 for three consecutive periods",
-            "connections": ["CloudWatch Metrics", "Application Auto Scaling"],
+            "connections": [
+              "CloudWatch Metrics",
+              "Application Auto Scaling"
+            ],
             "failure_impact": "If the alarm dimensions do not match the active variant, it enters INSUFFICIENT_DATA and never triggers scaling"
           },
           {
             "name": "Application Auto Scaling Policy (arcline-route-scaling-policy)",
             "role": "Scales the SageMaker endpoint between 1 and 6 instances using target tracking on InvocationsPerInstance",
-            "connections": ["CloudWatch Alarm", "SageMaker Endpoint"],
+            "connections": [
+              "CloudWatch Alarm",
+              "SageMaker Endpoint"
+            ],
             "failure_impact": "If the alarm never fires, the policy never activates and the endpoint stays at minimum capacity regardless of load"
           },
           {
             "name": "CloudWatch Metrics (AWS/SageMaker namespace)",
             "role": "Publishes per-variant metrics including InvocationsPerInstance, ModelLatency, and Invocation5XXErrors, dimensioned by EndpointName and VariantName",
-            "connections": ["SageMaker Endpoint", "CloudWatch Alarm"],
+            "connections": [
+              "SageMaker Endpoint",
+              "CloudWatch Alarm"
+            ],
             "failure_impact": "Metrics are published only for active variants. Retired variant names receive no new data points, causing any alarm referencing them to lose data"
           }
         ],
@@ -129,23 +159,43 @@
       "hints": [
         {
           "hint": "auto-scaling is configured but has never triggered -- what drives the scaling decision?",
-          "relevant_services": ["auto-scaling", "cloudwatch"],
+          "relevant_services": [
+            "auto-scaling",
+            "cloudwatch"
+          ],
           "skip_if_queried": []
         },
         {
           "hint": "the CloudWatch alarm for scaling is in INSUFFICIENT_DATA state -- it is not receiving the metric it expects",
-          "relevant_services": ["cloudwatch"],
-          "skip_if_queried": ["cloudwatch"]
+          "relevant_services": [
+            "cloudwatch"
+          ],
+          "skip_if_queried": [
+            "cloudwatch"
+          ]
         },
         {
           "hint": "CloudWatch metrics for SageMaker endpoints include the variant name as a dimension -- compare the alarm's dimension to the actual endpoint variant",
-          "relevant_services": ["cloudwatch", "sagemaker"],
-          "skip_if_queried": ["cloudwatch", "sagemaker"]
+          "relevant_services": [
+            "cloudwatch",
+            "sagemaker"
+          ],
+          "skip_if_queried": [
+            "cloudwatch",
+            "sagemaker"
+          ]
         },
         {
           "hint": "the alarm references variant 'AllTraffic' but the current production variant is 'optimized-v3' -- the metric dimension does not match, so the alarm never evaluates",
-          "relevant_services": ["cloudwatch", "sagemaker", "auto-scaling"],
-          "skip_if_queried": ["cloudwatch", "sagemaker"]
+          "relevant_services": [
+            "cloudwatch",
+            "sagemaker",
+            "auto-scaling"
+          ],
+          "skip_if_queried": [
+            "cloudwatch",
+            "sagemaker"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

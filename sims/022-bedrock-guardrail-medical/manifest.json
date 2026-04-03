@@ -1,10 +1,22 @@
 {
   "id": "022-bedrock-guardrail-medical",
   "title": "The Guardrail and the Doctor",
+  "summary": "A patient triage assistant blocks nearly half of legitimate medical questions. The guardrail is doing its job too well.",
   "difficulty": 2,
   "category": "reliability",
-  "services": ["bedrock", "cloudwatch", "lambda", "sns"],
-  "tags": ["bedrock-guardrails", "content-filter", "denied-topic", "false-positive", "healthcare"],
+  "services": [
+    "bedrock",
+    "cloudwatch",
+    "lambda",
+    "sns"
+  ],
+  "tags": [
+    "bedrock-guardrails",
+    "content-filter",
+    "denied-topic",
+    "false-positive",
+    "healthcare"
+  ],
   "estimated_minutes": 25,
   "prerequisites": [],
   "exam_topics": [
@@ -89,31 +101,42 @@
           {
             "name": "Patient Mobile App",
             "role": "Frontend interface where patients type symptom descriptions to begin triage",
-            "connections": ["API Gateway"],
+            "connections": [
+              "API Gateway"
+            ],
             "failure_impact": "None -- the app is functioning correctly"
           },
           {
             "name": "API Gateway",
             "role": "Routes HTTPS requests from the patient app to the Lambda function",
-            "connections": ["Lambda Function"],
+            "connections": [
+              "Lambda Function"
+            ],
             "failure_impact": "None -- requests are arriving at the backend"
           },
           {
             "name": "Lambda Function (patchwork-triage-handler)",
             "role": "Receives patient queries, formats prompts, and calls Bedrock InvokeModel with the guardrail attached",
-            "connections": ["Bedrock Guardrail", "SNS Topic"],
+            "connections": [
+              "Bedrock Guardrail",
+              "SNS Topic"
+            ],
             "failure_impact": "None -- the function executes correctly and passes the query to Bedrock"
           },
           {
             "name": "Bedrock Guardrail (patchwork-clinical-safety v3)",
             "role": "Evaluates text against content filters and denied topics before and after model invocation",
-            "connections": ["Foundation Model"],
+            "connections": [
+              "Foundation Model"
+            ],
             "failure_impact": "The denied topic 'Medical Advice and Diagnosis' blocks 40% of patient queries at the input stage. The foundation model never sees these requests. Patients receive a generic blocked message."
           },
           {
             "name": "Foundation Model (Claude 3 Haiku)",
             "role": "Generates triage categorizations from patient symptom descriptions",
-            "connections": ["Lambda Function"],
+            "connections": [
+              "Lambda Function"
+            ],
             "failure_impact": "None -- the model works correctly for the 60% of queries that reach it"
           },
           {
@@ -125,7 +148,9 @@
           {
             "name": "CloudWatch Metrics",
             "role": "Records GuardrailInterventions count and other operational metrics",
-            "connections": ["SNS Topic"],
+            "connections": [
+              "SNS Topic"
+            ],
             "failure_impact": "Metrics are recording correctly but no alarm is configured to act on the GuardrailInterventions spike"
           }
         ],
@@ -135,23 +160,41 @@
       "hints": [
         {
           "hint": "responses say the request was blocked, not that the model could not answer -- something is intercepting requests before the model sees them",
-          "relevant_services": ["bedrock"],
-          "skip_if_queried": ["get_guardrail", "apply_guardrail"]
+          "relevant_services": [
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "get_guardrail",
+            "apply_guardrail"
+          ]
         },
         {
           "hint": "bedrock guardrails evaluate input before it reaches the model -- has the guardrail configuration changed recently? check the version history",
-          "relevant_services": ["bedrock"],
-          "skip_if_queried": ["get_guardrail_version"]
+          "relevant_services": [
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "get_guardrail_version"
+          ]
         },
         {
           "hint": "look at the denied topics in the guardrail -- is there one whose example phrases might match legitimate medical triage queries like symptom descriptions?",
-          "relevant_services": ["bedrock"],
-          "skip_if_queried": ["get_guardrail"]
+          "relevant_services": [
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "get_guardrail"
+          ]
         },
         {
           "hint": "the denied topic 'Medical Advice and Diagnosis' is defined too broadly -- its example phrases match any symptom description, which is exactly what the triage assistant collects. fix is to narrow the topic and move it to output filtering",
-          "relevant_services": ["bedrock"],
-          "skip_if_queried": ["get_guardrail", "apply_guardrail"]
+          "relevant_services": [
+            "bedrock"
+          ],
+          "skip_if_queried": [
+            "get_guardrail",
+            "apply_guardrail"
+          ]
         }
       ],
       "max_hints_before_nudge": 3

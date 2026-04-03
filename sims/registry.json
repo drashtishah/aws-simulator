@@ -4,196 +4,320 @@
     {
       "id": "001-ec2-unreachable",
       "title": "The BrightPath Outage: Students Locked Out",
+      "summary": "A learning platform goes dark during midterm week. Students can't reach the site, but the server says everything is fine.",
       "difficulty": 1,
       "category": "networking",
-      "services": ["ec2", "vpc", "cloudwatch"],
+      "services": [
+        "ec2",
+        "vpc",
+        "cloudwatch"
+      ],
       "estimated_minutes": 15
     },
     {
       "id": "002-s3-public-exposure",
       "title": "The Meridian Health Data Leak",
+      "summary": "A healthcare company's private documents are suddenly accessible to anyone on the internet. The compliance team is panicking.",
       "difficulty": 2,
       "category": "security",
-      "services": ["s3", "iam", "cloudtrail"],
+      "services": [
+        "s3",
+        "iam",
+        "cloudtrail"
+      ],
       "estimated_minutes": 25
     },
     {
       "id": "003-rds-storage-full",
       "title": "The CropSync Harvest Crisis: Database Full",
+      "summary": "Harvest season hits and the farm data platform freezes. New crop readings won't save, but nobody changed the code.",
       "difficulty": 1,
       "category": "data",
-      "services": ["rds", "cloudwatch", "ec2"],
+      "services": [
+        "rds",
+        "cloudwatch",
+        "ec2"
+      ],
       "estimated_minutes": 15
     },
     {
       "id": "004-lambda-access-denied",
       "title": "PacketForge Lambda Lockout: The Missing Permission",
+      "summary": "A threat intelligence pipeline that ran for months starts failing overnight. The code hasn't changed, but something else did.",
       "difficulty": 2,
       "category": "security",
-      "services": ["lambda", "iam", "dynamodb", "cloudwatch"],
+      "services": [
+        "lambda",
+        "iam",
+        "dynamodb",
+        "cloudwatch"
+      ],
       "estimated_minutes": 20
     },
     {
       "id": "005-elb-502-errors",
       "title": "UrbanFleet Rush Hour Meltdown: The 502 Storm",
+      "summary": "A ride-sharing app crashes at rush hour with a wall of 502 errors. The servers are running, but nobody can reach them.",
       "difficulty": 2,
       "category": "reliability",
-      "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+      "services": [
+        "elb",
+        "auto-scaling",
+        "ec2",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25
     },
     {
       "id": "006-wrong-region",
       "title": "A Function in the Wrong Room",
+      "summary": "A booking API returns nothing but errors after a routine deployment. The function exists, the code is correct, yet every call fails.",
       "difficulty": 1,
       "category": "operations",
-      "services": ["lambda", "cloudwatch", "iam"],
+      "services": [
+        "lambda",
+        "cloudwatch",
+        "iam"
+      ],
       "estimated_minutes": 15
     },
     {
       "id": "007-dynamodb-scan",
       "title": "Four Million Records, One by One",
+      "summary": "A product catalog search gets slower every week. Four million records, and the team swears the queries used to be fast.",
       "difficulty": 2,
       "category": "performance",
-      "services": ["dynamodb", "cloudwatch", "lambda"],
+      "services": [
+        "dynamodb",
+        "cloudwatch",
+        "lambda"
+      ],
       "estimated_minutes": 25
     },
     {
       "id": "008-s3-cors-presigned",
       "title": "The Upload That Worked Everywhere Else",
+      "summary": "File uploads work perfectly from Postman and curl, but the browser keeps refusing. The presigned URLs are valid.",
       "difficulty": 2,
       "category": "operations",
-      "services": ["s3", "cloudfront", "api-gateway"],
+      "services": [
+        "s3",
+        "cloudfront",
+        "api-gateway"
+      ],
       "estimated_minutes": 25
     },
     {
       "id": "009-credential-chain",
       "title": "Someone Else's Keys",
+      "summary": "An application starts using credentials that belong to someone who left the company months ago. Nobody changed anything.",
       "difficulty": 1,
       "category": "security",
-      "services": ["iam", "sts", "secrets-manager"],
+      "services": [
+        "iam",
+        "sts",
+        "secrets-manager"
+      ],
       "estimated_minutes": 15
     },
     {
       "id": "010-cloudformation-stuck",
       "title": "The Stack That Wouldn't Move",
+      "summary": "A deployment stack won't update, won't roll back, and won't delete. Something vanished over the weekend.",
       "difficulty": 2,
       "category": "operations",
-      "services": ["cloudformation", "iam", "cloudwatch"],
+      "services": [
+        "cloudformation",
+        "iam",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25
     },
     {
       "id": "011-nat-gateway-cost",
       "title": "Nine Hundred Dollars for Nothing",
+      "summary": "The AWS bill jumps by nine hundred dollars a day. The workload hasn't changed, but something is quietly burning money.",
       "difficulty": 1,
       "category": "cost",
-      "services": ["nat-gateway", "s3", "vpc", "cloudwatch"],
+      "services": [
+        "nat-gateway",
+        "s3",
+        "vpc",
+        "cloudwatch"
+      ],
       "estimated_minutes": 15
     },
     {
       "id": "012-elb-flash-sale",
       "title": "The Sale That Started Too Fast",
+      "summary": "A retailer's flash sale crashes the site within sixty seconds of launch. The scaling rules are set, but they can't keep up.",
       "difficulty": 2,
       "category": "reliability",
-      "services": ["elb", "auto-scaling", "cloudwatch"],
+      "services": [
+        "elb",
+        "auto-scaling",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "013-elb-target-drain",
       "title": "The Targets That Disappeared",
+      "summary": "Every deployment causes a brief outage. Old instances vanish before new ones are ready, and users hit dead ends.",
       "difficulty": 2,
       "category": "reliability",
-      "services": ["elb", "auto-scaling", "ec2", "cloudwatch"],
+      "services": [
+        "elb",
+        "auto-scaling",
+        "ec2",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "014-sqs-double-process",
       "title": "The Queue Nobody Watched",
+      "summary": "Customers are getting charged twice for the same order. The code processes each message once, or so the team believes.",
       "difficulty": 2,
       "category": "reliability",
-      "services": ["sqs", "lambda", "cloudwatch"],
+      "services": [
+        "sqs",
+        "lambda",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "015-route53-failover-blind",
       "title": "Sixteen Seconds of Nothing",
+      "summary": "The backup site exists and works, but when the primary goes down, traffic goes nowhere. Failover was supposed to be automatic.",
       "difficulty": 2,
       "category": "networking",
-      "services": ["route53", "elb", "cloudwatch"],
+      "services": [
+        "route53",
+        "elb",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "016-sns-unconfirmed",
       "title": "A Notification for No One",
+      "summary": "Alarms fire, but nobody gets notified. Email, Slack, and SMS are all configured, yet every channel is silent.",
       "difficulty": 2,
       "category": "operations",
-      "services": ["sns", "cloudwatch", "lambda"],
+      "services": [
+        "sns",
+        "cloudwatch",
+        "lambda"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "017-elasticache-eviction",
       "title": "The Cache That Forgot Everything",
+      "summary": "Response times spike from milliseconds to eight seconds. The cache is running, the database is running, but something snapped.",
       "difficulty": 2,
       "category": "performance",
-      "services": ["elasticache", "elb", "cloudwatch"],
+      "services": [
+        "elasticache",
+        "elb",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-25"
     },
     {
       "id": "018-bedrock-agent-lambda",
       "title": "The Agent That Could Not Act",
+      "summary": "An AI agent can reason through every step of a plan, but when it tries to act, nothing happens. The Lambda function never fires.",
       "difficulty": 2,
       "category": "operations",
-      "services": ["bedrock", "lambda", "iam", "cloudwatch"],
+      "services": [
+        "bedrock",
+        "lambda",
+        "iam",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-26"
     },
     {
       "id": "019-bedrock-rag-dimension",
       "title": "One Thousand and Twenty-Four",
+      "summary": "A knowledge base search returns confident but completely wrong answers. The documents are correct, the model is fine.",
       "difficulty": 2,
       "category": "data",
-      "services": ["bedrock", "opensearch-serverless", "s3", "cloudwatch"],
+      "services": [
+        "bedrock",
+        "opensearch-serverless",
+        "s3",
+        "cloudwatch"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-26"
     },
     {
       "id": "020-bedrock-cross-region-scp",
       "title": "Intermittent by Design",
+      "summary": "Roughly one in three AI requests fails for no apparent reason. Retrying the same request sometimes works, sometimes doesn't.",
       "difficulty": 3,
       "category": "operations",
-      "services": ["bedrock", "iam", "organizations", "cloudwatch"],
+      "services": [
+        "bedrock",
+        "iam",
+        "organizations",
+        "cloudwatch"
+      ],
       "estimated_minutes": 30,
       "created": "2026-03-26"
     },
     {
       "id": "021-bedrock-agent-cost",
       "title": "Ten Dollars a Minute",
+      "summary": "An AI assistant that cost eight hundred dollars a week suddenly costs twelve thousand. Nothing in the code changed.",
       "difficulty": 2,
       "category": "cost",
-      "services": ["bedrock", "cloudwatch", "lambda"],
+      "services": [
+        "bedrock",
+        "cloudwatch",
+        "lambda"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-26"
     },
     {
       "id": "022-bedrock-guardrail-medical",
       "title": "The Guardrail and the Doctor",
+      "summary": "A patient triage assistant blocks nearly half of legitimate medical questions. The guardrail is doing its job too well.",
       "difficulty": 2,
       "category": "reliability",
-      "services": ["bedrock", "cloudwatch", "lambda", "sns"],
+      "services": [
+        "bedrock",
+        "cloudwatch",
+        "lambda",
+        "sns"
+      ],
       "estimated_minutes": 25,
       "created": "2026-03-26"
     },
     {
       "id": "023-sagemaker-endpoint-scaling",
       "title": "The Endpoint That Stopped Thinking",
+      "summary": "A machine learning endpoint handles morning traffic fine, but freezes under afternoon load. The scaling policy exists but never fires.",
       "difficulty": 3,
       "category": "performance",
-      "services": ["sagemaker", "cloudwatch", "auto-scaling", "lambda"],
+      "services": [
+        "sagemaker",
+        "cloudwatch",
+        "auto-scaling",
+        "lambda"
+      ],
       "estimated_minutes": 30,
       "created": "2026-03-26"
     }
