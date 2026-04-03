@@ -1,6 +1,6 @@
 ---
 name: sim-test
-description: Extend the sim-test CLI with new browser specs, persona profiles, design contracts, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend sim-test".
+description: Extend the sim-test CLI with new browser specs, persona profiles, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend sim-test".
 effort: medium
 paths:
   - test-specs/**
@@ -15,7 +15,7 @@ hooks:
 
 # sim-test Skill
 
-Extend the testing CLI with new browser specs, persona profiles, design contracts, or commands.
+Extend the testing CLI with new browser specs, persona profiles, or commands.
 
 ---
 
@@ -43,14 +43,7 @@ Choose one of these options depending on what is needed.
 2. Required fields: id, name, role, description, behaviors, focus_areas, evaluation_questions, session_minutes
 3. Validate: `sim-test personas --id {id} --dry-run`
 
-### Option C: Add a design contract
-
-1. Create JSON file in `design/contracts/{view}.json`
-2. Required sections: name, elements (selector, required, tag, min_count), aria (selector, role, attributes)
-3. Or generate from Stitch HTML: `sim-test design extract`
-4. Validate: `sim-test design check`
-
-### Option D: Add a CLI command
+### Option C: Add a CLI command
 
 1. Only possible in dev mode (no active skill), since `scripts/sim-test.js` is NEVER_WRITABLE during skill execution
 2. Register with commander: `.command('name').description('...').option('--json').action(async (opts) => { ... })`
@@ -72,7 +65,7 @@ Follow `.claude/skills/git/references/commit-procedure.md`. If a GitHub Issue ex
 ## Rules
 
 1. No emojis.
-2. Never edit `scripts/sim-test.js`, `scripts/generate-design-refs.js`, or `scripts/extract-design-contracts.js` during skill execution. They are NEVER_WRITABLE.
-3. Never edit files in `design/` or `test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
+2. Never edit `scripts/sim-test.js` during skill execution. It is NEVER_WRITABLE.
+3. Never edit files in `test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
 4. Always validate new specs with --dry-run before committing.
 5. The test skill owns `test-results/` directory only.

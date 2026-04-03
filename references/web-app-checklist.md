@@ -119,8 +119,8 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Tests
 
-- [ ] `sim-test run` passes all unit tests + design contracts
-- [ ] `sim-test agent` passes all 8 YAML browser specs
+- [ ] `sim-test run` passes all unit tests
+- [ ] `sim-test agent` passes all YAML browser specs
 - [ ] `sim-test personas` produces findings for all 5 personas
 - [ ] All API endpoints have unit tests (GET and POST routes)
 - [ ] Game endpoints tested for 400 (validation) and 503 (no claude-process)
@@ -131,10 +131,6 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] Browser specs: navigation, dashboard, sim picker, chat, settings all covered
 - [ ] Browser specs: layout assertions for responsive breakpoints (1280px, 480px, 375px)
 - [ ] Browser specs: ARIA roles, attributes, keyboard navigation covered
-- [ ] Browser specs: design match screenshots vs Stitch references
-- [ ] Design contracts: `design/manifest.json` checksums validated
-- [ ] Design contracts: `design/thresholds.json` scores within bounds
-- [ ] Guard coverage: `design/` and `test-specs/` in NEVER_WRITABLE_DIRS
+- [ ] Guard coverage: `test-specs/` in NEVER_WRITABLE_DIRS
 - [ ] Color contrast meets WCAG 2.1 AA (4.5:1 minimum)
 - [ ] All catch blocks in server.js log descriptive errors (endpoint, entity ID, cause)
-- [ ] Design references updated after CSS changes: `sim-test design generate`

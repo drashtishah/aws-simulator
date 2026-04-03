@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "node web/server.js",
+    "dev": "NODE_ENV=development node web/server.js",
     "test": "python3 scripts/extract_paths.py && node scripts/sim-test.js run",
     "test:agent": "node scripts/sim-test.js agent",
     "test:personas": "node scripts/sim-test.js personas",
@@ -11,9 +12,6 @@
     "test:summary": "node scripts/sim-test.js summary",
     "extract-paths": "python3 scripts/extract_paths.py",
     "health": "node scripts/code-health.js",
-    "design:generate": "node scripts/sim-test.js design generate",
-    "design:extract": "node scripts/sim-test.js design extract",
-    "design:check": "node scripts/sim-test.js design check",
     "feedback:personas": "node scripts/sim-test.js personas --feedback",
     "audit:permissions": "node scripts/audit-permissions.js"
   },
@@ -23,6 +21,8 @@
   },
   "devDependencies": {
     "acorn": "^8.16.0",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "connect-livereload": "^0.6.1",
+    "livereload": "^0.10.3"
   }
 }

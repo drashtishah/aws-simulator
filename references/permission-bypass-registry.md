@@ -19,4 +19,4 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | .claude/plans/eval-system-v2.md | 38 | `dangerously-skip-permissions` | `\| `scripts/audit-permissions.js` \| Create \| Scan for --dangerously-skip-permissions \|` | none detected |
 | .claude/plans/eval-system-v2.md | 1019 | `dangerously-skip-permissions` | `Scans `web/`, `scripts/`, `.claude/` directories for `dangerously-skip-permissions`. Writes Markdown table to `references/permission-bypass-registry.md` with file, line number, and context.` | none detected |
 
-_Last updated: 2026-04-02T18:41:22.431Z_
+_Last updated: 2026-04-03T09:21:27.780Z_

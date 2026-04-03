@@ -27,25 +27,20 @@ tags:
 
 ### Running Tests
 
-- `npm test`: runs `sim-test run` (unit tests + design contract checks)
+- `npm test`: runs `sim-test run` (unit tests)
 - `npm run test:agent`: runs `sim-test agent` (YAML browser specs via Chrome DevTools MCP)
 - `npm run test:personas`: runs `sim-test personas` (persona exploration sessions)
 - All deterministic tests must pass before any change is committed
 
 ### sim-test CLI
 
-- `sim-test run`: all deterministic tests (unit + design contracts)
-- `sim-test run --unit`: unit tests only
-- `sim-test run --design`: design contract checks only
+- `sim-test run`: all deterministic tests (unit)
 - `sim-test agent`: execute YAML browser specs via Chrome DevTools MCP
 - `sim-test agent --spec nav`: run a single spec by name prefix
 - `sim-test agent --dry-run`: parse and validate specs without executing
 - `sim-test personas`: run all persona exploration sessions
 - `sim-test personas --id hostile`: run a single persona by ID
 - `sim-test personas --feedback`: append persona findings to `learning/feedback.md`
-- `sim-test design generate`: capture screenshots and a11y trees from live app
-- `sim-test design extract`: parse Stitch HTML into contract JSON
-- `sim-test design check`: verify contracts against thresholds
 - `sim-test summary`: aggregate all results into `test-results/summary.json`
 - All commands support `--json` for structured output
 
@@ -59,15 +54,10 @@ tags:
 ### Test Architecture
 
 - Unit tests: `web/test/*.test.js` (node:test + assert/strict)
-- Design contracts: `design/contracts/*.json` (structural assertions)
 - Browser specs: `test-specs/browser/*.yaml` (agent-driven via Chrome DevTools MCP)
 - Persona profiles: `test-specs/personas/*.json` (exploratory testing)
 - Results: `test-results/` (gitignored, written by sim-test commands)
 - Architecture reference: `references/testing-system.md`
-
-### After CSS Changes
-
-Run `sim-test agent --spec design` to compare live app against Stitch design references.
 
 ## Adding New Content (Zero Code Changes)
 

@@ -62,7 +62,7 @@ Does the web app correctly consume all shared data files? Are API endpoints test
 
 Are all sims consistent in structure? Do manifests follow the schema? Are stories and resolutions well-written for learning?
 
-**Look at:** `sims/`, `sims/registry.json`, `design/manifest.json`.
+**Look at:** `sims/`, `sims/registry.json`.
 
 ## 11. Hook and guard system
 

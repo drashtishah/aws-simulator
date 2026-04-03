@@ -13,14 +13,12 @@ Interactive AWS incident-response training game played through Claude Code skill
 - sim-test: CLI for deterministic tests, agent browser specs, persona tests
 
 ### Hooks (2)
-- guard-write.js: PreToolUse Write hook. Skill ownership enforcement, protected paths (path-registry.csv, activity.jsonl, scripts/, node_modules/, design/, test-specs/)
+- guard-write.js: PreToolUse Write hook. Skill ownership enforcement, protected paths (path-registry.csv, activity.jsonl, scripts/, node_modules/, test-specs/)
 - log-hook.js: PostToolUse, SessionStart/End, PreCompact, PostCompact, UserPromptSubmit, PostToolUseFailure. Appends JSONL to learning/logs/activity.jsonl
 
-### MCP Servers (4)
+### MCP Servers (2)
 - aws-knowledge-mcp-server (HTTP): AWS API schemas, error codes, agent SOPs
-- stitch (npx): Data transformations
 - chrome-devtools (npx): Browser automation for agent testing
-- shadcn-ui (npx): UI components for web app
 
 ### Plugins
 - superpowers, playground, cli-anything
@@ -32,14 +30,13 @@ Interactive AWS incident-response training game played through Claude Code skill
 - prompt-builder.js constructs game prompts from sim manifests + themes
 
 ### Testing (3 layers)
-- Layer 1: node --test (unit tests for server, hooks, design integrity, code health)
+- Layer 1: node --test (unit tests for server, hooks, code health)
 - Layer 2: Agent browser specs (YAML specs + Chrome DevTools MCP)
 - Layer 3: Agent personas (JSON profiles: impatient-beginner, hostile-user, screen-reader-user, power-user, mobile-first-user)
 
 ### Key Tooling
 - npm run health: Code health metrics (modularity, complexity, size balance, dependency depth)
 - npm test: Path extraction + sim-test CLI
-- npm run design:*: Design contract generation/validation
 - npm run feedback:personas: Run persona-based testing
 
 ### Data Patterns

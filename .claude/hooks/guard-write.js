@@ -13,15 +13,12 @@ const NEVER_WRITABLE = [
   'references/path-registry.csv',
   'learning/logs/activity.jsonl',
   'package-lock.json',
-  'scripts/sim-test.js',
-  'scripts/generate-design-refs.js',
-  'scripts/extract-design-contracts.js'
+  'scripts/sim-test.js'
 ];
 
 // Directories NEVER writable
 const NEVER_WRITABLE_DIRS = [
   'node_modules',
-  'design',
   'test-specs'
 ];
 

@@ -40,7 +40,7 @@ function logEvent(sessionId, event) {
 function checkThresholds(sessionId, event) {
   // Context utilization warning
   if (event.usage && event.usage.input_tokens) {
-    const contextWindow = 200000; // sonnet context window
+    const contextWindow = 1000000; // opus context window
     const pct = event.usage.input_tokens / contextWindow;
     if (pct > CONTEXT_WARN_PCT) {
       logEvent(sessionId, {

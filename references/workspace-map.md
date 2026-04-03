@@ -113,12 +113,10 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> writes GitHub Issues (actionable findings from debate)
             --> /fix picks up issues in its gather phase (step 3b)
 
-sim-test ----> run: executes node --test + design contract checks
+sim-test ----> run: executes node --test (unit tests)
            --> agent: reads test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
            --> personas: reads test-specs/personas/*.json, prints prompts for exploration
            --> personas --feedback: reads test-results/personas/, appends to feedback.md
-           --> design generate: captures screenshots + a11y, updates design/manifest.json
-           --> design extract: parses Stitch HTML into design/contracts/*.json
            --> summary: aggregates test-results/ into test-results/summary.json
 ```
 
@@ -143,8 +141,6 @@ sim-test ----> run: executes node --test + design contract checks
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
-| `design/manifest.json` | `scripts/generate-design-refs.js` | `web/test/design-integrity.test.js` | JSON: SHA256 checksums of design files |
-| `design/thresholds.json` | (manual) | `sim-test design check` | JSON: pass/fail thresholds for design contracts |
 | `test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
 
 ## Play Component: Prompt Overlays
@@ -171,8 +167,7 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 | Unit | `web/test/prompt-builder.test.js` | buildPrompt, all themes, all sims, error messages, marker injection |
 | Unit | `web/test/log-hook.test.js` | buildRecord event enrichment, all 9 event types |
 | Unit | `web/test/guard-write.test.js` | checkAccess for protected files, dirs, safe paths, skill locks |
-| Unit | `web/test/design-integrity.test.js` | SHA256 checksums for design files, manifest validation |
-| Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers design/, test-specs/, CLI scripts |
+| Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers test-specs/, CLI scripts |
 | Unit | `web/test/code-health.test.js` | AST parsing, scoring functions, determinism, composite calculation |
 | Unit | `web/test/audit-permissions.test.js` | Cross-checks for permission bypass patterns |
 | Unit | `web/test/cross-file-consistency.test.js` | Validates data consistency across files |
@@ -184,7 +179,6 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 | Unit | `web/test/progression.test.js` | Rank progression and polygon calculations |
 | Unit | `web/test/setup-consistency.test.js` | Validates /setup command integrity |
 | Unit | `web/test/transcript.test.js` | Session transcript format |
-| Design | `design/contracts/*.json` | Structural contract validation against `design/thresholds.json` |
 
 ### Layer 2: Agent Browser (`sim-test agent`)
 
@@ -197,7 +191,7 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 | settings | `test-specs/browser/settings.yaml` | Dropdowns, theme switching, keyboard navigation |
 | layout | `test-specs/browser/layout.yaml` | CSS layout assertions, responsive breakpoints, alignment |
 | accessibility | `test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
-| design-match | `test-specs/browser/design-match.yaml` | Screenshots vs Stitch design references |
+
 
 ### Layer 3: Agent Persona (`sim-test personas`)
 

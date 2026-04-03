@@ -103,6 +103,7 @@ For each group of actionable findings that will drive changes, follow `.claude/s
 - Sim content, narrative, artifacts, difficulty: target `create-sim` skill (`.claude/skills/create-sim/SKILL.md`) and `.claude/skills/create-sim/references/sim-template.md`
 - Play flow, coaching, hints, console behavior: target `play` skill (`.claude/skills/play/SKILL.md`) and its references (`.claude/skills/play/references/agent-prompts.md`, `.claude/skills/play/references/coaching-patterns.md`)
 - Code structure, modularity, complexity regressions: target the specific files flagged by health scores
+- Web UI layout, visual design, navigation changes: edit `web/public/` files directly. After edits, use chrome-devtools MCP to take a screenshot and present it to the user for approval. The web app has live reload enabled in dev mode (`npm run dev`), so the browser updates automatically.
 - Behavioral expectations, scoring/coaching bugs, edge case failures, log-pattern anomalies (SESSION_AUTOSAVE_FAILED, TOOL_LOOP, CONTEXT_HIGH), persona findings about play-skill behavior: append to `learning/eval-proposals.md` using the proposal format below. Do NOT route here for simple code fixes, sim content quality, web UI issues, or one-off infra errors.
 - Ambiguous items: present to user for classification
 
@@ -141,6 +142,7 @@ g. Log the post-edit scores to `learning/logs/health-scores.jsonl`:
    {"ts":"2026-03-31T...","source":"fix","group":"{group name}","modularity":0,"encapsulation":0,"size_balance":0,"dep_depth":0,"complexity":0,"test_sync":0,"composite":0}
    ```
 h. **Commit this change.** Follow the procedure in `.claude/skills/git/references/commit-procedure.md`. The commit should reference the GitHub Issue for this group (use `Closes #N` if this is the last commit for that issue, `Ref #N` otherwise). Include `intent` and `decision` action lines describing why this specific change was made.
+h-verify. **Verification must be done by a separate subagent.** The agent that wrote code or text for this group must NOT be the same agent that verifies it. Spawn a new subagent to run the verification (health check, tests, visual regression). This applies to all verification steps: health checks (8f), test runs, and visual regression.
 i. Mark this group's task completed.
 j. Repeat for each remaining group.
 
@@ -194,3 +196,4 @@ All changes were already committed per-change in step 8h. Verify with `git log -
 3. Never edit `learning/logs/activity.jsonl` directly. It is append-only by hooks.
 4. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `scripts/metrics.config.json`.
 5. Do not push automatically. Let the user decide.
+6. Verification separation: any step that verifies work (health checks, test runs, visual regression) must be performed by a different subagent than the one that wrote the code or text being verified.

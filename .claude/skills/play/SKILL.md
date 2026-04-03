@@ -13,9 +13,6 @@ hooks:
           command: "node .claude/hooks/guard-write.js --ownership .claude/skills/play/ownership.json"
 ---
 
-## Player State (injected at load)
-!`cat learning/profile.json 2>/dev/null || echo '{"rank_title":"Responder","total_sessions":0}'`
-
 # play Skill
 
 Runs an AWS incident simulation end-to-end. Consumes sim packages from `sims/{id}/` and plays the combined role of narrator (game master) and AWS console emulator using a single consolidated prompt.

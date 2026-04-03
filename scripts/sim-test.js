@@ -11,7 +11,6 @@ const yaml = require('js-yaml');
 const evalRunner = require('./eval-runner');
 
 const ROOT = path.resolve(__dirname, '..');
-const DESIGN_DIR = path.join(ROOT, 'design');
 const SPECS_DIR = path.join(ROOT, 'test-specs', 'browser');
 const PERSONAS_DIR = path.join(ROOT, 'test-specs', 'personas');
 const RESULTS_DIR = path.join(ROOT, 'test-results');
@@ -47,219 +46,54 @@ function timestamp() {
 
 program
   .command('run')
-  .description('Run all deterministic tests (unit + design contracts)')
-  .option('--unit', 'Run unit tests only')
-  .option('--design', 'Run design contract checks only')
+  .description('Run all deterministic tests')
   .option('--json', 'Output structured JSON')
   .action(async (opts) => {
     const results = { command: 'run', ts: timestamp() };
     let exitCode = 0;
 
-    const runUnit = !opts.design || opts.unit;
-    const runDesign = !opts.unit || opts.design;
-
-    // Unit tests
-    if (runUnit) {
-      try {
-        const out = execSync('node --test web/test/*.test.js', {
-          cwd: ROOT,
-          encoding: 'utf8',
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: 120000
-        });
-        const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
-        const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
-        const passed = passMatch ? parseInt(passMatch[1], 10) : 0;
-        const failed = failMatch ? parseInt(failMatch[1], 10) : 0;
+    try {
+      const out = execSync('node --test web/test/*.test.js', {
+        cwd: ROOT,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 120000
+      });
+      const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
+      const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
+      const passed = passMatch ? parseInt(passMatch[1], 10) : 0;
+      const failed = failMatch ? parseInt(failMatch[1], 10) : 0;
+      results.unit = { total: passed + failed, passed, failed };
+      if (failed > 0) exitCode = 1;
+      if (!opts.json) {
+        console.log('  unit: ' + passed + '/' + (passed + failed) + ' passed');
+      }
+    } catch (err) {
+      const out = (err.stdout || '') + (err.stderr || '');
+      const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
+      const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
+      const passed = passMatch ? parseInt(passMatch[1], 10) : 0;
+      const failed = failMatch ? parseInt(failMatch[1], 10) : 0;
+      if (passed > 0 || failed > 0) {
         results.unit = { total: passed + failed, passed, failed };
-        if (failed > 0) exitCode = 1;
         if (!opts.json) {
           console.log('  unit: ' + passed + '/' + (passed + failed) + ' passed');
         }
-      } catch (err) {
-        const out = (err.stdout || '') + (err.stderr || '');
-        const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
-        const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
-        const passed = passMatch ? parseInt(passMatch[1], 10) : 0;
-        const failed = failMatch ? parseInt(failMatch[1], 10) : 0;
-        if (passed > 0 || failed > 0) {
-          results.unit = { total: passed + failed, passed, failed };
-          if (!opts.json) {
-            console.log('  unit: ' + passed + '/' + (passed + failed) + ' passed');
-          }
-        } else {
-          results.unit = { total: 0, passed: 0, failed: 0, error: 'Infrastructure error' };
-          if (!opts.json) {
-            console.log('  unit: INFRASTRUCTURE ERROR');
-            console.error(out.slice(0, 500));
-          }
-          exitCode = 2;
-        }
-        if (failed > 0) exitCode = 1;
-      }
-    }
-
-    // Design contract checks
-    if (runDesign) {
-      try {
-        const contractsDir = path.join(DESIGN_DIR, 'contracts');
-        const thresholdsPath = path.join(DESIGN_DIR, 'thresholds.json');
-
-        if (!fs.existsSync(contractsDir) || !fs.existsSync(thresholdsPath)) {
-          results.design = { total: 0, passed: 0, failed: 0, skipped: true };
-          if (!opts.json) {
-            console.log('  design: skipped (no contracts or thresholds found)');
-          }
-        } else {
-          const contracts = fs.readdirSync(contractsDir).filter(f => f.endsWith('.json'));
-          let designPassed = 0;
-          let designFailed = 0;
-
-          for (const file of contracts) {
-            const contract = JSON.parse(fs.readFileSync(path.join(contractsDir, file), 'utf8'));
-            if (contract.name && contract.elements) {
-              designPassed++;
-            } else {
-              designFailed++;
-            }
-          }
-
-          results.design = { total: contracts.length, passed: designPassed, failed: designFailed };
-          if (designFailed > 0) exitCode = 1;
-          if (!opts.json) {
-            console.log('  design: ' + designPassed + '/' + contracts.length + ' contracts passed');
-          }
-        }
-      } catch (err) {
-        results.design = { total: 0, passed: 0, failed: 0, error: err.message };
-        exitCode = 2;
+      } else {
+        results.unit = { total: 0, passed: 0, failed: 0, error: 'Infrastructure error' };
         if (!opts.json) {
-          console.log('  design: INFRASTRUCTURE ERROR');
+          console.log('  unit: INFRASTRUCTURE ERROR');
+          console.error(out.slice(0, 500));
         }
+        exitCode = 2;
       }
+      if (failed > 0) exitCode = 1;
     }
 
     results.verdict = exitCode === 0 ? 'PASS' : exitCode === 1 ? 'FAIL' : 'ERROR';
     jsonOut(opts.json, results);
     if (!opts.json) {
       console.log('  ' + results.verdict);
-    }
-    process.exit(exitCode);
-  });
-
-// ---------------------------------------------------------------------------
-// sim-test design
-// ---------------------------------------------------------------------------
-
-const designCmd = program
-  .command('design')
-  .description('Design reference management');
-
-designCmd
-  .command('generate')
-  .description('Capture screenshots and a11y trees from live app')
-  .option('--json', 'Output structured JSON')
-  .action(async (opts) => {
-    try {
-      const scriptPath = path.join(ROOT, 'scripts', 'generate-design-refs.js');
-      if (!fs.existsSync(scriptPath)) {
-        if (opts.json) {
-          jsonOut(true, { command: 'design generate', error: 'generate-design-refs.js not found' });
-        } else {
-          console.log('Error: scripts/generate-design-refs.js not found');
-        }
-        process.exit(2);
-      }
-      execSync('node "' + scriptPath + '"', { cwd: ROOT, stdio: 'inherit' });
-      if (opts.json) {
-        jsonOut(true, { command: 'design generate', ts: timestamp(), verdict: 'DONE' });
-      }
-    } catch (err) {
-      if (opts.json) {
-        jsonOut(true, { command: 'design generate', error: err.message });
-      }
-      process.exit(2);
-    }
-  });
-
-designCmd
-  .command('extract')
-  .description('Parse Stitch HTML into contract JSON')
-  .option('--json', 'Output structured JSON')
-  .action(async (opts) => {
-    try {
-      const scriptPath = path.join(ROOT, 'scripts', 'extract-design-contracts.js');
-      if (!fs.existsSync(scriptPath)) {
-        if (opts.json) {
-          jsonOut(true, { command: 'design extract', error: 'extract-design-contracts.js not found' });
-        } else {
-          console.log('Error: scripts/extract-design-contracts.js not found');
-        }
-        process.exit(2);
-      }
-      execSync('node "' + scriptPath + '"', { cwd: ROOT, stdio: 'inherit' });
-      if (opts.json) {
-        jsonOut(true, { command: 'design extract', ts: timestamp(), verdict: 'DONE' });
-      }
-    } catch (err) {
-      if (opts.json) {
-        jsonOut(true, { command: 'design extract', error: err.message });
-      }
-      process.exit(2);
-    }
-  });
-
-designCmd
-  .command('check')
-  .description('Verify contracts against thresholds')
-  .option('--json', 'Output structured JSON')
-  .action(async (opts) => {
-    const results = { command: 'design check', ts: timestamp() };
-    let exitCode = 0;
-
-    try {
-      const contractsDir = path.join(DESIGN_DIR, 'contracts');
-      const thresholdsPath = path.join(DESIGN_DIR, 'thresholds.json');
-
-      if (!fs.existsSync(thresholdsPath)) {
-        results.error = 'design/thresholds.json not found';
-        jsonOut(opts.json, results);
-        if (!opts.json) console.log('Error: design/thresholds.json not found');
-        process.exit(2);
-      }
-
-      const thresholds = JSON.parse(fs.readFileSync(thresholdsPath, 'utf8'));
-      results.thresholds = thresholds;
-
-      if (!fs.existsSync(contractsDir)) {
-        results.contracts = [];
-        results.verdict = 'PASS';
-        jsonOut(opts.json, results);
-        if (!opts.json) console.log('  No contracts found. PASS (vacuously).');
-        process.exit(0);
-      }
-
-      const files = fs.readdirSync(contractsDir).filter(f => f.endsWith('.json'));
-      results.contracts = [];
-
-      for (const file of files) {
-        const contract = JSON.parse(fs.readFileSync(path.join(contractsDir, file), 'utf8'));
-        const valid = !!(contract.name && contract.elements);
-        results.contracts.push({ file, name: contract.name, valid });
-        if (!valid) exitCode = 1;
-        if (!opts.json) {
-          console.log('  ' + file + ': ' + (valid ? 'PASS' : 'FAIL'));
-        }
-      }
-
-      results.verdict = exitCode === 0 ? 'PASS' : 'FAIL';
-      jsonOut(opts.json, results);
-      if (!opts.json) console.log('  ' + results.verdict);
-    } catch (err) {
-      results.error = err.message;
-      jsonOut(opts.json, results);
-      if (!opts.json) console.log('  INFRASTRUCTURE ERROR: ' + err.message);
-      exitCode = 2;
     }
     process.exit(exitCode);
   });
@@ -662,7 +496,6 @@ program
     if (!opts.json) {
       const r = results.layers.run;
       if (r.unit) console.log('  unit: ' + r.unit.passed + '/' + r.unit.total + ' passed');
-      if (r.design) console.log('  design: ' + (r.design.passed || 0) + '/' + (r.design.total || 0));
       console.log('  ' + (r.verdict || 'UNKNOWN'));
     }
 

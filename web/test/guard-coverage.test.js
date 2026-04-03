@@ -9,13 +9,6 @@ const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.js');
 describe('guard-write coverage', () => {
   const guardSource = fs.readFileSync(GUARD_PATH, 'utf8');
 
-  it('NEVER_WRITABLE_DIRS includes design/', () => {
-    assert.ok(
-      guardSource.includes("'design'"),
-      'guard-write.js should protect the design/ directory'
-    );
-  });
-
   it('NEVER_WRITABLE_DIRS includes test-specs/', () => {
     assert.ok(
       guardSource.includes("'test-specs'"),
@@ -27,20 +20,6 @@ describe('guard-write coverage', () => {
     assert.ok(
       guardSource.includes("'scripts/sim-test.js'"),
       'guard-write.js should protect scripts/sim-test.js'
-    );
-  });
-
-  it('NEVER_WRITABLE includes scripts/generate-design-refs.js', () => {
-    assert.ok(
-      guardSource.includes("'scripts/generate-design-refs.js'"),
-      'guard-write.js should protect scripts/generate-design-refs.js'
-    );
-  });
-
-  it('NEVER_WRITABLE includes scripts/extract-design-contracts.js', () => {
-    assert.ok(
-      guardSource.includes("'scripts/extract-design-contracts.js'"),
-      'guard-write.js should protect scripts/extract-design-contracts.js'
     );
   });
 

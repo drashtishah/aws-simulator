@@ -1,12 +1,24 @@
-const { describe, it, afterEach } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+
+const paths = require('../lib/paths');
+
+// Save original paths
+const origLogFile = paths.LOG_FILE;
+const origLogsDir = paths.LOGS_DIR;
+
+// Redirect to temp directory so tests don't pollute production logs
+const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logger-test-'));
+const tmpLogFile = path.join(tmpDir, 'activity.jsonl');
+paths.LOGS_DIR = tmpDir;
+paths.LOG_FILE = tmpLogFile;
 
 const { logEvent, generateFixManifest } = require('../lib/logger');
 
-const LOGS_DIR = path.resolve(__dirname, '..', '..', 'learning', 'logs');
-const LOG_FILE = path.join(LOGS_DIR, 'activity.jsonl');
+const LOG_FILE = tmpLogFile;
 
 function lastLogLine() {
   const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
@@ -78,7 +90,7 @@ describe('checkThresholds', () => {
     logEvent('test-threshold-ctx', {
       level: 'info',
       event: 'turn',
-      usage: { input_tokens: 170000 }
+      usage: { input_tokens: 850000 }
     });
     const lines = lastNLogLines(2);
     const warning = lines.find(l => l.event === 'CONTEXT_HIGH');
@@ -88,13 +100,11 @@ describe('checkThresholds', () => {
   });
 
   it('does not log CONTEXT_HIGH when input_tokens < 80%', () => {
-    const sizeBefore = fs.statSync(LOG_FILE).size;
     logEvent('test-threshold-ctx-ok', {
       level: 'info',
       event: 'turn',
-      usage: { input_tokens: 100000 }
+      usage: { input_tokens: 500000 }
     });
-    // Should only have written one line (the original event), not two
     const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
     const lines = content.split('\n');
     const warnings = lines.filter(l => {

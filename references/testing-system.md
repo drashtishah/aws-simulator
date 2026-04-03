@@ -13,10 +13,7 @@ Reference for the four-layer testing system. Agents interact only through the `s
 ```
   Agent Side                    |  System Side (protected)
                                 |
-  sim-test run ----------------->  unit tests, design contracts
-  sim-test design generate ----->  scripts/generate-design-refs.js
-  sim-test design extract ------>  scripts/extract-design-contracts.js
-  sim-test design check -------->  design/contracts/*.json
+  sim-test run ----------------->  unit tests
   sim-test agent --------------->  test-specs/browser/*.yaml
   sim-test personas ------------>  test-specs/personas/*.json
   sim-test evals --------------->  references/eval-scoring.yaml
@@ -35,18 +32,8 @@ All commands support `--json` for structured output.
 ### Test execution
 
 ```
-sim-test run                  # run unit + design tests
-sim-test run --unit           # unit tests only
-sim-test run --design         # design contract checks only
+sim-test run                  # run unit tests
 sim-test run --json           # structured JSON output
-```
-
-### Design management
-
-```
-sim-test design generate      # generate design references from Stitch
-sim-test design extract       # extract structural contracts from references
-sim-test design check         # validate live app against contracts
 ```
 
 ### Agent browser tests (Layer 2)
@@ -97,14 +84,6 @@ sim-test summary              # aggregate results into test-results/summary.json
 ## Directory Layout
 
 ```
-design/                    Protected: CLI writes here via scripts
-  manifest.json            SHA256 checksums (tamper detection)
-  thresholds.json          Pass/fail score thresholds
-  stitch-screens/          Stitch design references (PNG + HTML)
-  contracts/               Structural contracts (JSON)
-  screenshots/             Live app captures
-  a11y/                    Accessibility trees
-
 test-specs/                Protected: declarative test definitions
   browser/                 Layer 2: YAML browser test specs (8 files)
   personas/                Layer 3: persona profiles (5 files)
@@ -154,17 +133,9 @@ steps:
 
 Required fields: `id`, `name`, `role`, `description`, `behaviors` (array), `focus_areas` (array), `evaluation_questions` (array), `session_minutes` (number).
 
-### Design Contract (JSON)
-
-Required sections: `name`, `elements` (array of `{selector, required, tag, min_count, non_empty}`), `aria` (array of `{selector, role, aria attributes}`).
-
-### Thresholds (JSON)
-
-Sections: `lighthouse` (`performance`, `accessibility`, `best_practices`, `seo`), `similarity` (`structural`, `visual`), `a11y` (`violations_max`, `contrast_ratio_min`).
-
 ## Four Testing Layers
 
-1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests and design contract checks. No browser needed.
+1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests. No browser needed.
 2. **Layer 2 (Agent Browser):** `sim-test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
 3. **Layer 3 (Persona):** `sim-test personas` loads profiles and prints prompts. The agent explores freely via Chrome DevTools MCP.
 4. **Layer 4 (Evals):** `sim-test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
@@ -212,9 +183,6 @@ rubric:
 ### What agents can do
 
 - Run deterministic tests: `sim-test run`
-- Generate design references: `sim-test design generate`
-- Extract contracts: `sim-test design extract`
-- Check contracts: `sim-test design check`
 - Execute browser specs: `sim-test agent` (uses Chrome DevTools MCP)
 - Run persona tests: `sim-test personas` (uses Chrome DevTools MCP)
 - Read test results: read files in `test-results/`
@@ -222,9 +190,7 @@ rubric:
 
 ### What agents cannot do
 
-- Edit design reference files: `NEVER_WRITABLE_DIRS` includes `design/`
 - Edit unit test files during skill execution: skill-active check blocks `web/test/`
-- Edit generation scripts: `NEVER_WRITABLE` includes `scripts/generate-design-refs.js`, `scripts/extract-design-contracts.js`
 
 ## Findings to Feedback Pipeline
 
@@ -235,5 +201,3 @@ rubric:
 ## MCP Servers
 
 - **Chrome DevTools MCP:** browser interaction for agent and persona tests.
-- **Stitch MCP:** design source of truth, pull references.
-- **shadcn-ui MCP:** component registry browsing (CLI is default for installs).

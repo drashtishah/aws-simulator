@@ -58,11 +58,6 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
-    it('blocks design/ directory (protected)', () => {
-      const r = checkAccess(path.join(ROOT, 'design/manifest.json'), null, ROOT);
-      assert.equal(r.allowed, false);
-    });
-
     it('blocks test-specs/ directory (protected)', () => {
       const r = checkAccess(path.join(ROOT, 'test-specs/browser/navigation.yaml'), null, ROOT);
       assert.equal(r.allowed, false);
@@ -70,16 +65,6 @@ describe('checkAccess', () => {
 
     it('blocks scripts/sim-test.js (never writable)', () => {
       const r = checkAccess(path.join(ROOT, 'scripts/sim-test.js'), null, ROOT);
-      assert.equal(r.allowed, false);
-    });
-
-    it('blocks scripts/generate-design-refs.js (never writable)', () => {
-      const r = checkAccess(path.join(ROOT, 'scripts/generate-design-refs.js'), null, ROOT);
-      assert.equal(r.allowed, false);
-    });
-
-    it('blocks scripts/extract-design-contracts.js (never writable)', () => {
-      const r = checkAccess(path.join(ROOT, 'scripts/extract-design-contracts.js'), null, ROOT);
       assert.equal(r.allowed, false);
     });
 
@@ -201,12 +186,6 @@ describe('checkAccess', () => {
   });
 
   describe('directory error messages', () => {
-    it('shows design/ in error for design directory', () => {
-      const r = checkAccess(path.join(ROOT, 'design/contracts/foo.json'), null, ROOT);
-      assert.equal(r.allowed, false);
-      assert.ok(r.reason.includes('design/'));
-    });
-
     it('shows test-specs/ in error for test-specs directory', () => {
       const r = checkAccess(path.join(ROOT, 'test-specs/browser/nav.yaml'), null, ROOT);
       assert.equal(r.allowed, false);
