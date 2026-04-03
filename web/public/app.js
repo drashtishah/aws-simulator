@@ -128,7 +128,7 @@
     renderNextRank(progress);
 
     // Rank history
-    renderRankHistory(progress.rankHistory || []);
+    renderRankProgression(progress.rankHistory || []);
 
     // Services encountered
     const servicesList = document.getElementById('services-list');
@@ -284,6 +284,15 @@
 
   }
 
+  // Rank metadata
+  var rankMeta = {
+    'responder': { description: 'You respond to alerts and follow runbooks.', icon: 'dot' },
+    'investigator': { description: 'You dig into logs and identify patterns.', icon: 'triangle' },
+    'analyst': { description: 'You connect signals across services to find root causes.', icon: 'diamond' },
+    'incident-commander': { description: 'You can lead any incident from detection to resolution.', icon: 'shield' },
+    'chaos-architect': { description: 'You anticipate failures before they happen.', icon: 'star' }
+  };
+
   function renderNextRank(progress) {
     const container = document.getElementById('next-rank-info');
     if (!container) return;
@@ -294,9 +303,10 @@
       return;
     }
 
+    const meta = rankMeta[nextRank.id] || {};
     const rawPolygon = progress.rawPolygon || {};
     const gate = nextRank.gate || {};
-    let requirements = [];
+    let gaps = [];
 
     if (gate.all_axes_min !== undefined) {
       const axes = progress.axisNames || [];
@@ -305,7 +315,7 @@
         const needed = gate.all_axes_min;
         if (current < needed) {
           const label = (progress.axisLabels && progress.axisLabels[axis]) || axis;
-          requirements.push(label + ': ' + current + '/' + needed);
+          gaps.push({ label: label, current: current, needed: needed });
         }
       }
     }
@@ -314,45 +324,53 @@
         const current = rawPolygon[axis] || 0;
         if (current < needed) {
           const label = (progress.axisLabels && progress.axisLabels[axis]) || axis;
-          requirements.push(label + ': ' + current + '/' + needed);
+          gaps.push({ label: label, current: current, needed: needed });
         }
       }
     }
-    if (gate.count_axes_above) {
-      const axes = progress.axisNames || [];
-      const above = axes.filter(a => (rawPolygon[a] || 0) >= gate.count_axes_above.min).length;
-      if (above < gate.count_axes_above.count) {
-        requirements.push(gate.count_axes_above.count + ' axes at ' + gate.count_axes_above.min + '+ (currently ' + above + ')');
-      }
+
+    let html = '<div class="next-rank-title">' + escapeHtml(nextRank.title) + '</div>';
+    if (meta.description) {
+      html += '<div class="next-rank-description">' + escapeHtml(meta.description) + '</div>';
     }
 
-    if (requirements.length === 0) {
-      container.innerHTML = '<div class="next-rank-title">' + escapeHtml(nextRank.title) + '</div>' +
-        '<span class="text-muted">All requirements met. Complete a sim to advance.</span>';
-      return;
+    if (gaps.length === 0) {
+      html += '<span class="text-muted">All requirements met. Complete a sim to advance.</span>';
+    } else {
+      html += '<div class="next-rank-gaps">' +
+        gaps.map(g => {
+          const pct = Math.round((g.current / g.needed) * 100);
+          return '<div class="next-rank-gap">' +
+            '<span class="next-rank-gap-label">' + escapeHtml(g.label) + '</span>' +
+            '<div class="next-rank-gap-bar"><div class="next-rank-gap-fill" style="width:' + pct + '%"></div></div>' +
+            '<span class="next-rank-gap-value">' + g.current + '/' + g.needed + '</span>' +
+            '</div>';
+        }).join('') +
+        '</div>';
     }
 
-    container.innerHTML = '<div class="next-rank-title">' + escapeHtml(nextRank.title) + '</div>' +
-      '<div class="next-rank-requirements">' +
-      requirements.map(r => '<div class="next-rank-req">' + escapeHtml(r) + '</div>').join('') +
-      '</div>';
+    container.innerHTML = html;
   }
 
-  function renderRankHistory(history) {
-    const container = document.getElementById('rank-history-list');
+  function renderRankProgression(history) {
+    const container = document.getElementById('rank-progression');
     if (!container) return;
 
     if (!history.length) {
-      container.innerHTML = '<span class="text-muted">No rank changes yet.</span>';
+      container.innerHTML = '<span class="text-muted">Complete a simulation to begin your progression.</span>';
       return;
     }
 
-    container.innerHTML = history.map(entry =>
-      '<div class="rank-history-entry">' +
-      '<span class="rank-history-title">' + escapeHtml(formatRankId(entry.rank)) + '</span>' +
-      '<span class="rank-history-date">' + escapeHtml(entry.achieved) + '</span>' +
-      '</div>'
-    ).join('');
+    container.innerHTML = history.map(entry => {
+      const id = entry.rank;
+      const meta = rankMeta[id] || {};
+      const icon = meta.icon || 'dot';
+      return '<div class="rank-step">' +
+        '<div class="rank-icon"><div class="rank-icon-' + icon + '"></div></div>' +
+        '<div class="rank-step-title">' + escapeHtml(formatRankId(id)) + '</div>' +
+        '<div class="rank-step-date">' + escapeHtml(entry.achieved) + '</div>' +
+        '</div>';
+    }).join('');
   }
 
   function formatRankId(id) {
