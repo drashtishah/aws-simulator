@@ -369,6 +369,7 @@ a:hover {
 .sim-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  z-index: 10;
 }
 
 .sim-card:focus-visible {
@@ -433,7 +434,7 @@ a:hover {
 .sim-card[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-elevated);
@@ -442,9 +443,10 @@ a:hover {
   border-radius: 8px;
   font-size: var(--text-sm);
   max-width: 280px;
+  width: max-content;
   white-space: normal;
   box-shadow: var(--shadow-md);
-  z-index: 10;
+  z-index: 20;
   pointer-events: none;
 }
 
