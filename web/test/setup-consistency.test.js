@@ -7,31 +7,31 @@ const { loadConfig, axisNames, currentRank } = require('../lib/progression');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CONFIG_PATH = path.join(ROOT, 'references', 'progression.yaml');
+const DEFAULT_PROFILE_PATH = path.join(ROOT, 'references', 'default-profile.json');
 const SETUP_SKILL_PATH = path.join(ROOT, '.claude', 'skills', 'setup', 'SKILL.md');
 const PLAY_SKILL_PATH = path.join(ROOT, '.claude', 'skills', 'play', 'SKILL.md');
 
-// Extract the JSON block from the setup skill's Step 2
-function extractSetupProfileTemplate() {
-  const content = fs.readFileSync(SETUP_SKILL_PATH, 'utf8');
-  const match = content.match(/### 2\. Create profile[\s\S]*?```json\n([\s\S]*?)```/);
-  assert.ok(match, 'setup SKILL.md must contain a JSON profile template in Step 2');
-  // Replace the {today} placeholder so it parses as valid JSON
-  const jsonStr = match[1].replace(/"\{today\}"/g, '"2026-01-01"');
+// Load the shared default profile template
+function loadDefaultProfile() {
+  const content = fs.readFileSync(DEFAULT_PROFILE_PATH, 'utf8');
+  const jsonStr = content.replace(/"\{today\}"/g, '"2026-01-01"');
   return JSON.parse(jsonStr);
 }
 
-// Extract the JSON block from the play skill's Step 1
-function extractPlayProfileTemplate() {
-  const content = fs.readFileSync(PLAY_SKILL_PATH, 'utf8');
-  const match = content.match(/### 1\. Load Learner Profile[\s\S]*?```json\n([\s\S]*?)```/);
-  assert.ok(match, 'play SKILL.md must contain a JSON profile template in Step 1');
-  const jsonStr = match[1].replace(/"\{today\}"/g, '"2026-01-01"');
-  return JSON.parse(jsonStr);
+// Verify the skill references the shared profile
+function verifySkillReferencesProfile(skillPath, label) {
+  const content = fs.readFileSync(skillPath, 'utf8');
+  assert.ok(content.includes('references/default-profile.json'),
+    label + ' SKILL.md must reference references/default-profile.json');
 }
 
 describe('setup skill profile template consistency', () => {
   const config = loadConfig(CONFIG_PATH);
-  const setupProfile = extractSetupProfileTemplate();
+  const setupProfile = loadDefaultProfile();
+
+  it('setup SKILL.md references shared default-profile.json', () => {
+    verifySkillReferencesProfile(SETUP_SKILL_PATH, 'setup');
+  });
 
   it('skill_polygon axes match progression.yaml axes', () => {
     const configAxes = axisNames(config).sort();
@@ -105,35 +105,9 @@ describe('setup skill profile template consistency', () => {
 });
 
 describe('setup and play skill profile templates match', () => {
-  const setupProfile = extractSetupProfileTemplate();
-  const playProfile = extractPlayProfileTemplate();
-
-  it('both templates have the same top-level keys', () => {
-    const setupKeys = Object.keys(setupProfile).sort();
-    const playKeys = Object.keys(playProfile).sort();
-    assert.deepEqual(setupKeys, playKeys,
-      'setup and play profile templates must have identical top-level keys');
-  });
-
-  it('both templates have the same skill_polygon axes', () => {
-    const setupAxes = Object.keys(setupProfile.skill_polygon).sort();
-    const playAxes = Object.keys(playProfile.skill_polygon).sort();
-    assert.deepEqual(setupAxes, playAxes,
-      'setup and play skill_polygon axes must match');
-  });
-
-  it('both templates have the same question_patterns structure', () => {
-    const setupQP = Object.keys(setupProfile.question_patterns).sort();
-    const playQP = Object.keys(playProfile.question_patterns).sort();
-    assert.deepEqual(setupQP, playQP,
-      'setup and play question_patterns keys must match');
-  });
-
-  it('both templates have the same first_action_frequency keys', () => {
-    const setupFAF = Object.keys(setupProfile.question_patterns.first_action_frequency).sort();
-    const playFAF = Object.keys(playProfile.question_patterns.first_action_frequency).sort();
-    assert.deepEqual(setupFAF, playFAF,
-      'setup and play first_action_frequency keys must match');
+  it('both skills reference the same shared default-profile.json', () => {
+    verifySkillReferencesProfile(SETUP_SKILL_PATH, 'setup');
+    verifySkillReferencesProfile(PLAY_SKILL_PATH, 'play');
   });
 });
 
