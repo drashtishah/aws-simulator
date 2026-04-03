@@ -159,8 +159,8 @@
         '<span class="question-type-tag">' + escapeHtml(t) + '</span>'
       ).join('');
 
-      return '<div class="sim-card sim-completed fade-in">' +
-        '<span class="sim-completed-badge">Completed</span>' +
+      const tooltip = sim.summary ? ' data-tooltip="' + escapeAttr(sim.summary) + '"' : '';
+      return '<div class="sim-card fade-in"' + tooltip + '>' +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
         '<div class="sim-card-meta">' +
         '<div class="difficulty-dots">' + dots + '</div>' +
@@ -415,13 +415,10 @@
         '<span class="service-tag">' + escapeHtml(s) + '</span>'
       ).join('');
 
-      const done = completedSims.includes(sim.id);
       const inProgress = inProgressIds.includes(sim.id);
-      const statusClass = done ? 'sim-completed' : inProgress ? 'sim-in-progress' : 'sim-new';
 
       const tooltip = sim.summary ? ' data-tooltip="' + escapeAttr(sim.summary) + '"' : '';
-      return '<div class="sim-card fade-in ' + statusClass + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '"' + tooltip + '>' +
-        (done ? '<span class="sim-completed-badge">Completed</span>' : '') +
+      return '<div class="sim-card fade-in" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '"' + tooltip + '>' +
         (inProgress ? '<span class="sim-completed-badge">Resume</span>' : '') +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
         '<div class="sim-card-meta">' +
@@ -892,7 +889,10 @@
     document.getElementById('stat-completed-card').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCompletedDrilldown(); }
     });
-    document.getElementById('btn-drilldown-back').addEventListener('click', hideCompletedDrilldown);
+    document.getElementById('stat-rank-card').addEventListener('click', hideCompletedDrilldown);
+    document.getElementById('stat-rank-card').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hideCompletedDrilldown(); }
+    });
 
     // Setup helpers
     setupScrollDetection();

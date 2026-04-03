@@ -33,7 +33,7 @@
     <!-- Dashboard View -->
     <div id="view-dashboard" class="view active">
       <div class="dashboard-stats" id="dashboard-stats">
-        <div class="stat-card">
+        <div class="stat-card stat-card-clickable" id="stat-rank-card" role="button" tabindex="0">
           <div class="stat-value stat-value-title" id="stat-rank-title">Pager Duty Intern</div>
           <div class="stat-label">Rank</div>
         </div>
@@ -44,14 +44,6 @@
       </div>
 
       <div class="dashboard-drilldown" id="completed-drilldown" style="display: none;">
-        <div class="drilldown-header">
-          <button class="chat-back" id="btn-drilldown-back" aria-label="Back to dashboard">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-          </button>
-          <h2>Completed Simulations</h2>
-        </div>
         <div class="sim-grid" id="completed-grid"></div>
       </div>
 
@@ -60,7 +52,7 @@
         <h2>Investigation Profile</h2>
         <p class="hexagon-intro">Your question diversity across six investigation dimensions. Hover each axis for details.</p>
         <div class="hexagon-container" id="hexagon-container">
-          <svg id="hexagon-svg" viewBox="-40 -10 380 320" width="340" height="340"></svg>
+          <svg id="hexagon-svg" viewBox="-40 -10 380 320" width="420" height="420"></svg>
         </div>
       </div>
 

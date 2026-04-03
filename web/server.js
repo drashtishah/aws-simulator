@@ -214,6 +214,7 @@ app.get('/api/progress', (req, res) => {
       difficulty: sim.difficulty,
       category: sim.category,
       services: sim.services,
+      summary: sim.summary,
       questionTypes
     };
   });

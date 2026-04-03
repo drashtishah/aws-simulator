@@ -256,7 +256,7 @@ a:hover {
 }
 
 .hexagon-label {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   fill: var(--text-secondary);
   font-family: inherit;
 }
@@ -297,18 +297,6 @@ a:hover {
   margin-bottom: 24px;
 }
 
-.drilldown-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.drilldown-header h2 {
-  font-size: var(--text-md);
-  margin: 0;
-}
-
 .question-type-tags {
   display: flex;
   gap: 6px;
@@ -340,19 +328,9 @@ a:hover {
   border-radius: 12px;
   padding: 20px;
   box-shadow: var(--shadow-sm);
-  border-left: 3px solid var(--border-subtle);
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
-}
-
-.sim-card.sim-completed {
-  filter: saturate(0.4);
-  border-left-color: var(--accent-green);
-}
-
-.sim-card.sim-in-progress {
-  border-left-color: var(--accent-primary);
 }
 
 .sim-completed-badge {
