@@ -19,3 +19,6 @@ test-results/
 # Local docs and plans
 docs/
 .claude/plans/
+
+# Git worktrees
+.worktrees/
