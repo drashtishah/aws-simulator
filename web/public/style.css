@@ -233,6 +233,23 @@ a:hover {
   padding: 16px 0;
 }
 
+.hexagon-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+  padding: 0 8px;
+}
+
+.hexagon-legend-item {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.hexagon-legend-item strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .hexagon-grid-ring {
   fill: none;
   stroke: var(--border-subtle);

@@ -240,17 +240,17 @@
       svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot' + fadingClass + '" />';
     }
 
-    // Axis tooltip descriptions
-    const axisTooltips = {
-      gather: 'Questions about collecting logs, metrics, and initial evidence',
-      diagnose: 'Questions about identifying the root cause from symptoms',
-      correlate: 'Questions about connecting related signals across services',
-      impact: 'Questions about assessing blast radius and business impact',
-      trace: 'Questions about following the request/data path through the system',
-      fix: 'Questions about proposing and validating the remediation'
+    // Axis descriptions
+    const axisDescriptions = {
+      gather: 'Collecting logs, metrics, and evidence',
+      diagnose: 'Identifying root cause from symptoms',
+      correlate: 'Connecting signals across services',
+      impact: 'Assessing blast radius and business cost',
+      trace: 'Following the request path through the system',
+      fix: 'Proposing and validating the remediation'
     };
 
-    // Labels, with fading indicator and tooltips
+    // Labels, with fading indicator
     for (let i = 0; i < n; i++) {
       const axis = axes[i];
       const label = (axisLabels && axisLabels[axis]) || axis;
@@ -258,11 +258,20 @@
       const anchor = p.x < cx - 5 ? 'end' : p.x > cx + 5 ? 'start' : 'middle';
       const dy = p.y < cy ? '-4' : p.y > cy ? '12' : '4';
       const fadingClass = fadingAxes.has(axis) ? ' hexagon-label-fading' : '';
-      const tooltip = axisTooltips[axis] || '';
-      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label' + fadingClass + '"><title>' + escapeHtml(tooltip) + '</title>' + escapeHtml(label) + '</text>';
+      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label' + fadingClass + '">' + escapeHtml(label) + '</text>';
     }
 
     svg.innerHTML = svgContent;
+
+    // Render legend below hexagon
+    const legend = document.getElementById('hexagon-legend');
+    if (legend) {
+      legend.innerHTML = axes.map(axis => {
+        const label = (axisLabels && axisLabels[axis]) || axis;
+        const desc = axisDescriptions[axis] || '';
+        return '<div class="hexagon-legend-item"><strong>' + escapeHtml(label) + '</strong>: ' + escapeHtml(desc) + '</div>';
+      }).join('');
+    }
   }
 
   function renderNextRank(progress) {
