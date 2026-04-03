@@ -2,15 +2,6 @@
 name: fix
 description: Apply accumulated feedback to improve the simulation skills. Analyzes three sources: player feedback notes, activity log patterns, and code health scores. Runs health checks after each change to track improvement. Use when user says "fix", "apply feedback", or "improve skills".
 effort: medium
-paths:
-  - learning/**
-  - .claude/skills/**
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write"
-      hooks:
-        - type: command
-          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/fix/ownership.json"
 ---
 
 # fix Skill
@@ -155,6 +146,12 @@ j. Repeat for each remaining group.
 After all changes applied:
 - Clear processed entries from `learning/feedback.md` (keep lines 1-9: frontmatter header intact)
 - Update `last_fix_analyzed` in `scripts/metrics.config.json` to current ISO timestamp
+- Rotate `learning/logs/activity.jsonl`:
+  1. Read all lines from `activity.jsonl`
+  2. Filter out entries where `session_id === "test-threshold"` (synthetic test data)
+  3. Write filtered entries to `learning/logs/activity-archive-{YYYY-MM-DD}.jsonl`
+  4. Truncate `activity.jsonl` to empty
+  Note: archive files are gitignored and persist for manual review
 
 ### 10. Final health comparison
 

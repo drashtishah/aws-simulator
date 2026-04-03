@@ -70,11 +70,12 @@ file,path,line_number
 .claude/skills/fix/SKILL.md,.claude/skills/git/references/commit-procedure.md,135
 .claude/skills/fix/SKILL.md,learning/feedback.md,147
 .claude/skills/fix/SKILL.md,scripts/metrics.config.json,148
-.claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,152
-.claude/skills/fix/SKILL.md,learning/logs/activity.jsonl,187
-.claude/skills/fix/SKILL.md,learning/feedback.md,188
-.claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,188
-.claude/skills/fix/SKILL.md,scripts/metrics.config.json,188
+.claude/skills/fix/SKILL.md,learning/logs/activity.jsonl,149
+.claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,158
+.claude/skills/fix/SKILL.md,learning/logs/activity.jsonl,193
+.claude/skills/fix/SKILL.md,learning/feedback.md,194
+.claude/skills/fix/SKILL.md,learning/logs/health-scores.jsonl,194
+.claude/skills/fix/SKILL.md,scripts/metrics.config.json,194
 .claude/skills/fix/ownership.json,learning/eval-proposals.md,2
 .claude/skills/fix/ownership.json,learning/feedback.md,2
 .claude/skills/fix/ownership.json,scripts/metrics.config.json,2
