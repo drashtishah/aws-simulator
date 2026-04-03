@@ -62,33 +62,9 @@ The `aws-knowledge-mcp-server` MCP tools are for sim creation, not gameplay. Do 
 
 ### 1. Load Learner Profile
 
-Read `learning/profile.json`. If the file is missing or empty, create it with this default:
+Read `learning/profile.json`. If the file is missing or empty, create it.
 
-```json
-{
-  "rank_title": "Responder",
-  "skill_polygon": {
-    "gather": 0, "diagnose": 0, "correlate": 0,
-    "impact": 0, "trace": 0, "fix": 0
-  },
-  "polygon_last_advanced": {},
-  "completed_sims": [],
-  "service_exposure": {},
-  "question_patterns": {
-    "first_action_frequency": {
-      "logs": 0, "permissions": 0, "architecture": 0,
-      "metrics": 0, "recent_changes": 0, "immediate_fix": 0
-    },
-    "avg_questions_before_fix": 0,
-    "audit_trail_check_rate": 0.0,
-    "multi_service_investigation_rate": 0.0
-  },
-  "challenge_runs": [],
-  "rank_history": [{ "rank": "responder", "achieved": "{today}" }],
-  "total_sessions": 0,
-  "last_session": null
-}
-```
+Read `references/default-profile.json` for the default structure. Replace `{today}` with the current date in YYYY-MM-DD format.
 
 Load the progression config from `references/progression.yaml`. Apply decay: for each axis in `skill_polygon`, check if `polygon_last_advanced[axis]` is older than `decay.decay_after_days` and the axis value is at or above `decay.min_value_to_decay`. If so, subtract `decay.decay_amount` (floor at `decay.floor`). If any axes decayed, recompute rank and inform the player: "Your {axis label} skill has faded. Sims targeting it will appear first." Update `learning/profile.json` with decayed polygon values.
 

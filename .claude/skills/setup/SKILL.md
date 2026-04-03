@@ -26,35 +26,9 @@ If `learning/` does not exist, create it. If `learning/sessions/` does not exist
 
 ### 2. Create profile
 
-If `learning/profile.json` does not exist, create it:
+If `learning/profile.json` does not exist, create it.
 
-```json
-{
-  "rank_title": "Responder",
-  "skill_polygon": {
-    "gather": 0, "diagnose": 0, "correlate": 0,
-    "impact": 0, "trace": 0, "fix": 0
-  },
-  "polygon_last_advanced": {},
-  "completed_sims": [],
-  "service_exposure": {},
-  "question_patterns": {
-    "first_action_frequency": {
-      "logs": 0, "permissions": 0, "architecture": 0,
-      "metrics": 0, "recent_changes": 0, "immediate_fix": 0
-    },
-    "avg_questions_before_fix": 0,
-    "audit_trail_check_rate": 0,
-    "multi_service_investigation_rate": 0
-  },
-  "challenge_runs": [],
-  "rank_history": [{ "rank": "responder", "achieved": "{today}" }],
-  "total_sessions": 0,
-  "last_session": null
-}
-```
-
-Replace `{today}` with the current date in YYYY-MM-DD format.
+Read `references/default-profile.json` for the default structure. Replace `{today}` with the current date in YYYY-MM-DD format.
 
 If it already exists, leave it. Do not overwrite.
 
