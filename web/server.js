@@ -336,8 +336,8 @@ app.post('/api/game/resume', async (req, res) => {
 // --- Server startup ---
 
 function startServer(port) {
-  const server = app.listen(port, () => {
-    console.log(`AWS Incident Simulator running at http://localhost:${port}`);
+  const server = app.listen(port, '127.0.0.1', () => {
+    console.log(`AWS Incident Simulator running at http://127.0.0.1:${port}`);
   });
 
   server.on('error', (err) => {
