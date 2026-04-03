@@ -16,6 +16,7 @@
     "audit:permissions": "node scripts/audit-permissions.js"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.91",
     "express": "^4.21.0",
     "js-yaml": "^4.1.1"
   },

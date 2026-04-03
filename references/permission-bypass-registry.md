@@ -8,15 +8,20 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 
 | File | Line | Pattern | Context | Guardrails |
 | --- | --- | --- | --- | --- |
-| web/lib/claude-process.js | 202 | `dangerously-skip-permissions` | `'--dangerously-skip-permissions',` | allowedTools present; model specified |
-| web/lib/claude-process.js | 300 | `dangerously-skip-permissions` | `'--dangerously-skip-permissions',` | allowedTools present; model specified |
-| web/lib/claude-process.js | 323 | `dangerously-skip-permissions` | `'--dangerously-skip-permissions',` | allowedTools present; model specified |
+| web/lib/claude-process.js | 198 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 199 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true` | none detected |
+| web/lib/claude-process.js | 283 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 284 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true` | allowedTools present |
+| web/lib/claude-process.js | 316 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 317 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true` | none detected |
 | scripts/audit-permissions.js | 2 | `dangerously-skip-permissions` | `// audit-permissions.js: Scan for --dangerously-skip-permissions usage and generate registry.` | none detected |
 | scripts/audit-permissions.js | 15 | `dangerously-skip-permissions` | `'dangerously-skip-permissions',` | none detected |
 | scripts/audit-permissions.js | 16 | `dangerouslySkipPermissions` | `'dangerouslySkipPermissions',` | none detected |
-| scripts/audit-permissions.js | 17 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox'` | none detected |
-| scripts/audit-permissions.js | 118 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
+| scripts/audit-permissions.js | 17 | `DangerouslySkipPermissions` | `'DangerouslySkipPermissions',` | none detected |
+| scripts/audit-permissions.js | 18 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox',` | none detected |
+| scripts/audit-permissions.js | 19 | `bypassPermissions` | `'bypassPermissions'` | none detected |
+| scripts/audit-permissions.js | 120 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
 | .claude/plans/eval-system-v2.md | 38 | `dangerously-skip-permissions` | `\| `scripts/audit-permissions.js` \| Create \| Scan for --dangerously-skip-permissions \|` | none detected |
 | .claude/plans/eval-system-v2.md | 1019 | `dangerously-skip-permissions` | `Scans `web/`, `scripts/`, `.claude/` directories for `dangerously-skip-permissions`. Writes Markdown table to `references/permission-bypass-registry.md` with file, line number, and context.` | none detected |
 
-_Last updated: 2026-04-03T09:21:27.780Z_
+_Last updated: 2026-04-03T10:49:22.532Z_

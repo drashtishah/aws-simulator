@@ -14,7 +14,9 @@ const SKIP_DIRS = new Set(['node_modules', '.git']);
 const PATTERNS = [
   'dangerously-skip-permissions',
   'dangerouslySkipPermissions',
-  'dangerouslyDisableSandbox'
+  'DangerouslySkipPermissions',
+  'dangerouslyDisableSandbox',
+  'bypassPermissions'
 ];
 
 function matchesPattern(line) {

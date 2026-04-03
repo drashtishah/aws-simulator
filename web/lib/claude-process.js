@@ -1,4 +1,4 @@
-const { spawn } = require('child_process');
+const { query } = require('@anthropic-ai/claude-agent-sdk');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -9,7 +9,6 @@ let logger;
 try {
   logger = require('./logger');
 } catch {
-  // logger not yet created, use console fallback
   logger = {
     logEvent: () => {},
     generateFixManifest: () => {}
@@ -19,54 +18,61 @@ try {
 // In-memory session store (single-session enforcement)
 const sessions = new Map();
 
-function cleanEnv() {
-  const env = { ...process.env };
-  for (const key of ['CLAUDECODE', 'CLAUDE_CODE_ENTRYPOINT',
-    'CLAUDE_CODE_SESSION', 'CLAUDE_CODE_PARENT_SESSION']) {
-    delete env[key];
-  }
-  return env;
-}
+// --- Model mapping ---
 
-function parseStreamJson(stdout) {
-  const lines = stdout.split('\n').filter(l => l.trim());
+const MODEL_MAP = {
+  sonnet: 'claude-sonnet-4-6',
+  opus: 'claude-opus-4-6',
+  haiku: 'claude-haiku-4-5'
+};
+
+// --- Message parsing ---
+
+/**
+ * Parse Agent SDK messages from the query() async iterator.
+ * Extracts session ID, model, full text, and usage.
+ */
+function parseAgentMessages(messages) {
   let claudeSessionId = null;
   let claudeModel = null;
   const textParts = [];
   let usage = null;
 
-  for (const line of lines) {
-    let parsed;
-    try {
-      parsed = JSON.parse(line);
-    } catch {
-      continue;
-    }
-
-    if (parsed.type === 'system' && parsed.subtype === 'init') {
-      claudeSessionId = parsed.session_id;
-      if (parsed.model) claudeModel = parsed.model;
-    } else if (parsed.type === 'assistant' && parsed.message) {
-      const content = parsed.message.content || [];
+  for (const msg of messages) {
+    if (msg.type === 'system' && msg.subtype === 'init') {
+      claudeSessionId = msg.session_id;
+      if (msg.model) claudeModel = msg.model;
+    } else if (msg.type === 'assistant' && msg.message) {
+      const content = msg.message.content || [];
       for (const block of content) {
         if (block.type === 'text') {
           textParts.push(block.text);
         }
       }
-    } else if (parsed.type === 'result') {
+    } else if (msg.type === 'result') {
+      const u = msg.usage || {};
       usage = {
-        input_tokens: parsed.input_tokens || (parsed.usage && parsed.usage.input_tokens) || 0,
-        output_tokens: parsed.output_tokens || (parsed.usage && parsed.usage.output_tokens) || 0
+        input_tokens: u.input_tokens || 0,
+        output_tokens: u.output_tokens || 0
       };
-      if (parsed.duration_ms) usage.duration_ms = parsed.duration_ms;
+      if (msg.duration_ms) usage.duration_ms = msg.duration_ms;
     }
   }
 
-  const fullText = textParts.join('');
+  return {
+    claudeSessionId,
+    claudeModel,
+    fullText: textParts.join(''),
+    usage
+  };
+}
 
-  // Parse markers from full text
+/**
+ * Extract console, coaching, and session-complete markers from full text.
+ * Returns { events, sessionComplete }.
+ */
+function parseEvents(fullText) {
   const events = [];
-  let remaining = fullText;
 
   // Extract console blocks
   const consoleRegex = /\[CONSOLE_START\]([\s\S]*?)\[CONSOLE_END\]/g;
@@ -74,20 +80,19 @@ function parseStreamJson(stdout) {
   let lastIndex = 0;
   const segments = [];
 
-  while ((match = consoleRegex.exec(remaining)) !== null) {
+  while ((match = consoleRegex.exec(fullText)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: remaining.slice(lastIndex, match.index) });
+      segments.push({ type: 'text', content: fullText.slice(lastIndex, match.index) });
     }
     segments.push({ type: 'console', content: match[1].trim() });
     lastIndex = match.index + match[0].length;
   }
-  if (lastIndex < remaining.length) {
-    segments.push({ type: 'text', content: remaining.slice(lastIndex) });
+  if (lastIndex < fullText.length) {
+    segments.push({ type: 'text', content: fullText.slice(lastIndex) });
   }
 
-  // If no console markers found, treat everything as text
   if (segments.length === 0) {
-    segments.push({ type: 'text', content: remaining });
+    segments.push({ type: 'text', content: fullText });
   }
 
   // Process coaching markers within text segments
@@ -118,7 +123,6 @@ function parseStreamJson(stdout) {
 
   const sessionComplete = fullText.includes('[SESSION_COMPLETE]');
 
-  // Remove the [SESSION_COMPLETE] marker from event content
   if (sessionComplete) {
     for (const event of events) {
       if (event.content) {
@@ -127,51 +131,45 @@ function parseStreamJson(stdout) {
     }
   }
 
-  return { claudeSessionId, claudeModel, events, sessionComplete, usage };
+  return { events, sessionComplete };
 }
 
-function spawnClaude(args, stdinData) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn('claude', args, {
-      cwd: paths.ROOT,
-      env: cleanEnv(),
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+// --- Turn logging ---
 
-    let stdout = '';
-    let stderr = '';
+/**
+ * Log a turn to learning/sessions/{simId}/turns.jsonl.
+ */
+function logTurn(simId, turn, playerMessage, usage) {
+  const turnsPath = paths.turnsFile(simId);
+  const dir = path.dirname(turnsPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-    proc.stdout.on('data', d => stdout += d.toString());
-    proc.stderr.on('data', d => stderr += d.toString());
+  const entry = {
+    ts: new Date().toISOString(),
+    turn,
+    player_message: playerMessage,
+    usage: usage || {}
+  };
 
-    const timeout = setTimeout(() => {
-      proc.kill('SIGTERM');
-      setTimeout(() => {
-        if (!proc.killed) proc.kill('SIGKILL');
-      }, 1000);
-      reject(new Error('TIMEOUT: Claude subprocess exceeded 120s'));
-    }, 120000);
-
-    proc.on('close', (code) => {
-      clearTimeout(timeout);
-      if (code !== 0 && !stdout.trim()) {
-        reject(new Error(`SUBPROCESS_CRASH: exit code ${code}, stderr: ${stderr.slice(0, 500)}`));
-        return;
-      }
-      resolve({ stdout, stderr, code, pid: proc.pid });
-    });
-
-    proc.on('error', (err) => {
-      clearTimeout(timeout);
-      reject(new Error(`SUBPROCESS_CRASH: ${err.message}`));
-    });
-
-    if (stdinData) {
-      proc.stdin.write(stdinData);
-    }
-    proc.stdin.end();
-  });
+  fs.appendFileSync(turnsPath, JSON.stringify(entry) + '\n');
 }
+
+// --- Agent SDK helpers ---
+
+/**
+ * Collect all messages from Agent SDK query() async iterator.
+ */
+async function collectMessages(asyncIterator) {
+  const messages = [];
+  for await (const message of asyncIterator) {
+    messages.push(message);
+  }
+  return messages;
+}
+
+// --- Session management ---
 
 async function startSession(simId, themeId, options = {}) {
   // Single-session enforcement: end any active session
@@ -180,43 +178,45 @@ async function startSession(simId, themeId, options = {}) {
   }
 
   const VALID_MODELS = ['sonnet', 'opus', 'haiku'];
-  const model = VALID_MODELS.includes(options.model) ? options.model : 'sonnet';
+  const modelKey = VALID_MODELS.includes(options.model) ? options.model : 'sonnet';
+  const modelId = MODEL_MAP[modelKey];
 
   const sessionId = crypto.randomUUID();
-  const turnStart = new Date();
 
-  // Build and write prompt to temp file
+  // Build system prompt
   const promptText = buildPrompt(simId, themeId);
-  const promptFile = path.join('/tmp', `aws-sim-prompt-${sessionId}.txt`);
-  fs.writeFileSync(promptFile, promptText);
 
   const stdinMessage = options.resume
     ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
     : 'Begin the simulation. Deliver the Opening and Briefing Card.';
 
-  const args = [
-    '--print', '-',
-    '--verbose',
-    '--output-format', 'stream-json',
-    '--append-system-prompt-file', promptFile,
-    '--dangerously-skip-permissions',
-    '--allowedTools', 'Read,Write',
-    '--model', model
-  ];
+  const queryOptions = {
+    cwd: paths.ROOT,
+    allowedTools: ['Read', 'Write'],
+    model: modelId,
+    systemPrompt: promptText,
+    permissionMode: 'bypassPermissions',
+    allowDangerouslySkipPermissions: true
+  };
 
-  const { stdout } = await spawnClaude(args, stdinMessage);
-  const parsed = parseStreamJson(stdout);
+  const messages = await collectMessages(query({
+    prompt: stdinMessage,
+    options: queryOptions
+  }));
+
+  const parsed = parseAgentMessages(messages);
+  const { events, sessionComplete } = parseEvents(parsed.fullText);
 
   sessions.set(sessionId, {
     claudeSessionId: parsed.claudeSessionId,
     simId,
     themeId,
-    model,
-    promptFile,
-    startedAt: turnStart,
-    autosaveFailCount: 0,
+    model: modelKey,
+    modelId,
+    startedAt: new Date(),
     playtest: options.playtest || false,
-    turnCount: 0
+    turnCount: 0,
+    systemPrompt: promptText
   });
 
   logger.logEvent(sessionId, {
@@ -224,7 +224,7 @@ async function startSession(simId, themeId, options = {}) {
     event: 'session_start',
     sim_id: simId,
     theme: themeId,
-    model_requested: model,
+    model_requested: modelKey,
     model_actual: parsed.claudeModel || 'unknown',
     claude_session_id: parsed.claudeSessionId
   });
@@ -237,35 +237,18 @@ async function startSession(simId, themeId, options = {}) {
     });
   }
 
-  if (parsed.claudeModel && parsed.claudeModel !== model && !parsed.claudeModel.includes(model)) {
+  if (parsed.claudeModel && parsed.claudeModel !== modelKey && !parsed.claudeModel.includes(modelKey)) {
     logger.logEvent(sessionId, {
       level: 'warn',
       event: 'MODEL_MISMATCH',
-      model_requested: model,
+      model_requested: modelKey,
       model_actual: parsed.claudeModel
     });
   }
 
-  // Verify autosave
-  const autosaveResult = verifyAutosave(simId, turnStart);
-  if (!autosaveResult.ok) {
-    const session = sessions.get(sessionId);
-    session.autosaveFailCount++;
-    const level = session.autosaveFailCount >= 3 ? 'error' : 'warn';
-    logger.logEvent(sessionId, {
-      level,
-      event: 'SESSION_AUTOSAVE_FAILED',
-      failedCheck: autosaveResult.failedCheck,
-      failCount: session.autosaveFailCount
-    });
-  } else {
-    const session = sessions.get(sessionId);
-    if (session) session.autosaveFailCount = 0;
-  }
-
   if (options.playtest) {
     const transcript = require('./transcript');
-    const narratorText = parsed.events
+    const narratorText = events
       .filter(e => e.type === 'text')
       .map(e => e.content)
       .join('\n');
@@ -279,8 +262,8 @@ async function startSession(simId, themeId, options = {}) {
 
   return {
     sessionId,
-    events: parsed.events,
-    sessionComplete: parsed.sessionComplete
+    events,
+    sessionComplete
   };
 }
 
@@ -290,66 +273,87 @@ async function sendMessage(sessionId, message) {
     throw new Error('SESSION_LOST: No active session with that ID');
   }
 
-  const turnStart = new Date();
+  session.turnCount++;
+  const turnNumber = session.turnCount;
 
-  const args = [
-    '--print', '-',
-    '--verbose',
-    '--output-format', 'stream-json',
-    '--resume', session.claudeSessionId,
-    '--dangerously-skip-permissions',
-    '--allowedTools', 'Read,Write',
-    '--model', session.model || 'sonnet'
-  ];
+  const queryOptions = {
+    cwd: paths.ROOT,
+    allowedTools: ['Read', 'Write'],
+    model: session.modelId,
+    permissionMode: 'bypassPermissions',
+    allowDangerouslySkipPermissions: true
+  };
 
-  let result;
+  // Resume from existing session
+  if (session.claudeSessionId) {
+    queryOptions.resume = session.claudeSessionId;
+  } else {
+    // Fallback: re-send system prompt if no session to resume
+    queryOptions.systemPrompt = session.systemPrompt;
+  }
+
+  let messages;
   try {
-    result = await spawnClaude(args, message);
+    messages = await collectMessages(query({
+      prompt: message,
+      options: queryOptions
+    }));
   } catch (err) {
-    // Session error recovery: retry without --resume
-    if (err.message.includes('unknown session') || err.message.includes('SESSION_LOST')) {
+    // Session error recovery: retry with fresh session
+    if (err.message && (err.message.includes('unknown session') || err.message.includes('SESSION_LOST'))) {
       logger.logEvent(sessionId, {
         level: 'warn',
         event: 'retry',
         reason: 'SESSION_LOST',
-        detail: 'Retrying without --resume'
+        detail: 'Retrying with fresh system prompt'
       });
 
-      const retryArgs = [
-        '--print', '-',
-        '--verbose',
-        '--output-format', 'stream-json',
-        '--append-system-prompt-file', session.promptFile,
-        '--dangerously-skip-permissions',
-        '--allowedTools', 'Read,Write',
-        '--model', session.model || 'sonnet'
-      ];
-      result = await spawnClaude(retryArgs, message);
-      const parsed = parseStreamJson(result.stdout);
-      // Update claude session ID
-      if (parsed.claudeSessionId) {
-        session.claudeSessionId = parsed.claudeSessionId;
+      const retryOptions = {
+        cwd: paths.ROOT,
+        allowedTools: ['Read', 'Write'],
+        model: session.modelId,
+        systemPrompt: session.systemPrompt,
+        permissionMode: 'bypassPermissions',
+        allowDangerouslySkipPermissions: true
+      };
+
+      messages = await collectMessages(query({
+        prompt: message,
+        options: retryOptions
+      }));
+
+      const retryParsed = parseAgentMessages(messages);
+      if (retryParsed.claudeSessionId) {
+        session.claudeSessionId = retryParsed.claudeSessionId;
       }
     } else {
       throw err;
     }
   }
 
-  const parsed = parseStreamJson(result.stdout);
+  const parsed = parseAgentMessages(messages);
+  const { events, sessionComplete } = parseEvents(parsed.fullText);
+
+  // Update session ID if we got a new one
+  if (parsed.claudeSessionId && parsed.claudeSessionId !== session.claudeSessionId) {
+    session.claudeSessionId = parsed.claudeSessionId;
+  }
+
+  // Log turn to turns.jsonl
+  logTurn(session.simId, turnNumber, message, parsed.usage);
 
   if (session.playtest) {
     const transcript = require('./transcript');
-    session.turnCount++;
 
-    const narratorText = parsed.events
+    const narratorText = events
       .filter(e => e.type === 'text')
       .map(e => e.content)
       .join('\n');
-    const consoleText = parsed.events
+    const consoleText = events
       .filter(e => e.type === 'console')
       .map(e => e.content)
       .join('\n');
-    const coachingText = parsed.events
+    const coachingText = events
       .filter(e => e.type === 'coaching')
       .map(e => e.content)
       .join('\n');
@@ -357,7 +361,7 @@ async function sendMessage(sessionId, message) {
     const mode = consoleText ? 'console' : coachingText ? 'coaching' : 'narrator';
 
     transcript.appendTurn(session.simId, {
-      turn: session.turnCount,
+      turn: turnNumber,
       player: message,
       narrator: narratorText || null,
       console: consoleText || null,
@@ -373,34 +377,17 @@ async function sendMessage(sessionId, message) {
     usage: parsed.usage
   });
 
-  // Verify autosave
-  const autosaveResult = verifyAutosave(session.simId, turnStart);
-  if (!autosaveResult.ok) {
-    session.autosaveFailCount++;
-    const level = session.autosaveFailCount >= 3 ? 'error' : 'warn';
-    logger.logEvent(sessionId, {
-      level,
-      event: 'SESSION_AUTOSAVE_FAILED',
-      failedCheck: autosaveResult.failedCheck,
-      failCount: session.autosaveFailCount
-    });
-  } else {
-    session.autosaveFailCount = 0;
-  }
-
-  // Clean up on session complete
-  if (parsed.sessionComplete) {
+  if (sessionComplete) {
     logger.logEvent(sessionId, {
       level: 'info',
       event: 'session_end',
       outcome: 'success'
     });
-    cleanupPromptFile(session.promptFile);
   }
 
   return {
-    events: parsed.events,
-    sessionComplete: parsed.sessionComplete
+    events,
+    sessionComplete
   };
 }
 
@@ -414,53 +401,15 @@ async function endSession(sessionId) {
     outcome: 'quit'
   });
 
-  cleanupPromptFile(session.promptFile);
   sessions.delete(sessionId);
-}
-
-function verifyAutosave(simId, turnStartTime) {
-  const sessionFile = paths.sessionFile(simId);
-
-  if (!fs.existsSync(sessionFile)) {
-    return { ok: false, failedCheck: 'file_missing' };
-  }
-
-  let data;
-  try {
-    data = JSON.parse(fs.readFileSync(sessionFile, 'utf8'));
-  } catch {
-    return { ok: false, failedCheck: 'invalid_json' };
-  }
-
-  if (data.sim_id && data.sim_id !== simId) {
-    return { ok: false, failedCheck: 'sim_id_mismatch' };
-  }
-
-  if (data.last_active) {
-    const lastActive = new Date(data.last_active);
-    if (lastActive < turnStartTime) {
-      return { ok: false, failedCheck: 'stale_timestamp' };
-    }
-  }
-
-  return { ok: true, failedCheck: null };
-}
-
-function cleanupPromptFile(promptFile) {
-  try {
-    if (promptFile && fs.existsSync(promptFile)) {
-      fs.unlinkSync(promptFile);
-    }
-  } catch {
-    // ignore cleanup errors
-  }
 }
 
 module.exports = {
   startSession,
   sendMessage,
   endSession,
-  parseStreamJson,
-  verifyAutosave,
+  parseEvents,
+  parseAgentMessages,
+  logTurn,
   sessions
 };

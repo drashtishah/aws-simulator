@@ -218,7 +218,7 @@ When changing a component, check what else reads/writes the same data:
 | `coaching-patterns.md` | play (uses for post-game analysis + scoring) |
 | `sim-template.md` | create-sim (gold-standard example for generation) |
 | `sims/registry.json` format | setup (validates), create-sim (writes), play (reads for filtering), web/ server.js + app.js (reads for sim picker) |
-| `sessions/*.json` format | play (reads + writes + deletes), feedback (writes), web/ server.js (reads for resume detection) |
+| `sessions/*.json` format | play (reads + writes), feedback (writes), web/ server.js (reads for resume detection) |
 | Theme files (themes/) | play (theme selection + injection + rendering), agent-prompts.md (voice placeholder), web/ prompt-builder.js (reads for prompt), web/ settings (lists for dropdown) |
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
 | `journal.md` format | play (writes entries), web/ server.js `/api/journal-summary` parser |

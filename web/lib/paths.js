@@ -28,6 +28,7 @@ const story = (id) => path.join(SIMS_DIR, id, 'story.md');
 const theme = (id) => path.join(THEMES_DIR, `${id}.md`);
 const sessionFile = (id) => path.join(SESSIONS_DIR, id, 'session.json');
 const transcriptFile = (id) => path.join(SESSIONS_DIR, id, 'transcript.jsonl');
+const turnsFile = (id) => path.join(SESSIONS_DIR, id, 'turns.jsonl');
 const sessionDir = (id) => path.join(SESSIONS_DIR, id);
 
 module.exports = {
@@ -53,5 +54,6 @@ module.exports = {
   theme,
   sessionFile,
   transcriptFile,
+  turnsFile,
   sessionDir
 };

@@ -1,47 +1,27 @@
-const { describe, it } = require('node:test');
+const { describe, it, beforeEach, afterEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const fs = require('fs');
 
-const { parseStreamJson, verifyAutosave, sessions } = require('../lib/claude-process');
-
 const ROOT = path.resolve(__dirname, '..', '..');
 
-// --- parseStreamJson ---
+// --- parseEvents (marker extraction, unchanged logic) ---
 
-describe('parseStreamJson', () => {
-  it('extracts text from assistant messages', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-123' }),
-      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Hello, investigator.' }] } }),
-      JSON.stringify({ type: 'result', input_tokens: 100, output_tokens: 50 })
-    ].join('\n');
+describe('parseEvents', () => {
+  // Lazy-load to allow mocking in other describe blocks
+  const { parseEvents } = require('../lib/claude-process');
 
-    const result = parseStreamJson(stdout);
-    assert.equal(result.claudeSessionId, 'sess-123');
+  it('extracts text content', () => {
+    const result = parseEvents('Hello, investigator.');
     assert.equal(result.events.length, 1);
     assert.equal(result.events[0].type, 'text');
     assert.ok(result.events[0].content.includes('Hello, investigator.'));
-    assert.equal(result.usage.input_tokens, 100);
-    assert.equal(result.usage.output_tokens, 50);
+    assert.equal(result.sessionComplete, false);
   });
 
   it('parses console markers into console events', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-456' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'text',
-            text: 'Checking CloudWatch. [CONSOLE_START]{"metric": "CPUUtilization", "value": 99.2}[CONSOLE_END] That looks high.'
-          }]
-        }
-      }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
+    const text = 'Checking CloudWatch. [CONSOLE_START]{"metric": "CPUUtilization", "value": 99.2}[CONSOLE_END] That looks high.';
+    const result = parseEvents(text);
     assert.equal(result.events.length, 3);
     assert.equal(result.events[0].type, 'text');
     assert.ok(result.events[0].content.includes('Checking CloudWatch.'));
@@ -52,126 +32,31 @@ describe('parseStreamJson', () => {
   });
 
   it('parses coaching markers into coaching events', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-789' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'text',
-            text: 'Summary. [COACHING_START]## What you did well\nGood investigation.[COACHING_END]'
-          }]
-        }
-      }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
+    const text = 'Summary. [COACHING_START]## What you did well\nGood investigation.[COACHING_END]';
+    const result = parseEvents(text);
     const coaching = result.events.find(e => e.type === 'coaching');
     assert.ok(coaching);
     assert.ok(coaching.content.includes('What you did well'));
   });
 
   it('detects SESSION_COMPLETE marker', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-end' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: { content: [{ type: 'text', text: 'Done. [SESSION_COMPLETE]' }] }
-      }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
+    const text = 'Done. [SESSION_COMPLETE]';
+    const result = parseEvents(text);
     assert.ok(result.sessionComplete);
-    // Marker should be stripped from event content
     for (const event of result.events) {
       assert.ok(!event.content.includes('[SESSION_COMPLETE]'));
     }
   });
 
-  it('extracts model from init message', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-m1', model: 'claude-sonnet-4-20250514' }),
-      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'Hello.' }] } }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
-    assert.equal(result.claudeModel, 'claude-sonnet-4-20250514');
-  });
-
-  it('returns null claudeModel when init has no model field', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-m2' }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
-    assert.equal(result.claudeModel, null);
-  });
-
-  it('handles empty stdout gracefully', () => {
-    const result = parseStreamJson('');
-    assert.equal(result.claudeSessionId, null);
+  it('handles empty text gracefully', () => {
+    const result = parseEvents('');
     assert.ok(Array.isArray(result.events));
-  });
-
-  it('handles malformed JSON lines gracefully', () => {
-    const stdout = 'not json\n{"type":"system","subtype":"init","session_id":"s1"}\nbroken{';
-    const result = parseStreamJson(stdout);
-    assert.equal(result.claudeSessionId, 's1');
-  });
-
-  it('concatenates multiple text blocks from one message', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 's2' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [
-            { type: 'text', text: 'Part one. ' },
-            { type: 'text', text: 'Part two.' }
-          ]
-        }
-      }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
-    const text = result.events.map(e => e.content).join('');
-    assert.ok(text.includes('Part one.'));
-    assert.ok(text.includes('Part two.'));
-  });
-
-  it('extracts usage with duration_ms', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 's3' }),
-      JSON.stringify({ type: 'result', input_tokens: 500, output_tokens: 200, duration_ms: 3500 })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
-    assert.equal(result.usage.input_tokens, 500);
-    assert.equal(result.usage.output_tokens, 200);
-    assert.equal(result.usage.duration_ms, 3500);
+    assert.equal(result.sessionComplete, false);
   });
 
   it('handles multiple console blocks', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 's4' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'text',
-            text: 'First. [CONSOLE_START]data1[CONSOLE_END] Middle. [CONSOLE_START]data2[CONSOLE_END] End.'
-          }]
-        }
-      }),
-      JSON.stringify({ type: 'result' })
-    ].join('\n');
-
-    const result = parseStreamJson(stdout);
+    const text = 'First. [CONSOLE_START]data1[CONSOLE_END] Middle. [CONSOLE_START]data2[CONSOLE_END] End.';
+    const result = parseEvents(text);
     const consoleEvents = result.events.filter(e => e.type === 'console');
     assert.equal(consoleEvents.length, 2);
     assert.equal(consoleEvents[0].content, 'data1');
@@ -179,64 +64,137 @@ describe('parseStreamJson', () => {
   });
 });
 
-// --- verifyAutosave ---
+// --- parseAgentMessages ---
 
-describe('verifyAutosave', () => {
-  const sessionsDir = path.join(ROOT, 'learning', 'sessions');
-  const testSimId = '__test-autosave-verify__';
-  const testDir = path.join(sessionsDir, testSimId);
-  const testFile = path.join(testDir, 'session.json');
+describe('parseAgentMessages', () => {
+  const { parseAgentMessages } = require('../lib/claude-process');
 
-  function ensureDir() {
+  it('extracts session_id from init message', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 'sess-abc' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello.' }] } },
+      { type: 'result', duration_ms: 1000 }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.claudeSessionId, 'sess-abc');
+  });
+
+  it('extracts model from init message', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1', model: 'claude-sonnet-4-6' },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.claudeModel, 'claude-sonnet-4-6');
+  });
+
+  it('extracts text from assistant messages', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Part one. ' }, { type: 'text', text: 'Part two.' }] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.ok(result.fullText.includes('Part one.'));
+    assert.ok(result.fullText.includes('Part two.'));
+  });
+
+  it('extracts usage from result message', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'result', duration_ms: 2500, usage: { input_tokens: 500, output_tokens: 200 } }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.usage.input_tokens, 500);
+    assert.equal(result.usage.output_tokens, 200);
+    assert.equal(result.usage.duration_ms, 2500);
+  });
+
+  it('handles total_cost_usd from result', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'result', total_cost_usd: 0.027, usage: { input_tokens: 100, output_tokens: 50 } }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.usage.input_tokens, 100);
+  });
+
+  it('handles empty messages array', () => {
+    const result = parseAgentMessages([]);
+    assert.equal(result.claudeSessionId, null);
+    assert.equal(result.fullText, '');
+    assert.equal(result.usage, null);
+  });
+
+  it('skips hook messages and other system messages', () => {
+    const messages = [
+      { type: 'system', subtype: 'hook_started', hook_name: 'SessionStart:startup' },
+      { type: 'system', subtype: 'hook_response', hook_name: 'SessionStart:startup' },
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello.' }] } },
+      { type: 'rate_limit_event' },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.claudeSessionId, 's1');
+    assert.equal(result.fullText, 'Hello.');
+  });
+
+  it('skips thinking blocks in assistant messages', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [
+        { type: 'thinking', thinking: 'internal thought' },
+        { type: 'text', text: 'Visible response.' }
+      ] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.fullText, 'Visible response.');
+  });
+});
+
+// --- logTurn ---
+
+describe('logTurn', () => {
+  const { logTurn } = require('../lib/claude-process');
+  const testSimId = '__test-turn-log__';
+  const testDir = path.join(ROOT, 'learning', 'sessions', testSimId);
+  const turnsPath = path.join(testDir, 'turns.jsonl');
+
+  beforeEach(() => {
     fs.mkdirSync(testDir, { recursive: true });
-  }
+    try { fs.unlinkSync(turnsPath); } catch {}
+  });
 
-  function cleanup() {
+  afterEach(() => {
     try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
-  }
-
-  it('returns file_missing when session file does not exist', () => {
-    const result = verifyAutosave('nonexistent-sim-xyz', new Date());
-    assert.equal(result.ok, false);
-    assert.equal(result.failedCheck, 'file_missing');
   });
 
-  it('returns invalid_json for malformed file', () => {
-    ensureDir();
-    fs.writeFileSync(testFile, 'not json');
-    const result = verifyAutosave(testSimId, new Date(0));
-    cleanup();
-    assert.equal(result.ok, false);
-    assert.equal(result.failedCheck, 'invalid_json');
+  it('creates turns.jsonl if it does not exist', () => {
+    logTurn(testSimId, 1, 'hello', { input_tokens: 10, output_tokens: 5 });
+    assert.ok(fs.existsSync(turnsPath));
   });
 
-  it('returns sim_id_mismatch when sim_id differs', () => {
-    ensureDir();
-    fs.writeFileSync(testFile, JSON.stringify({ sim_id: 'other-sim', last_active: new Date().toISOString() }));
-    const result = verifyAutosave(testSimId, new Date(0));
-    cleanup();
-    assert.equal(result.ok, false);
-    assert.equal(result.failedCheck, 'sim_id_mismatch');
+  it('writes a valid JSONL line with correct fields', () => {
+    logTurn(testSimId, 1, 'check logs', { input_tokens: 100, output_tokens: 50, duration_ms: 1500 });
+    const line = fs.readFileSync(turnsPath, 'utf8').trim();
+    const parsed = JSON.parse(line);
+    assert.equal(parsed.turn, 1);
+    assert.equal(parsed.player_message, 'check logs');
+    assert.equal(parsed.usage.input_tokens, 100);
+    assert.equal(parsed.usage.output_tokens, 50);
+    assert.equal(parsed.usage.duration_ms, 1500);
+    assert.ok(parsed.ts); // ISO timestamp
   });
 
-  it('returns stale_timestamp when last_active is before turn start', () => {
-    ensureDir();
-    const old = new Date('2020-01-01');
-    fs.writeFileSync(testFile, JSON.stringify({ sim_id: testSimId, last_active: old.toISOString() }));
-    const result = verifyAutosave(testSimId, new Date());
-    cleanup();
-    assert.equal(result.ok, false);
-    assert.equal(result.failedCheck, 'stale_timestamp');
-  });
-
-  it('returns ok when file is valid and fresh', () => {
-    ensureDir();
-    const now = new Date();
-    fs.writeFileSync(testFile, JSON.stringify({ sim_id: testSimId, last_active: now.toISOString() }));
-    const result = verifyAutosave(testSimId, new Date(now.getTime() - 1000));
-    cleanup();
-    assert.equal(result.ok, true);
-    assert.equal(result.failedCheck, null);
+  it('appends multiple lines on multiple calls', () => {
+    logTurn(testSimId, 1, 'first', { input_tokens: 10, output_tokens: 5 });
+    logTurn(testSimId, 2, 'second', { input_tokens: 20, output_tokens: 10 });
+    const lines = fs.readFileSync(turnsPath, 'utf8').trim().split('\n');
+    assert.equal(lines.length, 2);
+    assert.equal(JSON.parse(lines[0]).turn, 1);
+    assert.equal(JSON.parse(lines[1]).turn, 2);
   });
 });
 
@@ -260,34 +218,29 @@ describe('sendMessage', () => {
 // --- endSession ---
 
 describe('endSession', () => {
-  const { endSession } = require('../lib/claude-process');
+  const { endSession, sessions } = require('../lib/claude-process');
 
   it('silently handles nonexistent session', async () => {
-    // Should not throw
     await endSession('nonexistent-session-xyz');
   });
 
-  it('removes session from sessions map and cleans up prompt file', async () => {
-    const promptFile = path.join('/tmp', 'aws-sim-test-cleanup-' + Date.now() + '.txt');
-    fs.writeFileSync(promptFile, 'test prompt');
-
+  it('removes session from sessions map', async () => {
     const testId = 'test-end-session-' + Date.now();
     sessions.set(testId, {
       claudeSessionId: 'claude-123',
-      simId: 'test-sim',
-      promptFile
+      simId: 'test-sim'
     });
 
     await endSession(testId);
-
     assert.ok(!sessions.has(testId), 'session should be removed from map');
-    assert.ok(!fs.existsSync(promptFile), 'prompt file should be deleted');
   });
 });
 
 // --- sessions map ---
 
 describe('sessions map', () => {
+  const { sessions } = require('../lib/claude-process');
+
   it('is exported and is a Map', () => {
     assert.ok(sessions instanceof Map);
   });
@@ -296,22 +249,11 @@ describe('sessions map', () => {
 // --- playtest transcript logging ---
 
 describe('playtest transcript logging', () => {
-  it('sendMessage response includes events for transcript extraction', () => {
-    const stdout = [
-      JSON.stringify({ type: 'system', subtype: 'init', session_id: 'sess-play' }),
-      JSON.stringify({
-        type: 'assistant',
-        message: {
-          content: [{
-            type: 'text',
-            text: 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.'
-          }]
-        }
-      }),
-      JSON.stringify({ type: 'result', input_tokens: 100, output_tokens: 50 })
-    ].join('\n');
+  const { parseEvents } = require('../lib/claude-process');
 
-    const result = parseStreamJson(stdout);
+  it('text can be split into narrator/console/coaching for transcripts', () => {
+    const text = 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.';
+    const result = parseEvents(text);
 
     const narratorText = result.events
       .filter(e => e.type === 'text')
