@@ -29,6 +29,10 @@ function buildRecord(data) {
     case 'SessionStart':
       base.source = data.source || null;
       base.model = data.model || null;
+      if (data.model) {
+        const modelPath = path.join(process.cwd(), 'learning', '.current-model');
+        try { fs.writeFileSync(modelPath, data.model, 'utf8'); } catch {}
+      }
       break;
 
     case 'SessionEnd':
