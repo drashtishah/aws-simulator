@@ -5,6 +5,14 @@
 # To add a challenge modifier: append to modifiers.
 # To change decay: edit the decay section.
 
+# --- Scoring diminishing returns ---
+# Prevents polygon inflation after many sims.
+# Formula: multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))
+scoring:
+  base_points: 1
+  ramp_interval: 5
+  min_multiplier: 0.1
+
 # --- Question axes ---
 # These define the skill polygon. Currently 6 (hexagon), but the system
 # supports any number. Add an axis here and it appears on the polygon,

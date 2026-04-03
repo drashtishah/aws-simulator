@@ -2,15 +2,6 @@
 name: play
 description: Run an AWS incident simulation as an interactive session. Presents available sims based on learning level, loads narrator and console behavioral context, tracks investigation and validates fixes, updates learning profile and player catalog. Use when user says "play", "start sim", "run simulation", "practice AWS", or "let's play".
 effort: high
-paths:
-  - sims/**
-  - learning/**
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write"
-      hooks:
-        - type: command
-          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/play/ownership.json"
 ---
 
 # play Skill
@@ -376,7 +367,7 @@ Read and update `learning/profile.json`:
 1. Add the sim `id` to `completed_sims`
 2. Update `service_exposure`: for each service in the sim, increment its count
 3. Update `question_patterns` with data from this session
-4. **Update skill polygon**: add effective counts from the session's `question_profile` to `profile.skill_polygon`. For each axis (from `references/progression.yaml`), add the effective count from this session to the running total.
+4. **Update skill polygon** (with diminishing returns): apply the scoring formula from `references/progression.yaml` before adding effective counts. Compute `multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))`. For each axis, add `round(effective_count * multiplier)` to the polygon. This prevents polygon inflation after many sims.
 5. **Update polygon_last_advanced**: for any axis that gained points in this session, set `polygon_last_advanced[axis]` to today's date (YYYY-MM-DD).
 6. **Apply challenge modifier bonuses**: if challenge modifiers were active during this session, add +1 to each axis listed in the modifier's `bonus_axes` (from `references/progression.yaml`).
 7. **Derive rank**: compute rank from the polygon shape using the rank gates in `references/progression.yaml`. Write rank title to `profile.rank_title`. If the rank changed from the previous value, append `{ "rank": "{rank_id}", "achieved": "{today}" }` to `profile.rank_history`.

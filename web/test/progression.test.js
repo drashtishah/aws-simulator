@@ -13,6 +13,7 @@ const {
   availableModifiers,
   normalizePolygon,
   initPolygon,
+  applyDiminishingReturns,
 } = require('../lib/progression');
 
 const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'progression.yaml');
@@ -310,6 +311,82 @@ describe('initPolygon', () => {
     assert.equal(result.extra_axis, 7);
     assert.equal(result.gather, 5);
     assert.equal(result.diagnose, 0);
+  });
+});
+
+describe('applyDiminishingReturns', () => {
+  const config = loadConfig(CONFIG_PATH);
+
+  it('0 sessions: full points (multiplier = 1.0)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 2, diagnose: 1 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config);
+    assert.equal(result.gather, 2);
+    assert.equal(result.diagnose, 1);
+  });
+
+  it('4 sessions: still full points (first ramp interval)', () => {
+    const polygon = { gather: 5, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 2, diagnose: 1 };
+    const result = applyDiminishingReturns(polygon, effectives, 4, config);
+    assert.equal(result.gather, 7);
+    assert.equal(result.diagnose, 4);
+  });
+
+  it('5 sessions: half points (multiplier = 0.5)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 2, diagnose: 2 };
+    const result = applyDiminishingReturns(polygon, effectives, 5, config);
+    assert.equal(result.gather, 1);
+    assert.equal(result.diagnose, 1);
+  });
+
+  it('10 sessions: third of points (multiplier ~ 0.33)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 3, diagnose: 3 };
+    const result = applyDiminishingReturns(polygon, effectives, 10, config);
+    assert.equal(result.gather, 1);
+    assert.equal(result.diagnose, 1);
+  });
+
+  it('20 sessions: fifth of points (multiplier = 0.2)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 5, diagnose: 5 };
+    const result = applyDiminishingReturns(polygon, effectives, 20, config);
+    assert.equal(result.gather, 1);
+    assert.equal(result.diagnose, 1);
+  });
+
+  it('min multiplier floor respected (never below 0.1)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 10 };
+    // At 100 sessions: multiplier = 1/(1+20) = 0.047, floored to 0.1
+    const result = applyDiminishingReturns(polygon, effectives, 100, config);
+    assert.equal(result.gather, 1); // 10 * 0.1 = 1
+  });
+
+  it('empty effectives: no change to polygon', () => {
+    const polygon = { gather: 5, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const result = applyDiminishingReturns(polygon, {}, 10, config);
+    assert.equal(result.gather, 5);
+    assert.equal(result.diagnose, 3);
+  });
+
+  it('config without scoring section: falls back to 1.0x', () => {
+    const configNoScoring = { ...config };
+    delete configNoScoring.scoring;
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 3 };
+    const result = applyDiminishingReturns(polygon, effectives, 20, configNoScoring);
+    assert.equal(result.gather, 3); // No diminishing, full points
+  });
+
+  it('rounds fractional points correctly', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 1 };
+    // At 5 sessions: multiplier = 0.5, 1 * 0.5 = 0.5, rounds to 1
+    const result = applyDiminishingReturns(polygon, effectives, 5, config);
+    assert.equal(result.gather, 1); // Math.round(0.5) = 1
   });
 });
 

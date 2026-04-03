@@ -226,6 +226,37 @@ function normalizePolygon(polygon, config, maxScale = 10) {
 }
 
 /**
+ * Apply diminishing returns to polygon point gains.
+ * As totalSessions grows, the multiplier decreases so the polygon grows more slowly.
+ * Formula: multiplier = max(min_multiplier, 1 / (1 + floor(totalSessions / ramp_interval)))
+ *
+ * Returns a new polygon with diminished points applied.
+ */
+function applyDiminishingReturns(polygon, sessionEffectives, totalSessions, config) {
+  const result = { ...polygon };
+  const scoring = config.scoring;
+
+  if (!scoring) {
+    // No scoring config: apply full points (no diminishing)
+    for (const [axis, points] of Object.entries(sessionEffectives)) {
+      result[axis] = (result[axis] || 0) + points;
+    }
+    return result;
+  }
+
+  const ramp = scoring.ramp_interval || 5;
+  const minMult = scoring.min_multiplier || 0.1;
+  const multiplier = Math.max(minMult, 1 / (1 + Math.floor(totalSessions / ramp)));
+
+  for (const [axis, points] of Object.entries(sessionEffectives)) {
+    const adjusted = Math.round(points * multiplier);
+    result[axis] = (result[axis] || 0) + adjusted;
+  }
+
+  return result;
+}
+
+/**
  * Initialize any missing axes in a polygon to 0.
  * Axes in the polygon but not in config are preserved but ignored.
  */
@@ -250,4 +281,5 @@ module.exports = {
   availableModifiers,
   normalizePolygon,
   initPolygon,
+  applyDiminishingReturns,
 };
