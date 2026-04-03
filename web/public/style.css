@@ -434,18 +434,17 @@ a:hover {
 .sim-card[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--bg-elevated);
   color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 16px;
+  border-radius: 12px;
   font-size: var(--text-sm);
-  max-width: 280px;
-  width: max-content;
   white-space: normal;
-  box-shadow: var(--shadow-md);
+  line-height: 1.5;
   z-index: 20;
   pointer-events: none;
 }
