@@ -204,7 +204,17 @@
       svgContent += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3" class="hexagon-dot' + fadingClass + '" />';
     }
 
-    // Labels, with fading indicator
+    // Axis tooltip descriptions
+    const axisTooltips = {
+      gather: 'Questions about collecting logs, metrics, and initial evidence',
+      diagnose: 'Questions about identifying the root cause from symptoms',
+      correlate: 'Questions about connecting related signals across services',
+      impact: 'Questions about assessing blast radius and business impact',
+      trace: 'Questions about following the request/data path through the system',
+      fix: 'Questions about proposing and validating the remediation'
+    };
+
+    // Labels, with fading indicator and tooltips
     for (let i = 0; i < n; i++) {
       const axis = axes[i];
       const label = (axisLabels && axisLabels[axis]) || axis;
@@ -212,7 +222,8 @@
       const anchor = p.x < cx - 5 ? 'end' : p.x > cx + 5 ? 'start' : 'middle';
       const dy = p.y < cy ? '-4' : p.y > cy ? '12' : '4';
       const fadingClass = fadingAxes.has(axis) ? ' hexagon-label-fading' : '';
-      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label' + fadingClass + '">' + escapeHtml(label) + '</text>';
+      const tooltip = axisTooltips[axis] || '';
+      svgContent += '<text x="' + p.x + '" y="' + p.y + '" dy="' + dy + '" text-anchor="' + anchor + '" class="hexagon-label' + fadingClass + '"><title>' + escapeHtml(tooltip) + '</title>' + escapeHtml(label) + '</text>';
     }
 
     svg.innerHTML = svgContent;
@@ -372,7 +383,8 @@
       const inProgress = inProgressIds.includes(sim.id);
       const statusClass = done ? 'sim-completed' : inProgress ? 'sim-in-progress' : 'sim-new';
 
-      return '<div class="sim-card fade-in ' + statusClass + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '">' +
+      const tooltip = sim.summary ? ' data-tooltip="' + escapeAttr(sim.summary) + '"' : '';
+      return '<div class="sim-card fade-in ' + statusClass + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '"' + tooltip + '>' +
         (done ? '<span class="sim-completed-badge">Completed</span>' : '') +
         (inProgress ? '<span class="sim-completed-badge">Resume</span>' : '') +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +

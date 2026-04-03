@@ -211,6 +211,12 @@ a:hover {
   color: var(--text-primary);
 }
 
+.hexagon-intro {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
 .hexagon-container {
   display: flex;
   justify-content: center;
@@ -377,6 +383,24 @@ a:hover {
   font-family: "JetBrains Mono", "SF Mono", monospace;
 }
 
+
+.sim-card[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  max-width: 280px;
+  white-space: normal;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  pointer-events: none;
+}
 
 .sim-empty {
   text-align: center;
