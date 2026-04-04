@@ -161,12 +161,22 @@ function logTurn(simId, turn, playerMessage, usage) {
 /**
  * Collect all messages from Agent SDK query() async iterator.
  */
+const COLLECT_TIMEOUT_MS = 120000;
+
 async function collectMessages(asyncIterator) {
   const messages = [];
-  for await (const message of asyncIterator) {
-    messages.push(message);
-  }
-  return messages;
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('AGENT_TIMEOUT: Response exceeded 120 seconds')), COLLECT_TIMEOUT_MS)
+  );
+
+  const collect = async () => {
+    for await (const message of asyncIterator) {
+      messages.push(message);
+    }
+    return messages;
+  };
+
+  return Promise.race([collect(), timeout]);
 }
 
 // --- Session management ---
@@ -196,7 +206,8 @@ async function startSession(simId, themeId, options = {}) {
     model: modelId,
     systemPrompt: promptText,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true
+    allowDangerouslySkipPermissions: true,
+    maxTurns: 50
   };
 
   const messages = await collectMessages(query({
@@ -281,7 +292,8 @@ async function sendMessage(sessionId, message) {
     allowedTools: ['Read', 'Write'],
     model: session.modelId,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true
+    allowDangerouslySkipPermissions: true,
+    maxTurns: 50
   };
 
   // Resume from existing session
@@ -314,7 +326,8 @@ async function sendMessage(sessionId, message) {
         model: session.modelId,
         systemPrompt: session.systemPrompt,
         permissionMode: 'bypassPermissions',
-        allowDangerouslySkipPermissions: true
+        allowDangerouslySkipPermissions: true,
+        maxTurns: 50
       };
 
       messages = await collectMessages(query({
@@ -411,5 +424,7 @@ module.exports = {
   parseEvents,
   parseAgentMessages,
   logTurn,
-  sessions
+  collectMessages,
+  sessions,
+  COLLECT_TIMEOUT_MS
 };

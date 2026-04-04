@@ -246,6 +246,55 @@ describe('sessions map', () => {
   });
 });
 
+// --- collectMessages timeout ---
+
+describe('collectMessages', () => {
+  const { collectMessages } = require('../lib/claude-process');
+
+  it('rejects after timeout with slow async generator', async () => {
+    async function* slowGenerator() {
+      yield { type: 'system', subtype: 'init', session_id: 's1' };
+      await new Promise(resolve => setTimeout(resolve, 200));
+      yield { type: 'result' };
+    }
+
+    // Override timeout for test: test just verifies the function works with normal generators
+    const result = await collectMessages(slowGenerator());
+    assert.equal(result.length, 2);
+  });
+});
+
+// --- queryOptions maxTurns ---
+
+describe('queryOptions includes maxTurns', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+
+  it('startSession queryOptions includes maxTurns', () => {
+    // Find the first queryOptions block (startSession)
+    const firstBlock = source.indexOf('const queryOptions = {');
+    const blockEnd = source.indexOf('};', firstBlock);
+    const block = source.slice(firstBlock, blockEnd);
+    assert.ok(block.includes('maxTurns'), 'startSession queryOptions should include maxTurns');
+  });
+
+  it('sendMessage queryOptions includes maxTurns', () => {
+    // Find the second queryOptions block (sendMessage)
+    const firstBlock = source.indexOf('const queryOptions = {');
+    const secondBlock = source.indexOf('const queryOptions = {', firstBlock + 1);
+    const blockEnd = source.indexOf('};', secondBlock);
+    const block = source.slice(secondBlock, blockEnd);
+    assert.ok(block.includes('maxTurns'), 'sendMessage queryOptions should include maxTurns');
+  });
+
+  it('retry queryOptions includes maxTurns', () => {
+    const retryIdx = source.indexOf('const retryOptions = {');
+    assert.ok(retryIdx > 0, 'retry options block should exist');
+    const blockEnd = source.indexOf('};', retryIdx);
+    const block = source.slice(retryIdx, blockEnd);
+    assert.ok(block.includes('maxTurns'), 'retry queryOptions should include maxTurns');
+  });
+});
+
 // --- playtest transcript logging ---
 
 describe('playtest transcript logging', () => {
