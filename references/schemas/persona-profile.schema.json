@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Persona Profile",
+  "description": "Schema for persona test profiles",
+  "type": "object",
+  "required": ["id", "name", "role", "description", "behaviors", "focus_areas", "evaluation_questions", "session_minutes"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "role": { "type": "string" },
+    "description": { "type": "string" },
+    "behaviors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "focus_areas": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "evaluation_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "session_minutes": {
+      "type": "number",
+      "minimum": 1
+    }
+  }
+}

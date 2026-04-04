@@ -133,6 +133,32 @@ steps:
 
 Required fields: `id`, `name`, `role`, `description`, `behaviors` (array), `focus_areas` (array), `evaluation_questions` (array), `session_minutes` (number).
 
+### Transcript Format
+
+Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| turn | number | 1-indexed turn number |
+| role | string | "player" or "narrator" |
+| text | string | Message content |
+| ts | string | ISO 8601 timestamp |
+| console | object | Parsed console block (if present) |
+| coaching | string | Coaching feedback (if present) |
+| usage | object | Token usage: { input_tokens, output_tokens } |
+
+### Persona Result Format
+
+Each persona run writes findings to `test-results/personas/{persona-id}-{timestamp}.json`:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| persona_id | string | Matches profile id |
+| timestamp | string | ISO 8601 |
+| findings | array | Array of { severity, description, selector, screenshot } |
+| evaluation | object | Answers to evaluation_questions from profile |
+| duration_seconds | number | Actual session length |
+
 ## Four Testing Layers
 
 1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests. No browser needed.

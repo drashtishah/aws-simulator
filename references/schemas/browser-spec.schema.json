@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Browser Spec",
+  "description": "Schema for YAML browser test specifications",
+  "type": "object",
+  "required": ["name", "description", "setup", "steps"],
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "setup": {
+      "type": "object",
+      "required": ["navigate"],
+      "properties": {
+        "navigate": { "type": "string" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string" },
+          "action": { "enum": ["click", "type", "keyboard", "emulate", "wait"] },
+          "target": { "type": "string" },
+          "text": { "type": "string" },
+          "key": { "type": "string" },
+          "viewport": { "type": "string" },
+          "ms": { "type": "number" },
+          "check": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["selector"],
+              "properties": {
+                "selector": { "type": "string" },
+                "has_class": { "type": "string" },
+                "not_has_class": { "type": "string" },
+                "attribute": { "type": "object" },
+                "text_contains": { "type": "string" },
+                "visible": { "type": "boolean" },
+                "css_property": { "type": "object" },
+                "min_count": { "type": "number" },
+                "screenshot_compare": {
+                  "type": "object",
+                  "properties": {
+                    "compare_to": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
