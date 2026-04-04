@@ -389,6 +389,23 @@ function startServer(port) {
 }
 
 validateStartup();
+
+// Create lock file to signal web app is running
+const lockPath = path.join(paths.ROOT, 'learning', 'logs', '.web-active.lock');
+fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+fs.writeFileSync(lockPath, JSON.stringify({
+  pid: process.pid,
+  port: 3200,
+  startedAt: new Date().toISOString()
+}));
+
+function cleanupLock() {
+  try { fs.unlinkSync(lockPath); } catch {}
+}
+process.on('SIGINT', () => { cleanupLock(); process.exit(); });
+process.on('SIGTERM', () => { cleanupLock(); process.exit(); });
+process.on('exit', cleanupLock);
+
 const config = getConfig();
 startServer(3200);
 
