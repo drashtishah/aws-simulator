@@ -13,7 +13,8 @@
     "extract-paths": "python3 scripts/extract_paths.py",
     "health": "node scripts/code-health.js",
     "feedback:personas": "node scripts/sim-test.js personas --feedback",
-    "audit:permissions": "node scripts/audit-permissions.js"
+    "audit:permissions": "node scripts/audit-permissions.js",
+    "generate-index": "node scripts/generate-agent-index.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.91",
