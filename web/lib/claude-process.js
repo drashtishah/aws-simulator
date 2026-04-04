@@ -18,6 +18,71 @@ try {
 // In-memory session store (single-session enforcement)
 const sessions = new Map();
 
+const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// --- Session persistence ---
+
+function persistSession(sessionId, sessionData) {
+  const dir = paths.sessionDir(sessionData.simId);
+  fs.mkdirSync(dir, { recursive: true });
+  const filePath = path.join(dir, 'web-session.json');
+  const data = {
+    sessionId,
+    claudeSessionId: sessionData.claudeSessionId,
+    simId: sessionData.simId,
+    themeId: sessionData.themeId,
+    model: sessionData.model,
+    modelId: sessionData.modelId,
+    startedAt: sessionData.startedAt instanceof Date ? sessionData.startedAt.toISOString() : sessionData.startedAt,
+    playtest: sessionData.playtest || false,
+    turnCount: sessionData.turnCount || 0
+  };
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function recoverSessions() {
+  const sessionsDir = paths.SESSIONS_DIR;
+  if (!fs.existsSync(sessionsDir)) return;
+
+  const entries = fs.readdirSync(sessionsDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const filePath = path.join(sessionsDir, entry.name, 'web-session.json');
+    if (!fs.existsSync(filePath)) continue;
+
+    let data;
+    try {
+      data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch {
+      continue; // Skip corrupt JSON
+    }
+
+    // Skip sessions older than 2 hours
+    const age = Date.now() - new Date(data.startedAt).getTime();
+    if (age > SESSION_MAX_AGE_MS) continue;
+
+    // Rebuild systemPrompt from simId + themeId
+    let systemPrompt;
+    try {
+      systemPrompt = buildPrompt(data.simId, data.themeId);
+    } catch {
+      continue; // Skip if sim/theme no longer exists
+    }
+
+    sessions.set(data.sessionId, {
+      claudeSessionId: data.claudeSessionId,
+      simId: data.simId,
+      themeId: data.themeId,
+      model: data.model,
+      modelId: data.modelId,
+      startedAt: new Date(data.startedAt),
+      playtest: data.playtest || false,
+      turnCount: data.turnCount || 0,
+      systemPrompt
+    });
+  }
+}
+
 // --- Model mapping ---
 
 const MODEL_MAP = {
@@ -218,7 +283,7 @@ async function startSession(simId, themeId, options = {}) {
   const parsed = parseAgentMessages(messages);
   const { events, sessionComplete } = parseEvents(parsed.fullText);
 
-  sessions.set(sessionId, {
+  const sessionData = {
     claudeSessionId: parsed.claudeSessionId,
     simId,
     themeId,
@@ -228,7 +293,9 @@ async function startSession(simId, themeId, options = {}) {
     playtest: options.playtest || false,
     turnCount: 0,
     systemPrompt: promptText
-  });
+  };
+  sessions.set(sessionId, sessionData);
+  persistSession(sessionId, sessionData);
 
   logger.logEvent(sessionId, {
     level: 'info',
@@ -286,6 +353,7 @@ async function sendMessage(sessionId, message) {
 
   session.turnCount++;
   const turnNumber = session.turnCount;
+  persistSession(sessionId, session);
 
   const queryOptions = {
     cwd: paths.ROOT,
@@ -414,6 +482,12 @@ async function endSession(sessionId) {
     outcome: 'quit'
   });
 
+  // Clean up persisted web-session.json
+  if (session.simId) {
+    const filePath = path.join(paths.sessionDir(session.simId), 'web-session.json');
+    try { fs.unlinkSync(filePath); } catch {}
+  }
+
   sessions.delete(sessionId);
 }
 
@@ -425,6 +499,9 @@ module.exports = {
   parseAgentMessages,
   logTurn,
   collectMessages,
+  persistSession,
+  recoverSessions,
   sessions,
-  COLLECT_TIMEOUT_MS
+  COLLECT_TIMEOUT_MS,
+  SESSION_MAX_AGE_MS
 };

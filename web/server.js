@@ -390,6 +390,11 @@ function startServer(port) {
 
 validateStartup();
 
+// Recover any persisted web sessions from disk
+if (claudeProcess && claudeProcess.recoverSessions) {
+  claudeProcess.recoverSessions();
+}
+
 // Create lock file to signal web app is running
 const lockPath = path.join(paths.ROOT, 'learning', 'logs', '.web-active.lock');
 fs.mkdirSync(path.dirname(lockPath), { recursive: true });
