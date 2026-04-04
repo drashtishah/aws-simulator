@@ -188,5 +188,9 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "aws-knowledge-mcp-server",
+    "chrome-devtools"
+  ]
 }
