@@ -1,0 +1,54 @@
+:root {
+  /* Ops Center: tactical dark theme for incident response */
+
+  /* Backgrounds: deep navy-charcoal */
+  --bg-deep: #0F1419;
+  --bg-surface: #1A2332;
+  --bg-elevated: #243447;
+  --bg-input: #1E2D3D;
+
+  /* Borders */
+  --border: #2E4358;
+  --border-subtle: #1E2D3D;
+
+  /* Text */
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+
+  /* Accents: ice-teal primary */
+  --accent-primary: #5EEAD4;
+  --accent-primary-hover: #99F6E4;
+  --accent-primary-text: #0F1419;
+  --accent-green: #4ADE80;
+  --accent-red: #F87171;
+
+  /* Cool accents */
+  --accent-blue: #7DD3FC;
+
+  /* Console */
+  --console-bg: #0B1017;
+  --console-text: #4ADE80;
+
+  /* Chat bubbles */
+  --narrator-bg: #1E2D3D;
+  --player-bg: #1A2845;
+
+  /* Category accents */
+  --category-networking: #7DD3FC;
+  --category-security: #F87171;
+  --category-data: #FBBF24;
+  --category-reliability: #4ADE80;
+  --category-compute: #A78BFA;
+  --category-observability: #7DD3FC;
+  --category-operations: #64748B;
+  --category-performance: #FDE047;
+  --category-cost: #FDE047;
+
+  /* Focus */
+  --focus-ring: rgba(125, 211, 252, 0.15);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+}

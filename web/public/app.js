@@ -790,7 +790,7 @@
       initCustomSelect(
         document.getElementById('select-ui-theme'),
         options,
-        getSetting('uiTheme', 'dracula'),
+        getSetting('uiTheme', 'ops-center'),
         (val) => { setSetting('uiTheme', val); loadUiTheme(val); }
       );
     } catch {
@@ -865,7 +865,7 @@
 
   function init() {
     // Load UI theme
-    const uiTheme = getSetting('uiTheme', 'dracula');
+    const uiTheme = getSetting('uiTheme', 'ops-center');
     loadUiTheme(uiTheme);
 
     // Tab navigation
