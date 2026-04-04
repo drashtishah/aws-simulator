@@ -310,6 +310,7 @@ a:hover {
   fill-opacity: 0.2;
   stroke: var(--accent-primary);
   stroke-width: 2;
+  filter: drop-shadow(0 0 6px var(--accent-primary));
 }
 
 .hexagon-dot {
