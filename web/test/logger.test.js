@@ -16,7 +16,7 @@ const tmpLogFile = path.join(tmpDir, 'activity.jsonl');
 paths.LOGS_DIR = tmpDir;
 paths.LOG_FILE = tmpLogFile;
 
-const { logEvent, generateFixManifest } = require('../lib/logger');
+const { logEvent, generateFixManifest, sessionTraces } = require('../lib/logger');
 
 const LOG_FILE = tmpLogFile;
 
@@ -156,5 +156,71 @@ describe('checkThresholds', () => {
     for (const line of lines) {
       assert.doesNotThrow(() => JSON.parse(line), 'every line must be valid JSON');
     }
+  });
+});
+
+describe('trace ID correlation', () => {
+  it('includes trace_id for same session across multiple calls (same trace_id)', () => {
+    const sid = 'test-trace-same-' + Date.now();
+    logEvent(sid, { level: 'info', event: 'first' });
+    logEvent(sid, { level: 'info', event: 'second' });
+    const lines = lastNLogLines(2);
+    assert.ok(lines[0].trace_id, 'first line should have trace_id');
+    assert.ok(lines[1].trace_id, 'second line should have trace_id');
+    assert.equal(lines[0].trace_id, lines[1].trace_id, 'same session should produce same trace_id');
+  });
+
+  it('different sessionIds produce different trace_ids', () => {
+    const sid1 = 'test-trace-diff-a-' + Date.now();
+    const sid2 = 'test-trace-diff-b-' + Date.now();
+    logEvent(sid1, { level: 'info', event: 'a' });
+    logEvent(sid2, { level: 'info', event: 'b' });
+    const lines = lastNLogLines(2);
+    assert.ok(lines[0].trace_id, 'first session should have trace_id');
+    assert.ok(lines[1].trace_id, 'second session should have trace_id');
+    assert.notEqual(lines[0].trace_id, lines[1].trace_id, 'different sessions should have different trace_ids');
+  });
+});
+
+describe('session cleanup on session_end', () => {
+  it('toolCallTracker is cleared on session_end', () => {
+    const sid = 'test-cleanup-tool-' + Date.now();
+    // Fire 4 tool_use events (below threshold of 5)
+    for (let i = 0; i < 4; i++) {
+      logEvent(sid, { level: 'info', event: 'tool_use', tool: 'Read', target: '/cleanup/file.js' });
+    }
+    // End the session, which should clear the tracker
+    logEvent(sid, { level: 'info', event: 'session_end' });
+    // Fire 4 more tool_use events with same tool+target (should restart from 0)
+    for (let i = 0; i < 4; i++) {
+      logEvent(sid, { level: 'info', event: 'tool_use', tool: 'Read', target: '/cleanup/file.js' });
+    }
+    // Total would be 8 without cleanup, triggering TOOL_LOOP. With cleanup, max is 4, no warning.
+    const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
+    const lines = content.split('\n');
+    const warnings = lines.filter(l => {
+      const parsed = JSON.parse(l);
+      return parsed.session_id === sid && parsed.event === 'TOOL_LOOP';
+    });
+    assert.equal(warnings.length, 0, 'should not trigger TOOL_LOOP after session_end reset');
+  });
+
+  it('sessionTraces is cleaned on session_end', () => {
+    const sid = 'test-cleanup-trace-' + Date.now();
+    logEvent(sid, { level: 'info', event: 'first_batch' });
+    const firstLine = lastLogLine();
+    const firstTraceId = firstLine.trace_id;
+    assert.ok(firstTraceId, 'should have a trace_id');
+
+    // End the session
+    logEvent(sid, { level: 'info', event: 'session_end' });
+    assert.equal(sessionTraces.has(sid), false, 'sessionTraces should not contain the session after session_end');
+
+    // Start new activity with the same sessionId
+    logEvent(sid, { level: 'info', event: 'second_batch' });
+    const secondLine = lastLogLine();
+    const secondTraceId = secondLine.trace_id;
+    assert.ok(secondTraceId, 'should have a new trace_id');
+    assert.notEqual(firstTraceId, secondTraceId, 'trace_id should differ after session_end');
   });
 });

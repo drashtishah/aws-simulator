@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const paths = require('./paths');
 
 const LOGS_DIR = paths.LOGS_DIR;
@@ -11,6 +12,9 @@ const TOOL_LOOP_THRESHOLD = 5;
 // Track tool calls per session for loop detection
 const toolCallTracker = new Map();
 
+// Track trace IDs per session
+const sessionTraces = new Map();
+
 function ensureLogsDir() {
   fs.mkdirSync(LOGS_DIR, { recursive: true });
 }
@@ -18,11 +22,18 @@ function ensureLogsDir() {
 function logEvent(sessionId, event) {
   if (!sessionId) return;
 
+  let trace_id = sessionTraces.get(sessionId);
+  if (!trace_id) {
+    trace_id = crypto.randomUUID();
+    sessionTraces.set(sessionId, trace_id);
+  }
+
   ensureLogsDir();
 
   const line = JSON.stringify({
     ts: new Date().toISOString(),
     session_id: sessionId,
+    trace_id,
     ...event
   }) + '\n';
 
@@ -35,6 +46,17 @@ function logEvent(sessionId, event) {
 
   // Check warning thresholds
   checkThresholds(sessionId, event);
+
+  // Clean up session state on session end
+  if (event.event === 'session_end') {
+    sessionTraces.delete(sessionId);
+    const prefix = sessionId + ':';
+    for (const key of toolCallTracker.keys()) {
+      if (key.startsWith(prefix)) {
+        toolCallTracker.delete(key);
+      }
+    }
+  }
 }
 
 function checkThresholds(sessionId, event) {
@@ -96,5 +118,6 @@ function generateFixManifest(sessionId, outcome, rootCause, errorChain, suggeste
 
 module.exports = {
   logEvent,
-  generateFixManifest
+  generateFixManifest,
+  sessionTraces
 };
