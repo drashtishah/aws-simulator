@@ -43,6 +43,9 @@
   --category-performance: #F1FA8C;
   --category-cost: #F1FA8C;
 
+  /* Focus */
+  --focus-ring: rgba(139, 233, 253, 0.15);
+
   /* Shadows */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);

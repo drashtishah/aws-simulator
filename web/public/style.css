@@ -838,7 +838,7 @@ a:hover {
 
 .chat-input:focus {
   border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .chat-input:disabled {
