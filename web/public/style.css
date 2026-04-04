@@ -126,6 +126,18 @@ a:hover {
 .topbar-nav [role="tab"][aria-selected="true"] {
   color: var(--accent-primary);
   background: var(--bg-elevated);
+  position: relative;
+}
+
+.topbar-nav [role="tab"][aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--accent-primary);
+  border-radius: 1px;
 }
 
 .topbar-settings {
