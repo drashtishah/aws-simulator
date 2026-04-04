@@ -301,13 +301,13 @@ a:hover {
 
 .hexagon-grid-ring {
   fill: none;
-  stroke: var(--border-subtle);
-  stroke-width: 0.5;
+  stroke: var(--border);
+  stroke-width: 0.75;
 }
 
 .hexagon-axis-line {
-  stroke: var(--border-subtle);
-  stroke-width: 0.5;
+  stroke: var(--border);
+  stroke-width: 0.75;
 }
 
 .hexagon-polygon {
