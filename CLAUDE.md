@@ -18,6 +18,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 - All file paths in markdown and JSON must be root-relative (e.g., `.claude/skills/create-sim/references/exam-topics.md`, not references/exam-topics.md). Run `npm run extract-paths` then `npm test` to validate.
 - Backticks in markdown are for file paths and code only. Do not backtick-wrap YAML tags, labels, or other slash-separated values that are not filesystem paths.
 - Workspace architecture in references/workspace-map.md
+- Agent navigation index in `references/agent-index.md`, tool registry in `references/tool-registry.md`
 
 ## Code Health
 

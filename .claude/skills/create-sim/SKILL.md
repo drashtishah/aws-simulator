@@ -16,6 +16,25 @@ hooks:
 
 Generates AWS incident simulation packages targeting knowledge gaps and exam coverage. Each package contains a manifest, narrative, resolution guide, and native-format artifacts that the play skill consumes.
 
+## Tool Reference
+
+| Step | Action | Tool | Target |
+|------|--------|------|--------|
+| 1 | Load catalog | Read | `learning/catalog.csv` |
+| 6 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
+| 6-9 | Research incidents | WebSearch | AWS incident patterns |
+| 9b | Query AWS docs | MCP aws___ | Documentation and SOPs |
+| 12 | Load sim template | Read | `.claude/skills/create-sim/references/sim-template.md` |
+| 13 | Load registry | Read | `sims/registry.json` |
+| 15 | Load manifest schema | Read | `.claude/skills/create-sim/assets/manifest-schema.json` |
+| 15 | Write manifest | Write | `sims/{id}/manifest.json` |
+| 16 | Write story | Write | `sims/{id}/story.md` |
+| 17 | Write resolution | Write | `sims/{id}/resolution.md` |
+| 18 | Write artifacts | Write | `sims/{id}/artifacts/*.txt` |
+| 20 | Update registry | Write | `sims/registry.json` |
+| 21 | Update index | Write | `sims/index.md` |
+| 9c | Update catalog | Write | `learning/catalog.csv` |
+
 ---
 
 ## Prerequisites

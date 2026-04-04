@@ -8,6 +8,26 @@ effort: medium
 
 Analyzes feedback, activity logs, and code health scores, then applies targeted improvements to simulation skills. Tracks health regressions per edit.
 
+## Tool Reference
+
+| Step | Action | Tool | Target |
+|------|--------|------|--------|
+| 0 | Load workspace map | Read | `references/workspace-map.md` |
+| 1 | Load feedback | Read | `learning/feedback.md` |
+| 2 | Load activity logs | Read | `learning/logs/activity.jsonl` |
+| 2 | Load metrics config | Read | `scripts/metrics.config.json` |
+| 3 | Load test results | Read | `test-results/summary.json` |
+| 3b | List open issues | Bash | gh issue list |
+| 4 | Run health check | Bash | node scripts/code-health.js |
+| 8a | Read target skill | Read | `.claude/skills/*/SKILL.md` |
+| 8c | Search code | Grep | Source files |
+| 8e | Apply edits | Edit | Target skill/reference files |
+| 8f | Run health check | Bash | node scripts/code-health.js |
+| 8g | Log health scores | Write | `learning/logs/health-scores.jsonl` |
+| 8h-verify | Verification | Agent | Separate subagent |
+| 9 | Clear feedback | Write | `learning/feedback.md` |
+| 9 | Update metrics config | Write | `scripts/metrics.config.json` |
+
 ---
 
 ## Phase 1: Gather

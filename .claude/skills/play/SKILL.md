@@ -8,6 +8,35 @@ effort: high
 
 Runs an AWS incident simulation end-to-end. Consumes sim packages from `sims/{id}/` and plays the combined role of narrator (game master) and AWS console emulator using a single consolidated prompt.
 
+## Tool Reference
+
+| Step | Action | Tool | Target |
+|------|--------|------|--------|
+| 0a | Start web server | Bash | npm start |
+| 1 | Load profile | Read | `learning/profile.json` |
+| 1 | Load default profile | Read | `references/default-profile.json` |
+| 1 | Load progression | Read | `references/progression.yaml` |
+| 1 | Save decayed profile | Write | `learning/profile.json` |
+| 2 | List sessions | Glob | `learning/sessions/*/session.json` |
+| 2 | Read session | Read | `learning/sessions/{id}/session.json` |
+| 3 | Load registry | Read | `sims/registry.json` |
+| 5 | Load manifest | Read | `sims/{id}/manifest.json` |
+| 5 | Load story | Read | `sims/{id}/story.md` |
+| 5 | Load artifacts | Read | `sims/{id}/artifacts/*.txt` |
+| 6 | Load prompt template | Read | `.claude/skills/play/references/agent-prompts.md` |
+| 6b | Check model tier | Read | `learning/.current-model` |
+| 6 | Load theme base | Read | `themes/_base.md` |
+| 6 | Load theme | Read | `themes/{theme_id}.md` |
+| 6 | Load overlay | Read | `.claude/skills/play/references/prompt-overlay-{tier}.md` |
+| 8 | Resume session state | Read | `learning/sessions/{id}/session.json` |
+| 10 | Save session state | Write | `learning/sessions/{id}/session.json` |
+| 11 | Update profile | Write | `learning/profile.json` |
+| 11 | Update catalog | Write | `learning/catalog.csv` |
+| 11 | Write journal | Write | `learning/journal.md` |
+| 12 | Load coaching patterns | Read | `.claude/skills/play/references/coaching-patterns.md` |
+
+Do NOT use Bash for file reads. Do NOT call MCP aws___ tools during gameplay.
+
 ---
 
 ## Phase 1: Setup
@@ -19,6 +48,12 @@ If any of the following are missing, tell the user: "Run `/setup` first to initi
 - `learning/` directory
 - `learning/profile.json`
 - `learning/catalog.csv`
+
+Check if `learning/logs/.web-active.lock` exists. If it does:
+- Read the lock file to get the PID
+- Check if the PID is still running (use Bash: `kill -0 {pid} 2>/dev/null && echo running || echo stopped`)
+- If running: tell the player "The web app is currently running. Please use the browser at http://localhost:{port} or stop the server first (Ctrl+C in the server terminal)." Stop the skill.
+- If NOT running: the lock is stale. Delete it and continue.
 
 ### 0a. Choose Play Mode
 

@@ -16,6 +16,18 @@ hooks:
 
 Prepares the workspace for a new player. Run once after cloning.
 
+## Tool Reference
+
+| Step | Action | Tool | Target |
+|------|--------|------|--------|
+| 2 | Load default profile | Read | `references/default-profile.json` |
+| 2 | Create profile | Write | `learning/profile.json` |
+| 3 | Create journal | Write | `learning/journal.md` |
+| 4 | Create feedback log | Write | `learning/feedback.md` |
+| 5 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
+| 5 | Create catalog | Write | `learning/catalog.csv` |
+| 6 | Load registry | Read | `sims/registry.json` |
+
 ---
 
 ## Steps

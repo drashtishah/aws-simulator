@@ -229,6 +229,60 @@ describe('dashboard rendering correctness', () => {
   });
 });
 
+// --- 8b. Skill tool references ---
+
+describe('skill tool references', () => {
+  const skillDirs = fs.readdirSync(path.join(ROOT, '.claude', 'skills'), { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name);
+
+  const validTools = ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Bash', 'Agent', 'WebSearch', 'WebFetch', 'MCP aws___'];
+
+  for (const skill of skillDirs) {
+    const skillPath = path.join(ROOT, '.claude', 'skills', skill, 'SKILL.md');
+    if (!fs.existsSync(skillPath)) continue;
+    const content = fs.readFileSync(skillPath, 'utf8');
+
+    // Check if skill has a Tool Reference section
+    if (!content.includes('## Tool Reference')) continue;
+
+    // Extract the table section
+    const tableMatch = content.match(/## Tool Reference\n\n\|[\s\S]*?\n\n/);
+    if (!tableMatch) continue;
+
+    const lines = tableMatch[0].split('\n').filter(l => l.startsWith('|') && !l.includes('---') && !l.includes('Step'));
+
+    it(skill + ' SKILL.md tool names are valid', () => {
+      for (const line of lines) {
+        const cols = line.split('|').map(c => c.trim()).filter(Boolean);
+        if (cols.length < 3) continue;
+        const toolName = cols[2]; // Tool column
+        const isValid = validTools.some(v => toolName.startsWith(v));
+        assert.ok(isValid, 'Unknown tool "' + toolName + '" in ' + skill + ' SKILL.md');
+      }
+    });
+
+    it(skill + ' SKILL.md concrete target paths exist', () => {
+      const missing = [];
+      for (const line of lines) {
+        const cols = line.split('|').map(c => c.trim()).filter(Boolean);
+        if (cols.length < 4) continue;
+        let target = cols[3].replace(/^`|`$/g, ''); // Target column, strip backticks
+        // Skip template paths, runtime paths, commands, and descriptions
+        if (target.includes('{') || target.includes('*') || !target.includes('/') || !target.includes('.')) continue;
+        if (target.startsWith('learning/') || target.startsWith('test-results/')) continue;
+        if (target.startsWith('node ') || target.startsWith('npm ') || target.startsWith('gh ')) continue;
+        if (/^[A-Z]/.test(target)) continue; // Skip descriptions like "AWS incident patterns"
+        const fullPath = path.join(ROOT, target);
+        if (!fs.existsSync(fullPath)) {
+          missing.push(target);
+        }
+      }
+      assert.equal(missing.length, 0, 'Missing target files: ' + missing.join(', '));
+    });
+  }
+});
+
 // --- 8. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
