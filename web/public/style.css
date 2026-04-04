@@ -197,6 +197,11 @@ a:hover {
   padding: 20px;
   box-shadow: var(--shadow-sm);
   min-width: 120px;
+  flex: 1;
+}
+
+.stat-card:first-child {
+  flex: 2;
 }
 
 .stat-card-clickable {
