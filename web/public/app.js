@@ -673,7 +673,7 @@
     if (!content || !content.trim()) return;
     const messages = document.getElementById('chat-messages');
     const div = document.createElement('div');
-    div.className = 'chat-message ' + type + ' fade-in';
+    div.className = 'chat-message ' + type + ' msg-enter';
     if (type === 'narrator' || type === 'coaching') {
       div.innerHTML = renderMarkdown(content);
     } else {

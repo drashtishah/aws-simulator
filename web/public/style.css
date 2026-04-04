@@ -1154,6 +1154,31 @@ a:hover {
 .dashboard-section:nth-child(3) { animation: staggerIn 0.3s ease-out 0.24s both; }
 .dashboard-section:nth-child(4) { animation: staggerIn 0.3s ease-out 0.32s both; }
 
+/* Chat message entrance animations */
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.chat-message.narrator.msg-enter,
+.chat-message.coaching.msg-enter,
+.chat-message.console.msg-enter {
+  animation: slideInLeft 0.2s ease-out both;
+}
+
+.chat-message.player.msg-enter {
+  animation: slideInRight 0.2s ease-out both;
+}
+
+.chat-message.system.msg-enter {
+  animation: fadeIn 0.2s ease-in both;
+}
+
 /* === Accessibility === */
 
 .sr-only {
