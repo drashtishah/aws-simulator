@@ -925,17 +925,21 @@ a:hover {
 /* === Settings Modal === */
 
 .modal-overlay {
-  display: none;
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
   z-index: 100;
+  display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 .modal-overlay.active {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal {
@@ -945,6 +949,12 @@ a:hover {
   box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 400px;
+  transform: scale(0.95);
+  transition: transform 0.2s ease;
+}
+
+.modal-overlay.active .modal {
+  transform: scale(1);
 }
 
 .modal-title {
