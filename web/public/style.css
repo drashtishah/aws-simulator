@@ -537,6 +537,20 @@ a:hover {
   color: var(--text-secondary);
 }
 
+.sim-card {
+  border-left: 3px solid var(--border-subtle);
+}
+
+.sim-card[data-category="networking"] { border-left-color: var(--category-networking); }
+.sim-card[data-category="security"] { border-left-color: var(--category-security); }
+.sim-card[data-category="data"] { border-left-color: var(--category-data); }
+.sim-card[data-category="reliability"] { border-left-color: var(--category-reliability); }
+.sim-card[data-category="compute"] { border-left-color: var(--category-compute); }
+.sim-card[data-category="observability"] { border-left-color: var(--category-observability); }
+.sim-card[data-category="operations"] { border-left-color: var(--category-operations); }
+.sim-card[data-category="performance"] { border-left-color: var(--category-performance); }
+.sim-card[data-category="cost"] { border-left-color: var(--category-cost); }
+
 .sim-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
