@@ -455,7 +455,7 @@
       const inProgress = inProgressIds.includes(sim.id);
 
       const tooltip = sim.summary ? ' data-tooltip="' + escapeAttr(sim.summary) + '"' : '';
-      return '<div class="sim-card fade-in" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '"' + tooltip + '>' +
+      return '<div class="sim-card fade-in' + (inProgress ? ' sim-card-resume' : '') + '" tabindex="0" data-sim-id="' + escapeAttr(sim.id) + '" data-category="' + escapeAttr(sim.category || '') + '"' + tooltip + '>' +
         (inProgress ? '<span class="sim-completed-badge">Resume</span>' : '') +
         '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
         '<div class="sim-card-meta">' +

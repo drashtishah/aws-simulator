@@ -555,6 +555,10 @@ a:hover {
   color: var(--text-secondary);
 }
 
+.sim-card-resume {
+  border-left: 3px solid var(--accent-primary);
+}
+
 .sim-card:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
