@@ -62,6 +62,7 @@ function axisNames(config) {
 /**
  * Evaluate a single gate condition against a polygon.
  * Gate types: all_axes_min, axes_min, count_axes_above, empty (always true).
+ * Compound gates (multiple conditions) require ALL conditions to pass.
  */
 function evaluateGate(polygon, gate, config) {
   if (!gate || Object.keys(gate).length === 0) {
@@ -69,16 +70,16 @@ function evaluateGate(polygon, gate, config) {
   }
 
   const axes = axisNames(config);
+  let pass = true;
 
   if (gate.all_axes_min !== undefined) {
     const min = gate.all_axes_min;
-    return axes.every(axis => (polygon[axis] || 0) >= min);
+    if (!axes.every(axis => (polygon[axis] || 0) >= min)) {
+      pass = false;
+    }
   }
 
-  // For compound gates (axes_min + count_axes_above), all conditions must pass
-  let pass = true;
-
-  if (gate.axes_min) {
+  if (pass && gate.axes_min) {
     for (const [axis, min] of Object.entries(gate.axes_min)) {
       if ((polygon[axis] || 0) < min) {
         pass = false;
@@ -99,14 +100,32 @@ function evaluateGate(polygon, gate, config) {
 }
 
 /**
+ * Evaluate a quality gate against a player profile.
+ * Returns true if the profile meets the quality and session requirements,
+ * or if no quality gate is defined.
+ */
+function evaluateQualityGate(profile, qualityGate) {
+  if (!qualityGate) return true;
+
+  const avgQuality = (profile.question_quality && profile.question_quality.avg_overall) || 0;
+  const sessionsAtRank = profile.sessions_at_current_rank || 0;
+
+  if (avgQuality < qualityGate.avg_question_quality) return false;
+  if (sessionsAtRank < qualityGate.min_sessions_at_rank) return false;
+
+  return true;
+}
+
+/**
  * Determine current rank by evaluating gates top-to-bottom.
+ * When a profile is provided, quality gates are also checked.
  * Returns the full rank object (id, title, max_difficulty, unlocks, gate).
  */
-function currentRank(polygon, config) {
+function currentRank(polygon, config, profile) {
   for (const rank of config.ranks) {
-    if (evaluateGate(polygon, rank.gate, config)) {
-      return rank;
-    }
+    if (!evaluateGate(polygon, rank.gate, config)) continue;
+    if (profile && !evaluateQualityGate(profile, rank.quality_gate)) continue;
+    return rank;
   }
   return config.ranks[config.ranks.length - 1];
 }
@@ -120,26 +139,43 @@ function maxDifficulty(polygon, config) {
 
 /**
  * Apply skill decay to polygon axes based on timestamps.
+ * Supports tiered decay: different tiers have different thresholds based on rank.
+ * When rankId is provided, looks up the matching tier. Falls back to first tier.
  * Returns { polygon, decayed } where decayed is an array of axis keys that lost points.
  */
-function applyDecay(polygon, timestamps, config) {
+function applyDecay(polygon, timestamps, config, rankId) {
   const decayConfig = config.decay;
   if (!decayConfig) return { polygon: { ...polygon }, decayed: [] };
+
+  // Resolve tier parameters based on rank
+  let tierParams;
+  if (decayConfig.tiers) {
+    tierParams = decayConfig.tiers.find(t => t.ranks.includes(rankId));
+    if (!tierParams) tierParams = decayConfig.tiers[0]; // fallback to first tier
+  } else {
+    // Legacy flat decay config
+    tierParams = {
+      decay_after_days: decayConfig.decay_after_days,
+      min_value_to_decay: decayConfig.min_value_to_decay,
+      floor: decayConfig.floor,
+    };
+  }
 
   const now = new Date();
   const updated = { ...polygon };
   const decayed = [];
+  const decayAmount = decayConfig.decay_amount || 1;
 
   for (const axis of axisNames(config)) {
     const value = updated[axis] || 0;
-    if (value < decayConfig.min_value_to_decay) continue;
+    if (value < tierParams.min_value_to_decay) continue;
 
     const lastAdvanced = timestamps[axis];
     if (!lastAdvanced) continue;
 
     const daysSince = (now - new Date(lastAdvanced)) / (1000 * 60 * 60 * 24);
-    if (daysSince >= decayConfig.decay_after_days) {
-      updated[axis] = Math.max(decayConfig.floor, value - decayConfig.decay_amount);
+    if (daysSince >= tierParams.decay_after_days) {
+      updated[axis] = Math.max(tierParams.floor, value - decayAmount);
       if (updated[axis] < value) {
         decayed.push(axis);
       }
@@ -228,11 +264,16 @@ function normalizePolygon(polygon, config, maxScale = 10) {
 /**
  * Apply diminishing returns to polygon point gains.
  * As totalSessions grows, the multiplier decreases so the polygon grows more slowly.
- * Formula: multiplier = max(min_multiplier, 1 / (1 + floor(totalSessions / ramp_interval)))
+ * Quality factor scales points by average question quality (0-8 scale).
+ *
+ * Formula:
+ *   multiplier = max(min_multiplier, 1 / (1 + floor(totalSessions / ramp_interval)))
+ *   quality_factor = clamp(avgQuality / 8, 0.25, 1.0)
+ *   points_per_axis = round(base_points * multiplier * quality_factor)
  *
  * Returns a new polygon with diminished points applied.
  */
-function applyDiminishingReturns(polygon, sessionEffectives, totalSessions, config) {
+function applyDiminishingReturns(polygon, sessionEffectives, totalSessions, config, avgQuality) {
   const result = { ...polygon };
   const scoring = config.scoring;
 
@@ -244,12 +285,18 @@ function applyDiminishingReturns(polygon, sessionEffectives, totalSessions, conf
     return result;
   }
 
-  const ramp = scoring.ramp_interval || 5;
-  const minMult = scoring.min_multiplier || 0.1;
+  const ramp = scoring.ramp_interval || 3;
+  const minMult = scoring.min_multiplier || 0.05;
   const multiplier = Math.max(minMult, 1 / (1 + Math.floor(totalSessions / ramp)));
 
+  // Quality factor: scales points by question quality. Default to 1.0 if not provided.
+  let qualityFactor = 1.0;
+  if (avgQuality !== undefined && avgQuality !== null) {
+    qualityFactor = Math.min(1.0, Math.max(0.25, avgQuality / 8));
+  }
+
   for (const [axis, points] of Object.entries(sessionEffectives)) {
-    const adjusted = Math.round(points * multiplier);
+    const adjusted = Math.round(points * multiplier * qualityFactor);
     result[axis] = (result[axis] || 0) + adjusted;
   }
 
@@ -274,6 +321,7 @@ module.exports = {
   loadConfig,
   axisNames,
   evaluateGate,
+  evaluateQualityGate,
   currentRank,
   maxDifficulty,
   applyDecay,

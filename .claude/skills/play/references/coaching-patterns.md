@@ -207,6 +207,48 @@ Bad notes are vague or generic:
 
 ---
 
+## Question Quality Rubric
+
+Each player question during investigation is scored on 4 dimensions, each 0-2, for a total of 0-8 per question.
+
+| Dimension | 0 | 1 | 2 |
+|-----------|---|---|---|
+| Specificity | Vague ("what happened?") | Somewhat targeted ("check the logs") | Precise ("show me CloudTrail events for IAM role changes in us-east-1 in the last 24 hours") |
+| Relevance | Unrelated to incident | Tangentially related | Directly advances investigation |
+| Building | Standalone, ignores previous info | Loosely follows up | Explicitly references prior response data |
+| Targeting | No specific service/component | Names a service | Names a service AND specifies what to look for |
+
+Score each question inline during the investigation loop. Record scores in session state alongside axis classification.
+
+### Quality-Based Coaching Feedback
+
+During the coaching debrief, include question quality analysis:
+
+**Positive feedback template**: "Your questions averaged {score}/8. Your best question ({question text}) scored {N}/8 because: {dimension breakdown}."
+
+**Growth feedback template**: "To improve specificity, name the exact service, metric, or API action. Instead of 'check the logs,' try 'show me CloudWatch logs for the Lambda function {name} in the last hour.'"
+
+**Per-dimension coaching for low scores**:
+
+- Low specificity (avg < 1.0): "Name the exact resource. Instead of 'check permissions,' try 'show me the IAM policy attached to role {name}.'"
+- Low relevance (avg < 1.0): "Focus on the incident symptoms. What service is showing errors? Start there."
+- Low building (avg < 1.0): "Reference what you just learned. After seeing an error in CloudWatch, follow up with 'show me the IAM role for that Lambda function' rather than jumping to an unrelated service."
+- Low targeting (avg < 1.0): "Specify what you want to see. Instead of 'check CloudWatch,' try 'show me the Errors metric for Lambda function {name} in the last hour.'"
+
+### Quality-Weighted Scoring
+
+Question quality affects polygon point gains:
+
+```
+quality_factor = clamp(avg_session_quality / 8, 0.25, 1.0)
+multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))
+points_per_axis = round(base_points * multiplier * quality_factor)
+```
+
+Higher quality questions earn more polygon points. Even low quality questions still earn 25% of full points (floor at 0.25).
+
+---
+
 ## Profile Update Rules
 
 After scoring, update `learning/profile.json`:
@@ -232,17 +274,22 @@ A question is "effective" if it led to discovering new information (the response
 
 ### Rank Derivation
 
-After updating the question hexagon in profile.json, derive the player's rank:
+After updating the skill polygon in profile.json, derive the player's rank from `references/progression.yaml`. The rank system uses 10 tiers with both polygon gates and quality gates:
 
-| Rank | Requirement |
-|---|---|
-| Pager Duty Intern | Default (all axes < 3) |
-| Config Whisperer | gather >= 3 AND diagnose >= 3 |
-| Root Cause Wrangler | correlate >= 3 AND any 3 axes >= 3 |
-| Incident Commander | all 6 axes >= 3 |
-| Chaos Architect | all 6 axes >= 6 |
+| Rank | Polygon Gate | Quality Gate |
+|---|---|---|
+| Responder | (none) | (none) |
+| Junior Investigator | any 2 axes >= 1 | avg quality >= 2, 15 sessions |
+| Investigator | gather >= 2, diagnose >= 2 | avg quality >= 3, 30 sessions |
+| Senior Investigator | gather >= 3, 3 axes >= 2 | avg quality >= 3, 40 sessions |
+| Analyst | 3 axes >= 3 | avg quality >= 4, 50 sessions |
+| Senior Analyst | correlate >= 4, 4 axes >= 3 | avg quality >= 4, 60 sessions |
+| Incident Commander | all >= 3, 3 axes >= 4 | avg quality >= 5, 70 sessions |
+| Senior Commander | all axes >= 4 | avg quality >= 5, 80 sessions |
+| Chaos Engineer | all >= 5, 3 axes >= 6 | avg quality >= 6, 90 sessions |
+| Chaos Architect | all axes >= 6 | avg quality >= 6, 100 sessions |
 
-The rank is written to `profile.rank_title`. Rank reflects the shape of the hexagon, not the number of sims completed.
+The rank is written to `profile.rank_title`. Rank reflects polygon shape, question quality, and sustained practice.
 
 ### Question Pattern Tracking
 

@@ -10,8 +10,10 @@
 # Formula: multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))
 scoring:
   base_points: 1
-  ramp_interval: 5
-  min_multiplier: 0.1
+  ramp_interval: 3
+  min_multiplier: 0.05
+  quality_weight: 0.5
+  quality_threshold: 4
 
 # --- Question axes ---
 # These define the skill polygon. Currently 6 (hexagon), but the system
@@ -55,28 +57,75 @@ ranks:
   - id: chaos-architect
     title: Chaos Architect
     gate: { all_axes_min: 6 }
+    quality_gate: { avg_question_quality: 6, min_sessions_at_rank: 100 }
     max_difficulty: 4
     unlocks: [challenge_modifiers, custom_constraints]
 
-  - id: incident-commander
-    title: Incident Commander
-    gate: { all_axes_min: 3 }
+  - id: chaos-engineer
+    title: Chaos Engineer
+    gate:
+      all_axes_min: 5
+      count_axes_above: { min: 6, count: 3 }
+    quality_gate: { avg_question_quality: 6, min_sessions_at_rank: 90 }
+    max_difficulty: 4
+    unlocks: [challenge_modifiers, custom_constraints]
+
+  - id: senior-commander
+    title: Senior Commander
+    gate: { all_axes_min: 4 }
+    quality_gate: { avg_question_quality: 5, min_sessions_at_rank: 80 }
     max_difficulty: 4
     unlocks: [challenge_modifiers]
+
+  - id: incident-commander
+    title: Incident Commander
+    gate:
+      all_axes_min: 3
+      count_axes_above: { min: 4, count: 3 }
+    quality_gate: { avg_question_quality: 5, min_sessions_at_rank: 70 }
+    max_difficulty: 4
+    unlocks: [challenge_modifiers]
+
+  - id: senior-analyst
+    title: Senior Analyst
+    gate:
+      axes_min: { correlate: 4 }
+      count_axes_above: { min: 3, count: 4 }
+    quality_gate: { avg_question_quality: 4, min_sessions_at_rank: 60 }
+    max_difficulty: 3
+    unlocks: []
 
   - id: analyst
     title: Analyst
     gate:
-      axes_min: { correlate: 3 }
       count_axes_above: { min: 3, count: 3 }
+    quality_gate: { avg_question_quality: 4, min_sessions_at_rank: 50 }
     max_difficulty: 3
+    unlocks: []
+
+  - id: senior-investigator
+    title: Senior Investigator
+    gate:
+      axes_min: { gather: 3 }
+      count_axes_above: { min: 2, count: 3 }
+    quality_gate: { avg_question_quality: 3, min_sessions_at_rank: 40 }
+    max_difficulty: 2
     unlocks: []
 
   - id: investigator
     title: Investigator
     gate:
-      axes_min: { gather: 3, diagnose: 3 }
+      axes_min: { gather: 2, diagnose: 2 }
+    quality_gate: { avg_question_quality: 3, min_sessions_at_rank: 30 }
     max_difficulty: 2
+    unlocks: []
+
+  - id: junior-investigator
+    title: Junior Investigator
+    gate:
+      count_axes_above: { min: 1, count: 2 }
+    quality_gate: { avg_question_quality: 2, min_sessions_at_rank: 15 }
+    max_difficulty: 1
     unlocks: []
 
   - id: responder
@@ -103,11 +152,26 @@ category_map:
 # --- Decay ---
 # Skills fade without practice. Axes decay independently.
 decay:
-  warn_after_days: 21     # Mark axis as "fading" after this many days
-  decay_after_days: 42    # Decrement axis value after this many days
   decay_amount: 1         # How much to subtract per decay tick
-  min_value_to_decay: 3   # Only decay axes at or above this value
-  floor: 0                # Never decay below this
+  tiers:
+    - id: fast
+      ranks: [responder, junior-investigator, investigator]
+      warn_after_days: 10
+      decay_after_days: 21
+      min_value_to_decay: 2
+      floor: 0
+    - id: medium
+      ranks: [senior-investigator, analyst, senior-analyst, incident-commander]
+      warn_after_days: 14
+      decay_after_days: 28
+      min_value_to_decay: 3
+      floor: 1
+    - id: slow
+      ranks: [senior-commander, chaos-engineer, chaos-architect]
+      warn_after_days: 21
+      decay_after_days: 42
+      min_value_to_decay: 4
+      floor: 2
 
 # --- Challenge modifiers ---
 # Opt-in constraints for replayability. Each modifier is independent.

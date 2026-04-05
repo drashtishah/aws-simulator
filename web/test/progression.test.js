@@ -14,6 +14,7 @@ const {
   normalizePolygon,
   initPolygon,
   applyDiminishingReturns,
+  evaluateQualityGate,
 } = require('../lib/progression');
 
 const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'progression.yaml');
@@ -35,14 +36,28 @@ describe('loadConfig', () => {
     assert.equal(Object.keys(config.axes).length, 6);
   });
 
-  it('has 5 ranks in default config', () => {
+  it('has 10 ranks in default config', () => {
     const config = loadConfig(CONFIG_PATH);
-    assert.equal(config.ranks.length, 5);
+    assert.equal(config.ranks.length, 10);
   });
 
   it('has 4 modifiers in default config', () => {
     const config = loadConfig(CONFIG_PATH);
     assert.equal(config.modifiers.length, 4);
+  });
+
+  it('has tiered decay config', () => {
+    const config = loadConfig(CONFIG_PATH);
+    assert.ok(config.decay.tiers);
+    assert.equal(config.decay.tiers.length, 3);
+  });
+
+  it('has quality scoring params', () => {
+    const config = loadConfig(CONFIG_PATH);
+    assert.equal(config.scoring.quality_weight, 0.5);
+    assert.equal(config.scoring.quality_threshold, 4);
+    assert.equal(config.scoring.ramp_interval, 3);
+    assert.equal(config.scoring.min_multiplier, 0.05);
   });
 });
 
@@ -103,6 +118,54 @@ describe('evaluateGate', () => {
     const poly = { gather: 3, diagnose: 3, impact: 3, correlate: 2 };
     assert.ok(!evaluateGate(poly, gate, config));
   });
+
+  it('compound gate: all_axes_min + count_axes_above', () => {
+    const gate = { all_axes_min: 5, count_axes_above: { min: 6, count: 3 } };
+    const poly = { gather: 6, diagnose: 6, correlate: 6, impact: 5, trace: 5, fix: 5 };
+    assert.ok(evaluateGate(poly, gate, config));
+  });
+
+  it('compound gate: all_axes_min + count_axes_above fails when count insufficient', () => {
+    const gate = { all_axes_min: 5, count_axes_above: { min: 6, count: 3 } };
+    const poly = { gather: 6, diagnose: 6, correlate: 5, impact: 5, trace: 5, fix: 5 };
+    assert.ok(!evaluateGate(poly, gate, config));
+  });
+});
+
+describe('evaluateQualityGate', () => {
+  it('passes when avg quality meets threshold', () => {
+    const profile = { question_quality: { avg_overall: 4 }, sessions_at_current_rank: 50 };
+    const qualityGate = { avg_question_quality: 4, min_sessions_at_rank: 50 };
+    assert.ok(evaluateQualityGate(profile, qualityGate));
+  });
+
+  it('fails when avg quality below threshold', () => {
+    const profile = { question_quality: { avg_overall: 3 }, sessions_at_current_rank: 50 };
+    const qualityGate = { avg_question_quality: 4, min_sessions_at_rank: 50 };
+    assert.ok(!evaluateQualityGate(profile, qualityGate));
+  });
+
+  it('fails when sessions_at_current_rank below minimum', () => {
+    const profile = { question_quality: { avg_overall: 5 }, sessions_at_current_rank: 10 };
+    const qualityGate = { avg_question_quality: 4, min_sessions_at_rank: 50 };
+    assert.ok(!evaluateQualityGate(profile, qualityGate));
+  });
+
+  it('passes when both quality and sessions meet threshold', () => {
+    const profile = { question_quality: { avg_overall: 6 }, sessions_at_current_rank: 100 };
+    const qualityGate = { avg_question_quality: 5, min_sessions_at_rank: 70 };
+    assert.ok(evaluateQualityGate(profile, qualityGate));
+  });
+
+  it('passes when no quality gate defined (null)', () => {
+    const profile = { question_quality: { avg_overall: 0 }, sessions_at_current_rank: 0 };
+    assert.ok(evaluateQualityGate(profile, null));
+  });
+
+  it('passes when no quality gate defined (undefined)', () => {
+    const profile = { question_quality: { avg_overall: 0 }, sessions_at_current_rank: 0 };
+    assert.ok(evaluateQualityGate(profile, undefined));
+  });
 });
 
 describe('currentRank', () => {
@@ -112,18 +175,43 @@ describe('currentRank', () => {
     assert.equal(currentRank({}, config).id, 'responder');
   });
 
-  it('returns Investigator when gather >= 3 and diagnose >= 3', () => {
-    assert.equal(currentRank({ gather: 3, diagnose: 3 }, config).id, 'investigator');
+  it('returns Junior Investigator when 2 axes >= 1', () => {
+    const poly = { gather: 1, diagnose: 1 };
+    assert.equal(currentRank(poly, config).id, 'junior-investigator');
   });
 
-  it('returns Analyst when correlate >= 3 and 3 axes >= 3', () => {
+  it('returns Investigator when gather >= 2 and diagnose >= 2', () => {
+    assert.equal(currentRank({ gather: 2, diagnose: 2 }, config).id, 'investigator');
+  });
+
+  it('returns Senior Investigator when gather >= 3 and 3 axes >= 2', () => {
+    const poly = { gather: 3, diagnose: 2, correlate: 2 };
+    assert.equal(currentRank(poly, config).id, 'senior-investigator');
+  });
+
+  it('returns Analyst when 3 axes >= 3', () => {
     const poly = { gather: 3, diagnose: 3, correlate: 3 };
     assert.equal(currentRank(poly, config).id, 'analyst');
   });
 
-  it('returns Incident Commander when all 6 axes >= 3', () => {
-    const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
+  it('returns Senior Analyst when correlate >= 4 and 4 axes >= 3', () => {
+    const poly = { gather: 3, diagnose: 3, correlate: 4, impact: 3 };
+    assert.equal(currentRank(poly, config).id, 'senior-analyst');
+  });
+
+  it('returns Incident Commander when all >= 3 and 3 axes >= 4', () => {
+    const poly = { gather: 4, diagnose: 4, correlate: 4, impact: 3, trace: 3, fix: 3 };
     assert.equal(currentRank(poly, config).id, 'incident-commander');
+  });
+
+  it('returns Senior Commander when all axes >= 4', () => {
+    const poly = { gather: 4, diagnose: 4, correlate: 4, impact: 4, trace: 4, fix: 4 };
+    assert.equal(currentRank(poly, config).id, 'senior-commander');
+  });
+
+  it('returns Chaos Engineer when all >= 5 and 3 axes >= 6', () => {
+    const poly = { gather: 6, diagnose: 6, correlate: 6, impact: 5, trace: 5, fix: 5 };
+    assert.equal(currentRank(poly, config).id, 'chaos-engineer');
   });
 
   it('returns Chaos Architect when all 6 axes >= 6', () => {
@@ -131,13 +219,24 @@ describe('currentRank', () => {
     assert.equal(currentRank(poly, config).id, 'chaos-architect');
   });
 
-  it('returns Incident Commander at 5 (not Chaos Architect)', () => {
-    const poly = { gather: 5, diagnose: 5, correlate: 5, impact: 5, trace: 5, fix: 5 };
-    assert.equal(currentRank(poly, config).id, 'incident-commander');
-  });
-
   it('returns Responder when only one axis is high', () => {
     assert.equal(currentRank({ gather: 10 }, config).id, 'responder');
+  });
+
+  it('quality gate blocks rank even when polygon passes', () => {
+    const poly = { gather: 2, diagnose: 2 };
+    // Without quality profile, polygon-only evaluation gives Investigator
+    assert.equal(currentRank(poly, config).id, 'investigator');
+    // With quality profile that fails all quality gates, falls to Responder
+    const profile = { question_quality: { avg_overall: 1 }, sessions_at_current_rank: 5 };
+    assert.equal(currentRank(poly, config, profile).id, 'responder');
+  });
+
+  it('quality gate on Junior Investigator with insufficient sessions', () => {
+    const poly = { gather: 1, diagnose: 1 };
+    const profile = { question_quality: { avg_overall: 3 }, sessions_at_current_rank: 5 };
+    // Quality avg passes (3 >= 2) but sessions too low (5 < 15)
+    assert.equal(currentRank(poly, config, profile).id, 'responder');
   });
 });
 
@@ -148,16 +247,40 @@ describe('maxDifficulty', () => {
     assert.equal(maxDifficulty({}, config), 1);
   });
 
+  it('returns 1 for Junior Investigator', () => {
+    assert.equal(maxDifficulty({ gather: 1, diagnose: 1 }, config), 1);
+  });
+
   it('returns 2 for Investigator', () => {
-    assert.equal(maxDifficulty({ gather: 3, diagnose: 3 }, config), 2);
+    assert.equal(maxDifficulty({ gather: 2, diagnose: 2 }, config), 2);
+  });
+
+  it('returns 2 for Senior Investigator', () => {
+    const poly = { gather: 3, diagnose: 2, correlate: 2 };
+    assert.equal(maxDifficulty(poly, config), 2);
   });
 
   it('returns 3 for Analyst', () => {
     assert.equal(maxDifficulty({ gather: 3, diagnose: 3, correlate: 3 }, config), 3);
   });
 
+  it('returns 3 for Senior Analyst', () => {
+    const poly = { gather: 3, diagnose: 3, correlate: 4, impact: 3 };
+    assert.equal(maxDifficulty(poly, config), 3);
+  });
+
   it('returns 4 for Incident Commander', () => {
-    const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
+    const poly = { gather: 4, diagnose: 4, correlate: 4, impact: 3, trace: 3, fix: 3 };
+    assert.equal(maxDifficulty(poly, config), 4);
+  });
+
+  it('returns 4 for Senior Commander', () => {
+    const poly = { gather: 4, diagnose: 4, correlate: 4, impact: 4, trace: 4, fix: 4 };
+    assert.equal(maxDifficulty(poly, config), 4);
+  });
+
+  it('returns 4 for Chaos Engineer', () => {
+    const poly = { gather: 6, diagnose: 6, correlate: 6, impact: 5, trace: 5, fix: 5 };
     assert.equal(maxDifficulty(poly, config), 4);
   });
 
@@ -170,59 +293,108 @@ describe('maxDifficulty', () => {
 describe('applyDecay', () => {
   const config = loadConfig(CONFIG_PATH);
 
-  it('does not decay axes below min_value_to_decay', () => {
-    const poly = { gather: 2, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const timestamps = { gather: '2025-01-01' };
-    const { polygon, decayed } = applyDecay(poly, timestamps, config);
-    assert.equal(polygon.gather, 2);
-    assert.equal(decayed.length, 0);
-  });
-
-  it('decays axes past decay_after_days threshold', () => {
-    const poly = { gather: 5, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    // 100 days ago
+  it('uses fast tier for Responder (decay at 21 days)', () => {
+    const poly = { gather: 3, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const past = new Date();
-    past.setDate(past.getDate() - 100);
+    past.setDate(past.getDate() - 25); // past fast tier threshold (21 days)
     const timestamps = { gather: past.toISOString().split('T')[0] };
-    const { polygon, decayed } = applyDecay(poly, timestamps, config);
-    assert.equal(polygon.gather, 4);
+    const rankId = 'responder';
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, rankId);
+    assert.equal(polygon.gather, 2);
     assert.deepEqual(decayed, ['gather']);
   });
 
-  it('respects floor', () => {
+  it('fast tier does not decay below min_value_to_decay of 2', () => {
+    const poly = { gather: 1, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 25);
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, 'responder');
+    assert.equal(polygon.gather, 1);
+    assert.equal(decayed.length, 0);
+  });
+
+  it('uses medium tier for Analyst (decay at 28 days)', () => {
+    const poly = { gather: 4, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 30); // past medium tier threshold (28 days)
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, 'analyst');
+    assert.equal(polygon.gather, 3);
+    assert.deepEqual(decayed, ['gather']);
+  });
+
+  it('medium tier respects floor of 1', () => {
     const poly = { gather: 3, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const past = new Date();
     past.setDate(past.getDate() - 100);
     const timestamps = { gather: past.toISOString().split('T')[0] };
-
-    // Apply decay multiple times to test floor
     let current = poly;
-    let ts = timestamps;
     for (let i = 0; i < 5; i++) {
-      const result = applyDecay(current, ts, config);
+      const result = applyDecay(current, timestamps, config, 'analyst');
       current = result.polygon;
     }
-    assert.ok(current.gather >= 0);
+    assert.ok(current.gather >= 1);
+  });
+
+  it('uses slow tier for Chaos Architect (decay at 42 days)', () => {
+    const poly = { gather: 5, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 45); // past slow tier threshold (42 days)
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, 'chaos-architect');
+    assert.equal(polygon.gather, 4);
+    assert.deepEqual(decayed, ['gather']);
+  });
+
+  it('slow tier does not decay below min_value_to_decay of 4', () => {
+    const poly = { gather: 3, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 100);
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, 'chaos-architect');
+    assert.equal(polygon.gather, 3);
+    assert.equal(decayed.length, 0);
+  });
+
+  it('slow tier respects floor of 2', () => {
+    const poly = { gather: 5, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 100);
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    let current = poly;
+    for (let i = 0; i < 10; i++) {
+      const result = applyDecay(current, timestamps, config, 'chaos-architect');
+      current = result.polygon;
+    }
+    assert.ok(current.gather >= 2);
   });
 
   it('does not decay if no timestamp', () => {
     const poly = { gather: 5, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const { polygon, decayed } = applyDecay(poly, {}, config);
+    const { polygon, decayed } = applyDecay(poly, {}, config, 'responder');
     assert.equal(polygon.gather, 5);
     assert.equal(decayed.length, 0);
   });
 
-  it('decay can trigger a rank drop', () => {
-    // Investigator requires gather >= 3 and diagnose >= 3
-    const poly = { gather: 3, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
+  it('fast tier does not decay at 20 days (under 21 day threshold)', () => {
+    const poly = { gather: 3, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const past = new Date();
-    past.setDate(past.getDate() - 100);
-    const timestamps = { gather: past.toISOString().split('T')[0], diagnose: past.toISOString().split('T')[0] };
+    past.setDate(past.getDate() - 20);
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config, 'responder');
+    assert.equal(polygon.gather, 3);
+    assert.equal(decayed.length, 0);
+  });
 
-    assert.equal(currentRank(poly, config).id, 'investigator');
-
-    const { polygon } = applyDecay(poly, timestamps, config);
-    assert.equal(currentRank(polygon, config).id, 'responder');
+  it('falls back to fast tier when no rankId given', () => {
+    const poly = { gather: 3, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const past = new Date();
+    past.setDate(past.getDate() - 25);
+    const timestamps = { gather: past.toISOString().split('T')[0] };
+    const { polygon, decayed } = applyDecay(poly, timestamps, config);
+    assert.equal(polygon.gather, 2);
+    assert.deepEqual(decayed, ['gather']);
   });
 });
 
@@ -256,8 +428,14 @@ describe('availableModifiers', () => {
     assert.equal(mods.length, 0);
   });
 
-  it('returns modifiers for Incident Commander', () => {
-    const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
+  it('returns no modifiers for Analyst (rank 5, no unlock)', () => {
+    const poly = { gather: 3, diagnose: 3, correlate: 3 };
+    const mods = availableModifiers(poly, config);
+    assert.equal(mods.length, 0);
+  });
+
+  it('returns modifiers for Incident Commander (rank 7)', () => {
+    const poly = { gather: 4, diagnose: 4, correlate: 4, impact: 3, trace: 3, fix: 3 };
     const mods = availableModifiers(poly, config);
     assert.ok(mods.length > 0);
     assert.ok(mods.every(m => m.id && m.title));
@@ -317,57 +495,84 @@ describe('initPolygon', () => {
 describe('applyDiminishingReturns', () => {
   const config = loadConfig(CONFIG_PATH);
 
-  it('0 sessions: full points (multiplier = 1.0)', () => {
+  it('0 sessions, quality 8/8: full points (multiplier = 1.0, quality factor = 1.0)', () => {
     const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const effectives = { gather: 2, diagnose: 1 };
-    const result = applyDiminishingReturns(polygon, effectives, 0, config);
+    const result = applyDiminishingReturns(polygon, effectives, 0, config, 8);
     assert.equal(result.gather, 2);
     assert.equal(result.diagnose, 1);
   });
 
-  it('4 sessions: still full points (first ramp interval)', () => {
+  it('0 sessions, quality 4/8: half quality factor (0.5)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 2, diagnose: 2 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config, 4);
+    // multiplier=1.0, quality_factor=0.5, 2*1.0*0.5=1
+    assert.equal(result.gather, 1);
+    assert.equal(result.diagnose, 1);
+  });
+
+  it('quality factor floor at 0.25 (quality 1/8)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 4 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config, 1);
+    // multiplier=1.0, quality_factor=clamp(1/8, 0.25, 1.0)=0.25, 4*1.0*0.25=1
+    assert.equal(result.gather, 1);
+  });
+
+  it('quality factor cap at 1.0 (quality 8/8)', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 3 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config, 8);
+    // multiplier=1.0, quality_factor=1.0, 3*1.0*1.0=3
+    assert.equal(result.gather, 3);
+  });
+
+  it('quality factor at 0.75 for quality 6/8', () => {
+    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const effectives = { gather: 4 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config, 6);
+    // multiplier=1.0, quality_factor=0.75, 4*1.0*0.75=3
+    assert.equal(result.gather, 3);
+  });
+
+  it('2 sessions: still full multiplier (first ramp interval is 3)', () => {
     const polygon = { gather: 5, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const effectives = { gather: 2, diagnose: 1 };
-    const result = applyDiminishingReturns(polygon, effectives, 4, config);
+    const result = applyDiminishingReturns(polygon, effectives, 2, config, 8);
     assert.equal(result.gather, 7);
     assert.equal(result.diagnose, 4);
   });
 
-  it('5 sessions: half points (multiplier = 0.5)', () => {
+  it('3 sessions: half multiplier (0.5)', () => {
     const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const effectives = { gather: 2, diagnose: 2 };
-    const result = applyDiminishingReturns(polygon, effectives, 5, config);
+    const result = applyDiminishingReturns(polygon, effectives, 3, config, 8);
+    // multiplier=max(0.05, 1/(1+1))=0.5, quality=1.0, 2*0.5*1.0=1
     assert.equal(result.gather, 1);
     assert.equal(result.diagnose, 1);
   });
 
-  it('10 sessions: third of points (multiplier ~ 0.33)', () => {
+  it('6 sessions: third of points (multiplier ~ 0.33)', () => {
     const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const effectives = { gather: 3, diagnose: 3 };
-    const result = applyDiminishingReturns(polygon, effectives, 10, config);
+    const result = applyDiminishingReturns(polygon, effectives, 6, config, 8);
+    // multiplier=max(0.05, 1/(1+2))=0.333, quality=1.0, 3*0.333*1.0=1
     assert.equal(result.gather, 1);
     assert.equal(result.diagnose, 1);
   });
 
-  it('20 sessions: fifth of points (multiplier = 0.2)', () => {
+  it('min multiplier floor respected (never below 0.05)', () => {
     const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const effectives = { gather: 5, diagnose: 5 };
-    const result = applyDiminishingReturns(polygon, effectives, 20, config);
-    assert.equal(result.gather, 1);
-    assert.equal(result.diagnose, 1);
-  });
-
-  it('min multiplier floor respected (never below 0.1)', () => {
-    const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const effectives = { gather: 10 };
-    // At 100 sessions: multiplier = 1/(1+20) = 0.047, floored to 0.1
-    const result = applyDiminishingReturns(polygon, effectives, 100, config);
-    assert.equal(result.gather, 1); // 10 * 0.1 = 1
+    const effectives = { gather: 20 };
+    // At 100 sessions: multiplier = 1/(1+33) = 0.029, floored to 0.05
+    const result = applyDiminishingReturns(polygon, effectives, 100, config, 8);
+    assert.equal(result.gather, 1); // 20 * 0.05 * 1.0 = 1
   });
 
   it('empty effectives: no change to polygon', () => {
     const polygon = { gather: 5, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const result = applyDiminishingReturns(polygon, {}, 10, config);
+    const result = applyDiminishingReturns(polygon, {}, 10, config, 8);
     assert.equal(result.gather, 5);
     assert.equal(result.diagnose, 3);
   });
@@ -381,49 +586,43 @@ describe('applyDiminishingReturns', () => {
     assert.equal(result.gather, 3); // No diminishing, full points
   });
 
-  it('rounds fractional points correctly', () => {
+  it('no avgQuality argument: defaults to no quality factor', () => {
     const polygon = { gather: 0, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
-    const effectives = { gather: 1 };
-    // At 5 sessions: multiplier = 0.5, 1 * 0.5 = 0.5, rounds to 1
-    const result = applyDiminishingReturns(polygon, effectives, 5, config);
-    assert.equal(result.gather, 1); // Math.round(0.5) = 1
+    const effectives = { gather: 2 };
+    const result = applyDiminishingReturns(polygon, effectives, 0, config);
+    // Without quality arg, should still work (backward compat, quality factor = 1.0)
+    assert.equal(result.gather, 2);
   });
 });
 
 describe('config extensibility', () => {
   it('adding a 7th axis: currentRank still works without code changes', () => {
     const config = loadConfig(CONFIG_PATH);
-    // Simulate adding a 7th axis
     config.axes.communicate = { label: 'Communicate', description: 'Stakeholder updates', keywords: [] };
 
-    // Responder gate is empty, should still match
     const poly = {};
     assert.equal(currentRank(poly, config).id, 'responder');
 
-    // all_axes_min gate now requires 7 axes
     const poly7 = { gather: 6, diagnose: 6, correlate: 6, impact: 6, trace: 6, fix: 6, communicate: 6 };
     assert.equal(currentRank(poly7, config).id, 'chaos-architect');
 
-    // Missing the 7th axis should fail all_axes_min
     const poly6 = { gather: 6, diagnose: 6, correlate: 6, impact: 6, trace: 6, fix: 6 };
     assert.notEqual(currentRank(poly6, config).id, 'chaos-architect');
   });
 
   it('inserting a rank: evaluator picks it up from config', () => {
     const config = loadConfig(CONFIG_PATH);
-    // Insert a new rank between analyst and incident-commander
     const newRank = {
-      id: 'senior-analyst',
-      title: 'Senior Analyst',
-      gate: { count_axes_above: { min: 3, count: 5 } },
-      max_difficulty: 3,
-      unlocks: []
+      id: 'master-architect',
+      title: 'Master Architect',
+      gate: { all_axes_min: 8 },
+      max_difficulty: 4,
+      unlocks: ['challenge_modifiers', 'custom_constraints']
     };
-    // Insert at index 2 (after incident-commander, before analyst)
-    config.ranks.splice(2, 0, newRank);
+    config.ranks.splice(0, 0, newRank);
 
-    const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 0 };
-    assert.equal(currentRank(poly, config).id, 'senior-analyst');
-    assert.equal(maxDifficulty(poly, config), 3);
+    const poly = { gather: 8, diagnose: 8, correlate: 8, impact: 8, trace: 8, fix: 8 };
+    assert.equal(currentRank(poly, config).id, 'master-architect');
+    assert.equal(maxDifficulty(poly, config), 4);
   });
 });
