@@ -270,7 +270,7 @@ describe('skill tool references', () => {
         let target = cols[3].replace(/^`|`$/g, ''); // Target column, strip backticks
         // Skip template paths, runtime paths, commands, and descriptions
         if (target.includes('{') || target.includes('*') || !target.includes('/') || !target.includes('.')) continue;
-        if (target.startsWith('learning/') || target.startsWith('test-results/')) continue;
+        if (target.startsWith('learning/') || target.startsWith('web/test-results/')) continue;
         if (target.startsWith('node ') || target.startsWith('npm ') || target.startsWith('gh ')) continue;
         if (/^[A-Z]/.test(target)) continue; // Skip descriptions like "AWS incident patterns"
         const fullPath = path.join(ROOT, target);

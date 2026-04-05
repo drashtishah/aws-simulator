@@ -23,7 +23,7 @@ const FIX_OWNERSHIP = {
 
 const TEST_OWNERSHIP = {
   files: [],
-  dirs: ['test-results/']
+  dirs: ['web/test-results/']
 };
 
 describe('checkAccess', () => {
@@ -58,8 +58,8 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
-    it('blocks test-specs/ directory (protected)', () => {
-      const r = checkAccess(path.join(ROOT, 'test-specs/browser/navigation.yaml'), null, ROOT);
+    it('blocks web/test-specs/ directory (protected)', () => {
+      const r = checkAccess(path.join(ROOT, 'web/test-specs/browser/navigation.yaml'), null, ROOT);
       assert.equal(r.allowed, false);
     });
 
@@ -161,8 +161,8 @@ describe('checkAccess', () => {
   });
 
   describe('test skill context', () => {
-    it('allows test-results/ directory (owned)', () => {
-      const r = checkAccess(path.join(ROOT, 'test-results/browser/nav.json'), TEST_OWNERSHIP, ROOT);
+    it('allows web/test-results/ directory (owned)', () => {
+      const r = checkAccess(path.join(ROOT, 'web/test-results/browser/nav.json'), TEST_OWNERSHIP, ROOT);
       assert.equal(r.allowed, true);
     });
 
@@ -186,10 +186,10 @@ describe('checkAccess', () => {
   });
 
   describe('directory error messages', () => {
-    it('shows test-specs/ in error for test-specs directory', () => {
-      const r = checkAccess(path.join(ROOT, 'test-specs/browser/nav.yaml'), null, ROOT);
+    it('shows web/test-specs/ in error for test-specs directory', () => {
+      const r = checkAccess(path.join(ROOT, 'web/test-specs/browser/nav.yaml'), null, ROOT);
       assert.equal(r.allowed, false);
-      assert.ok(r.reason.includes('test-specs/'));
+      assert.ok(r.reason.includes('web/test-specs/'));
     });
   });
 });

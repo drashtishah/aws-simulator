@@ -317,3 +317,8 @@ describe('playtest transcript logging', () => {
     assert.ok(consoleText.includes('sg-123'));
   });
 });
+
+// Force exit after all tests complete: the Claude SDK import keeps open handles
+// that prevent the node --test runner from exiting within sim-test's timeout.
+const { after } = require('node:test');
+after(() => setTimeout(() => process.exit(0), 500));

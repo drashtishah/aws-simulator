@@ -11,9 +11,9 @@ const yaml = require('js-yaml');
 const evalRunner = require('./eval-runner');
 
 const ROOT = path.resolve(__dirname, '..');
-const SPECS_DIR = path.join(ROOT, 'test-specs', 'browser');
-const PERSONAS_DIR = path.join(ROOT, 'test-specs', 'personas');
-const RESULTS_DIR = path.join(ROOT, 'test-results');
+const SPECS_DIR = path.join(ROOT, 'web', 'test-specs', 'browser');
+const PERSONAS_DIR = path.join(ROOT, 'web', 'test-specs', 'personas');
+const RESULTS_DIR = path.join(ROOT, 'web', 'test-results');
 
 const program = new Command();
 
@@ -113,9 +113,9 @@ program
     let exitCode = 0;
 
     if (!fs.existsSync(SPECS_DIR)) {
-      results.error = 'test-specs/browser/ directory not found';
+      results.error = 'web/test-specs/browser/ directory not found';
       jsonOut(opts.json, results);
-      if (!opts.json) console.log('Error: test-specs/browser/ not found');
+      if (!opts.json) console.log('Error: web/test-specs/browser/ not found');
       process.exit(2);
     }
 
@@ -212,9 +212,9 @@ program
     let exitCode = 0;
 
     if (!fs.existsSync(PERSONAS_DIR)) {
-      results.error = 'test-specs/personas/ directory not found';
+      results.error = 'web/test-specs/personas/ directory not found';
       jsonOut(opts.json, results);
-      if (!opts.json) console.log('Error: test-specs/personas/ not found');
+      if (!opts.json) console.log('Error: web/test-specs/personas/ not found');
       process.exit(2);
     }
 
@@ -300,7 +300,7 @@ function handlePersonaFeedback(opts) {
     if (opts.json) {
       jsonOut(true, { command: 'personas --feedback', error: 'No persona results found' });
     } else {
-      console.log('No persona results found in test-results/personas/');
+      console.log('No persona results found in web/test-results/personas/');
     }
     process.exit(0);
   }
@@ -627,7 +627,7 @@ program
     if (opts.json) {
       jsonOut(true, summary);
     } else {
-      console.log('  Summary written to test-results/summary.json');
+      console.log('  Summary written to web/test-results/summary.json');
       if (summary.layers.evals && summary.layers.evals.total) {
         console.log('  evals: ' + summary.layers.evals.passed + ' passed, ' + summary.layers.evals.failed + ' failed (' + summary.layers.evals.runs + ' run(s))');
       } else if (summary.layers.evals) {

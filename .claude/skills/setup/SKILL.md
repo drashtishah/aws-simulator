@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Initialize the local workspace for a new player. Creates the learning directory, profile, journal, and feedback files. Verifies sim packages and MCP configuration. Use when user says "setup", "initialize", or on first clone.
+description: Initialize the local workspace for a new player. Creates the learning directory, profile, vault, and feedback files. Verifies sim packages and MCP configuration. Use when user says "setup", "initialize", or on first clone.
 effort: low
 paths:
   - learning/**
@@ -22,7 +22,7 @@ Prepares the workspace for a new player. Run once after cloning.
 |------|--------|------|--------|
 | 2 | Load default profile | Read | `references/default-profile.json` |
 | 2 | Create profile | Write | `learning/profile.json` |
-| 3 | Create journal | Write | `learning/journal.md` |
+| 3 | Create vault | Write | `learning/vault/` |
 | 4 | Create feedback log | Write | `learning/feedback.md` |
 | 5 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
 | 5 | Create catalog | Write | `learning/catalog.csv` |
@@ -45,21 +45,9 @@ Read `references/default-profile.json` for the default structure. Replace `{toda
 
 If it already exists, leave it. Do not overwrite.
 
-### 3. Create journal
+### 3. Create vault
 
-If `learning/journal.md` does not exist, create it:
-
-```markdown
----
-tags:
-  - type/learning-journal
-  - domain/aws-simulator
----
-
-# Learning Journal
-
-Progress entries are added automatically after each completed simulation.
-```
+If `learning/vault/` does not exist, create the vault directory structure. Copy templates from `references/vault-templates/` into `learning/vault/`.
 
 ### 4. Create feedback log
 

@@ -14,12 +14,12 @@ Reference for the four-layer testing system. Agents interact only through the `s
   Agent Side                    |  System Side (protected)
                                 |
   sim-test run ----------------->  unit tests
-  sim-test agent --------------->  test-specs/browser/*.yaml
-  sim-test personas ------------>  test-specs/personas/*.json
+  sim-test agent --------------->  web/test-specs/browser/*.yaml
+  sim-test personas ------------>  web/test-specs/personas/*.json
   sim-test evals --------------->  references/eval-scoring.yaml
   sim-test validate ------------>  all layers in sequence
                                 |
-  stdout (text or JSON) <--------  test-results/
+  stdout (text or JSON) <--------  web/test-results/
   exit code (0, 1, 2) <---------  pass / fail / infra error
 ```
 
@@ -72,7 +72,7 @@ sim-test validate --quick     # skip persona tests
 ### Summary
 
 ```
-sim-test summary              # aggregate results into test-results/summary.json
+sim-test summary              # aggregate results into web/test-results/summary.json
 ```
 
 ### Exit codes
@@ -84,11 +84,11 @@ sim-test summary              # aggregate results into test-results/summary.json
 ## Directory Layout
 
 ```
-test-specs/                Protected: declarative test definitions
+web/test-specs/                Protected: declarative test definitions
   browser/                 Layer 2: YAML browser test specs (8 files)
   personas/                Layer 3: persona profiles (5 files)
 
-test-results/              Writable by test skill (gitignored)
+web/test-results/              Writable by test skill (gitignored)
   browser/                 Layer 2 results
   personas/                Layer 3 findings
   evals/                   Layer 4 eval results (JSON per eval)
@@ -149,7 +149,7 @@ Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
 
 ### Persona Result Format
 
-Each persona run writes findings to `test-results/personas/{persona-id}-{timestamp}.json`:
+Each persona run writes findings to `web/test-results/personas/{persona-id}-{timestamp}.json`:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -211,7 +211,7 @@ rubric:
 - Run deterministic tests: `sim-test run`
 - Execute browser specs: `sim-test agent` (uses Chrome DevTools MCP)
 - Run persona tests: `sim-test personas` (uses Chrome DevTools MCP)
-- Read test results: read files in `test-results/`
+- Read test results: read files in `web/test-results/`
 - Push persona findings to feedback: `sim-test personas --feedback`
 
 ### What agents cannot do
@@ -220,7 +220,7 @@ rubric:
 
 ## Findings to Feedback Pipeline
 
-1. Agent runs `sim-test personas` and writes findings to `test-results/personas/{id}-{timestamp}.json`.
+1. Agent runs `sim-test personas` and writes findings to `web/test-results/personas/{id}-{timestamp}.json`.
 2. `sim-test personas --feedback` reads findings and appends to `learning/feedback.md`.
 3. The `/fix` skill reads `learning/feedback.md` and applies improvements.
 

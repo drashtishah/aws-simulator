@@ -13,7 +13,7 @@ Interactive AWS incident-response training game played through Claude Code skill
 - sim-test: CLI for deterministic tests, agent browser specs, persona tests
 
 ### Hooks (2)
-- guard-write.js: PreToolUse Write hook. Skill ownership enforcement, protected paths (path-registry.csv, activity.jsonl, scripts/, node_modules/, test-specs/)
+- guard-write.js: PreToolUse Write hook. Skill ownership enforcement, protected paths (path-registry.csv, activity.jsonl, scripts/, node_modules/, web/test-specs/)
 - log-hook.js: PostToolUse, SessionStart/End, PreCompact, PostCompact, UserPromptSubmit, PostToolUseFailure. Appends JSONL to learning/logs/activity.jsonl
 
 ### MCP Servers (2)

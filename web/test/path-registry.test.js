@@ -40,7 +40,7 @@ describe('path-registry', () => {
 
       // Skip runtime-generated paths (created by hooks/CLI, not present on fresh clone)
       if (row.path.startsWith('learning/logs/')) continue;
-      if (row.path.startsWith('test-results/')) continue;
+      if (row.path.startsWith('web/test-results/')) continue;
 
       const fullPath = path.join(ROOT, row.path);
       if (!fs.existsSync(fullPath)) {
@@ -69,11 +69,19 @@ describe('path-registry', () => {
       const templateIdx = [dollarIdx, braceIdx].filter(i => i >= 0).reduce((a, b) => Math.min(a, b), row.path.length);
       const prefix = row.path.slice(0, templateIdx);
 
-      // The prefix directory should exist (e.g., "sims/" from "sims/{id}/manifest.json")
+      // The prefix should exist as a directory (e.g., "sims/" from "sims/{id}/manifest.json")
+      // or as a file prefix (e.g., "prompt-overlay-" matching "prompt-overlay-medium.md")
       if (prefix) {
         const prefixPath = path.join(ROOT, prefix);
         if (!fs.existsSync(prefixPath)) {
-          failures.push(`${row.file}:${row.line_number} references "${row.path}" but prefix "${prefix}" does not exist`);
+          // Check if any files match the prefix (for file-level templates like "foo-{var}.md")
+          const prefixDir = path.dirname(prefixPath);
+          const prefixBase = path.basename(prefixPath);
+          const hasMatchingFiles = fs.existsSync(prefixDir) &&
+            fs.readdirSync(prefixDir).some(f => f.startsWith(prefixBase));
+          if (!hasMatchingFiles) {
+            failures.push(`${row.file}:${row.line_number} references "${row.path}" but prefix "${prefix}" does not exist`);
+          }
         }
       }
     }

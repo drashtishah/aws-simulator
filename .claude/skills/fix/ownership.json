@@ -1,4 +1,4 @@
 {
-  "files": ["learning/feedback.md", "learning/eval-proposals.md", "scripts/metrics.config.json"],
+  "files": ["learning/feedback.md", "scripts/metrics.config.json"],
   "dirs": [".claude/skills/", "learning/logs"]
 }

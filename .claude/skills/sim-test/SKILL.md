@@ -3,7 +3,7 @@ name: sim-test
 description: Extend the sim-test CLI with new browser specs, persona profiles, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend sim-test".
 effort: medium
 paths:
-  - test-specs/**
+  - web/test-specs/**
   - scripts/**
 hooks:
   PreToolUse:
@@ -23,7 +23,7 @@ Extend the testing CLI with new browser specs, persona profiles, or commands.
 
 - Read `references/testing-system.md` for architecture overview
 - Run `sim-test --help` to see current commands
-- List `test-specs/browser/` and `test-specs/personas/` for current coverage
+- List `web/test-specs/browser/` and `web/test-specs/personas/` for current coverage
 
 ## Phase 2: Expand
 
@@ -31,7 +31,7 @@ Choose one of these options depending on what is needed.
 
 ### Option A: Add a browser spec
 
-1. Create YAML file in `test-specs/browser/{name}.yaml`
+1. Create YAML file in `web/test-specs/browser/{name}.yaml`
 2. Follow schema: name, description, setup, steps (id, action, target, check)
 3. Check types: has_class, not_has_class, attribute, text_contains, visible, css_property, min_count, screenshot_compare
 4. Action types: click, type, keyboard, emulate, wait
@@ -39,7 +39,7 @@ Choose one of these options depending on what is needed.
 
 ### Option B: Add a persona profile
 
-1. Create JSON file in `test-specs/personas/{id}.json`
+1. Create JSON file in `web/test-specs/personas/{id}.json`
 2. Required fields: id, name, role, description, behaviors, focus_areas, evaluation_questions, session_minutes
 3. Validate: `sim-test personas --id {id} --dry-run`
 
@@ -66,6 +66,6 @@ Follow `.claude/skills/git/references/commit-procedure.md`. If a GitHub Issue ex
 
 1. No emojis.
 2. Never edit `scripts/sim-test.js` during skill execution. It is NEVER_WRITABLE.
-3. Never edit files in `test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
+3. Never edit files in `web/test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
 4. Always validate new specs with --dry-run before committing.
-5. The test skill owns `test-results/` directory only.
+5. The test skill owns `web/test-results/` directory only.

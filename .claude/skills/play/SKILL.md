@@ -32,7 +32,7 @@ Runs an AWS incident simulation end-to-end. Consumes sim packages from `sims/{id
 | 10 | Save session state | Write | `learning/sessions/{id}/session.json` |
 | 11 | Update profile | Write | `learning/profile.json` |
 | 11 | Update catalog | Write | `learning/catalog.csv` |
-| 11 | Write journal | Write | `learning/journal.md` |
+| 11 | Write vault session | Write | `learning/vault/sessions/` |
 | 12 | Load coaching patterns | Read | `.claude/skills/play/references/coaching-patterns.md` |
 
 Do NOT use Bash for file reads. Do NOT call MCP aws___ tools during gameplay.

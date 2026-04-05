@@ -41,7 +41,7 @@ tags:
 - `sim-test personas`: run all persona exploration sessions
 - `sim-test personas --id hostile`: run a single persona by ID
 - `sim-test personas --feedback`: append persona findings to `learning/feedback.md`
-- `sim-test summary`: aggregate all results into `test-results/summary.json`
+- `sim-test summary`: aggregate all results into `web/test-results/summary.json`
 - All commands support `--json` for structured output
 
 ### TDD for New Features
@@ -54,9 +54,9 @@ tags:
 ### Test Architecture
 
 - Unit tests: `web/test/*.test.js` (node:test + assert/strict)
-- Browser specs: `test-specs/browser/*.yaml` (agent-driven via Chrome DevTools MCP)
-- Persona profiles: `test-specs/personas/*.json` (exploratory testing)
-- Results: `test-results/` (gitignored, written by sim-test commands)
+- Browser specs: `web/test-specs/browser/*.yaml` (agent-driven via Chrome DevTools MCP)
+- Persona profiles: `web/test-specs/personas/*.json` (exploratory testing)
+- Results: `web/test-results/` (gitignored, written by sim-test commands)
 - Architecture reference: `references/testing-system.md`
 
 ## Adding New Content (Zero Code Changes)

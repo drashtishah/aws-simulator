@@ -16,7 +16,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 | 1 | Load feedback | Read | `learning/feedback.md` |
 | 2 | Load activity logs | Read | `learning/logs/activity.jsonl` |
 | 2 | Load metrics config | Read | `scripts/metrics.config.json` |
-| 3 | Load test results | Read | `test-results/summary.json` |
+| 3 | Load test results | Read | `web/test-results/summary.json` |
 | 3b | List open issues | Bash | gh issue list |
 | 4 | Run health check | Bash | node scripts/code-health.js |
 | 8a | Read target skill | Read | `.claude/skills/*/SKILL.md` |
@@ -74,7 +74,7 @@ Run vault health checks:
 
 ### 3. Check recent test results
 
-If `test-results/summary.json` exists, read it for recent test failures. Note any browser spec failures or high-severity persona findings. These inform which skill areas need attention.
+If `web/test-results/summary.json` exists, read it for recent test failures. Note any browser spec failures or high-severity persona findings. These inform which skill areas need attention.
 
 ### 3b. Check open GitHub Issues
 

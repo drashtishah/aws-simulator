@@ -9,10 +9,10 @@ const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.js');
 describe('guard-write coverage', () => {
   const guardSource = fs.readFileSync(GUARD_PATH, 'utf8');
 
-  it('NEVER_WRITABLE_DIRS includes test-specs/', () => {
+  it('NEVER_WRITABLE_DIRS includes web/test-specs/', () => {
     assert.ok(
-      guardSource.includes("'test-specs'"),
-      'guard-write.js should protect the test-specs/ directory'
+      guardSource.includes("'web/test-specs'"),
+      'guard-write.js should protect the web/test-specs/ directory'
     );
   });
 
@@ -41,13 +41,13 @@ describe('guard-write coverage', () => {
     }
   });
 
-  it('sim-test ownership includes test-results/ dir', () => {
+  it('sim-test ownership includes web/test-results/ dir', () => {
     const ownership = JSON.parse(
       fs.readFileSync(path.join(ROOT, '.claude', 'skills', 'sim-test', 'ownership.json'), 'utf8')
     );
     assert.ok(
-      ownership.dirs.includes('test-results/'),
-      'sim-test ownership should include test-results/ directory'
+      ownership.dirs.includes('web/test-results/'),
+      'sim-test ownership should include web/test-results/ directory'
     );
   });
 

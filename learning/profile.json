@@ -1,57 +1,52 @@
 {
-  "rank_title": "Analyst",
+  "rank_title": "Responder",
   "skill_polygon": {
-    "gather": 3,
-    "diagnose": 3,
-    "correlate": 3,
-    "impact": 1,
-    "trace": 1,
-    "fix": 2
+    "gather": 0,
+    "diagnose": 0,
+    "correlate": 0,
+    "impact": 0,
+    "trace": 0,
+    "fix": 0
   },
-  "polygon_last_advanced": {
-    "gather": "2026-03-27",
-    "diagnose": "2026-03-27",
-    "correlate": "2026-03-27",
-    "impact": "2026-03-27",
-    "trace": "2026-03-27",
-    "fix": "2026-03-27"
-  },
-  "completed_sims": ["001-ec2-unreachable", "006-wrong-region", "003-rds-storage-full", "009-credential-chain", "011-nat-gateway-cost", "022-bedrock-guardrail-medical", "002-s3-public-exposure", "004-lambda-access-denied", "007-dynamodb-scan", "014-sqs-double-process"],
-  "service_exposure": {
-    "ec2": 2,
-    "vpc": 2,
-    "cloudwatch": 8,
-    "lambda": 5,
-    "iam": 4,
-    "rds": 1,
-    "sts": 1,
-    "secrets-manager": 1,
-    "nat-gateway": 1,
-    "s3": 2,
-    "bedrock": 1,
-    "sns": 1,
-    "cloudtrail": 1,
-    "dynamodb": 2,
-    "sqs": 1
-  },
+  "polygon_last_advanced": {},
+  "completed_sims": [],
+  "service_exposure": {},
   "question_patterns": {
     "first_action_frequency": {
-      "logs": 3,
+      "logs": 0,
       "permissions": 0,
-      "architecture": 4,
-      "metrics": 1,
-      "recent_changes": 2,
+      "architecture": 0,
+      "metrics": 0,
+      "recent_changes": 0,
       "immediate_fix": 0
     },
-    "avg_questions_before_fix": 5.6,
-    "audit_trail_check_rate": 0.35,
-    "multi_service_investigation_rate": 0.81
+    "avg_questions_before_fix": 0,
+    "audit_trail_check_rate": 0,
+    "multi_service_investigation_rate": 0
   },
   "challenge_runs": [],
   "rank_history": [
-    { "rank": "responder", "achieved": "2026-03-20" },
-    { "rank": "analyst", "achieved": "2026-03-27" }
+    {
+      "rank": "responder",
+      "achieved": "2026-04-05"
+    }
   ],
-  "total_sessions": 10,
-  "last_session": "2026-03-27"
+  "total_sessions": 0,
+  "last_session": null,
+  "vault_version": 1,
+  "question_quality": {
+    "avg_overall": 0,
+    "avg_specificity": 0,
+    "avg_relevance": 0,
+    "avg_building": 0,
+    "avg_targeting": 0,
+    "total_questions_scored": 0,
+    "last_5_session_avgs": []
+  },
+  "sessions_at_current_rank": 0,
+  "behavioral_profile_summary": {
+    "primary_approach": null,
+    "confidence_calibration": null,
+    "debrief_engagement": null
+  }
 }

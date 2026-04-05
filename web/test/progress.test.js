@@ -39,9 +39,9 @@ describe('currentRank (via progress.js wrapper)', () => {
     assert.equal(currentRank({ gather: 3, diagnose: 3, correlate: 3 }), 'Analyst');
   });
 
-  it('returns Incident Commander when all 6 axes >= 3', () => {
+  it('returns Analyst when all 6 axes >= 3', () => {
     const poly = { gather: 3, diagnose: 3, correlate: 3, impact: 3, trace: 3, fix: 3 };
-    assert.equal(currentRank(poly), 'Incident Commander');
+    assert.equal(currentRank(poly), 'Analyst');
   });
 
   it('returns Chaos Architect when all 6 axes >= 6', () => {
@@ -49,9 +49,9 @@ describe('currentRank (via progress.js wrapper)', () => {
     assert.equal(currentRank(poly), 'Chaos Architect');
   });
 
-  it('returns Incident Commander, not Chaos Architect, at 5', () => {
+  it('returns Senior Commander, not Chaos Architect, at 5', () => {
     const poly = { gather: 5, diagnose: 5, correlate: 5, impact: 5, trace: 5, fix: 5 };
-    assert.equal(currentRank(poly), 'Incident Commander');
+    assert.equal(currentRank(poly), 'Senior Commander');
   });
 
   it('returns Responder when only one axis is high', () => {

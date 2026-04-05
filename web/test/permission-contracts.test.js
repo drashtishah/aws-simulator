@@ -170,7 +170,7 @@ describe('guard-write contract', () => {
 
   it('NEVER_WRITABLE_DIRS includes critical protected directories', () => {
     const values = extractArrayValues(guardSource, 'NEVER_WRITABLE_DIRS');
-    const required = ['node_modules', 'test-specs'];
+    const required = ['node_modules', 'web/test-specs'];
     for (const dir of required) {
       assert.ok(values.includes(dir),
         'NEVER_WRITABLE_DIRS must include ' + dir);

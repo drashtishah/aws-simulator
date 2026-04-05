@@ -19,7 +19,7 @@ const NEVER_WRITABLE = [
 // Directories NEVER writable
 const NEVER_WRITABLE_DIRS = [
   'node_modules',
-  'test-specs'
+  'web/test-specs'
 ];
 
 function checkAccess(filePath, ownership, root) {

@@ -16,7 +16,7 @@ learning/logs/activity-archive-*.jsonl
 web/test/e2e/test-results/
 
 # sim-test output
-test-results/
+web/test-results/
 
 # Runtime skill state
 .claude/state/

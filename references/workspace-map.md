@@ -48,10 +48,10 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                            |  themes/*.md      |       | Writes:          |
                            |  coaching-patt.   |       |  skill files     |
                            |                   |       |  feedback.md     |
-                           | Writes:           |       |  eval-proposals  |
-                           |  (via Claude      |       |  health-scores   |
-                           |   subprocess)     |       |  metrics.config  |
-                           |  sessions/*.json  |       +------------------+
+                           | Writes:           |       |  health-scores   |
+                           |  (via Claude      |       |                  |
+                           |   subprocess)     |       +------------------+
+                           |  sessions/*.json  |
                            |  profile.json     |
                            |  catalog.csv      |
                            |  journal.md       |
@@ -95,10 +95,9 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                 |
                 v
 /fix ---------> reads feedback.md + learning/logs/activity.jsonl + system.jsonl + health scores
-            --> reads test-results/summary.json (if exists) for recent test failures
+            --> reads web/test-results/summary.json (if exists) for recent test failures
             --> runs node scripts/code-health.js (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
-            --> writes learning/eval-proposals.md (staged proposals for eval YAML)
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
             --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
@@ -114,10 +113,10 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> /fix picks up issues in its gather phase (step 3b)
 
 sim-test ----> run: executes node --test (unit tests)
-           --> agent: reads test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
-           --> personas: reads test-specs/personas/*.json, prints prompts for exploration
-           --> personas --feedback: reads test-results/personas/, appends to feedback.md
-           --> summary: aggregates test-results/ into test-results/summary.json
+           --> agent: reads web/test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
+           --> personas: reads web/test-specs/personas/*.json, prints prompts for exploration
+           --> personas --feedback: reads web/test-results/personas/, appends to feedback.md
+           --> summary: aggregates web/test-results/ into web/test-results/summary.json
 ```
 
 ## Transient Files
@@ -132,9 +131,8 @@ sim-test ----> run: executes node --test (unit tests)
 |------|-----------|---------|--------|
 | `learning/catalog.csv` | setup, create-sim, play | create-sim, play | CSV: service, full_name, category, cert_relevance, knowledge_score, sims_completed, last_practiced, notes |
 | `learning/profile.json` | setup, play | play | JSON: level, completed sims, patterns, strengths, weaknesses |
-| `learning/journal.md` | setup, play | (reference) | Markdown: per-sim learning entries |
+| `learning/vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
-| `learning/eval-proposals.md` | fix | sim-test eval | Markdown: staged proposals for Layer 4 eval YAML conversion |
 | `learning/.current-model` | log-hook | play | Plain text: model ID for tier selection (opus/sonnet/haiku) |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: learning events (session lifecycle, user prompts, tasks) |
@@ -142,7 +140,7 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
-| `test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
+| `web/test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
 
 ## Play Component: Prompt Overlays
 
@@ -168,7 +166,7 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 | Unit | `web/test/prompt-builder.test.js` | buildPrompt, all themes, all sims, error messages, marker injection |
 | Unit | `web/test/log-hook.test.js` | buildRecord event enrichment, all 9 event types |
 | Unit | `web/test/guard-write.test.js` | checkAccess for protected files, dirs, safe paths, skill locks |
-| Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers test-specs/, CLI scripts |
+| Unit | `web/test/guard-coverage.test.js` | Verifies guard-write covers web/test-specs/, CLI scripts |
 | Unit | `web/test/code-health.test.js` | AST parsing, scoring functions, determinism, composite calculation |
 | Unit | `web/test/audit-permissions.test.js` | Cross-checks for permission bypass patterns |
 | Unit | `web/test/cross-file-consistency.test.js` | Validates data consistency across files |
@@ -185,26 +183,26 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `reference
 
 | Spec | Location | What it covers |
 |------|----------|----------------|
-| navigation | `test-specs/browser/navigation.yaml` | Tab switching, aria-selected, settings modal open/close |
-| dashboard | `test-specs/browser/dashboard.yaml` | Rank title, hexagon SVG, services section |
-| sim-picker | `test-specs/browser/sim-picker.yaml` | Card rendering, keyboard nav, empty state, category borders |
-| chat | `test-specs/browser/chat.yaml` | Chat flow, message types, send/quit, session complete |
-| settings | `test-specs/browser/settings.yaml` | Dropdowns, theme switching, keyboard navigation |
-| layout | `test-specs/browser/layout.yaml` | CSS layout assertions, responsive breakpoints, alignment |
-| accessibility | `test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
+| navigation | `web/test-specs/browser/navigation.yaml` | Tab switching, aria-selected, settings modal open/close |
+| dashboard | `web/test-specs/browser/dashboard.yaml` | Rank title, hexagon SVG, services section |
+| sim-picker | `web/test-specs/browser/sim-picker.yaml` | Card rendering, keyboard nav, empty state, category borders |
+| chat | `web/test-specs/browser/chat.yaml` | Chat flow, message types, send/quit, session complete |
+| settings | `web/test-specs/browser/settings.yaml` | Dropdowns, theme switching, keyboard navigation |
+| layout | `web/test-specs/browser/layout.yaml` | CSS layout assertions, responsive breakpoints, alignment |
+| accessibility | `web/test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
 
 
 ### Layer 3: Agent Persona (`sim-test personas`)
 
 | Persona | Location | Focus areas |
 |---------|----------|-------------|
-| impatient-beginner | `test-specs/personas/impatient-beginner.json` | Error handling, loading states, race conditions |
-| hostile-user | `test-specs/personas/hostile-user.json` | XSS, input validation, API error handling |
-| screen-reader-user | `test-specs/personas/screen-reader-user.json` | ARIA roles, live regions, focus management |
-| power-user | `test-specs/personas/power-user.json` | State consistency, performance, concurrent operations |
-| mobile-first-user | `test-specs/personas/mobile-first-user.json` | Responsive layout, touch targets, viewport overflow |
+| impatient-beginner | `web/test-specs/personas/impatient-beginner.json` | Error handling, loading states, race conditions |
+| hostile-user | `web/test-specs/personas/hostile-user.json` | XSS, input validation, API error handling |
+| screen-reader-user | `web/test-specs/personas/screen-reader-user.json` | ARIA roles, live regions, focus management |
+| power-user | `web/test-specs/personas/power-user.json` | State consistency, performance, concurrent operations |
+| mobile-first-user | `web/test-specs/personas/mobile-first-user.json` | Responsive layout, touch targets, viewport overflow |
 
-Results written to `test-results/` (gitignored). Use `sim-test summary` to aggregate.
+Results written to `web/test-results/` (gitignored). Use `sim-test summary` to aggregate.
 
 ## Impact Analysis Guide
 
@@ -227,5 +225,4 @@ When changing a component, check what else reads/writes the same data:
 | `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
 | GitHub Issues | /git (creates), /fix (reads in step 3b, creates in step 6b), /fight-team (creates from debate findings) |
 | `learning/.current-model` | log-hook (writes on SessionStart), play (reads for tier selection) |
-| `learning/eval-proposals.md` | fix (writes proposals), sim-test eval (reads for YAML conversion) |
 | Prompt overlays | play (reads based on tier), prompt-overlay-medium.md and prompt-overlay-small.md in play/references/ |

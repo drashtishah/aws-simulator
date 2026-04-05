@@ -131,6 +131,6 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] Browser specs: navigation, dashboard, sim picker, chat, settings all covered
 - [ ] Browser specs: layout assertions for responsive breakpoints (1280px, 480px, 375px)
 - [ ] Browser specs: ARIA roles, attributes, keyboard navigation covered
-- [ ] Guard coverage: `test-specs/` in NEVER_WRITABLE_DIRS
+- [ ] Guard coverage: `web/test-specs/` in NEVER_WRITABLE_DIRS
 - [ ] Color contrast meets WCAG 2.1 AA (4.5:1 minimum)
 - [ ] All catch blocks in server.js log descriptive errors (endpoint, entity ID, cause)
