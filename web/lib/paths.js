@@ -8,6 +8,7 @@ const THEMES_DIR = path.join(ROOT, 'themes');
 const LEARNING_DIR = path.join(ROOT, 'learning');
 const SESSIONS_DIR = path.join(LEARNING_DIR, 'sessions');
 const LOGS_DIR = path.join(LEARNING_DIR, 'logs');
+const VAULT_DIR = path.join(LEARNING_DIR, 'vault');
 const UI_THEMES_DIR = path.join(ROOT, 'web', 'public', 'ui-themes');
 const PUBLIC_DIR = path.join(ROOT, 'web', 'public');
 
@@ -39,6 +40,7 @@ module.exports = {
   LEARNING_DIR,
   SESSIONS_DIR,
   LOGS_DIR,
+  VAULT_DIR,
   UI_THEMES_DIR,
   PUBLIC_DIR,
   REGISTRY,

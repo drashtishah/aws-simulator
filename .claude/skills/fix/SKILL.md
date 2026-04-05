@@ -51,6 +51,27 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 - **Player engagement**: Count UserPromptSubmit events per session. Report average.
 - **Permission bypass audit**: Read `references/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
 
+### 2b. Analyze learning vault
+
+Read `learning/vault/index.md` for stats. Read `learning/vault/patterns/question-quality.md` and `learning/vault/patterns/behavioral-profile.md`. Include in the unified report:
+
+```
+=== Learning Vault Insights ===
+- Question quality trend: {improving/declining/stable} (last 5 sessions: {scores})
+- Behavioral patterns: {notable observations}
+- Growth area: {weakest quality dimension with suggestion}
+- Concept coverage: {concepts encountered vs total available}
+```
+
+Also check `learning/vault/raw/` for orphaned raw notes. If found, compile them using the same logic as Step 19 in the play skill. Report: "Found and compiled {N} orphaned raw notes."
+
+Run vault health checks:
+- All `[[wikilinks]]` in session notes resolve to existing files
+- Orphan concept notes (no session links to them)
+- Stale concepts (not encountered in recent sessions)
+- Pattern files have been updated recently
+- Report vault health score alongside code health score
+
 ### 3. Check recent test results
 
 If `test-results/summary.json` exists, read it for recent test failures. Note any browser spec failures or high-severity persona findings. These inform which skill areas need attention.

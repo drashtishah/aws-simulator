@@ -264,6 +264,34 @@ Hints are objects with `hint`, `relevant_services`, and `skip_if_queried` fields
 - If a hint's `relevant_services` overlap with services the player has NOT queried, prioritize that hint
 - Still deliver only one hint at a time, still require 2+ unproductive questions before offering
 
+### 10e. Question Quality Scoring
+
+After classifying each player question by axis, also score question quality on 4 dimensions (each 0-2, total 0-8) per the rubric in `references/game-design-document.md`:
+
+- **Specificity**: How precise is the question? (vague=0, targeted=1, exact resource/metric=2)
+- **Relevance**: Does it advance the investigation? (unrelated=0, tangential=1, direct=2)
+- **Building**: Does it reference prior response data? (standalone=0, loose followup=1, explicit reference=2)
+- **Targeting**: Does it name a service AND what to look for? (no service=0, names service=1, service+action=2)
+
+Append to raw notes file at `learning/vault/raw/{sim_id}-{date}.md`:
+
+```markdown
+### Turn {n}
+**Question**: {player's question}
+**Axis**: {classified axis}
+**Quality**: specificity={0-2} relevance={0-2} building={0-2} targeting={0-2} total={0-8}
+**Response summary**: {1-sentence: what the console/narrator revealed}
+**Signal**: {behavioral observation, if notable}
+```
+
+Also add `question_quality_scores` array to session.json (alongside existing question_profile):
+
+```json
+"question_quality_scores": [
+  { "turn": 1, "axis": "trace", "quality": { "specificity": 1, "relevance": 2, "building": 0, "targeting": 1, "total": 4 } }
+]
+```
+
 ### 11. Session State Auto-Save
 
 Auto-save session state to `learning/sessions/{sim_id}/session.json` after every significant interaction. Include `theme_id` in the session state so it persists across resumes.
@@ -402,12 +430,16 @@ Read and update `learning/profile.json`:
 1. Add the sim `id` to `completed_sims`
 2. Update `service_exposure`: for each service in the sim, increment its count
 3. Update `question_patterns` with data from this session
-4. **Update skill polygon** (with diminishing returns): apply the scoring formula from `references/progression.yaml` before adding effective counts. Compute `multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))`. For each axis, add `round(effective_count * multiplier)` to the polygon. This prevents polygon inflation after many sims.
-5. **Update polygon_last_advanced**: for any axis that gained points in this session, set `polygon_last_advanced[axis]` to today's date (YYYY-MM-DD).
-6. **Apply challenge modifier bonuses**: if challenge modifiers were active during this session, add +1 to each axis listed in the modifier's `bonus_axes` (from `references/progression.yaml`).
-7. **Derive rank**: compute rank from the polygon shape using the rank gates in `references/progression.yaml`. Write rank title to `profile.rank_title`. If the rank changed from the previous value, append `{ "rank": "{rank_id}", "achieved": "{today}" }` to `profile.rank_history`.
-8. Increment `total_sessions` by 1
-9. Set `last_session` to today's date (YYYY-MM-DD)
+4. **Compute session quality**: calculate average question quality from `question_quality_scores` in session.json. Apply debrief multiplier: 0.7x if 0 debrief questions, 1.1x if 3+ debrief questions across 2+ zones (capped at 8/8).
+5. **Update question_quality** running averages in profile.json: update `avg_overall`, per-dimension averages, `total_questions_scored`, and `last_5_session_avgs`.
+6. **Update skill polygon** (with quality-weighted diminishing returns): compute `quality_factor = clamp(avg_session_quality / 8, 0.25, 1.0)` and `multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval)))`. For each axis, add `round(effective_count * multiplier * quality_factor)` to the polygon. This prevents polygon inflation and rewards question quality.
+7. **Update polygon_last_advanced**: for any axis that gained points in this session, set `polygon_last_advanced[axis]` to today's date (YYYY-MM-DD).
+8. **Apply challenge modifier bonuses**: if challenge modifiers were active during this session, add +1 to each axis listed in the modifier's `bonus_axes` (from `references/progression.yaml`).
+9. **Derive rank**: compute rank from the polygon shape AND quality gates using the rank gates in `references/progression.yaml`. Both polygon gate and quality gate must pass. Write rank title to `profile.rank_title`. If the rank changed from the previous value, append `{ "rank": "{rank_id}", "achieved": "{today}" }` to `profile.rank_history`. On rank change, reset `sessions_at_current_rank` to 0.
+10. Increment `total_sessions` by 1
+11. Increment `sessions_at_current_rank` by 1
+12. Set `last_session` to today's date (YYYY-MM-DD)
+13. Update `behavioral_profile_summary` with approach pattern, confidence calibration, debrief engagement
 
 ### 18. Update Services Catalog
 
@@ -420,30 +452,38 @@ Read `learning/catalog.csv`. For each service in `manifest.services`:
 
 Write the updated CSV back to `learning/catalog.csv`.
 
-### 19. Write Journal Entry
+### 19. Compile Vault Notes
 
-Append an entry to `learning/journal.md`:
+Read `learning/vault/raw/{sim_id}-{date}.md` and compile structured vault notes:
 
-```markdown
-## {sim title}
+1. **Create session note** at `learning/vault/sessions/{sim_id}.md`:
+   - Frontmatter: tags (type/session, category/{cat}, rank/{rank}), date, sim ID, difficulty, quality_avg
+   - Sections: Investigation Summary, Question Quality Analysis (table from raw), Concepts Encountered (wikilinks), Behavioral Signals, Coaching Summary
 
-- **Date**: {today YYYY-MM-DD}
-- **Sim**: [[{sim-id}]]
-- **Difficulty**: {difficulty}
-- **Category**: {category}
-- **Services**: {comma-separated services}
-- **Questions asked**: {questions_asked}
-- **Criteria met**: {count met} / {count total}
-- **Question types**: gather: {count}, diagnose: {count}, correlate: {count}, impact: {count}, trace: {count}, fix: {count}
+2. **Update question quality patterns** at `learning/vault/patterns/question-quality.md`:
+   - Append session average to the Session Averages table
+   - Update running averages per dimension
 
-### Coaching summary
+3. **Update behavioral profile** at `learning/vault/patterns/behavioral-profile.md`:
+   - Update approach pattern, error response, hint usage, confidence calibration
 
-{Condensed version of the coaching feedback -- 2-3 sentences}
+4. **Create/update concept notes** in `learning/vault/concepts/`:
+   - One per learning_objective from manifest, with backlinks to session notes
+   - If concept note already exists, append new encounter entry
 
-### Key takeaway
+5. **Create/update service notes** in `learning/vault/services/`:
+   - One per service in `services_queried`. Append encounter entry with what was learned, quality score, and role in this sim
+   - Add cross-links to concept notes and related services
+   - Update `knowledge_score` and `last_practiced` in frontmatter
 
-{Single most important learning}
-```
+6. **Update vault index** at `learning/vault/index.md`:
+   - Refresh Recent Sessions (last 5)
+   - Update Stats (total sessions, avg quality, rank, sessions at rank)
+   - Add new concepts to the Concepts section
+
+7. **Delete raw file** after successful compilation
+
+If compile fails, log error to `learning/feedback.md` but DO NOT block session completion. The sim data is still in session.json and profile.json.
 
 ### 20. Archive Session
 

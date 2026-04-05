@@ -6,6 +6,9 @@ node_modules/
 
 # All logs (shared hooks + web app)
 learning/logs/
+
+# Vault raw notes (temporary, compiled by play skill)
+learning/vault/raw/
 learning/logs/activity-archive-*.jsonl
 .web-active.lock
 
