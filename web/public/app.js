@@ -121,6 +121,19 @@
     document.getElementById('stat-rank-title').textContent = progress.rankTitle;
     document.getElementById('stat-completed').textContent = progress.simsCompleted;
 
+    // Question quality display
+    var qualityEl = document.getElementById('stat-quality');
+    if (qualityEl && progress.questionQuality) {
+      var avg = progress.questionQuality.avg_overall;
+      qualityEl.textContent = avg > 0 ? (avg.toFixed(1) + '/8') : 'n/a';
+    }
+
+    // Sessions at current rank
+    var sessionsEl = document.getElementById('stat-sessions-at-rank');
+    if (sessionsEl) {
+      sessionsEl.textContent = progress.sessionsAtCurrentRank || 0;
+    }
+
     // Dynamic polygon SVG
     renderPolygon(progress.polygon, progress.axisNames, progress.axisLabels, progress.polygonLastAdvanced);
 
@@ -287,9 +300,14 @@
   // Rank metadata
   var rankMeta = {
     'responder': { description: 'You respond to alerts and follow runbooks.', icon: 'dot' },
+    'junior-investigator': { description: 'You ask targeted questions about specific services.', icon: 'dot' },
     'investigator': { description: 'You dig into logs and identify patterns.', icon: 'triangle' },
+    'senior-investigator': { description: 'You investigate broadly across multiple services.', icon: 'triangle' },
     'analyst': { description: 'You connect signals across services to find root causes.', icon: 'diamond' },
+    'senior-analyst': { description: 'You correlate complex multi-service failures.', icon: 'diamond' },
     'incident-commander': { description: 'You can lead any incident from detection to resolution.', icon: 'shield' },
+    'senior-commander': { description: 'You handle cascading failures with precision.', icon: 'shield' },
+    'chaos-engineer': { description: 'You understand failure modes deeply enough to create them.', icon: 'star' },
     'chaos-architect': { description: 'You anticipate failures before they happen.', icon: 'star' }
   };
 
@@ -334,12 +352,25 @@
       html += '<div class="next-rank-description">' + escapeHtml(meta.description) + '</div>';
     }
 
+    // Quality gate gaps
+    const qualityGate = nextRank.quality_gate;
+    if (qualityGate) {
+      const avgQuality = (progress.questionQuality && progress.questionQuality.avg_overall) || 0;
+      if (avgQuality < qualityGate.avg_question_quality) {
+        gaps.push({ label: 'Question Quality', current: avgQuality.toFixed(1), needed: qualityGate.avg_question_quality });
+      }
+      const sessionsAtRank = progress.sessionsAtCurrentRank || 0;
+      if (sessionsAtRank < qualityGate.min_sessions_at_rank) {
+        gaps.push({ label: 'Sessions at Rank', current: sessionsAtRank, needed: qualityGate.min_sessions_at_rank });
+      }
+    }
+
     if (gaps.length === 0) {
       html += '<span class="text-muted">All requirements met. Complete a sim to advance.</span>';
     } else {
       html += '<div class="next-rank-gaps">' +
         gaps.map(g => {
-          const pct = Math.round((g.current / g.needed) * 100);
+          const pct = Math.min(100, Math.round((parseFloat(g.current) / g.needed) * 100));
           return '<div class="next-rank-gap">' +
             '<span class="next-rank-gap-label">' + escapeHtml(g.label) + '</span>' +
             '<div class="next-rank-gap-bar"><div class="next-rank-gap-fill" style="width:' + pct + '%"></div></div>' +

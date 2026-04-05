@@ -135,6 +135,28 @@ function buildApp() {
   });
 
   app.get('/api/journal-summary', (req, res) => {
+    // Try vault session notes first
+    const vaultSessionsDir = path.join(ROOT, 'learning', 'vault', 'sessions');
+    try {
+      const files = fs.readdirSync(vaultSessionsDir).filter(f => f.endsWith('.md')).sort().reverse().slice(0, 5);
+      if (files.length > 0) {
+        const parsed = files.map(f => {
+          const content = fs.readFileSync(path.join(vaultSessionsDir, f), 'utf8');
+          const { meta, body } = stripFrontmatter(content);
+          const titleMatch = body.match(/^# (.+)/m);
+          return {
+            title: titleMatch ? titleMatch[1].trim() : f.replace('.md', ''),
+            date: meta.date || '',
+            takeaway: (body.match(/## Coaching Summary\n\n(.+)/m) || ['', ''])[1].trim().slice(0, 200)
+          };
+        });
+        return res.json(parsed);
+      }
+    } catch {
+      // vault may not exist yet
+    }
+
+    // Fall back to journal.md
     const journalPath = path.join(ROOT, 'learning', 'journal.md');
     try {
       const content = fs.readFileSync(journalPath, 'utf8');
@@ -213,7 +235,10 @@ function buildApp() {
       challengeRuns: profile.challenge_runs || [],
       categoryMap: config.category_map,
       nextRank,
-      assist: config.assist
+      assist: config.assist,
+      questionQuality: profile.question_quality || null,
+      sessionsAtCurrentRank: profile.sessions_at_current_rank || 0,
+      behavioralProfile: profile.behavioral_profile_summary || null
     });
   });
 
@@ -465,6 +490,22 @@ describe('GET /api/progress', () => {
     const res = await request(app, 'GET', '/api/progress');
     assert.ok(Array.isArray(res.body.rankHistory));
     assert.ok(Array.isArray(res.body.challengeRuns));
+  });
+
+  it('includes questionQuality in response', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    // questionQuality may be null if profile has no quality data
+    assert.ok(res.body.questionQuality !== undefined, 'questionQuality should be present');
+  });
+
+  it('includes sessionsAtCurrentRank in response', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    assert.ok(typeof res.body.sessionsAtCurrentRank === 'number');
+  });
+
+  it('includes behavioralProfile in response', async () => {
+    const res = await request(app, 'GET', '/api/progress');
+    assert.ok(res.body.behavioralProfile !== undefined, 'behavioralProfile should be present');
   });
 });
 

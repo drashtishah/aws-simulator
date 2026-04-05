@@ -136,6 +136,36 @@ app.get('/api/sessions', (req, res) => {
 });
 
 app.get('/api/journal-summary', (req, res) => {
+  // Try vault session notes first
+  const vaultSessionsDir = path.join(paths.VAULT_DIR, 'sessions');
+  try {
+    const files = fs.readdirSync(vaultSessionsDir).filter(f => f.endsWith('.md')).sort().reverse().slice(0, 5);
+    if (files.length > 0) {
+      const parsed = files.map(f => {
+        const content = fs.readFileSync(path.join(vaultSessionsDir, f), 'utf8');
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+        const meta = {};
+        if (fmMatch) {
+          for (const line of fmMatch[1].split('\n')) {
+            const idx = line.indexOf(':');
+            if (idx > 0) meta[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+          }
+        }
+        const body = fmMatch ? fmMatch[2] : content;
+        const titleMatch = body.match(/^# (.+)/m);
+        return {
+          title: titleMatch ? titleMatch[1].trim() : f.replace('.md', ''),
+          date: meta.date || '',
+          takeaway: (body.match(/## Coaching Summary\n\n(.+)/m) || ['', ''])[1].trim().slice(0, 200)
+        };
+      });
+      return res.json(parsed);
+    }
+  } catch {
+    // vault may not exist yet
+  }
+
+  // Fall back to journal.md
   const journalPath = paths.JOURNAL;
   try {
     const content = fs.readFileSync(journalPath, 'utf8');
@@ -155,7 +185,7 @@ app.get('/api/journal-summary', (req, res) => {
     });
     res.json(parsed);
   } catch (err) {
-    console.error(`GET /api/journal-summary: failed to read ${journalPath}: ${err.message}`);
+    console.error(`GET /api/journal-summary: failed to read: ${err.message}`);
     res.json([]);
   }
 });
@@ -236,7 +266,10 @@ app.get('/api/progress', (req, res) => {
     assist: config.assist || {},
     simsCompleted: completedSimIds.length,
     completedSims,
-    servicesEncountered
+    servicesEncountered,
+    questionQuality: profile.question_quality || null,
+    sessionsAtCurrentRank: profile.sessions_at_current_rank || 0,
+    behavioralProfile: profile.behavioral_profile_summary || null
   });
 });
 
