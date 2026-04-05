@@ -559,6 +559,16 @@
           appendMessage('coaching', data.content);
         },
         complete: () => {
+          appendMessage('system', 'Simulation complete.');
+        },
+        profile_updating: () => {
+          appendMessage('system', 'Updating your learning profile...');
+        },
+        profile_updated: () => {
+          handleSessionComplete();
+        },
+        profile_update_failed: (data) => {
+          appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
           handleSessionComplete();
         },
         error: (data) => {
@@ -612,6 +622,16 @@
           appendMessage('coaching', data.content);
         },
         complete: () => {
+          appendMessage('system', 'Simulation complete.');
+        },
+        profile_updating: () => {
+          appendMessage('system', 'Updating your learning profile...');
+        },
+        profile_updated: () => {
+          handleSessionComplete();
+        },
+        profile_update_failed: (data) => {
+          appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
           handleSessionComplete();
         },
         error: (data) => {
@@ -641,7 +661,10 @@
           text: (data) => appendMessage('narrator', data.content),
           console: (data) => appendMessage('console', data.content),
           coaching: (data) => appendMessage('coaching', data.content),
-          complete: () => handleSessionComplete(),
+          complete: () => appendMessage('system', 'Simulation complete.'),
+          profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
+          profile_updated: () => handleSessionComplete(),
+          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed.'); handleSessionComplete(); },
           error: (data) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
           done: () => {
             showTyping(false);
@@ -658,7 +681,6 @@
   }
 
   function handleSessionComplete() {
-    appendMessage('system', 'Simulation complete.');
     currentSessionId = null;
     setTimeout(() => {
       resetChat();

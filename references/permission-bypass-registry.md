@@ -8,13 +8,15 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 
 | File | Line | Pattern | Context | Guardrails |
 | --- | --- | --- | --- | --- |
-| web/lib/claude-process.js | 273 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 274 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | none detected |
-| web/lib/claude-process.js | 362 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 363 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | allowedTools present |
-| web/lib/claude-process.js | 396 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 397 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | none detected |
-| web/test/permission-contracts.test.js | 43 | `bypassPermissions` | `it('has exactly 3 permissionMode occurrences, each set to bypassPermissions', () => {` | none detected |
+| web/lib/claude-process.js | 364 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 365 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | none detected |
+| web/lib/claude-process.js | 454 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 455 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | allowedTools present |
+| web/lib/claude-process.js | 488 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 489 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | none detected |
+| web/lib/claude-process.js | 627 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.js | 628 | `DangerouslySkipPermissions` | `allowDangerouslySkipPermissions: true,` | allowedTools present |
+| web/test/permission-contracts.test.js | 43 | `bypassPermissions` | `it('has exactly 4 permissionMode occurrences, each set to bypassPermissions', () => {` | none detected |
 | web/test/permission-contracts.test.js | 54 | `bypassPermissions` | `m.text.includes("'bypassPermissions'"),` | none detected |
 | web/test/permission-contracts.test.js | 55 | `bypassPermissions` | `'permissionMode on line ' + m.lineNumber + ' must be bypassPermissions'` | none detected |
 | web/test/permission-contracts.test.js | 60 | `dangerouslyDisableSandbox` | `it('does not contain dangerouslyDisableSandbox', () => {` | none detected |
@@ -30,7 +32,5 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | scripts/audit-permissions.js | 18 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox',` | none detected |
 | scripts/audit-permissions.js | 19 | `bypassPermissions` | `'bypassPermissions'` | none detected |
 | scripts/audit-permissions.js | 120 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
-| .claude/plans/eval-system-v2.md | 38 | `dangerously-skip-permissions` | `\| `scripts/audit-permissions.js` \| Create \| Scan for --dangerously-skip-permissions \|` | none detected |
-| .claude/plans/eval-system-v2.md | 1019 | `dangerously-skip-permissions` | `Scans `web/`, `scripts/`, `.claude/` directories for `dangerously-skip-permissions`. Writes Markdown table to `references/permission-bypass-registry.md` with file, line number, and context.` | none detected |
 
-_Last updated: 2026-04-05T16:03:27.068Z_
+_Last updated: 2026-04-05T17:20:47.451Z_

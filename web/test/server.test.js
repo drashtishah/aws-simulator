@@ -632,3 +632,101 @@ describe('Game endpoints return 503 without claudeProcess', () => {
     assert.equal(res.status, 503);
   });
 });
+
+// --- SSE event types for session complete flow ---
+
+describe('POST /api/game/message SSE events', () => {
+  function buildSSEApp(sessionComplete, postSessionResult) {
+    const sseApp = express();
+    sseApp.use(express.json());
+
+    sseApp.post('/api/game/message', async (req, res) => {
+      const { sessionId, message } = req.body;
+      if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required' });
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
+
+      res.write(`data: ${JSON.stringify({ type: 'text', content: 'Response text.' })}\n\n`);
+
+      if (sessionComplete) {
+        res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
+
+        if (postSessionResult === 'success') {
+          res.write(`data: ${JSON.stringify({ type: 'profile_updated' })}\n\n`);
+        } else {
+          res.write(`data: ${JSON.stringify({ type: 'profile_update_failed', message: 'Agent error' })}\n\n`);
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+      res.end();
+    });
+
+    return sseApp;
+  }
+
+  function requestSSE(app, method, url, body) {
+    return new Promise((resolve, reject) => {
+      const server = app.listen(0, () => {
+        const port = server.address().port;
+        const opts = {
+          hostname: '127.0.0.1',
+          port,
+          path: url,
+          method,
+          headers: { 'Content-Type': 'application/json' }
+        };
+        const req = http.request(opts, (res) => {
+          let data = '';
+          res.on('data', d => data += d);
+          res.on('end', () => {
+            server.close();
+            const events = data.split('\n')
+              .filter(l => l.startsWith('data: '))
+              .map(l => { try { return JSON.parse(l.slice(6)); } catch { return null; } })
+              .filter(Boolean);
+            resolve({ status: res.statusCode, events });
+          });
+        });
+        req.on('error', (err) => { server.close(); reject(err); });
+        if (body) req.write(JSON.stringify(body));
+        req.end();
+      });
+    });
+  }
+
+  it('sends profile_updating event when session completes', async () => {
+    const app = buildSSEApp(true, 'success');
+    const res = await requestSSE(app, 'POST', '/api/game/message', { sessionId: 'x', message: 'fix it' });
+    const types = res.events.map(e => e.type);
+    assert.ok(types.includes('profile_updating'), 'should include profile_updating event');
+  });
+
+  it('sends profile_updated after successful post-session agent', async () => {
+    const app = buildSSEApp(true, 'success');
+    const res = await requestSSE(app, 'POST', '/api/game/message', { sessionId: 'x', message: 'fix it' });
+    const types = res.events.map(e => e.type);
+    assert.ok(types.includes('profile_updated'), 'should include profile_updated event');
+    // profile_updating should come before profile_updated
+    assert.ok(types.indexOf('profile_updating') < types.indexOf('profile_updated'));
+  });
+
+  it('sends profile_update_failed on post-session agent error', async () => {
+    const app = buildSSEApp(true, 'failure');
+    const res = await requestSSE(app, 'POST', '/api/game/message', { sessionId: 'x', message: 'fix it' });
+    const types = res.events.map(e => e.type);
+    assert.ok(types.includes('profile_update_failed'), 'should include profile_update_failed event');
+  });
+
+  it('does not send profile events when session is not complete', async () => {
+    const app = buildSSEApp(false);
+    const res = await requestSSE(app, 'POST', '/api/game/message', { sessionId: 'x', message: 'check logs' });
+    const types = res.events.map(e => e.type);
+    assert.ok(!types.includes('profile_updating'), 'should not include profile_updating');
+    assert.ok(!types.includes('profile_updated'), 'should not include profile_updated');
+  });
+});

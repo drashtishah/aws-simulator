@@ -345,6 +345,21 @@ app.post('/api/game/message', async (req, res) => {
 
     if (result.sessionComplete) {
       res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
+
+      // Look up simId from the in-memory session
+      const session = claudeProcess.sessions.get(sessionId);
+      const simId = session ? session.simId : null;
+
+      if (simId) {
+        res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
+        try {
+          await claudeProcess.runPostSessionAgent(simId);
+          res.write(`data: ${JSON.stringify({ type: 'profile_updated' })}\n\n`);
+        } catch (postErr) {
+          console.error(`POST /api/game/message: post-session agent failed: ${postErr.message}`);
+          res.write(`data: ${JSON.stringify({ type: 'profile_update_failed', message: postErr.message })}\n\n`);
+        }
+      }
     }
 
     res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);

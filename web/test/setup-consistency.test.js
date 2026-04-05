@@ -133,9 +133,13 @@ describe('setup skill profile template consistency', () => {
 });
 
 describe('setup and play skill profile templates match', () => {
-  it('both skills reference the same shared default-profile.json', () => {
+  it('setup skill references shared default-profile.json', () => {
     verifySkillReferencesProfile(SETUP_SKILL_PATH, 'setup');
-    verifySkillReferencesProfile(PLAY_SKILL_PATH, 'play');
+  });
+
+  it('play skill is web-only launcher (no profile management)', () => {
+    const content = fs.readFileSync(PLAY_SKILL_PATH, 'utf8');
+    assert.ok(content.includes('web app handles'), 'play skill should delegate to web app');
   });
 });
 

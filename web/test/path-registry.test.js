@@ -38,8 +38,11 @@ describe('path-registry', () => {
       // Skip template paths (contain {} or ${}), and glob patterns (contain *)
       if (row.path.includes('{') || row.path.includes('*') || row.path.includes('$')) continue;
 
-      // Skip runtime-generated paths (created by hooks/CLI, not present on fresh clone)
+      // Skip runtime-generated paths (created by /setup, hooks, or CLI, not present on fresh clone)
       if (row.path.startsWith('learning/logs/')) continue;
+      if (row.path.startsWith('learning/vault')) continue;
+      if (row.path === 'learning/catalog.csv') continue;
+      if (row.path === 'learning/feedback.md') continue;
       if (row.path.startsWith('web/test-results/')) continue;
 
       const fullPath = path.join(ROOT, row.path);
@@ -62,6 +65,10 @@ describe('path-registry', () => {
 
     for (const row of rows) {
       if (!row.path.includes('{') && !row.path.includes('$')) continue;
+
+      // Skip runtime-generated directory prefixes
+      if (row.path.startsWith('web/test-results/')) continue;
+      if (row.path.startsWith('learning/vault')) continue;
 
       // Extract prefix before the first template variable ($ or {)
       const dollarIdx = row.path.indexOf('$');

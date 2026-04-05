@@ -152,6 +152,76 @@ describe('parseAgentMessages', () => {
     const result = parseAgentMessages(messages);
     assert.equal(result.fullText, 'Visible response.');
   });
+
+  it('returns toolCalls array', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'Writing file.' }] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.ok(Array.isArray(result.toolCalls), 'toolCalls should be an array');
+  });
+
+  it('toolCalls is empty array when no tool_use blocks present', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'No tools.' }] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.toolCalls.length, 0);
+  });
+
+  it('captures Write tool calls with name, input, and id', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [
+        { type: 'text', text: 'Saving session.' },
+        { type: 'tool_use', name: 'Write', input: { file_path: '/tmp/test.json', content: '{}' }, id: 'tool-1' }
+      ] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.toolCalls.length, 1);
+    assert.equal(result.toolCalls[0].name, 'Write');
+    assert.equal(result.toolCalls[0].input.file_path, '/tmp/test.json');
+    assert.equal(result.toolCalls[0].id, 'tool-1');
+  });
+
+  it('existing text extraction still works when tool_use blocks are mixed in', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [
+        { type: 'text', text: 'Before.' },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/tmp/x' }, id: 'tool-2' },
+        { type: 'text', text: 'After.' }
+      ] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.fullText, 'Before.After.');
+    assert.equal(result.toolCalls.length, 1);
+  });
+
+  it('multiple tool_use blocks across multiple assistant messages all captured', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [
+        { type: 'tool_use', name: 'Read', input: { file_path: '/a' }, id: 't1' }
+      ] } },
+      { type: 'assistant', message: { content: [
+        { type: 'tool_use', name: 'Write', input: { file_path: '/b', content: 'x' }, id: 't2' },
+        { type: 'tool_use', name: 'Read', input: { file_path: '/c' }, id: 't3' }
+      ] } },
+      { type: 'result' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.toolCalls.length, 3);
+    assert.equal(result.toolCalls[0].id, 't1');
+    assert.equal(result.toolCalls[1].id, 't2');
+    assert.equal(result.toolCalls[2].id, 't3');
+  });
 });
 
 // --- logTurn ---
@@ -251,16 +321,67 @@ describe('sessions map', () => {
 describe('collectMessages', () => {
   const { collectMessages } = require('../lib/claude-process');
 
-  it('rejects after timeout with slow async generator', async () => {
-    async function* slowGenerator() {
+  it('collects messages from async generator', async () => {
+    async function* generator() {
       yield { type: 'system', subtype: 'init', session_id: 's1' };
-      await new Promise(resolve => setTimeout(resolve, 200));
+      yield { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello.' }] } };
       yield { type: 'result' };
     }
 
-    // Override timeout for test: test just verifies the function works with normal generators
-    const result = await collectMessages(slowGenerator());
-    assert.equal(result.length, 2);
+    const result = await collectMessages(generator());
+    assert.equal(result.length, 3);
+  });
+
+  it('rejects with AGENT_TIMEOUT after timeout period', async () => {
+    async function* neverEnds() {
+      yield { type: 'system', subtype: 'init', session_id: 's1' };
+      await new Promise(resolve => setTimeout(resolve, 60000));
+      yield { type: 'result' };
+    }
+
+    await assert.rejects(
+      () => collectMessages(neverEnds(), 50),
+      (err) => {
+        assert.ok(err.message.includes('AGENT_TIMEOUT'), 'should include AGENT_TIMEOUT');
+        return true;
+      }
+    );
+  });
+});
+
+// --- parseAgentMessages error detection ---
+
+describe('parseAgentMessages error detection', () => {
+  const { parseAgentMessages } = require('../lib/claude-process');
+
+  it('captures resultError from error result messages', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'result', is_error: true, subtype: 'error_max_turns', error: 'Max turns reached' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.ok(result.resultError, 'resultError should be present');
+    assert.equal(result.resultError.subtype, 'error_max_turns');
+  });
+
+  it('captures terminalReason from result messages', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'result', terminal_reason: 'end_turn' }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.terminalReason, 'end_turn');
+  });
+
+  it('returns resultError null and terminalReason null when no errors', () => {
+    const messages = [
+      { type: 'system', subtype: 'init', session_id: 's1' },
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'OK.' }] } },
+      { type: 'result', usage: { input_tokens: 10, output_tokens: 5 } }
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.resultError, null);
+    assert.equal(result.terminalReason, null);
   });
 });
 
