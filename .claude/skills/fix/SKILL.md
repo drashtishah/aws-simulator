@@ -166,11 +166,12 @@ j. Repeat for each remaining group.
 After all changes applied:
 - Clear processed entries from `learning/feedback.md` (keep lines 1-9: frontmatter header intact)
 - Update `last_fix_analyzed` in `scripts/metrics.config.json` to current ISO timestamp
-- Rotate `learning/logs/activity.jsonl`:
-  1. Read all lines from `activity.jsonl`
+- Rotate both log files:
+  1. Read all lines from `learning/logs/activity.jsonl`
   2. Filter out entries where `session_id === "test-threshold"` (synthetic test data)
-  3. Write filtered entries to `learning/logs/activity-archive-{YYYY-MM-DD}.jsonl`
+  3. Write filtered entries to `learning/logs/archive/activity-{YYYY-MM-DD}.jsonl`
   4. Truncate `activity.jsonl` to empty
+  5. Repeat for `learning/logs/system.jsonl` -> `learning/logs/archive/system-{YYYY-MM-DD}.jsonl`
   Note: archive files are gitignored and persist for manual review
 
 ### 10. Final health comparison

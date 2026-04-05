@@ -5,6 +5,17 @@
 const fs = require('fs');
 const path = require('path');
 
+// System events go to system.jsonl, learning events go to activity.jsonl
+const SYSTEM_EVENTS = new Set([
+  'PostToolUse', 'PostToolUseFailure', 'StopFailure',
+  'PreCompact', 'PostCompact',
+  'PermissionDenied', 'CwdChanged', 'FileChanged'
+]);
+
+function logDestination(eventName) {
+  return SYSTEM_EVENTS.has(eventName) ? 'system.jsonl' : 'activity.jsonl';
+}
+
 function buildRecord(data) {
   const base = {
     ts: new Date().toISOString(),
@@ -90,12 +101,14 @@ if (require.main === module) {
       const data = JSON.parse(input);
       const dir = path.join(process.cwd(), 'learning', 'logs');
       fs.mkdirSync(dir, { recursive: true });
-      const line = JSON.stringify(buildRecord(data)) + '\n';
-      fs.appendFileSync(path.join(dir, 'activity.jsonl'), line);
+      const record = buildRecord(data);
+      const line = JSON.stringify(record) + '\n';
+      const dest = logDestination(data.hook_event_name);
+      fs.appendFileSync(path.join(dir, dest), line);
     } catch {
       // Silently ignore parse errors to avoid breaking the hook chain
     }
   });
 }
 
-module.exports = { buildRecord };
+module.exports = { buildRecord, logDestination };

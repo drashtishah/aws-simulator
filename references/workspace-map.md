@@ -94,7 +94,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /feedback ----> writes feedback.md + sessions/{id}.json (during play)
                 |
                 v
-/fix ---------> reads feedback.md + learning/logs/activity.jsonl + health scores
+/fix ---------> reads feedback.md + learning/logs/activity.jsonl + system.jsonl + health scores
             --> reads test-results/summary.json (if exists) for recent test failures
             --> runs node scripts/code-health.js (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
@@ -137,7 +137,8 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/eval-proposals.md` | fix | sim-test eval | Markdown: staged proposals for Layer 4 eval YAML conversion |
 | `learning/.current-model` | log-hook | play | Plain text: model ID for tier selection (opus/sonnet/haiku) |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
-| `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: tool calls, session events, prompts, failures, compaction |
+| `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: learning events (session lifecycle, user prompts, tasks) |
+| `learning/logs/system.jsonl` | hooks, web logger | fix | JSONL: system events (tool calls, failures, compaction, warnings) |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |

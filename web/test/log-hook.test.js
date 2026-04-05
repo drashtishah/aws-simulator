@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildRecord } = require('../../.claude/hooks/log-hook');
+const { buildRecord, logDestination } = require('../../.claude/hooks/log-hook');
 
 describe('buildRecord', () => {
   it('always includes base fields', () => {
@@ -146,5 +146,59 @@ describe('buildRecord', () => {
     });
     assert.equal(rec.source, null);
     assert.equal(rec.model, null);
+  });
+});
+
+describe('logDestination', () => {
+  it('routes PostToolUse to system.jsonl', () => {
+    assert.equal(logDestination('PostToolUse'), 'system.jsonl');
+  });
+
+  it('routes PostToolUseFailure to system.jsonl', () => {
+    assert.equal(logDestination('PostToolUseFailure'), 'system.jsonl');
+  });
+
+  it('routes StopFailure to system.jsonl', () => {
+    assert.equal(logDestination('StopFailure'), 'system.jsonl');
+  });
+
+  it('routes PreCompact to system.jsonl', () => {
+    assert.equal(logDestination('PreCompact'), 'system.jsonl');
+  });
+
+  it('routes PostCompact to system.jsonl', () => {
+    assert.equal(logDestination('PostCompact'), 'system.jsonl');
+  });
+
+  it('routes PermissionDenied to system.jsonl', () => {
+    assert.equal(logDestination('PermissionDenied'), 'system.jsonl');
+  });
+
+  it('routes CwdChanged to system.jsonl', () => {
+    assert.equal(logDestination('CwdChanged'), 'system.jsonl');
+  });
+
+  it('routes FileChanged to system.jsonl', () => {
+    assert.equal(logDestination('FileChanged'), 'system.jsonl');
+  });
+
+  it('routes SessionStart to activity.jsonl', () => {
+    assert.equal(logDestination('SessionStart'), 'activity.jsonl');
+  });
+
+  it('routes SessionEnd to activity.jsonl', () => {
+    assert.equal(logDestination('SessionEnd'), 'activity.jsonl');
+  });
+
+  it('routes UserPromptSubmit to activity.jsonl', () => {
+    assert.equal(logDestination('UserPromptSubmit'), 'activity.jsonl');
+  });
+
+  it('routes TaskCreated to activity.jsonl', () => {
+    assert.equal(logDestination('TaskCreated'), 'activity.jsonl');
+  });
+
+  it('routes unknown events to activity.jsonl', () => {
+    assert.equal(logDestination('SomeNewEvent'), 'activity.jsonl');
   });
 });

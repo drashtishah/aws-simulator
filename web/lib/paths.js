@@ -16,6 +16,7 @@ const REGISTRY = path.join(SIMS_DIR, 'registry.json');
 const PROFILE = path.join(LEARNING_DIR, 'profile.json');
 const JOURNAL = path.join(LEARNING_DIR, 'journal.md');
 const LOG_FILE = path.join(LOGS_DIR, 'activity.jsonl');
+const SYSTEM_LOG_FILE = path.join(LOGS_DIR, 'system.jsonl');
 const HEALTH_SCORES_FILE = path.join(LOGS_DIR, 'health-scores.jsonl');
 const CATALOG = path.join(LEARNING_DIR, 'catalog.csv');
 const THEME_BASE = path.join(THEMES_DIR, '_base.md');
@@ -44,6 +45,7 @@ module.exports = {
   PROFILE,
   JOURNAL,
   LOG_FILE,
+  SYSTEM_LOG_FILE,
   HEALTH_SCORES_FILE,
   CATALOG,
   THEME_BASE,

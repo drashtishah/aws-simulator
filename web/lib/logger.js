@@ -30,14 +30,18 @@ function logEvent(sessionId, event) {
 
   ensureLogsDir();
 
-  const line = JSON.stringify({
+  const record = {
     ts: new Date().toISOString(),
     session_id: sessionId,
     trace_id,
     ...event
-  }) + '\n';
+  };
+  const line = JSON.stringify(record) + '\n';
 
-  const logFile = paths.LOG_FILE;
+  // Route system-level events to system.jsonl, learning events to activity.jsonl
+  const isSystemEvent = event.level === 'warn' ||
+    ['CONTEXT_HIGH', 'HIGH_LATENCY', 'TOOL_LOOP'].includes(event.event);
+  const logFile = isSystemEvent ? paths.SYSTEM_LOG_FILE : paths.LOG_FILE;
   try {
     fs.appendFileSync(logFile, line);
   } catch (err) {
