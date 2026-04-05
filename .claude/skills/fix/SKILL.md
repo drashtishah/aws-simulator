@@ -136,24 +136,10 @@ For each group of actionable findings that will drive changes, follow `.claude/s
 - Play flow, coaching, hints, console behavior: target `play` skill (`.claude/skills/play/SKILL.md`) and its references (`.claude/skills/play/references/agent-prompts.md`, `.claude/skills/play/references/coaching-patterns.md`)
 - Code structure, modularity, complexity regressions: target the specific files flagged by health scores
 - Web UI layout, visual design, navigation changes: edit `web/public/` files directly. After edits, use chrome-devtools MCP to take a screenshot and present it to the user for approval. The web app has live reload enabled in dev mode (`npm run dev`), so the browser updates automatically.
-- Behavioral expectations, scoring/coaching bugs, edge case failures, log-pattern anomalies (SESSION_AUTOSAVE_FAILED, TOOL_LOOP, CONTEXT_HIGH), persona findings about play-skill behavior: append to `learning/eval-proposals.md` using the proposal format below. Do NOT route here for simple code fixes, sim content quality, web UI issues, or one-off infra errors.
+- Player behavior patterns (approach, quality trends, engagement): update `learning/vault/patterns/` notes
+- Code bugs, infra errors, test failures: create GitHub Issues
+- Agent behavior expectations: update `references/eval-scoring.yaml`
 - Ambiguous items: present to user for classification
-
-**Eval proposal format** (append to `learning/eval-proposals.md`):
-
-```markdown
-### {date}: {one-line description}
-- **Source**: feedback / activity-log / test-result
-- **Track**: deterministic / judgment
-- **Category**: scoring / coaching / console / enablement / edge-case
-- **Sim**: {sim_id or "any"}
-- **What to test**: {expected behavior}
-- **What went wrong**: {observed behavior}
-```
-
-After appending proposals, create a single task with subject "Review eval proposals" so the pending work is visible in the session. This task does not need a GitHub Issue until `sim-test eval --proposals` is implemented.
-
-Inform the user: "Eval proposals written. Run `sim-test eval --proposals` to generate draft YAML."
 
 ### 8. Apply changes with per-edit health tracking
 

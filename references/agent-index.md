@@ -44,7 +44,9 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 |----------|---------|
 | `references/workspace-map.md` | Workspace architecture |
 | `references/progression.yaml` | Rank and scoring config |
+| `references/game-design-document.md` | All game mechanics and rubrics |
 | `references/testing-system.md` | Testing system reference |
+| `learning/vault/index.md` | Player learning data: sessions, concepts, behavioral patterns, question quality |
 
 ## Data Files
 
@@ -52,6 +54,7 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 |------|------------|
 | `references/path-registry.csv` | Yes |
 | `learning/logs/activity.jsonl` | Yes |
+| `learning/logs/system.jsonl` | Yes |
 | `package-lock.json` | Yes |
 | `scripts/sim-test.js` | Yes |
 | `node_modules/` | Yes (entire directory) |
