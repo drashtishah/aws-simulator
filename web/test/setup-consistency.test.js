@@ -72,7 +72,11 @@ describe('setup skill profile template consistency', () => {
       'challenge_runs',
       'rank_history',
       'total_sessions',
-      'last_session'
+      'last_session',
+      'vault_version',
+      'question_quality',
+      'sessions_at_current_rank',
+      'behavioral_profile_summary'
     ];
     for (const field of requiredFields) {
       assert.ok(field in setupProfile,
@@ -94,6 +98,30 @@ describe('setup skill profile template consistency', () => {
     assert.equal(setupProfile.total_sessions, 0);
   });
 
+  it('vault_version is 1', () => {
+    assert.equal(setupProfile.vault_version, 1);
+  });
+
+  it('sessions_at_current_rank initializes to 0', () => {
+    assert.equal(setupProfile.sessions_at_current_rank, 0);
+  });
+
+  it('question_quality has expected sub-fields', () => {
+    const qq = setupProfile.question_quality;
+    assert.ok(qq, 'question_quality must exist');
+    assert.equal(qq.avg_overall, 0);
+    assert.equal(qq.total_questions_scored, 0);
+    assert.deepEqual(qq.last_5_session_avgs, []);
+  });
+
+  it('behavioral_profile_summary has expected sub-fields', () => {
+    const bp = setupProfile.behavioral_profile_summary;
+    assert.ok(bp, 'behavioral_profile_summary must exist');
+    assert.equal(bp.primary_approach, null);
+    assert.equal(bp.confidence_calibration, null);
+    assert.equal(bp.debrief_engagement, null);
+  });
+
   it('question_patterns has expected sub-fields', () => {
     const qp = setupProfile.question_patterns;
     assert.ok(qp, 'question_patterns must exist');
@@ -108,6 +136,21 @@ describe('setup and play skill profile templates match', () => {
   it('both skills reference the same shared default-profile.json', () => {
     verifySkillReferencesProfile(SETUP_SKILL_PATH, 'setup');
     verifySkillReferencesProfile(PLAY_SKILL_PATH, 'play');
+  });
+});
+
+describe('setup creates vault structure', () => {
+  it('setup SKILL.md includes vault creation step', () => {
+    const content = fs.readFileSync(SETUP_SKILL_PATH, 'utf8');
+    assert.ok(content.includes('5b. Create learning vault'), 'setup should have vault creation step');
+  });
+
+  it('vault templates exist for all required files', () => {
+    const templateDir = path.join(ROOT, 'references', 'vault-templates');
+    assert.ok(fs.existsSync(path.join(templateDir, 'index.md')), 'index.md template should exist');
+    assert.ok(fs.existsSync(path.join(templateDir, 'patterns', 'behavioral-profile.md')), 'behavioral-profile.md template should exist');
+    assert.ok(fs.existsSync(path.join(templateDir, 'patterns', 'question-quality.md')), 'question-quality.md template should exist');
+    assert.ok(fs.existsSync(path.join(templateDir, 'patterns', 'investigation-style.md')), 'investigation-style.md template should exist');
   });
 });
 

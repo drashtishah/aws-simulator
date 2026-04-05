@@ -19,5 +19,21 @@
   "challenge_runs": [],
   "rank_history": [{ "rank": "responder", "achieved": "{today}" }],
   "total_sessions": 0,
-  "last_session": null
+  "last_session": null,
+  "vault_version": 1,
+  "question_quality": {
+    "avg_overall": 0,
+    "avg_specificity": 0,
+    "avg_relevance": 0,
+    "avg_building": 0,
+    "avg_targeting": 0,
+    "total_questions_scored": 0,
+    "last_5_session_avgs": []
+  },
+  "sessions_at_current_rank": 0,
+  "behavioral_profile_summary": {
+    "primary_approach": null,
+    "confidence_calibration": null,
+    "debrief_engagement": null
+  }
 }

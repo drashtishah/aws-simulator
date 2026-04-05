@@ -26,6 +26,7 @@ Prepares the workspace for a new player. Run once after cloning.
 | 4 | Create feedback log | Write | `learning/feedback.md` |
 | 5 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
 | 5 | Create catalog | Write | `learning/catalog.csv` |
+| 5b | Copy vault templates | Read, Write | `references/vault-templates/*` -> `learning/vault/*` |
 | 6 | Load registry | Read | `sims/registry.json` |
 
 ---
@@ -87,6 +88,19 @@ service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_pr
 All progress columns default to `0,0,,`.
 
 If `learning/catalog.csv` already exists, leave it. Do not overwrite.
+
+### 5b. Create learning vault
+
+If `learning/vault/` does not exist, create the vault directory structure:
+
+1. Create directories: `learning/vault/sessions/`, `learning/vault/concepts/`, `learning/vault/patterns/`, `learning/vault/services/`, `learning/vault/raw/`
+2. Copy vault templates from `references/vault-templates/` to `learning/vault/`:
+   - `references/vault-templates/index.md` -> `learning/vault/index.md`
+   - `references/vault-templates/patterns/behavioral-profile.md` -> `learning/vault/patterns/behavioral-profile.md`
+   - `references/vault-templates/patterns/question-quality.md` -> `learning/vault/patterns/question-quality.md`
+   - `references/vault-templates/patterns/investigation-style.md` -> `learning/vault/patterns/investigation-style.md`
+
+If `learning/vault/` already exists, leave it. Do not overwrite.
 
 ### 6. Verify sim packages
 
