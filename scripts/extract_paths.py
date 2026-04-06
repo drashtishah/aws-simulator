@@ -6,7 +6,7 @@ Scans .md and .json files for strings that look like file/directory paths
 since there's no import/variable mechanism.
 
 The script only extracts and reports. It does not validate, resolve, or
-rewrite paths. The test (web/test/path-registry.test.js) handles validation.
+rewrite paths. The test (web/test/path-registry.test.ts) handles validation.
 
 Outputs a sorted, deduplicated CSV to references/path-registry.csv.
 

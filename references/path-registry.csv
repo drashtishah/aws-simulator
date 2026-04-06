@@ -205,6 +205,8 @@ file,path,line_number
 .claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/state/last-check.json,248
 .claude/skills/upgrade/SKILL.md,.claude/skills/git/references/commit-procedure.md,284
 .claude/skills/upgrade/SKILL.md,.claude/skills/git/references/task-to-issue.md,284
+.mypy_cache/3.8/extract_paths.data.json,scripts/extract_paths.py,1
+.mypy_cache/3.8/extract_paths.meta.json,scripts/extract_paths.py,1
 CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,18
 CLAUDE.md,references/agent-index.md,21
 CLAUDE.md,references/tool-registry.md,21
@@ -339,3 +341,4 @@ references/workspace-map.md,learning/.current-model,227
 tsconfig.frontend.json,dist/public,8
 tsconfig.frontend.json,web/public,9
 tsconfig.json,web/public,22
+tsconfig.json,web/test,22
