@@ -295,6 +295,14 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('index.html does not contain stat-quality or stat-sessions-at-rank', () => {
+    const html = readFile('web/public/index.html');
+    assert.ok(!html.includes('stat-quality'),
+      'index.html should not contain stat-quality card');
+    assert.ok(!html.includes('stat-sessions-at-rank'),
+      'index.html should not contain stat-sessions-at-rank card');
+  });
+
   it('chat-input:focus uses accent-primary not accent-blue', () => {
     const css = readFile('web/public/style.css');
     assert.ok(!/\.chat-input:focus\s*\{[^}]*accent-blue/.test(css),

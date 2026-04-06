@@ -121,19 +121,6 @@
     document.getElementById('stat-rank-title').textContent = progress.rankTitle;
     document.getElementById('stat-completed').textContent = progress.simsCompleted;
 
-    // Question quality display
-    var qualityEl = document.getElementById('stat-quality');
-    if (qualityEl && progress.questionQuality) {
-      var avg = progress.questionQuality.avg_overall;
-      qualityEl.textContent = avg > 0 ? (avg.toFixed(1) + '/8') : 'n/a';
-    }
-
-    // Sessions at current rank
-    var sessionsEl = document.getElementById('stat-sessions-at-rank');
-    if (sessionsEl) {
-      sessionsEl.textContent = progress.sessionsAtCurrentRank || 0;
-    }
-
     // Dynamic polygon SVG
     renderPolygon(progress.polygon, progress.axisNames, progress.axisLabels, progress.polygonLastAdvanced);
 
