@@ -68,7 +68,7 @@ Are all sims consistent in structure? Do manifests follow the schema? Are storie
 
 Are hooks correctly enforcing constraints? Is guard-write coverage complete? Are there gaps where unprotected writes could happen?
 
-**Look at:** `.claude/hooks/`, `web/test/guard-write.test.js`, `web/test/guard-coverage.test.js`.
+**Look at:** `.claude/hooks/`, `web/test/guard-write.test.ts`, `web/test/guard-coverage.test.ts`.
 
 ## 12. Data flow integrity
 

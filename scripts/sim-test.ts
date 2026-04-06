@@ -3,7 +3,7 @@
 // Agents interact through commands only. This file is NEVER_WRITABLE.
 
 import { Command } from 'commander';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
@@ -267,44 +267,54 @@ program
     const results: RunResults = { command: 'run', ts: timestamp() };
     let exitCode = 0;
 
-    try {
-      const out = execSync('npx tsx --test web/test/*.test.js', {
-        cwd: ROOT,
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 600000,
-        maxBuffer: 10 * 1024 * 1024
-      });
-      const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
-      const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
-      const passed = passMatch ? parseInt(passMatch[1]!, 10) : 0;
-      const failed = failMatch ? parseInt(failMatch[1]!, 10) : 0;
-      results.unit = { total: passed + failed, passed, failed };
-      if (failed > 0) exitCode = 1;
-      if (!opts.json) {
-        console.log('  unit: ' + passed + '/' + (passed + failed) + ' passed');
+    // Run each test file in its own tsx process to avoid tsx hanging
+    // when multiple test files share a single process.
+    {
+      const testDir = path.join(ROOT, 'web', 'test');
+      const allTests = fs.readdirSync(testDir)
+        .filter((f: string) => f.endsWith('.test.ts'))
+        .map((f: string) => path.join('web', 'test', f));
+
+      let totalPassed = 0;
+      let totalFailed = 0;
+      let hasError = false;
+
+      for (const testFile of allTests) {
+        const result = spawnSync('tsx', ['--test', '--test-force-exit', testFile], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          timeout: 30000,
+          maxBuffer: 5 * 1024 * 1024,
+        });
+
+        const out = (result.stdout ?? '') + (result.stderr ?? '');
+        const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
+        const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
+        const passed = passMatch ? parseInt(passMatch[1]!, 10) : 0;
+        const failed = failMatch ? parseInt(failMatch[1]!, 10) : 0;
+
+        if (passed === 0 && failed === 0 && !result.signal) {
+          hasError = true;
+          if (!opts.json) {
+            console.error('  ' + path.basename(testFile) + ': ERROR');
+            console.error(out.slice(0, 200));
+          }
+        }
+
+        totalPassed += passed;
+        totalFailed += failed;
       }
-    } catch (err: unknown) {
-      const execErr = err as { stdout?: string; stderr?: string; status?: number };
-      const out = (execErr.stdout ?? '') + (execErr.stderr ?? '');
-      const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
-      const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
-      const passed = passMatch ? parseInt(passMatch[1]!, 10) : 0;
-      const failed = failMatch ? parseInt(failMatch[1]!, 10) : 0;
-      if (passed > 0 || failed > 0) {
-        results.unit = { total: passed + failed, passed, failed };
-        if (!opts.json) {
-          console.log('  unit: ' + passed + '/' + (passed + failed) + ' passed');
-        }
-      } else {
-        results.unit = { total: 0, passed: 0, failed: 0, error: 'Infrastructure error' };
-        if (!opts.json) {
-          console.log('  unit: INFRASTRUCTURE ERROR');
-          console.error(out.slice(0, 500));
-        }
+
+      const total = totalPassed + totalFailed;
+      results.unit = { total, passed: totalPassed, failed: totalFailed };
+      if (hasError && total === 0) {
+        results.unit.error = 'Infrastructure error';
         exitCode = 2;
       }
-      if (failed > 0) exitCode = 1;
+      if (totalFailed > 0) exitCode = 1;
+      if (!opts.json) {
+        console.log('  unit: ' + totalPassed + '/' + total + ' passed');
+      }
     }
 
     results.verdict = exitCode === 0 ? 'PASS' : exitCode === 1 ? 'FAIL' : 'ERROR';

@@ -2,6 +2,10 @@
    Uses marked.js for full markdown support + highlight.js for code blocks.
    XSS-safe: marked sanitizes by default. */
 
+/* eslint-disable no-var */
+declare var module: { exports: Record<string, unknown> } | undefined;
+/* eslint-enable no-var */
+
 (function (exports: Record<string, unknown>) {
   'use strict';
 
@@ -31,9 +35,8 @@
     return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // UMD export: works in both Node (CJS) and browser (global) contexts
-  if (typeof globalThis !== 'undefined' && 'module' in globalThis) {
-    (globalThis as Record<string, unknown>).module = { exports: { renderMarkdown } };
+  if (typeof module !== 'undefined' && module && module.exports) {
+    module.exports = { renderMarkdown };
   } else {
     exports.renderMarkdown = renderMarkdown;
   }

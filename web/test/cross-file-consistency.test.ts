@@ -14,8 +14,8 @@ function readFile(relPath) {
 
 // --- 1. CSS class coverage ---
 
-describe('CSS class coverage: app.js classes exist in style.css', () => {
-  const appJs = readFile('web/public/app.js');
+describe('CSS class coverage: app.ts classes exist in style.css', () => {
+  const appJs = readFile('web/public/app.ts');
   const styleCss = readFile('web/public/style.css');
 
   // Extract class selectors from CSS (e.g. .foo-bar)
@@ -24,7 +24,7 @@ describe('CSS class coverage: app.js classes exist in style.css', () => {
     cssClasses.add(match[1]);
   }
 
-  // Classes that app.js constructs in HTML strings.
+  // Classes that app.ts constructs in HTML strings.
   // We look for class="..." patterns and ' classname' concatenation patterns.
   const appClassRefs = new Set();
 
@@ -61,7 +61,7 @@ describe('CSS class coverage: app.js classes exist in style.css', () => {
 
   for (const cls of criticalClasses) {
     it('"' + cls + '" exists in style.css', () => {
-      assert.ok(cssClasses.has(cls), cls + ' is referenced in app.js but missing from style.css');
+      assert.ok(cssClasses.has(cls), cls + ' is referenced in app.ts but missing from style.css');
     });
   }
 });
@@ -99,7 +99,7 @@ describe('no stale theme references', () => {
   const staleThemes = ['still-life', 'slow-burn', 'field-notes'];
 
   const files = [
-    'web/public/app.js',
+    'web/public/app.ts',
     'web/server.ts',
     '.claude/skills/play/SKILL.md',
     'references/web-app-checklist.md',
@@ -148,16 +148,16 @@ describe('session state template axes match progression.yaml', () => {
 
 // --- 5. App.js fallback axes match progression.yaml ---
 
-describe('app.js fallback axes match progression.yaml', () => {
+describe('app.ts fallback axes match progression.yaml', () => {
   const config = loadConfig(CONFIG_PATH);
   const configAxes = axisNames(config).sort();
 
   it('hardcoded axisNames in loadDashboard fallback match config', () => {
-    const appJs = readFile('web/public/app.js');
+    const appJs = readFile('web/public/app.ts');
 
     // Find the axisNames array in the fallback object
     const match = appJs.match(/axisNames:\s*\[([^\]]+)\]/);
-    assert.ok(match, 'app.js must contain a hardcoded axisNames fallback array');
+    assert.ok(match, 'app.ts must contain a hardcoded axisNames fallback array');
 
     const fallbackAxes = [];
     for (const m of match[1].matchAll(/'([a-z_]+)'/g)) {
@@ -166,7 +166,7 @@ describe('app.js fallback axes match progression.yaml', () => {
     fallbackAxes.sort();
 
     assert.deepEqual(fallbackAxes, configAxes,
-      'app.js fallback axisNames must match progression.yaml axes');
+      'app.ts fallback axisNames must match progression.yaml axes');
   });
 });
 
@@ -174,14 +174,14 @@ describe('app.js fallback axes match progression.yaml', () => {
 
 describe('playtester mode removed', () => {
   const indexHtml = readFile('web/public/index.html');
-  const appJs = readFile('web/public/app.js');
+  const appJs = readFile('web/public/app.ts');
 
   it('index.html does not have playtest select element', () => {
     assert.ok(!indexHtml.includes('select-playtest'), 'settings modal should not have playtest dropdown');
   });
 
-  it('app.js does not read playtest setting', () => {
-    assert.ok(!appJs.includes("getSetting('playtest'"), 'app.js should not read playtest setting');
+  it('app.ts does not read playtest setting', () => {
+    assert.ok(!appJs.includes("getSetting('playtest'"), 'app.ts should not read playtest setting');
   });
 });
 
@@ -202,7 +202,7 @@ describe('sim-test CLI commands', () => {
 // --- 8. Dashboard rendering correctness ---
 
 describe('dashboard rendering correctness', () => {
-  const appJs = readFile('web/public/app.js');
+  const appJs = readFile('web/public/app.ts');
   const indexHtml = readFile('web/public/index.html');
 
   it('hexagon SVG viewBox has room for labels beyond the grid', () => {
@@ -282,10 +282,10 @@ describe('skill tool references', () => {
 // --- 8. Theme IDs hardcoded in source exist on disk ---
 
 describe('hardcoded theme IDs exist as files', () => {
-  it('app.js calm-mentor theme file exists', () => {
-    const appJs = readFile('web/public/app.js');
+  it('app.ts calm-mentor theme file exists', () => {
+    const appJs = readFile('web/public/app.ts');
     const match = appJs.match(/themeId\s*=\s*'([^']+)'/);
-    assert.ok(match, 'app.js must hardcode a themeId');
+    assert.ok(match, 'app.ts must hardcode a themeId');
     const themeFile = path.join(ROOT, 'themes', match[1] + '.md');
     assert.ok(fs.existsSync(themeFile),
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
@@ -309,10 +309,10 @@ describe('hardcoded theme IDs exist as files', () => {
       'index.html should include mermaid.min.js CDN');
   });
 
-  it('app.js contains mermaid.render call', () => {
-    const appJs = readFile('web/public/app.js');
+  it('app.ts contains mermaid.render call', () => {
+    const appJs = readFile('web/public/app.ts');
     assert.ok(appJs.includes('mermaid.render'),
-      'app.js should contain mermaid.render for diagram support');
+      'app.ts should contain mermaid.render for diagram support');
   });
 
   it('style.css contains .mermaid-diagram', () => {
@@ -333,10 +333,10 @@ describe('hardcoded theme IDs exist as files', () => {
       'narrator messages should use white-space: normal');
   });
 
-  it('app.js contains single-sim enforcement guard', () => {
-    const appJs = readFile('web/public/app.js');
+  it('app.ts contains single-sim enforcement guard', () => {
+    const appJs = readFile('web/public/app.ts');
     assert.ok(appJs.includes('currentSessionId && !isResume'),
-      'app.js should have single-sim enforcement guard in startSim');
+      'app.ts should have single-sim enforcement guard in startSim');
   });
 
   it('index.html does not contain stat-quality or stat-sessions-at-rank', () => {

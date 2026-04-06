@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 
-const { renderMarkdown } = require('../public/markdown.js');
+const { renderMarkdown } = require('../public/markdown.ts');
 
 describe('renderMarkdown', () => {
   // In Node.js test environment, marked is not loaded (CDN-only).
@@ -26,14 +26,14 @@ describe('renderMarkdown', () => {
   });
 
   it('source references marked.parse', () => {
-    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'markdown.js'), 'utf8');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'markdown.ts'), 'utf8');
     assert.ok(source.includes('marked.parse'),
-      'markdown.js should reference marked.parse');
+      'markdown.ts should reference marked.parse');
   });
 
   it('source configures highlight.js integration', () => {
-    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'markdown.js'), 'utf8');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'public', 'markdown.ts'), 'utf8');
     assert.ok(source.includes('hljs'),
-      'markdown.js should reference hljs for syntax highlighting');
+      'markdown.ts should reference hljs for syntax highlighting');
   });
 });
