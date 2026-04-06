@@ -1,7 +1,7 @@
 {
   "id": "023-sagemaker-endpoint-scaling",
   "title": "The Endpoint That Stopped Thinking",
-  "summary": "A machine learning endpoint handles morning traffic fine, but freezes under afternoon load. The scaling policy exists but never fires.",
+  "summary": "A machine learning endpoint freezes every morning under rush-hour load. The scaling policy exists but never fires.",
   "difficulty": 3,
   "category": "performance",
   "services": [
