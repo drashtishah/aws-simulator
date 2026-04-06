@@ -499,6 +499,11 @@
   // --- Chat ---
 
   async function startSim(simId, isResume) {
+    // Single-sim enforcement: block if a session is already active
+    if (currentSessionId && !isResume) {
+      appendMessage('system', 'A simulation is already in progress. Quit it first before starting another.');
+      return;
+    }
     currentSimId = simId;
 
     // Find sim title

@@ -295,6 +295,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('app.js contains single-sim enforcement guard', () => {
+    const appJs = readFile('web/public/app.js');
+    assert.ok(appJs.includes('currentSessionId && !isResume'),
+      'app.js should have single-sim enforcement guard in startSim');
+  });
+
   it('index.html does not contain stat-quality or stat-sessions-at-rank', () => {
     const html = readFile('web/public/index.html');
     assert.ok(!html.includes('stat-quality'),
