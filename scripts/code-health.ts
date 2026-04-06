@@ -619,8 +619,9 @@ function scoreTestSync(libFiles: string[]): MetricResult {
   for (const f of libFiles) {
     const ext: string = path.extname(f);
     const base: string = path.basename(f, ext);
-    const testPath: string = path.join(ROOT, 'web', 'test', `${base}.test.js`);
-    if (fs.existsSync(testPath)) covered++;
+    const testPathTs: string = path.join(ROOT, 'web', 'test', `${base}.test.ts`);
+    const testPathJs: string = path.join(ROOT, 'web', 'test', `${base}.test.js`);
+    if (fs.existsSync(testPathTs) || fs.existsSync(testPathJs)) covered++;
   }
 
   const pct: number = total > 0 ? (covered / total) * 100 : 100;
