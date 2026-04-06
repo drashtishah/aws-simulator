@@ -295,6 +295,23 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('registry summaries share keywords with manifest summaries', () => {
+    const registry = JSON.parse(readFile('sims/registry.json'));
+    for (const sim of registry.sims) {
+      const manifestPath = path.join('sims', sim.id, 'manifest.json');
+      const fullPath = path.join(ROOT, manifestPath);
+      if (!fs.existsSync(fullPath)) continue;
+      const manifest = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+      // Extract significant words (4+ chars) from manifest summary
+      const manifestWords = (manifest.summary || '').toLowerCase().split(/\W+/).filter(w => w.length >= 4);
+      const registrySummary = (sim.summary || '').toLowerCase();
+      // At least one keyword from manifest should appear in registry
+      const hasOverlap = manifestWords.some(w => registrySummary.includes(w));
+      assert.ok(hasOverlap,
+        'registry summary for "' + sim.id + '" should share keywords with manifest summary');
+    }
+  });
+
   it('app.js contains single-sim enforcement guard', () => {
     const appJs = readFile('web/public/app.js');
     assert.ok(appJs.includes('currentSessionId && !isResume'),
