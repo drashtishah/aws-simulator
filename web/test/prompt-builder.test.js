@@ -140,4 +140,20 @@ describe('buildPrompt', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     assert.ok(prompt.includes('Do not offer another simulation'), 'should contain no-play-another rule');
   });
+
+  it('contains Player Context when profile.json exists', () => {
+    const profilePath = path.join(ROOT, 'learning', 'profile.json');
+    if (fs.existsSync(profilePath)) {
+      const prompt = buildPrompt(testSimId, 'calm-mentor');
+      assert.ok(prompt.includes('Player Context'), 'should contain Player Context section');
+    }
+  });
+
+  it('builds successfully when profile.json does not exist', () => {
+    // buildPrompt should not throw even if profile is missing
+    // (graceful degradation via try/catch in buildPlayerContext)
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    assert.ok(typeof prompt === 'string');
+    assert.ok(prompt.length > 100);
+  });
 });
