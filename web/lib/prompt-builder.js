@@ -183,6 +183,9 @@ function buildPrompt(simId, themeId) {
 - After delivering coaching analysis and [SESSION_COMPLETE], do not continue the conversation. Do not offer another simulation. The server handles session completion.
 - Do not use Markdown headers in responses (use bold text and line breaks instead)`;
 
+  // 8. Inject player context
+  prompt += buildPlayerContext(manifest);
+
   // Validate: check for unresolved placeholders
   const unresolved = prompt.match(/\{[a-z_]+\.[a-z_]+\}/g);
   if (unresolved) {
@@ -191,6 +194,68 @@ function buildPrompt(simId, themeId) {
   }
 
   return prompt;
+}
+
+function buildPlayerContext(manifest) {
+  try {
+    const profilePath = paths.PROFILE;
+    if (!fs.existsSync(profilePath)) return '';
+
+    const profile = JSON.parse(fs.readFileSync(profilePath, 'utf8'));
+    const sections = [];
+
+    sections.push(`## Player Context`);
+    sections.push(`Rank: ${profile.rank_title || 'unranked'} | Sessions: ${profile.total_sessions || 0}`);
+
+    // Skill polygon
+    if (profile.skill_polygon) {
+      const poly = profile.skill_polygon;
+      sections.push(`Skill polygon: gather=${poly.gather||0}, diagnose=${poly.diagnose||0}, correlate=${poly.correlate||0}, impact=${poly.impact||0}, trace=${poly.trace||0}, fix=${poly.fix||0}`);
+    }
+
+    // Question quality
+    if (profile.question_quality) {
+      const qq = profile.question_quality;
+      sections.push(`Question quality (running avg): overall=${qq.overall||0}, specificity=${qq.specificity||0}, relevance=${qq.relevance||0}`);
+    }
+
+    // Behavioral profile from vault
+    const behavioralPath = path.join(paths.ROOT, 'learning', 'vault', 'patterns', 'behavioral-profile.md');
+    if (fs.existsSync(behavioralPath)) {
+      const behavioral = fs.readFileSync(behavioralPath, 'utf8');
+      // Extract just the body (skip frontmatter)
+      const bodyStart = behavioral.indexOf('---', 4);
+      if (bodyStart > 0) {
+        const body = behavioral.slice(bodyStart + 3).trim();
+        if (body.length > 0 && body.length < 2000) {
+          sections.push(`\nBehavioral profile:\n${body}`);
+        }
+      }
+    }
+
+    // Service familiarity for this sim's services
+    if (manifest.services) {
+      const catalogPath = paths.CATALOG;
+      if (fs.existsSync(catalogPath)) {
+        const catalog = fs.readFileSync(catalogPath, 'utf8');
+        const lines = catalog.split('\n');
+        const relevant = [];
+        for (const service of manifest.services) {
+          const row = lines.find(l => l.startsWith(service.id + ',') || l.includes(',' + service.id + ','));
+          if (row) relevant.push(`  - ${service.id}: ${row}`);
+        }
+        if (relevant.length > 0) {
+          sections.push(`\nService familiarity (this sim):\n${relevant.join('\n')}`);
+        }
+      }
+    }
+
+    sections.push(`\nAdapt pacing accordingly: if the player has high familiarity with a service, keep console responses concise. If behavioral profile shows they tend to rush to fixes, let the investigation develop naturally without acceleration. Do not reference this data directly to the player. Do not mention rank, scores, or profile data.`);
+
+    return '\n\n' + sections.join('\n');
+  } catch {
+    return ''; // Graceful degradation if any file is missing or malformed
+  }
 }
 
 function readArtifact(simDir, relativePath) {
