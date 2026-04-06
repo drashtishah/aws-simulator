@@ -416,6 +416,23 @@ describe('queryOptions includes maxTurns', () => {
   });
 });
 
+// --- Cost budgeting ---
+
+describe('cost budgeting', () => {
+  it('metrics.config.json contains budgets', () => {
+    const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
+    assert.ok(config.budgets, 'metrics.config.json should have budgets key');
+    assert.ok(config.budgets.game_session_usd, 'budgets should have game_session_usd');
+    assert.ok(config.budgets.post_session_usd, 'budgets should have post_session_usd');
+  });
+
+  it('claude-process.js source contains maxBudgetUsd', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+    assert.ok(source.includes('maxBudgetUsd'),
+      'claude-process.js should reference maxBudgetUsd');
+  });
+});
+
 // --- parseAgentMessages hasToolUse ---
 
 describe('parseAgentMessages hasToolUse', () => {

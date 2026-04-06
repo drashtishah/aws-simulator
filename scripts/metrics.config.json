@@ -9,5 +9,9 @@
       "test_sync": 0.10
     }
   },
+  "budgets": {
+    "game_session_usd": 2.00,
+    "post_session_usd": 5.00
+  },
   "last_fix_analyzed": "2026-04-03T08:30:00Z"
 }

@@ -490,6 +490,12 @@ async function* streamSession(simId, themeId, options = {}) {
     maxTurns: 50
   };
 
+  try {
+    const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
+    const budget = metricsConfig.budgets?.game_session_usd;
+    if (budget) queryOptions.maxBudgetUsd = budget;
+  } catch { /* ignore missing config */ }
+
   const sessionData = {
     claudeSessionId: null,
     simId,
@@ -971,6 +977,12 @@ async function runPostSessionAgent(simId) {
     allowDangerouslySkipPermissions: true,
     maxTurns: 30
   };
+
+  try {
+    const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
+    const budget = metricsConfig.budgets?.post_session_usd;
+    if (budget) queryOptions.maxBudgetUsd = budget;
+  } catch { /* ignore missing config */ }
 
   const messages = await collectMessages(query({
     prompt,
