@@ -50,6 +50,17 @@ Choose one of these options depending on what is needed.
 3. Must support --json flag, exit codes (0/1/2), --help
 4. Add corresponding npm script alias in `package.json`
 
+### Option D: Run content validation
+
+1. Pick a sim ID from `sims/registry.json`
+2. Run: `sim-test content <simId>`
+3. Review the 7-dimension findings (summary, title, difficulty, services, tags, category, learning_objectives)
+4. If any dimension fails, fix the sim content and re-run
+5. For structured output: `sim-test content <simId> --json`
+6. Results are written to `web/test-results/content/`
+
+This command uses Sonnet to validate that sim metadata accurately describes the sim content. It reads manifest.json, story.md, resolution.md, and all artifacts, then asks the agent to check each dimension.
+
 ## Phase 3: Verify
 
 - Run `sim-test --help` to confirm command appears (if adding a command)

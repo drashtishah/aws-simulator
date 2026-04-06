@@ -35,7 +35,7 @@ file,path,line_number
 .claude/skills/create-sim/SKILL.md,.claude/skills/create-sim/assets/manifest-schema.json,327
 .claude/skills/create-sim/SKILL.md,sims/registry.json,338
 .claude/skills/create-sim/SKILL.md,sims/index.md,351
-.claude/skills/create-sim/SKILL.md,.claude/skills/git/references/commit-procedure.md,368
+.claude/skills/create-sim/SKILL.md,.claude/skills/git/references/commit-procedure.md,374
 .claude/skills/create-sim/ownership.json,learning/catalog.csv,2
 .claude/skills/create-sim/ownership.json,sims/index.md,2
 .claude/skills/create-sim/ownership.json,sims/registry.json,2
@@ -187,10 +187,12 @@ file,path,line_number
 .claude/skills/sim-test/SKILL.md,web/test-specs/browser/{name}.yaml,34
 .claude/skills/sim-test/SKILL.md,web/test-specs/personas/{id}.json,42
 .claude/skills/sim-test/SKILL.md,scripts/sim-test.js,48
-.claude/skills/sim-test/SKILL.md,.claude/skills/git/references/commit-procedure.md,61
-.claude/skills/sim-test/SKILL.md,scripts/sim-test.js,68
-.claude/skills/sim-test/SKILL.md,web/test-specs/,69
-.claude/skills/sim-test/SKILL.md,web/test-results/,71
+.claude/skills/sim-test/SKILL.md,sims/registry.json,55
+.claude/skills/sim-test/SKILL.md,web/test-results/content/,60
+.claude/skills/sim-test/SKILL.md,.claude/skills/git/references/commit-procedure.md,72
+.claude/skills/sim-test/SKILL.md,scripts/sim-test.js,79
+.claude/skills/sim-test/SKILL.md,web/test-specs/,80
+.claude/skills/sim-test/SKILL.md,web/test-results/,82
 .claude/skills/sim-test/ownership.json,web/test-results/,3
 .claude/skills/upgrade/SKILL.md,.claude/settings.local.json,18
 .claude/skills/upgrade/SKILL.md,.claude/hooks/guard-write.js,19
