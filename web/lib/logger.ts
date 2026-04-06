@@ -1,25 +1,35 @@
-const fs = require('fs');
-const crypto = require('crypto');
-const paths = require('./paths');
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { LOGS_DIR, SYSTEM_LOG_FILE, LOG_FILE } from './paths.js';
 
-const LOGS_DIR = paths.LOGS_DIR;
-
-// Warning thresholds
 const CONTEXT_WARN_PCT = 0.80;
 const LATENCY_WARN_MS = 30000;
 const TOOL_LOOP_THRESHOLD = 5;
 
-// Track tool calls per session for loop detection
-const toolCallTracker = new Map();
+const toolCallTracker = new Map<string, number>();
+const sessionTraces = new Map<string, string>();
 
-// Track trace IDs per session
-const sessionTraces = new Map();
+interface LogRecord {
+  ts: string;
+  session_id: string;
+  trace_id: string;
+  [key: string]: unknown;
+}
 
-function ensureLogsDir() {
+interface EventData {
+  level?: string;
+  event?: string;
+  usage?: { input_tokens?: number; duration_ms?: number };
+  tool?: string;
+  target?: string;
+  [key: string]: unknown;
+}
+
+function ensureLogsDir(): void {
   fs.mkdirSync(LOGS_DIR, { recursive: true });
 }
 
-function logEvent(sessionId, event) {
+function logEvent(sessionId: string | null, event: EventData): void {
   if (!sessionId) return;
 
   let trace_id = sessionTraces.get(sessionId);
@@ -30,7 +40,7 @@ function logEvent(sessionId, event) {
 
   ensureLogsDir();
 
-  const record = {
+  const record: LogRecord = {
     ts: new Date().toISOString(),
     session_id: sessionId,
     trace_id,
@@ -38,20 +48,18 @@ function logEvent(sessionId, event) {
   };
   const line = JSON.stringify(record) + '\n';
 
-  // Route system-level events to system.jsonl, learning events to activity.jsonl
   const isSystemEvent = event.level === 'warn' ||
-    ['CONTEXT_HIGH', 'HIGH_LATENCY', 'TOOL_LOOP'].includes(event.event);
-  const logFile = isSystemEvent ? paths.SYSTEM_LOG_FILE : paths.LOG_FILE;
+    ['CONTEXT_HIGH', 'HIGH_LATENCY', 'TOOL_LOOP'].includes(event.event ?? '');
+  const logFile = isSystemEvent ? SYSTEM_LOG_FILE : LOG_FILE;
   try {
     fs.appendFileSync(logFile, line);
-  } catch (err) {
-    console.error(`Failed to write log to ${logFile}: ${err.message}`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Failed to write log to ${logFile}: ${message}`);
   }
 
-  // Check warning thresholds
   checkThresholds(sessionId, event);
 
-  // Clean up session state on session end
   if (event.event === 'session_end') {
     sessionTraces.delete(sessionId);
     const prefix = sessionId + ':';
@@ -63,10 +71,9 @@ function logEvent(sessionId, event) {
   }
 }
 
-function checkThresholds(sessionId, event) {
-  // Context utilization warning
-  if (event.usage && event.usage.input_tokens) {
-    const contextWindow = 1000000; // opus context window
+function checkThresholds(sessionId: string, event: EventData): void {
+  if (event.usage?.input_tokens) {
+    const contextWindow = 1000000;
     const pct = event.usage.input_tokens / contextWindow;
     if (pct > CONTEXT_WARN_PCT) {
       logEvent(sessionId, {
@@ -77,8 +84,7 @@ function checkThresholds(sessionId, event) {
     }
   }
 
-  // Latency warning
-  if (event.usage && event.usage.duration_ms && event.usage.duration_ms > LATENCY_WARN_MS) {
+  if (event.usage?.duration_ms && event.usage.duration_ms > LATENCY_WARN_MS) {
     logEvent(sessionId, {
       level: 'warn',
       event: 'HIGH_LATENCY',
@@ -86,15 +92,9 @@ function checkThresholds(sessionId, event) {
     });
   }
 
-  // API retry warning
-  if (event.event === 'retry') {
-    // Already logged at warn level
-  }
-
-  // Tool loop detection
   if (event.event === 'tool_use' && event.tool && event.target) {
     const key = sessionId + ':' + event.tool + ':' + event.target;
-    const count = (toolCallTracker.get(key) || 0) + 1;
+    const count = (toolCallTracker.get(key) ?? 0) + 1;
     toolCallTracker.set(key, count);
     if (count > TOOL_LOOP_THRESHOLD) {
       logEvent(sessionId, {
@@ -108,7 +108,13 @@ function checkThresholds(sessionId, event) {
   }
 }
 
-function generateFixManifest(sessionId, outcome, rootCause, errorChain, suggestedFixes) {
+function generateFixManifest(
+  sessionId: string,
+  outcome: string,
+  rootCause: string,
+  errorChain: string[],
+  suggestedFixes: string[]
+): void {
   if (outcome === 'success') return;
 
   logEvent(sessionId, {
@@ -120,8 +126,4 @@ function generateFixManifest(sessionId, outcome, rootCause, errorChain, suggeste
   });
 }
 
-module.exports = {
-  logEvent,
-  generateFixManifest,
-  sessionTraces
-};
+export { logEvent, generateFixManifest, sessionTraces };

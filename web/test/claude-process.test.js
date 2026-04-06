@@ -389,27 +389,27 @@ describe('parseAgentMessages error detection', () => {
 // --- queryOptions maxTurns ---
 
 describe('queryOptions includes maxTurns', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.ts'), 'utf8');
 
   it('startSession queryOptions includes maxTurns', () => {
-    // Find the first queryOptions block (startSession)
-    const firstBlock = source.indexOf('const queryOptions = {');
+    const firstBlock = source.indexOf('const queryOptions:');
+    assert.ok(firstBlock > 0, 'should find first queryOptions declaration');
     const blockEnd = source.indexOf('};', firstBlock);
     const block = source.slice(firstBlock, blockEnd);
     assert.ok(block.includes('maxTurns'), 'startSession queryOptions should include maxTurns');
   });
 
   it('sendMessage queryOptions includes maxTurns', () => {
-    // Find the second queryOptions block (sendMessage)
-    const firstBlock = source.indexOf('const queryOptions = {');
-    const secondBlock = source.indexOf('const queryOptions = {', firstBlock + 1);
+    const firstBlock = source.indexOf('const queryOptions:');
+    const secondBlock = source.indexOf('const queryOptions:', firstBlock + 1);
+    assert.ok(secondBlock > 0, 'should find second queryOptions declaration');
     const blockEnd = source.indexOf('};', secondBlock);
     const block = source.slice(secondBlock, blockEnd);
     assert.ok(block.includes('maxTurns'), 'sendMessage queryOptions should include maxTurns');
   });
 
   it('retry queryOptions includes maxTurns', () => {
-    const retryIdx = source.indexOf('const retryOptions = {');
+    const retryIdx = source.indexOf('const retryOptions:');
     assert.ok(retryIdx > 0, 'retry options block should exist');
     const blockEnd = source.indexOf('};', retryIdx);
     const block = source.slice(retryIdx, blockEnd);
@@ -427,10 +427,10 @@ describe('cost budgeting', () => {
     assert.ok(config.budgets.post_session_usd, 'budgets should have post_session_usd');
   });
 
-  it('claude-process.js source contains maxBudgetUsd', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  it('claude-process.ts source contains maxBudgetUsd', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.ts'), 'utf8');
     assert.ok(source.includes('maxBudgetUsd'),
-      'claude-process.js should reference maxBudgetUsd');
+      'claude-process.ts should reference maxBudgetUsd');
   });
 });
 
@@ -464,7 +464,7 @@ describe('parseAgentMessages hasToolUse', () => {
 // --- streamMessage resume validation ---
 
 describe('streamMessage resume validation', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.ts'), 'utf8');
 
   it('checks lastTurnHadToolUse before resume', () => {
     assert.ok(source.includes('lastTurnHadToolUse'),
@@ -519,7 +519,7 @@ describe('buildPostSessionPrompt includes solves', () => {
 // --- Model hardcoding ---
 
 describe('model is hardcoded', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.ts'), 'utf8');
 
   it('startSession hardcodes claude-sonnet-4-6', () => {
     const startIdx = source.indexOf('async function startSession');

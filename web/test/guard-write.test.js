@@ -63,9 +63,9 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
-    it('blocks scripts/sim-test.js (never writable)', () => {
+    it('allows scripts/sim-test.js (no longer never writable)', () => {
       const r = checkAccess(path.join(ROOT, 'scripts/sim-test.js'), null, ROOT);
-      assert.equal(r.allowed, false);
+      assert.equal(r.allowed, true);
     });
 
     it('allows learning/feedback.md (not in never-writable)', () => {

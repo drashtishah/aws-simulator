@@ -4,6 +4,7 @@
 const acorn = require('acorn');
 const fs = require('fs');
 const path = require('path');
+const ts = require('typescript');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -30,8 +31,16 @@ function loadWeights() {
 
 function parseFile(filePath) {
   const source = fs.readFileSync(filePath, 'utf8');
+  // For .ts files, strip type annotations before parsing with acorn
+  let jsSource = source;
+  if (filePath.endsWith('.ts')) {
+    const result = ts.transpileModule(source, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS }
+    });
+    jsSource = result.outputText;
+  }
   return {
-    ast: acorn.parse(source, { ecmaVersion: 2022, sourceType: 'script', allowReturnOutsideFunction: true }),
+    ast: acorn.parse(jsSource, { ecmaVersion: 2022, sourceType: 'script', allowReturnOutsideFunction: true }),
     source,
     loc: source.split('\n').length
   };
@@ -100,6 +109,7 @@ function extractExportCount(ast) {
 
   // Second pass: find module.exports and classify each property
   walk(ast, (node) => {
+    // Pattern 1: module.exports = { ... }
     if (
       node.type === 'AssignmentExpression' &&
       node.left.type === 'MemberExpression' &&
@@ -121,9 +131,36 @@ function extractExportCount(ast) {
           } else if (declType === 'const') {
             constCount++;
           } else {
-            // 'unknown' or not found: count as function (conservative, higher weight)
             fnCount++;
           }
+        } else {
+          constCount++;
+        }
+      }
+    }
+    // Pattern 2: exports.X = ... (TS transpiler output)
+    if (
+      node.type === 'AssignmentExpression' &&
+      node.left.type === 'MemberExpression' &&
+      node.left.object.type === 'Identifier' &&
+      node.left.object.name === 'exports' &&
+      node.left.property.type === 'Identifier'
+    ) {
+      const name = node.left.property.name;
+      // Skip __esModule marker
+      if (name === '__esModule') return;
+      const declType = declarations.get(name);
+      if (declType === 'function') {
+        fnCount++;
+      } else if (declType === 'const') {
+        constCount++;
+      } else {
+        // Check the RHS: if it's a function, count as function
+        if (
+          node.right.type === 'FunctionExpression' ||
+          node.right.type === 'ArrowFunctionExpression'
+        ) {
+          fnCount++;
         } else {
           constCount++;
         }
@@ -249,11 +286,16 @@ function scoreModularity(libFiles, allProdFiles) {
       for (const req of reqs) {
         // Skip node built-ins and npm packages
         if (!req.startsWith('.') && !req.startsWith('/')) continue;
-        const resolved = path.resolve(path.dirname(f), req);
-        const resolvedRel = relPath(resolved.replace(/\.js$/, '') + '.js');
+        let resolved = path.resolve(path.dirname(f), req);
+        // Handle .js -> .ts resolution
+        if (resolved.endsWith('.js') && !fs.existsSync(resolved) && fs.existsSync(resolved.replace(/\.js$/, '.ts'))) {
+          resolved = resolved.replace(/\.js$/, '.ts');
+        }
+        const basePath = resolved.replace(/\.(js|ts)$/, '');
+        const resolvedRel = relPath(basePath + (fs.existsSync(basePath + '.ts') ? '.ts' : '.js'));
 
         // Count if it resolves to another project file
-        if (fs.existsSync(resolved) || fs.existsSync(resolved + '.js')) {
+        if (fs.existsSync(resolved) || fs.existsSync(resolved + '.js') || fs.existsSync(resolved + '.ts')) {
           localFanOut++;
           const targetDir = topDir(resolvedRel);
           if (srcDir !== targetDir) {
@@ -387,7 +429,13 @@ function scoreDepDepth(libFiles) {
       for (const req of reqs) {
         if (!req.startsWith('.') && !req.startsWith('/')) continue;
         let resolved = path.resolve(path.dirname(f), req);
-        if (!resolved.endsWith('.js')) resolved += '.js';
+        if (!resolved.endsWith('.js') && !resolved.endsWith('.ts')) {
+          resolved += fs.existsSync(resolved + '.ts') ? '.ts' : '.js';
+        }
+        // Handle .js -> .ts resolution (TS imports use .js extension but file is .ts)
+        if (resolved.endsWith('.js') && !fs.existsSync(resolved) && fs.existsSync(resolved.replace(/\.js$/, '.ts'))) {
+          resolved = resolved.replace(/\.js$/, '.ts');
+        }
         const resolvedRel = relPath(resolved);
         if (fileSet.has(resolvedRel)) {
           graph.get(rel).push(resolvedRel);
@@ -492,7 +540,8 @@ function scoreTestSync(libFiles) {
   const total = libFiles.length;
 
   for (const f of libFiles) {
-    const base = path.basename(f, '.js');
+    const ext = path.extname(f);
+    const base = path.basename(f, ext);
     const testPath = path.join(ROOT, 'web', 'test', `${base}.test.js`);
     if (fs.existsSync(testPath)) covered++;
   }
@@ -533,10 +582,10 @@ function printReport(scores, composite) {
 function main() {
   const weights = loadWeights();
 
-  const libFiles = discoverFiles(['web/lib'], ['.js']);
+  const libFiles = discoverFiles(['web/lib'], ['.js', '.ts']);
   const prodFiles = discoverFiles(
     ['web/lib', 'web/server.js', 'web/public', '.claude/hooks', 'scripts'],
-    ['.js']
+    ['.js', '.ts']
   );
   // Exclude this script itself from production analysis
   const filteredProd = prodFiles.filter(f => relPath(f) !== 'scripts/code-health.js');

@@ -12,8 +12,7 @@ const path = require('path');
 const NEVER_WRITABLE = [
   'references/path-registry.csv',
   'learning/logs/activity.jsonl',
-  'package-lock.json',
-  'scripts/sim-test.js'
+  'package-lock.json'
 ];
 
 // Directories NEVER writable

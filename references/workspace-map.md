@@ -123,7 +123,7 @@ sim-test ----> run: executes node --test (unit tests)
 
 | File | Created by | Purpose | Lifetime |
 |------|-----------|---------|----------|
-| `/tmp/aws-sim-prompt-{sessionId}.txt` | `web/lib/claude-process.js` | System prompt passed to Claude subprocess via `--append-system-prompt-file` | Duration of Claude subprocess |
+| `/tmp/aws-sim-prompt-{sessionId}.txt` | `web/lib/claude-process.ts` | System prompt passed to Claude subprocess via `--append-system-prompt-file` | Duration of Claude subprocess |
 
 ## Shared Data Files
 

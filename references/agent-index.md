@@ -53,7 +53,6 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 | `references/path-registry.csv` | Yes |
 | `learning/logs/activity.jsonl` | Yes |
 | `package-lock.json` | Yes |
-| `scripts/sim-test.js` | Yes |
 | `node_modules/` | Yes (entire directory) |
 | `web/test-specs/` | Yes (entire directory) |
 

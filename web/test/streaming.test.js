@@ -8,7 +8,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 // --- streamQuery source-level tests ---
 
 describe('streamQuery', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.ts'), 'utf8');
 
   it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamQuery'),
@@ -39,7 +39,7 @@ describe('streamQuery', () => {
 // --- streamSession source-level tests ---
 
 describe('streamSession', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.ts'), 'utf8');
 
   it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamSession'),
@@ -62,7 +62,7 @@ describe('streamSession', () => {
 // --- streamMessage source-level tests ---
 
 describe('streamMessage', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.ts'), 'utf8');
 
   it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamMessage'),
@@ -85,7 +85,7 @@ describe('streamMessage', () => {
 // --- endSession abort ---
 
 describe('endSession abort', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-session.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-session.ts'), 'utf8');
 
   it('calls abort on controller', () => {
     const fnStart = source.indexOf('async function endSession');

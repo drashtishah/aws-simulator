@@ -1,39 +1,87 @@
-const path = require('path');
-const fs = require('fs');
-const paths = require('./paths');
+import path from 'node:path';
+import fs from 'node:fs';
+import * as paths from './paths.js';
+import { logEvent } from './logger.js';
 
-let logger;
-try {
-  logger = require('./logger');
-} catch {
-  logger = { logEvent: () => {} };
+export interface SessionData {
+  claudeSessionId: string | null;
+  simId: string;
+  themeId: string;
+  model: string;
+  modelId: string;
+  startedAt: Date;
+  turnCount: number;
+  systemPrompt: string;
+  abortController?: AbortController;
+  lastTurnHadToolUse?: boolean;
 }
 
-// In-memory session store (single-session enforcement)
-const sessions = new Map();
+interface PersistedSession {
+  sessionId: string;
+  claudeSessionId: string | null;
+  simId: string;
+  themeId: string;
+  model: string;
+  modelId: string;
+  startedAt: string;
+  turnCount: number;
+}
 
-const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
+interface CriterionStatus {
+  id: string;
+  description: string;
+  required: boolean;
+}
 
-// --- Session persistence ---
+interface QuestionAxisProfile {
+  count: number;
+  effective: number;
+}
 
-function persistSession(sessionId, sessionData) {
+export interface GameSession {
+  sim_id: string;
+  status: string;
+  started_at: string;
+  last_active: string;
+  criteria_met: CriterionStatus[];
+  criteria_remaining: CriterionStatus[];
+  question_profile: Record<string, QuestionAxisProfile>;
+  investigation_summary: string;
+  story_beats_fired: string[];
+  services_queried: string[];
+  feedback_notes: string[];
+  debrief_phase: string | null;
+  debrief_questions_asked: number;
+  debrief_zones_explored: string[];
+  debrief_seeds_offered: string[];
+  debrief_depth_score: number;
+  question_quality_scores: unknown[];
+  turnCount?: number;
+  [key: string]: unknown;
+}
+
+export const sessions = new Map<string, SessionData>();
+
+export const SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+
+export function persistSession(sessionId: string, sessionData: SessionData): void {
   const dir = paths.sessionDir(sessionData.simId);
   fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, 'web-session.json');
-  const data = {
+  const data: PersistedSession = {
     sessionId,
     claudeSessionId: sessionData.claudeSessionId,
     simId: sessionData.simId,
     themeId: sessionData.themeId,
     model: sessionData.model,
     modelId: sessionData.modelId,
-    startedAt: sessionData.startedAt instanceof Date ? sessionData.startedAt.toISOString() : sessionData.startedAt,
+    startedAt: sessionData.startedAt instanceof Date ? sessionData.startedAt.toISOString() : String(sessionData.startedAt),
     turnCount: sessionData.turnCount || 0
   };
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-function recoverSessions(buildPromptFn) {
+export function recoverSessions(buildPromptFn: (simId: string, themeId: string) => string): void {
   const sessionsDir = paths.SESSIONS_DIR;
   if (!fs.existsSync(sessionsDir)) return;
 
@@ -43,23 +91,21 @@ function recoverSessions(buildPromptFn) {
     const filePath = path.join(sessionsDir, entry.name, 'web-session.json');
     if (!fs.existsSync(filePath)) continue;
 
-    let data;
+    let data: PersistedSession;
     try {
       data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } catch {
-      continue; // Skip corrupt JSON
+      continue;
     }
 
-    // Skip sessions older than 2 hours
     const age = Date.now() - new Date(data.startedAt).getTime();
     if (age > SESSION_MAX_AGE_MS) continue;
 
-    // Rebuild systemPrompt from simId + themeId
-    let systemPrompt;
+    let systemPrompt: string;
     try {
       systemPrompt = buildPromptFn(data.simId, data.themeId);
     } catch {
-      continue; // Skip if sim/theme no longer exists
+      continue;
     }
 
     sessions.set(data.sessionId, {
@@ -75,26 +121,26 @@ function recoverSessions(buildPromptFn) {
   }
 }
 
-// --- Game session persistence (server-owned) ---
-
-function createGameSession(simId, options = {}) {
+export function createGameSession(simId: string): GameSession {
   const manifestPath = paths.manifest(simId);
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
+    resolution: { fix_criteria?: Array<{ id: string; description: string; required: boolean }> };
+  };
 
   const now = new Date().toISOString();
   const axes = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
-  const questionProfile = {};
+  const questionProfile: Record<string, QuestionAxisProfile> = {};
   for (const axis of axes) {
     questionProfile[axis] = { count: 0, effective: 0 };
   }
 
-  const session = {
+  const session: GameSession = {
     sim_id: simId,
     status: 'in_progress',
     started_at: now,
     last_active: now,
     criteria_met: [],
-    criteria_remaining: (manifest.resolution.fix_criteria || []).map(c => ({
+    criteria_remaining: (manifest.resolution.fix_criteria ?? []).map(c => ({
       id: c.id,
       description: c.description,
       required: c.required
@@ -119,13 +165,13 @@ function createGameSession(simId, options = {}) {
   return session;
 }
 
-function updateGameSession(simId, updates) {
+export function updateGameSession(simId: string, updates: Record<string, unknown>): GameSession | null {
   const filePath = paths.sessionFile(simId);
   if (!fs.existsSync(filePath)) {
     return null;
   }
 
-  const session = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  const session = JSON.parse(fs.readFileSync(filePath, 'utf8')) as GameSession;
   Object.assign(session, updates);
   session.last_active = new Date().toISOString();
 
@@ -133,22 +179,20 @@ function updateGameSession(simId, updates) {
   return session;
 }
 
-async function endSession(sessionId) {
+export async function endSession(sessionId: string): Promise<void> {
   const session = sessions.get(sessionId);
   if (!session) return;
 
-  // Abort running query if any
   if (session.abortController) {
     session.abortController.abort();
   }
 
-  logger.logEvent(sessionId, {
+  logEvent(sessionId, {
     level: 'info',
     event: 'session_end',
     outcome: 'quit'
   });
 
-  // Clean up persisted web-session.json
   if (session.simId) {
     const filePath = path.join(paths.sessionDir(session.simId), 'web-session.json');
     try { fs.unlinkSync(filePath); } catch {}
@@ -156,13 +200,3 @@ async function endSession(sessionId) {
 
   sessions.delete(sessionId);
 }
-
-module.exports = {
-  sessions,
-  SESSION_MAX_AGE_MS,
-  persistSession,
-  recoverSessions,
-  createGameSession,
-  updateGameSession,
-  endSession
-};

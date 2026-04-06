@@ -1,50 +1,100 @@
-const path = require('path');
-const fs = require('fs');
-const paths = require('./paths');
+import path from 'node:path';
+import fs from 'node:fs';
+import * as paths from './paths.js';
 
-const COLLECT_TIMEOUT_MS = 120000;
+export const COLLECT_TIMEOUT_MS = 120000;
 
-/**
- * Parse Agent SDK messages from the query() async iterator.
- * Extracts session ID, model, full text, and usage.
- */
-function parseAgentMessages(messages) {
-  let claudeSessionId = null;
-  let claudeModel = null;
-  const textParts = [];
-  const toolCalls = [];
-  let usage = null;
+interface ContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: unknown;
+  id?: string;
+}
+
+interface SDKMsg {
+  type: string;
+  subtype?: string;
+  session_id?: string;
+  model?: string;
+  message?: { content?: ContentBlock[] };
+  usage?: { input_tokens?: number; output_tokens?: number };
+  duration_ms?: number;
+  is_error?: boolean;
+  error?: unknown;
+  terminal_reason?: string;
+}
+
+interface ToolCall {
+  name: string;
+  input: unknown;
+  id: string;
+}
+
+export interface Usage {
+  input_tokens: number;
+  output_tokens: number;
+  duration_ms?: number;
+}
+
+export interface ParsedMessages {
+  claudeSessionId: string | null;
+  claudeModel: string | null;
+  fullText: string;
+  toolCalls: ToolCall[];
+  hasToolUse: boolean;
+  usage: Usage | null;
+  resultError: { subtype?: string; error: unknown } | null;
+  terminalReason: string | null;
+}
+
+export interface ParsedEvent {
+  type: string;
+  content: string;
+}
+
+export interface ParsedEvents {
+  events: ParsedEvent[];
+  sessionComplete: boolean;
+}
+
+export function parseAgentMessages(messages: SDKMsg[]): ParsedMessages {
+  let claudeSessionId: string | null = null;
+  let claudeModel: string | null = null;
+  const textParts: string[] = [];
+  const toolCalls: ToolCall[] = [];
+  let usage: Usage | null = null;
 
   for (const msg of messages) {
     if (msg.type === 'system' && msg.subtype === 'init') {
-      claudeSessionId = msg.session_id;
+      claudeSessionId = msg.session_id ?? null;
       if (msg.model) claudeModel = msg.model;
     } else if (msg.type === 'assistant' && msg.message) {
-      const content = msg.message.content || [];
+      const content = msg.message.content ?? [];
       for (const block of content) {
         if (block.type === 'text') {
-          textParts.push(block.text);
+          textParts.push(block.text ?? '');
         } else if (block.type === 'tool_use') {
-          toolCalls.push({ name: block.name, input: block.input, id: block.id });
+          toolCalls.push({ name: block.name!, input: block.input, id: block.id! });
         }
       }
     } else if (msg.type === 'result') {
-      const u = msg.usage || {};
+      const u = msg.usage ?? {};
       usage = {
-        input_tokens: u.input_tokens || 0,
-        output_tokens: u.output_tokens || 0
+        input_tokens: u.input_tokens ?? 0,
+        output_tokens: u.output_tokens ?? 0
       };
       if (msg.duration_ms) usage.duration_ms = msg.duration_ms;
     }
   }
 
-  let resultError = null;
-  let terminalReason = null;
+  let resultError: { subtype?: string; error: unknown } | null = null;
+  let terminalReason: string | null = null;
 
   for (const msg of messages) {
     if (msg.type === 'result') {
       if (msg.is_error || (msg.subtype && msg.subtype.startsWith('error_'))) {
-        resultError = { subtype: msg.subtype, error: msg.error || null };
+        resultError = { subtype: msg.subtype, error: msg.error ?? null };
       }
       if (msg.terminal_reason) {
         terminalReason = msg.terminal_reason;
@@ -64,24 +114,19 @@ function parseAgentMessages(messages) {
   };
 }
 
-/**
- * Extract console, coaching, and session-complete markers from full text.
- * Returns { events, sessionComplete }.
- */
-function parseEvents(fullText) {
-  const events = [];
+export function parseEvents(fullText: string): ParsedEvents {
+  const events: ParsedEvent[] = [];
 
-  // Extract console blocks
   const consoleRegex = /\[CONSOLE_START\]([\s\S]*?)\[CONSOLE_END\]/g;
-  let match;
+  let match: RegExpExecArray | null;
   let lastIndex = 0;
-  const segments = [];
+  const segments: Array<{ type: string; content: string }> = [];
 
   while ((match = consoleRegex.exec(fullText)) !== null) {
     if (match.index > lastIndex) {
       segments.push({ type: 'text', content: fullText.slice(lastIndex, match.index) });
     }
-    segments.push({ type: 'console', content: match[1].trim() });
+    segments.push({ type: 'console', content: (match[1] ?? '').trim() });
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < fullText.length) {
@@ -92,24 +137,23 @@ function parseEvents(fullText) {
     segments.push({ type: 'text', content: fullText });
   }
 
-  // Process coaching markers within text segments
   for (const seg of segments) {
     if (seg.type === 'console') {
       events.push({ type: 'console', content: seg.content });
       continue;
     }
 
-    let text = seg.content;
+    const text = seg.content;
     const coachingRegex = /\[COACHING_START\]([\s\S]*?)\[COACHING_END\]/g;
     let cLastIndex = 0;
-    let cMatch;
+    let cMatch: RegExpExecArray | null;
 
     while ((cMatch = coachingRegex.exec(text)) !== null) {
       if (cMatch.index > cLastIndex) {
         const before = text.slice(cLastIndex, cMatch.index).trim();
         if (before) events.push({ type: 'text', content: before });
       }
-      events.push({ type: 'coaching', content: cMatch[1].trim() });
+      events.push({ type: 'coaching', content: (cMatch[1] ?? '').trim() });
       cLastIndex = cMatch.index + cMatch[0].length;
     }
     if (cLastIndex < text.length) {
@@ -131,10 +175,7 @@ function parseEvents(fullText) {
   return { events, sessionComplete };
 }
 
-/**
- * Log a turn to learning/sessions/{simId}/turns.jsonl.
- */
-function logTurn(simId, turn, playerMessage, usage) {
+export function logTurn(simId: string, turn: number, playerMessage: string, usage?: Usage | null): void {
   const turnsPath = paths.turnsFile(simId);
   const dir = path.dirname(turnsPath);
   if (!fs.existsSync(dir)) {
@@ -145,29 +186,27 @@ function logTurn(simId, turn, playerMessage, usage) {
     ts: new Date().toISOString(),
     turn,
     player_message: playerMessage,
-    usage: usage || {}
+    usage: usage ?? {}
   };
 
   fs.appendFileSync(turnsPath, JSON.stringify(entry) + '\n');
 }
 
-/**
- * Collect all messages from Agent SDK query() async iterator.
- */
-async function collectMessages(asyncIterator, timeoutMs = COLLECT_TIMEOUT_MS) {
-  const messages = [];
+export async function collectMessages<T>(asyncIterator: AsyncIterable<T>, timeoutMs = COLLECT_TIMEOUT_MS): Promise<T[]> {
+  const messages: T[] = [];
 
-  const timeout = new Promise((_, reject) => {
+  const timeout = new Promise<never>((_, reject) => {
     const timer = setTimeout(() => {
-      if (asyncIterator.return) {
-        asyncIterator.return().catch(() => {});
+      const iter = asyncIterator as AsyncIterableIterator<T>;
+      if (iter.return) {
+        iter.return().catch(() => {});
       }
       reject(new Error(`AGENT_TIMEOUT: Response exceeded ${timeoutMs / 1000} seconds`));
     }, timeoutMs);
     if (timer.unref) timer.unref();
   });
 
-  const collect = async () => {
+  const collect = async (): Promise<T[]> => {
     for await (const message of asyncIterator) {
       messages.push(message);
     }
@@ -177,23 +216,24 @@ async function collectMessages(asyncIterator, timeoutMs = COLLECT_TIMEOUT_MS) {
   return Promise.race([collect(), timeout]);
 }
 
-/**
- * Retry wrapper with exponential backoff.
- */
-async function withRetry(fn, { maxAttempts = 3, delays = [1000, 2000, 4000] } = {}) {
-  let lastError;
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  { maxAttempts = 3, delays = [1000, 2000, 4000] }: { maxAttempts?: number; delays?: number[] } = {}
+): Promise<T> {
+  let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn();
-    } catch (err) {
+    } catch (err: unknown) {
       lastError = err;
-      const isRateLimit = err.status === 429 || err.status === 529 || (err.message && err.message.includes('rate_limit'));
+      const errObj = err as { status?: number; message?: string; headers?: { get?(k: string): string | null } };
+      const isRateLimit = errObj.status === 429 || errObj.status === 529 || (errObj.message?.includes('rate_limit') ?? false);
 
       if (attempt === maxAttempts - 1) throw err;
 
-      let delay = delays[attempt] || delays[delays.length - 1];
+      let delay = delays[attempt] ?? delays[delays.length - 1] ?? 4000;
       if (isRateLimit) {
-        const retryAfter = err.headers?.get?.('retry-after');
+        const retryAfter = errObj.headers?.get?.('retry-after');
         delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.max(5000, delay);
       }
 
@@ -202,12 +242,3 @@ async function withRetry(fn, { maxAttempts = 3, delays = [1000, 2000, 4000] } = 
   }
   throw lastError;
 }
-
-module.exports = {
-  parseEvents,
-  parseAgentMessages,
-  logTurn,
-  collectMessages,
-  withRetry,
-  COLLECT_TIMEOUT_MS
-};

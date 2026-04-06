@@ -1,23 +1,39 @@
-'use strict';
+export interface QuestionScore {
+  specificity: number;
+  relevance: number;
+  building: number;
+  targeting: number;
+}
+
+export interface QuestionQuality {
+  avg_specificity: number;
+  avg_relevance: number;
+  avg_building: number;
+  avg_targeting: number;
+  avg_overall: number;
+  total_questions_scored: number;
+  last_5_session_avgs: number[];
+}
+
+export interface Profile {
+  question_quality: QuestionQuality;
+  [key: string]: unknown;
+}
 
 /**
  * Compute the quality factor for scoring.
  * Clamps avgQuality/8 between 0.25 and 1.0.
  */
-function qualityFactor(avgQuality) {
+export function qualityFactor(avgQuality: number): number {
   return Math.min(1.0, Math.max(0.25, avgQuality / 8));
 }
 
 /**
  * Update the running question quality averages in a profile.
  * Returns a new profile object with updated question_quality.
- *
- * @param {Object} profile - The player profile
- * @param {Array} sessionScores - Array of {specificity, relevance, building, targeting} objects
- * @returns {Object} Updated profile
  */
-function updateRunningAverage(profile, sessionScores) {
-  const qc = { ...profile.question_quality };
+export function updateRunningAverage(profile: Profile, sessionScores: QuestionScore[]): Profile {
+  const qc: QuestionQuality = { ...profile.question_quality };
   const prevTotal = qc.total_questions_scored || 0;
   const newCount = sessionScores.length;
   const newTotal = prevTotal + newCount;
@@ -31,7 +47,7 @@ function updateRunningAverage(profile, sessionScores) {
     building: sessionScores.reduce((s, q) => s + q.building, 0) / newCount,
     targeting: sessionScores.reduce((s, q) => s + q.targeting, 0) / newCount,
   };
-  const sessionOverall = (sessionAvg.specificity + sessionAvg.relevance + sessionAvg.building + sessionAvg.targeting);
+  const sessionOverall = sessionAvg.specificity + sessionAvg.relevance + sessionAvg.building + sessionAvg.targeting;
 
   // Weighted running average
   qc.avg_specificity = (qc.avg_specificity * prevTotal + sessionAvg.specificity * newCount) / newTotal;
@@ -48,8 +64,3 @@ function updateRunningAverage(profile, sessionScores) {
 
   return { ...profile, question_quality: qc };
 }
-
-module.exports = {
-  qualityFactor,
-  updateRunningAverage,
-};

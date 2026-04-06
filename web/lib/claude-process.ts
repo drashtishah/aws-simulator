@@ -1,26 +1,42 @@
-const { query } = require('@anthropic-ai/claude-agent-sdk');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
-const { buildPrompt } = require('./prompt-builder');
-const paths = require('./paths');
-const { sessions, persistSession, createGameSession, updateGameSession, endSession } = require('./claude-session');
-const { parseEvents, parseAgentMessages, logTurn, collectMessages, withRetry, COLLECT_TIMEOUT_MS } = require('./claude-parse');
+import { query } from '@anthropic-ai/claude-agent-sdk';
+import path from 'node:path';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { buildPrompt } from './prompt-builder.js';
+import * as paths from './paths.js';
+import { sessions, persistSession, createGameSession, updateGameSession, endSession } from './claude-session.js';
+import { parseEvents, parseAgentMessages, logTurn, collectMessages, withRetry, COLLECT_TIMEOUT_MS } from './claude-parse.js';
+import type { ParsedEvent, Usage } from './claude-parse.js';
+import { logEvent, generateFixManifest } from './logger.js';
 
-let logger;
-try {
-  logger = require('./logger');
-} catch {
-  logger = {
-    logEvent: () => {},
-    generateFixManifest: () => {}
-  };
+interface StartSessionOptions {
+  resume?: boolean;
+  resumeMessage?: string;
 }
 
-// --- Session management ---
+interface QueryOptions {
+  cwd: string;
+  allowedTools: string[];
+  model: string;
+  systemPrompt?: string;
+  permissionMode: string;
+  maxTurns: number;
+  resume?: string;
+  maxBudgetUsd?: number;
+}
 
-async function startSession(simId, themeId, options = {}) {
-  // Single-session enforcement: end any active session
+interface SessionResult {
+  sessionId: string;
+  events: ParsedEvent[];
+  sessionComplete: boolean;
+}
+
+interface MessageResult {
+  events: ParsedEvent[];
+  sessionComplete: boolean;
+}
+
+export async function startSession(simId: string, themeId: string, options: StartSessionOptions = {}): Promise<SessionResult> {
   for (const [id] of sessions) {
     await endSession(id);
   }
@@ -30,29 +46,27 @@ async function startSession(simId, themeId, options = {}) {
 
   const sessionId = crypto.randomUUID();
 
-  // Build system prompt
   const promptText = buildPrompt(simId, themeId);
 
   const stdinMessage = options.resume
-    ? (options.resumeMessage || `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
+    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
     : 'Begin the simulation. Deliver the Opening and Briefing Card.';
 
-  const queryOptions = {
+  const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
     allowedTools: ['Read', 'Write'],
     model: modelId,
     systemPrompt: promptText,
     permissionMode: 'bypassPermissions',
-
     maxTurns: 50
   };
 
   const messages = await collectMessages(query({
     prompt: stdinMessage,
-    options: queryOptions
+    options: queryOptions as Parameters<typeof query>[0]['options']
   }));
 
-  const parsed = parseAgentMessages(messages);
+  const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
   const { events, sessionComplete } = parseEvents(parsed.fullText);
 
   const sessionData = {
@@ -69,18 +83,18 @@ async function startSession(simId, themeId, options = {}) {
   persistSession(sessionId, sessionData);
   createGameSession(simId);
 
-  logger.logEvent(sessionId, {
+  logEvent(sessionId, {
     level: 'info',
     event: 'session_start',
     sim_id: simId,
     theme: themeId,
     model_requested: modelKey,
-    model_actual: parsed.claudeModel || 'unknown',
+    model_actual: parsed.claudeModel ?? 'unknown',
     claude_session_id: parsed.claudeSessionId
   });
 
   if (parsed.claudeModel && parsed.claudeModel !== modelKey && !parsed.claudeModel.includes(modelKey)) {
-    logger.logEvent(sessionId, {
+    logEvent(sessionId, {
       level: 'warn',
       event: 'MODEL_MISMATCH',
       model_requested: modelKey,
@@ -95,7 +109,7 @@ async function startSession(simId, themeId, options = {}) {
   };
 }
 
-async function sendMessage(sessionId, message) {
+export async function sendMessage(sessionId: string, message: string): Promise<MessageResult> {
   const session = sessions.get(sessionId);
   if (!session) {
     throw new Error('SESSION_LOST: No active session with that ID');
@@ -105,55 +119,51 @@ async function sendMessage(sessionId, message) {
   const turnNumber = session.turnCount;
   persistSession(sessionId, session);
 
-  const queryOptions = {
+  const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
     allowedTools: ['Read', 'Write'],
     model: session.modelId,
     permissionMode: 'bypassPermissions',
-
     maxTurns: 50
   };
 
-  // Resume from existing session
   if (session.claudeSessionId) {
     queryOptions.resume = session.claudeSessionId;
   } else {
-    // Fallback: re-send system prompt if no session to resume
     queryOptions.systemPrompt = session.systemPrompt;
   }
 
-  let messages;
+  let messages: unknown[];
   try {
     messages = await collectMessages(query({
       prompt: message,
-      options: queryOptions
+      options: queryOptions as Parameters<typeof query>[0]['options']
     }));
-  } catch (err) {
-    // Session error recovery: retry with fresh session
-    if (err.message && (err.message.includes('unknown session') || err.message.includes('SESSION_LOST'))) {
-      logger.logEvent(sessionId, {
+  } catch (err: unknown) {
+    const errObj = err as { message?: string };
+    if (errObj.message && (errObj.message.includes('unknown session') || errObj.message.includes('SESSION_LOST'))) {
+      logEvent(sessionId, {
         level: 'warn',
         event: 'retry',
         reason: 'SESSION_LOST',
         detail: 'Retrying with fresh system prompt'
       });
 
-      const retryOptions = {
+      const retryOptions: QueryOptions = {
         cwd: paths.ROOT,
         allowedTools: ['Read', 'Write'],
         model: session.modelId,
         systemPrompt: session.systemPrompt,
         permissionMode: 'bypassPermissions',
-
         maxTurns: 50
       };
 
       messages = await collectMessages(query({
         prompt: message,
-        options: retryOptions
+        options: retryOptions as Parameters<typeof query>[0]['options']
       }));
 
-      const retryParsed = parseAgentMessages(messages);
+      const retryParsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
       if (retryParsed.claudeSessionId) {
         session.claudeSessionId = retryParsed.claudeSessionId;
       }
@@ -162,12 +172,11 @@ async function sendMessage(sessionId, message) {
     }
   }
 
-  const parsed = parseAgentMessages(messages);
+  const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
   const { events, sessionComplete } = parseEvents(parsed.fullText);
 
-  // Log result errors
   if (parsed.resultError) {
-    logger.logEvent(sessionId, {
+    logEvent(sessionId, {
       level: 'warn',
       event: 'AGENT_RESULT_ERROR',
       subtype: parsed.resultError.subtype,
@@ -175,30 +184,27 @@ async function sendMessage(sessionId, message) {
     });
   }
 
-  // Update session ID if we got a new one
   if (parsed.claudeSessionId && parsed.claudeSessionId !== session.claudeSessionId) {
     session.claudeSessionId = parsed.claudeSessionId;
   }
 
-  // Log turn to turns.jsonl
   logTurn(session.simId, turnNumber, message, parsed.usage);
 
-  // Update game session state
-  const gameSessionUpdate = { turnCount: turnNumber };
+  const gameSessionUpdate: Record<string, unknown> = { turnCount: turnNumber };
   if (sessionComplete) {
     gameSessionUpdate.status = 'completed';
   }
   updateGameSession(session.simId, gameSessionUpdate);
 
-  logger.logEvent(sessionId, {
+  logEvent(sessionId, {
     level: 'info',
     event: 'turn',
     direction: 'out',
-    usage: parsed.usage
+    usage: parsed.usage ?? undefined
   });
 
   if (sessionComplete) {
-    logger.logEvent(sessionId, {
+    logEvent(sessionId, {
       level: 'info',
       event: 'session_end',
       outcome: 'success'
@@ -211,9 +217,7 @@ async function sendMessage(sessionId, message) {
   };
 }
 
-// --- Post-session agent ---
-
-function buildPostSessionPrompt(simId) {
+export function buildPostSessionPrompt(simId: string): string {
   const sessionFilePath = paths.sessionFile(simId);
   const manifestPath = paths.manifest(simId);
   const profilePath = paths.PROFILE;
@@ -248,40 +252,41 @@ Instructions:
 Do not skip any step. Write all updates to the files listed above.`;
 }
 
-async function runPostSessionAgent(simId) {
+export async function runPostSessionAgent(simId: string): Promise<{ success: boolean }> {
   const prompt = buildPostSessionPrompt(simId);
 
-  const queryOptions = {
+  const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
     allowedTools: ['Read', 'Write'],
     model: 'claude-opus-4-6',
     permissionMode: 'bypassPermissions',
-
     maxTurns: 30
   };
 
   try {
-    const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
+    const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8')) as {
+      budgets?: { post_session_usd?: number };
+    };
     const budget = metricsConfig.budgets?.post_session_usd;
     if (budget) queryOptions.maxBudgetUsd = budget;
   } catch { /* ignore missing config */ }
 
   const messages = await collectMessages(query({
     prompt,
-    options: queryOptions
+    options: queryOptions as Parameters<typeof query>[0]['options']
   }));
 
-  const parsed = parseAgentMessages(messages);
+  const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
 
-  logger.logEvent(null, {
+  logEvent(null, {
     level: 'info',
     event: 'post_session_agent_complete',
     sim_id: simId,
-    usage: parsed.usage
+    usage: parsed.usage ?? undefined
   });
 
   if (parsed.resultError) {
-    logger.logEvent(null, {
+    logEvent(null, {
       level: 'error',
       event: 'post_session_agent_error',
       sim_id: simId,
@@ -293,16 +298,12 @@ async function runPostSessionAgent(simId) {
   return { success: true };
 }
 
-module.exports = {
-  startSession,
-  sendMessage,
+export {
   endSession,
   parseEvents,
   parseAgentMessages,
   logTurn,
   collectMessages,
-  buildPostSessionPrompt,
-  runPostSessionAgent,
   withRetry,
   COLLECT_TIMEOUT_MS
 };

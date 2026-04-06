@@ -8,25 +8,25 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 
 | File | Line | Pattern | Context | Guardrails |
 | --- | --- | --- | --- | --- |
-| web/lib/claude-process.js | 45 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 112 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 146 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-process.js | 258 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-stream.js | 126 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-stream.js | 211 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
-| web/lib/claude-stream.js | 261 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.ts | 60 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.ts | 126 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.ts | 157 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-process.ts | 262 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-stream.ts | 174 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-stream.ts | 259 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
+| web/lib/claude-stream.ts | 308 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | allowedTools present |
 | web/test/agent-test-runner.test.js | 26 | `DangerouslySkipPermissions` | `it('does not contain allowDangerouslySkipPermissions', () => {` | none detected |
 | web/test/agent-test-runner.test.js | 28 | `DangerouslySkipPermissions` | `assert.ok(!source.includes('allowDangerouslySkipPermissions'),` | none detected |
 | web/test/agent-test-runner.test.js | 29 | `DangerouslySkipPermissions` | `'must not use allowDangerouslySkipPermissions');` | allowedTools present |
-| web/test/permission-contracts.test.js | 45 | `bypassPermissions` | `it('has exactly 7 permissionMode occurrences, each set to bypassPermissions', () => {` | none detected |
-| web/test/permission-contracts.test.js | 56 | `bypassPermissions` | `m.text.includes("'bypassPermissions'"),` | none detected |
-| web/test/permission-contracts.test.js | 57 | `bypassPermissions` | `'permissionMode on line ' + m.lineNumber + ' must be bypassPermissions'` | none detected |
-| web/test/permission-contracts.test.js | 62 | `dangerouslyDisableSandbox` | `it('does not contain dangerouslyDisableSandbox', () => {` | none detected |
-| web/test/permission-contracts.test.js | 64 | `dangerouslyDisableSandbox` | `!source.includes('dangerouslyDisableSandbox'),` | none detected |
-| web/test/permission-contracts.test.js | 65 | `dangerouslyDisableSandbox` | `'source must not contain dangerouslyDisableSandbox'` | none detected |
-| web/test/permission-contracts.test.js | 69 | `DangerouslySkipPermissions` | `it('does not contain allowDangerouslySkipPermissions', () => {` | none detected |
-| web/test/permission-contracts.test.js | 71 | `DangerouslySkipPermissions` | `!source.includes('allowDangerouslySkipPermissions'),` | none detected |
-| web/test/permission-contracts.test.js | 72 | `DangerouslySkipPermissions` | `'source must not contain allowDangerouslySkipPermissions'` | none detected |
+| web/test/permission-contracts.test.js | 46 | `bypassPermissions` | `it('has exactly 7 permissionMode occurrences, each set to bypassPermissions', () => {` | none detected |
+| web/test/permission-contracts.test.js | 58 | `bypassPermissions` | `m.text.includes("'bypassPermissions'"),` | none detected |
+| web/test/permission-contracts.test.js | 59 | `bypassPermissions` | `'permissionMode on line ' + m.lineNumber + ' must be bypassPermissions'` | none detected |
+| web/test/permission-contracts.test.js | 64 | `dangerouslyDisableSandbox` | `it('does not contain dangerouslyDisableSandbox', () => {` | none detected |
+| web/test/permission-contracts.test.js | 66 | `dangerouslyDisableSandbox` | `!source.includes('dangerouslyDisableSandbox'),` | none detected |
+| web/test/permission-contracts.test.js | 67 | `dangerouslyDisableSandbox` | `'source must not contain dangerouslyDisableSandbox'` | none detected |
+| web/test/permission-contracts.test.js | 71 | `DangerouslySkipPermissions` | `it('does not contain allowDangerouslySkipPermissions', () => {` | none detected |
+| web/test/permission-contracts.test.js | 73 | `DangerouslySkipPermissions` | `!source.includes('allowDangerouslySkipPermissions'),` | none detected |
+| web/test/permission-contracts.test.js | 74 | `DangerouslySkipPermissions` | `'source must not contain allowDangerouslySkipPermissions'` | none detected |
 | scripts/agent-test-runner.js | 41 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | none detected |
 | scripts/audit-permissions.js | 2 | `dangerously-skip-permissions` | `// audit-permissions.js: Scan for --dangerously-skip-permissions usage and generate registry.` | none detected |
 | scripts/audit-permissions.js | 15 | `dangerously-skip-permissions` | `'dangerously-skip-permissions',` | none detected |
@@ -36,4 +36,4 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | scripts/audit-permissions.js | 19 | `bypassPermissions` | `'bypassPermissions'` | none detected |
 | scripts/audit-permissions.js | 120 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
 
-_Last updated: 2026-04-06T06:49:04.314Z_
+_Last updated: 2026-04-06T08:30:25.249Z_

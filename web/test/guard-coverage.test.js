@@ -16,10 +16,10 @@ describe('guard-write coverage', () => {
     );
   });
 
-  it('NEVER_WRITABLE includes scripts/sim-test.js', () => {
+  it('sim-test.js removed from NEVER_WRITABLE for TS migration', () => {
     assert.ok(
-      guardSource.includes("'scripts/sim-test.js'"),
-      'guard-write.js should protect scripts/sim-test.js'
+      !guardSource.includes("'scripts/sim-test.js'"),
+      'guard-write.js should no longer protect scripts/sim-test.js (removed for TS migration)'
     );
   });
 

@@ -53,7 +53,7 @@ program
     let exitCode = 0;
 
     try {
-      const out = execSync('node --test web/test/*.test.js', {
+      const out = execSync('npx tsx --test web/test/*.test.js', {
         cwd: ROOT,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],

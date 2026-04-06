@@ -38,7 +38,7 @@ function withTempFiles(fileSpecs, fn) {
 
 describe('parseFile', () => {
   it('parses a JS file and returns AST, source, and LOC', () => {
-    const result = parseFile(path.join(ROOT, 'web', 'lib', 'paths.js'));
+    const result = parseFile(path.join(ROOT, 'web', 'lib', 'paths.ts'));
     assert.ok(result.ast);
     assert.equal(result.ast.type, 'Program');
     assert.ok(result.loc > 0);
@@ -334,7 +334,7 @@ describe('scoreComplexity (controlled)', () => {
 describe('scoreTestSync (controlled)', () => {
   it('reports correct coverage ratio for real lib files', () => {
     const libFiles = fs.readdirSync(path.join(ROOT, 'web', 'lib'))
-      .filter(f => f.endsWith('.js'))
+      .filter(f => f.endsWith('.ts'))
       .map(f => path.join(ROOT, 'web', 'lib', f));
 
     const result = scoreTestSync(libFiles);

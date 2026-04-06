@@ -16,11 +16,11 @@ describe('permission bypass audit', () => {
     assert.ok(fs.existsSync(path.join(ROOT, 'references', 'permission-bypass-registry.md')));
   });
 
-  it('registry contains known usage in claude-process.js', () => {
+  it('registry contains known usage in claude-process', () => {
     const registry = fs.readFileSync(
       path.join(ROOT, 'references', 'permission-bypass-registry.md'), 'utf8'
     );
-    assert.ok(registry.includes('claude-process.js'), 'should find usage in claude-process.js');
+    assert.ok(registry.includes('claude-process'), 'should find usage in claude-process');
   });
 
   it('registry has table format', () => {
