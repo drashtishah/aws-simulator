@@ -715,4 +715,137 @@ program
     }
   });
 
+
+// --- Agent test type commands ---
+
+function formatAgentResults(result, dimensions, label) {
+  for (const dim of dimensions) {
+    const f = (result.findings || []).find(f => f.dimension === dim);
+    const status = f ? (f.pass ? 'PASS' : 'FAIL') : 'SKIP';
+    const pad = '.'.repeat(Math.max(1, 22 - dim.length));
+    console.log('  ' + dim + ' ' + pad + ' ' + status);
+    if (f && !f.pass && f.detail) {
+      console.log('    ' + f.detail);
+    }
+  }
+  const passCount = (result.findings || []).filter(f => f.pass).length;
+  const total = (result.findings || []).length;
+  console.log('\n  result: ' + (result.pass ? 'PASS' : 'FAIL') + ' (' + passCount + '/' + total + ')');
+  if (result.usage) {
+    console.log('  tokens: ' + result.usage.input_tokens.toLocaleString() + ' in / ' + result.usage.output_tokens.toLocaleString() + ' out');
+  }
+}
+
+program
+  .command('narrator-rules <simId>')
+  .description('Validate narrator rule compliance (uses Sonnet)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const { runNarratorRulesCheck } = require('./narrator-rule-checks');
+    if (!opts.json) console.log('\nNarrator rules: ' + simId + '\n');
+    const result = await runNarratorRulesCheck(simId);
+    if (opts.json) {
+      console.log(JSON.stringify({ command: 'narrator-rules', simId, ...result }, null, 2));
+    } else {
+      formatAgentResults(result, ['no_emojis', 'no_fourth_wall', 'console_format', 'no_premature_hints', 'voice_consistency', 'no_fix_criteria_leak']);
+    }
+    process.exit(result.pass ? 0 : 1);
+  });
+
+program
+  .command('debrief <simId>')
+  .description('Validate debrief quality (uses Sonnet)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const { runDebriefCheck } = require('./debrief-checks');
+    if (!opts.json) console.log('\nDebrief quality: ' + simId + '\n');
+    const result = await runDebriefCheck(simId);
+    if (opts.json) {
+      console.log(JSON.stringify({ command: 'debrief', simId, ...result }, null, 2));
+    } else {
+      formatAgentResults(result, ['summary_brevity', 'seed_quality', 'zone_accuracy', 'no_new_info', 'voice_continuity']);
+    }
+    process.exit(result.pass ? 0 : 1);
+  });
+
+program
+  .command('end-session <simId>')
+  .description('Validate end-of-session compliance (uses Sonnet)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const { runEndSessionCheck } = require('./end-session-checks');
+    if (!opts.json) console.log('\nEnd-session compliance: ' + simId + '\n');
+    const result = await runEndSessionCheck(simId);
+    if (opts.json) {
+      console.log(JSON.stringify({ command: 'end-session', simId, ...result }, null, 2));
+    } else {
+      formatAgentResults(result, ['no_play_another', 'session_complete_present', 'no_post_complete']);
+    }
+    process.exit(result.pass ? 0 : 1);
+  });
+
+program
+  .command('hint-progression <simId>')
+  .description('Validate hint progression logic (uses Sonnet)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const { runHintProgressionCheck } = require('./hint-progression-checks');
+    if (!opts.json) console.log('\nHint progression: ' + simId + '\n');
+    const result = await runHintProgressionCheck(simId);
+    if (opts.json) {
+      console.log(JSON.stringify({ command: 'hint-progression', simId, ...result }, null, 2));
+    } else {
+      formatAgentResults(result, ['no_premature_hints', 'correct_ordering', 'skip_logic', 'natural_delivery']);
+    }
+    process.exit(result.pass ? 0 : 1);
+  });
+
+program
+  .command('all <simId>')
+  .description('Run all agent-in-the-loop checks (content + narrator-rules + debrief + end-session + hint-progression)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const contentChecks = require('./content-checks');
+    const { runNarratorRulesCheck } = require('./narrator-rule-checks');
+    const { runDebriefCheck } = require('./debrief-checks');
+    const { runEndSessionCheck } = require('./end-session-checks');
+    const { runHintProgressionCheck } = require('./hint-progression-checks');
+
+    const checks = [
+      { name: 'content', fn: () => contentChecks.runContentCheck(simId) },
+      { name: 'narrator-rules', fn: () => runNarratorRulesCheck(simId) },
+      { name: 'debrief', fn: () => runDebriefCheck(simId) },
+      { name: 'end-session', fn: () => runEndSessionCheck(simId) },
+      { name: 'hint-progression', fn: () => runHintProgressionCheck(simId) }
+    ];
+
+    const results = {};
+    let allPass = true;
+
+    for (const check of checks) {
+      if (!opts.json) console.log('\n--- ' + check.name + ' ---');
+      try {
+        const result = await check.fn();
+        results[check.name] = result;
+        if (!result.pass) allPass = false;
+        if (!opts.json) {
+          const passCount = (result.findings || []).filter(f => f.pass).length;
+          const total = (result.findings || []).length;
+          console.log('  ' + (result.pass ? 'PASS' : 'FAIL') + ' (' + passCount + '/' + total + ')');
+        }
+      } catch (err) {
+        results[check.name] = { pass: false, error: err.message };
+        allPass = false;
+        if (!opts.json) console.log('  ERROR: ' + err.message);
+      }
+    }
+
+    if (opts.json) {
+      console.log(JSON.stringify({ command: 'all', simId, pass: allPass, checks: results }, null, 2));
+    } else {
+      console.log('\n=== Overall: ' + (allPass ? 'PASS' : 'FAIL') + ' ===');
+    }
+    process.exit(allPass ? 0 : 1);
+  });
+
 program.parse();
