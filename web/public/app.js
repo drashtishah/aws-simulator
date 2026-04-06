@@ -854,17 +854,6 @@
       // ignore
     }
 
-    // Assist mode
-    const assistOptions = [
-      { value: 'standard', label: 'Standard' },
-      { value: 'guided', label: 'Guided' }
-    ];
-    initCustomSelect(
-      document.getElementById('select-assist-mode'),
-      assistOptions,
-      getSetting('assistMode', 'standard'),
-      (val) => { setSetting('assistMode', val); }
-    );
 
   }
 
