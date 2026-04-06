@@ -298,19 +298,18 @@ app.post('/api/game/start', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const result = await claudeProcess.startSession(simId, themeId || 'calm-mentor', { assistMode, playtest: playtest === 'playtester' });
-    res.write(`data: ${JSON.stringify({ type: 'session', sessionId: result.sessionId })}\n\n`);
-
-    for (const event of result.events) {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', { assistMode, playtest: playtest === 'playtester' })) {
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
     }
-
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-    res.end();
+    if (!res.writableEnded) res.end();
   } catch (err) {
     console.error(`POST /api/game/start: simId=${simId}, error=${err.message}`);
-    res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -333,23 +332,23 @@ app.post('/api/game/message', async (req, res) => {
   }
 
   try {
-    const result = await claudeProcess.sendMessage(sessionId, msg);
-
     if (truncated) {
       res.write(`data: ${JSON.stringify({ type: 'warning', message: 'Message truncated to 2000 characters.' })}\n\n`);
     }
 
-    for (const event of result.events) {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    let sessionComplete = false;
+    for await (const event of claudeProcess.streamMessage(sessionId, msg)) {
+      if (event.type === 'done' && event.sessionComplete) {
+        sessionComplete = true;
+      }
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
     }
 
-    if (result.sessionComplete) {
-      res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
-
-      // Look up simId from the in-memory session
+    if (sessionComplete) {
       const session = claudeProcess.sessions.get(sessionId);
       const simId = session ? session.simId : null;
-
       if (simId) {
         res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
         try {
@@ -362,12 +361,13 @@ app.post('/api/game/message', async (req, res) => {
       }
     }
 
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-    res.end();
+    if (!res.writableEnded) res.end();
   } catch (err) {
     console.error(`POST /api/game/message: sessionId=${sessionId}, error=${err.message}`);
-    res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -395,23 +395,22 @@ app.post('/api/game/resume', async (req, res) => {
   res.flushHeaders();
 
   try {
-    const result = await claudeProcess.startSession(simId, themeId || 'calm-mentor', {
+    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', {
       resume: true,
       resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`,
       playtest: playtest === 'playtester'
-    });
-    res.write(`data: ${JSON.stringify({ type: 'session', sessionId: result.sessionId })}\n\n`);
-
-    for (const event of result.events) {
-      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    })) {
+      if (!res.writableEnded) {
+        res.write(`data: ${JSON.stringify(event)}\n\n`);
+      }
     }
-
-    res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
-    res.end();
+    if (!res.writableEnded) res.end();
   } catch (err) {
     console.error(`POST /api/game/resume: simId=${simId}, error=${err.message}`);
-    res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
-    res.end();
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
