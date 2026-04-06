@@ -720,6 +720,21 @@
     div.className = 'chat-message ' + type + ' msg-enter';
     if (type === 'narrator' || type === 'coaching') {
       div.innerHTML = renderMarkdown(content);
+      // Render any Mermaid diagrams in the message
+      if (typeof mermaid !== 'undefined') {
+        const codeBlocks = div.querySelectorAll('pre code.language-mermaid');
+        codeBlocks.forEach(async (block, idx) => {
+          const pre = block.parentElement;
+          const id = 'mermaid-' + Date.now() + '-' + idx;
+          try {
+            const { svg } = await mermaid.render(id, block.textContent);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mermaid-diagram';
+            wrapper.innerHTML = svg;
+            pre.replaceWith(wrapper);
+          } catch { /* leave as code block if mermaid fails */ }
+        });
+      }
     } else {
       div.textContent = content;
     }
@@ -895,6 +910,11 @@
   // --- Event Bindings ---
 
   function init() {
+    // Initialize Mermaid with dark theme
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+    }
+
     // Load UI theme
     const uiTheme = getSetting('uiTheme', 'ops-center');
     loadUiTheme(uiTheme);

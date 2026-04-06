@@ -295,6 +295,24 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('index.html includes mermaid.min.js CDN script', () => {
+    const html = readFile('web/public/index.html');
+    assert.ok(html.includes('mermaid.min.js'),
+      'index.html should include mermaid.min.js CDN');
+  });
+
+  it('app.js contains mermaid.render call', () => {
+    const appJs = readFile('web/public/app.js');
+    assert.ok(appJs.includes('mermaid.render'),
+      'app.js should contain mermaid.render for diagram support');
+  });
+
+  it('style.css contains .mermaid-diagram', () => {
+    const css = readFile('web/public/style.css');
+    assert.ok(css.includes('.mermaid-diagram'),
+      'style.css should contain .mermaid-diagram styles');
+  });
+
   it('index.html includes marked.min.js CDN script', () => {
     const html = readFile('web/public/index.html');
     assert.ok(html.includes('marked.min.js'),

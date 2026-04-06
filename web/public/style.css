@@ -798,6 +798,18 @@ a:hover {
   padding: 0;
 }
 
+.mermaid-diagram {
+  background: var(--bg-deep);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
 .chat-message hr {
   border: none;
   border-top: 1px solid var(--border-subtle);
