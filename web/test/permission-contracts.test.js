@@ -17,15 +17,15 @@ describe('web app tool whitelist', () => {
   );
   const lines = source.split('\n');
 
-  it('has exactly 4 allowedTools occurrences, each restricted to Read and Write', () => {
+  it('has exactly 7 allowedTools occurrences, each restricted to Read and Write', () => {
     const matches = [];
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].includes('allowedTools:')) {
         matches.push({ lineNumber: i + 1, text: lines[i] });
       }
     }
-    assert.equal(matches.length, 4,
-      'expected exactly 4 allowedTools declarations, found ' + matches.length);
+    assert.equal(matches.length, 7,
+      'expected exactly 7 allowedTools declarations, found ' + matches.length);
     for (const m of matches) {
       assert.ok(
         m.text.includes("'Read'") && m.text.includes("'Write'"),
@@ -40,15 +40,15 @@ describe('web app tool whitelist', () => {
     }
   });
 
-  it('has exactly 4 permissionMode occurrences, each set to bypassPermissions', () => {
+  it('has exactly 7 permissionMode occurrences, each set to bypassPermissions', () => {
     const matches = [];
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].includes('permissionMode:')) {
         matches.push({ lineNumber: i + 1, text: lines[i] });
       }
     }
-    assert.equal(matches.length, 4,
-      'expected exactly 4 permissionMode declarations, found ' + matches.length);
+    assert.equal(matches.length, 7,
+      'expected exactly 7 permissionMode declarations, found ' + matches.length);
     for (const m of matches) {
       assert.ok(
         m.text.includes("'bypassPermissions'"),
