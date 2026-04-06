@@ -44,6 +44,7 @@ describe('path-registry', () => {
       if (row.path === 'learning/catalog.csv') continue;
       if (row.path === 'learning/feedback.md') continue;
       if (row.path.startsWith('web/test-results/')) continue;
+      if (row.path.startsWith('dist/')) continue;
 
       const fullPath = path.join(ROOT, row.path);
       if (!fs.existsSync(fullPath)) {
@@ -68,6 +69,7 @@ describe('path-registry', () => {
 
       // Skip runtime-generated directory prefixes
       if (row.path.startsWith('web/test-results/')) continue;
+      if (row.path.startsWith('dist/')) continue;
       if (row.path.startsWith('learning/vault')) continue;
 
       // Extract prefix before the first template variable ($ or {)
