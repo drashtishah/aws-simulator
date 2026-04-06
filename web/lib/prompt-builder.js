@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const paths = require('./paths');
+const { stripFrontmatter } = require('./frontmatter');
 
 /**
  * Build a fully populated system prompt for a simulation.
@@ -38,13 +39,13 @@ function buildPrompt(simId, themeId) {
   if (!fs.existsSync(basePath)) {
     throw new Error('themes/_base.md not found');
   }
-  const baseContent = stripFrontmatter(fs.readFileSync(basePath, 'utf8'));
+  const { body: baseContent } = stripFrontmatter(fs.readFileSync(basePath, 'utf8'));
 
   const themePath = paths.theme(themeId);
   if (!fs.existsSync(themePath)) {
     throw new Error(`Theme "${themeId}" not found: ${themePath}`);
   }
-  const themeContent = stripFrontmatter(fs.readFileSync(themePath, 'utf8'));
+  const { body: themeContent } = stripFrontmatter(fs.readFileSync(themePath, 'utf8'));
 
   // 6. Perform substitutions
 
@@ -266,11 +267,6 @@ function readArtifact(simDir, relativePath) {
     console.warn(`ARTIFACT_MISSING: ${fullPath}`);
     return `[Missing artifact: ${relativePath}]`;
   }
-}
-
-function stripFrontmatter(content) {
-  const match = content.match(/^---\n[\s\S]*?\n---\n?([\s\S]*)$/);
-  return match ? match[1].trim() : content.trim();
 }
 
 module.exports = { buildPrompt };
