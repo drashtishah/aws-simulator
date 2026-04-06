@@ -19,5 +19,5 @@
     "scripts/**/*.ts",
     ".claude/hooks/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", "web/public"]
+  "exclude": ["node_modules", "dist", "web/public", "web/test"]
 }

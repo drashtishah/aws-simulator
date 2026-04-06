@@ -6,7 +6,7 @@
     "dev": "tsc -p tsconfig.frontend.json && NODE_ENV=development tsx web/server.ts",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.frontend.json",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.frontend.json",
-    "test": "python3 scripts/extract_paths.py && tsx scripts/sim-test.ts run",
+    "test": "python3 scripts/extract_paths.py && npm run typecheck && tsx scripts/sim-test.ts run",
     "test:agent": "tsx scripts/sim-test.ts agent",
     "test:personas": "tsx scripts/sim-test.ts personas",
     "test:evals": "tsx scripts/sim-test.ts evals",
