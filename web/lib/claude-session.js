@@ -1,7 +1,13 @@
 const path = require('path');
 const fs = require('fs');
-const { buildPrompt } = require('./prompt-builder');
 const paths = require('./paths');
+
+let logger;
+try {
+  logger = require('./logger');
+} catch {
+  logger = { logEvent: () => {} };
+}
 
 // In-memory session store (single-session enforcement)
 const sessions = new Map();
@@ -27,7 +33,7 @@ function persistSession(sessionId, sessionData) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
-function recoverSessions() {
+function recoverSessions(buildPromptFn) {
   const sessionsDir = paths.SESSIONS_DIR;
   if (!fs.existsSync(sessionsDir)) return;
 
@@ -51,7 +57,7 @@ function recoverSessions() {
     // Rebuild systemPrompt from simId + themeId
     let systemPrompt;
     try {
-      systemPrompt = buildPrompt(data.simId, data.themeId);
+      systemPrompt = buildPromptFn(data.simId, data.themeId);
     } catch {
       continue; // Skip if sim/theme no longer exists
     }
@@ -127,11 +133,36 @@ function updateGameSession(simId, updates) {
   return session;
 }
 
+async function endSession(sessionId) {
+  const session = sessions.get(sessionId);
+  if (!session) return;
+
+  // Abort running query if any
+  if (session.abortController) {
+    session.abortController.abort();
+  }
+
+  logger.logEvent(sessionId, {
+    level: 'info',
+    event: 'session_end',
+    outcome: 'quit'
+  });
+
+  // Clean up persisted web-session.json
+  if (session.simId) {
+    const filePath = path.join(paths.sessionDir(session.simId), 'web-session.json');
+    try { fs.unlinkSync(filePath); } catch {}
+  }
+
+  sessions.delete(sessionId);
+}
+
 module.exports = {
   sessions,
   SESSION_MAX_AGE_MS,
   persistSession,
   recoverSessions,
   createGameSession,
-  updateGameSession
+  updateGameSession,
+  endSession
 };

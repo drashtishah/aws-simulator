@@ -91,7 +91,7 @@ describe('recoverSessions', () => {
       turnCount: 3
     }));
 
-    recoverSessions();
+    recoverSessions(require('../lib/prompt-builder').buildPrompt);
     assert.ok(sessions.has('recover-1'), 'session should be recovered');
     const session = sessions.get('recover-1');
     assert.equal(session.simId, realSimId);
@@ -110,7 +110,7 @@ describe('recoverSessions', () => {
       turnCount: 0
     }));
 
-    recoverSessions();
+    recoverSessions(require('../lib/prompt-builder').buildPrompt);
     const session = sessions.get('recover-fields');
     assert.ok(session, 'session should exist');
     assert.ok(session.claudeSessionId);
@@ -134,7 +134,7 @@ describe('recoverSessions', () => {
       turnCount: 10
     }));
 
-    recoverSessions();
+    recoverSessions(require('../lib/prompt-builder').buildPrompt);
     assert.ok(!sessions.has('recover-old'), 'old session should not be recovered');
   });
 
@@ -142,7 +142,7 @@ describe('recoverSessions', () => {
     fs.writeFileSync(filePath, '{invalid json!!!');
 
     // Should not throw
-    recoverSessions();
+    recoverSessions(require('../lib/prompt-builder').buildPrompt);
     assert.equal(sessions.size, 0, 'no sessions recovered from corrupt file');
   });
 
@@ -172,7 +172,7 @@ describe('recoverSessions', () => {
       turnCount: 0
     }));
 
-    recoverSessions();
+    recoverSessions(require('../lib/prompt-builder').buildPrompt);
     assert.ok(!sessions.has('recover-missing'), 'session with missing sim should not be recovered');
 
     // Cleanup

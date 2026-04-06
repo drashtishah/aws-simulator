@@ -4,8 +4,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { buildPrompt } = require('./prompt-builder');
 const paths = require('./paths');
-const { parseEvents, logTurn, COLLECT_TIMEOUT_MS } = require('./claude-process');
-const { sessions, persistSession, createGameSession, updateGameSession } = require('./claude-session');
+const { parseEvents, logTurn, COLLECT_TIMEOUT_MS } = require('./claude-parse');
+const { sessions, persistSession, createGameSession, updateGameSession, endSession } = require('./claude-session');
 
 let logger;
 try {
@@ -104,7 +104,6 @@ async function* streamQuery(prompt, queryOptions, abortController) {
  */
 async function* streamSession(simId, themeId, options = {}) {
   // Single-session enforcement
-  const { endSession } = require('./claude-process');
   for (const [id] of sessions) {
     await endSession(id);
   }

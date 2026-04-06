@@ -85,7 +85,7 @@ describe('streamMessage', () => {
 // --- endSession abort ---
 
 describe('endSession abort', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-session.js'), 'utf8');
 
   it('calls abort on controller', () => {
     const fnStart = source.indexOf('async function endSession');

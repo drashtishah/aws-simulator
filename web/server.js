@@ -423,7 +423,8 @@ validateStartup();
 
 // Recover any persisted web sessions from disk
 if (claudeSession && claudeSession.recoverSessions) {
-  claudeSession.recoverSessions();
+  const { buildPrompt } = require('./lib/prompt-builder');
+  claudeSession.recoverSessions(buildPrompt);
 }
 
 // Create lock file to signal web app is running
