@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const paths = require('../lib/paths');
-const { persistSession, recoverSessions, sessions, SESSION_MAX_AGE_MS } = require('../lib/claude-process');
+const { persistSession, recoverSessions, sessions, SESSION_MAX_AGE_MS } = require('../lib/claude-session');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

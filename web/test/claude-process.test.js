@@ -288,7 +288,8 @@ describe('sendMessage', () => {
 // --- endSession ---
 
 describe('endSession', () => {
-  const { endSession, sessions } = require('../lib/claude-process');
+  const { endSession } = require('../lib/claude-process');
+  const { sessions } = require('../lib/claude-session');
 
   it('silently handles nonexistent session', async () => {
     await endSession('nonexistent-session-xyz');
@@ -309,7 +310,7 @@ describe('endSession', () => {
 // --- sessions map ---
 
 describe('sessions map', () => {
-  const { sessions } = require('../lib/claude-process');
+  const { sessions } = require('../lib/claude-session');
 
   it('is exported and is a Map', () => {
     assert.ok(sessions instanceof Map);

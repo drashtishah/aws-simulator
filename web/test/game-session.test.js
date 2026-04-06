@@ -12,7 +12,7 @@ const sessionPath = path.join(testDir, 'session.json');
 // --- createGameSession ---
 
 describe('createGameSession', () => {
-  const { createGameSession } = require('../lib/claude-process');
+  const { createGameSession } = require('../lib/claude-session');
 
   beforeEach(() => {
     fs.mkdirSync(testDir, { recursive: true });
@@ -102,7 +102,7 @@ describe('createGameSession', () => {
 // --- updateGameSession ---
 
 describe('updateGameSession', () => {
-  const { updateGameSession, createGameSession } = require('../lib/claude-process');
+  const { updateGameSession, createGameSession } = require('../lib/claude-session');
 
   afterEach(() => {
     try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}

@@ -276,10 +276,12 @@ app.get('/api/progress', (req, res) => {
 // --- Game API endpoints (added in Step 5) ---
 
 let claudeProcess;
+let claudeSession;
 try {
   claudeProcess = require('./lib/claude-process');
+  claudeSession = require('./lib/claude-session');
 } catch {
-  // claude-process.js not yet created
+  // claude-process.js or claude-session.js not yet created
 }
 
 app.post('/api/game/start', async (req, res) => {
@@ -347,7 +349,7 @@ app.post('/api/game/message', async (req, res) => {
     }
 
     if (sessionComplete) {
-      const session = claudeProcess.sessions.get(sessionId);
+      const session = claudeSession.sessions.get(sessionId);
       const simId = session ? session.simId : null;
       if (simId) {
         res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
@@ -436,8 +438,8 @@ function startServer(port) {
 validateStartup();
 
 // Recover any persisted web sessions from disk
-if (claudeProcess && claudeProcess.recoverSessions) {
-  claudeProcess.recoverSessions();
+if (claudeSession && claudeSession.recoverSessions) {
+  claudeSession.recoverSessions();
 }
 
 // Create lock file to signal web app is running
