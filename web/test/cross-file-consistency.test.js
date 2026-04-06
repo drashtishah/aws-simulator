@@ -295,6 +295,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('chat-input:focus uses accent-primary not accent-blue', () => {
+    const css = readFile('web/public/style.css');
+    assert.ok(!/\.chat-input:focus\s*\{[^}]*accent-blue/.test(css),
+      'chat-input:focus should not use accent-blue');
+  });
+
   it('index.html does not contain model selector', () => {
     const html = readFile('web/public/index.html');
     assert.ok(!html.includes('id="select-model"'),
