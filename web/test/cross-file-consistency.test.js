@@ -295,6 +295,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('agent-prompts.md contains mermaid instruction', () => {
+    const prompts = readFile('.claude/skills/play/references/agent-prompts.md');
+    assert.ok(prompts.toLowerCase().includes('mermaid'),
+      'agent-prompts.md should contain mermaid instruction');
+  });
+
   it('index.html includes mermaid.min.js CDN script', () => {
     const html = readFile('web/public/index.html');
     assert.ok(html.includes('mermaid.min.js'),
