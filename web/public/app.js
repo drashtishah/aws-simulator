@@ -11,6 +11,7 @@
   let profile = { completed_sims: [] };
   let progressData = null;
   let isScrollPinned = true;
+  let sessionCompleted = false;
 
   // --- Settings (localStorage with fallback) ---
 
@@ -548,17 +549,19 @@
           appendMessage('coaching', data.content);
         },
         complete: () => {
+          sessionCompleted = true;
+          setInputEnabled(false);
           appendMessage('system', 'Simulation complete.');
         },
         profile_updating: () => {
           appendMessage('system', 'Updating your learning profile...');
         },
         profile_updated: () => {
-          handleSessionComplete();
+          handleSessionComplete('updated');
         },
         profile_update_failed: (data) => {
           appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
-          handleSessionComplete();
+          handleSessionComplete('failed', data.message);
         },
         error: (data) => {
           appendMessage('system', 'Error: ' + (data.message || 'Unknown error'));
@@ -568,8 +571,10 @@
         },
         done: () => {
           showTyping(false);
-          setInputEnabled(true);
-          input.focus();
+          if (!sessionCompleted) {
+            setInputEnabled(true);
+            input.focus();
+          }
         }
       });
     } catch (err) {
@@ -611,17 +616,19 @@
           appendMessage('coaching', data.content);
         },
         complete: () => {
+          sessionCompleted = true;
+          setInputEnabled(false);
           appendMessage('system', 'Simulation complete.');
         },
         profile_updating: () => {
           appendMessage('system', 'Updating your learning profile...');
         },
         profile_updated: () => {
-          handleSessionComplete();
+          handleSessionComplete('updated');
         },
         profile_update_failed: (data) => {
           appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
-          handleSessionComplete();
+          handleSessionComplete('failed', data.message);
         },
         error: (data) => {
           appendMessage('system', 'Error: ' + (data.message || 'Unknown error'));
@@ -631,8 +638,10 @@
         },
         done: () => {
           showTyping(false);
-          setInputEnabled(true);
-          input.focus();
+          if (!sessionCompleted) {
+            setInputEnabled(true);
+            input.focus();
+          }
         }
       });
     } catch (err) {
@@ -650,15 +659,17 @@
           text: (data) => appendMessage('narrator', data.content),
           console: (data) => appendMessage('console', data.content),
           coaching: (data) => appendMessage('coaching', data.content),
-          complete: () => appendMessage('system', 'Simulation complete.'),
+          complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
           profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
-          profile_updated: () => handleSessionComplete(),
-          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed.'); handleSessionComplete(); },
+          profile_updated: () => handleSessionComplete('updated'),
+          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed.'); handleSessionComplete('failed', data.message); },
           error: (data) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
           done: () => {
             showTyping(false);
-            setInputEnabled(true);
-            input.focus();
+            if (!sessionCompleted) {
+              setInputEnabled(true);
+              input.focus();
+            }
           }
         });
       } catch {
@@ -669,16 +680,33 @@
     }
   }
 
-  function handleSessionComplete() {
-    currentSessionId = null;
-    setTimeout(() => {
-      resetChat();
-      switchView('dashboard');
-      if (typeof showCompletedDrilldown === 'function') {
-        showCompletedDrilldown();
-      }
-    }, 1500);
-    loadDashboard();
+  function handleSessionComplete(profileStatus, errorMessage) {
+    const title = 'Simulation Complete';
+    let body;
+    if (profileStatus === 'updated') {
+      body = 'Your learning profile has been updated.';
+    } else if (profileStatus === 'failed') {
+      body = 'Learning profile update failed' + (errorMessage ? ': ' + errorMessage : '') + '.';
+    } else {
+      body = 'Session ended.';
+    }
+
+    showConfirmModal({
+      title,
+      body,
+      actions: [
+        { label: 'Return to Dashboard', primary: true, onClick: () => {
+          currentSessionId = null;
+          sessionCompleted = false;
+          resetChat();
+          switchView('dashboard');
+          loadDashboard();
+          if (typeof showCompletedDrilldown === 'function') {
+            showCompletedDrilldown();
+          }
+        }}
+      ]
+    });
   }
 
   async function quitSim() {
@@ -706,6 +734,7 @@
   function resetChat() {
     currentSessionId = null;
     currentSimId = null;
+    sessionCompleted = false;
     document.getElementById('chat-messages').innerHTML = '';
     document.getElementById('chat').classList.remove('active');
     document.getElementById('sim-picker').style.display = 'block';
