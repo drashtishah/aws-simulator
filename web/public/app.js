@@ -662,7 +662,7 @@
           complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
           profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
           profile_updated: () => handleSessionComplete('updated'),
-          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed.'); handleSessionComplete('failed', data.message); },
+          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
           error: (data) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
           done: () => {
             showTyping(false);
