@@ -30,7 +30,6 @@ describe('persistSession', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: new Date(),
-      playtest: false,
       turnCount: 0
     });
     assert.ok(fs.existsSync(filePath), 'web-session.json should exist');
@@ -44,7 +43,6 @@ describe('persistSession', () => {
       model: 'opus',
       modelId: 'claude-opus-4-6',
       startedAt: new Date('2026-04-04T10:00:00Z'),
-      playtest: true,
       turnCount: 5
     });
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -54,7 +52,6 @@ describe('persistSession', () => {
     assert.equal(data.themeId, 'calm-mentor');
     assert.equal(data.model, 'opus');
     assert.equal(data.modelId, 'claude-opus-4-6');
-    assert.equal(data.playtest, true);
     assert.equal(data.turnCount, 5);
     assert.ok(data.startedAt);
   });
@@ -91,7 +88,6 @@ describe('recoverSessions', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: new Date().toISOString(),
-      playtest: false,
       turnCount: 3
     }));
 
@@ -111,7 +107,6 @@ describe('recoverSessions', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: new Date().toISOString(),
-      playtest: true,
       turnCount: 0
     }));
 
@@ -136,7 +131,6 @@ describe('recoverSessions', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: oldDate.toISOString(),
-      playtest: false,
       turnCount: 10
     }));
 
@@ -161,7 +155,6 @@ describe('recoverSessions', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: new Date().toISOString(),
-      playtest: false,
       turnCount: 0
     }));
 
@@ -176,7 +169,6 @@ describe('recoverSessions', () => {
       model: 'sonnet',
       modelId: 'claude-sonnet-4-6',
       startedAt: new Date().toISOString(),
-      playtest: false,
       turnCount: 0
     }));
 

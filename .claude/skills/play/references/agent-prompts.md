@@ -251,14 +251,6 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
 
    Increment the count for the matched type in question_profile. If the question leads to discovering new information or satisfying a criterion, also increment effective.
 
-8c. PLAYTEST TRANSCRIPT: If play_mode is "playtester", after each exchange append a JSON line to learning/sessions/{sim_id}/transcript.jsonl:
-
-   {"turn":{N},"ts":"{ISO 8601}","player":"{player message}","narrator":"{your full narrator response}","console":"{console data if any, else null}","coaching":"{coaching text if any, else null}","mode":"{narrator|console|coaching}","service":"{service name if console, else null}"}
-
-   Also write the opening narration as turn 0 with player: null.
-
-   This does not change your behavior. You respond exactly as normal. The transcript is a side-effect log only.
-
 9. On resolution (all required criteria met) -- three-stage debrief:
 
    **Stage 1: Summary.** Keep this short. The player just solved something. Let it land.

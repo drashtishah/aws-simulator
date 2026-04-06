@@ -525,15 +525,13 @@
     showTyping(true);
 
     const themeId = 'calm-mentor';
-    const assistMode = getSetting('assistMode', 'standard');
-    const playtest = getSetting('playtest', 'player');
     const endpoint = isResume ? '/api/game/resume' : '/api/game/start';
 
     try {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ simId, themeId, assistMode, playtest })
+        body: JSON.stringify({ simId, themeId })
       });
 
       await streamResponse(response, {
@@ -868,17 +866,6 @@
       (val) => { setSetting('assistMode', val); }
     );
 
-    // Play mode
-    const playtestOptions = [
-      { value: 'player', label: 'Player' },
-      { value: 'playtester', label: 'Playtester' }
-    ];
-    initCustomSelect(
-      document.getElementById('select-playtest'),
-      playtestOptions,
-      getSetting('playtest', 'player'),
-      (val) => { setSetting('playtest', val); }
-    );
   }
 
   function formatThemeName(id) {

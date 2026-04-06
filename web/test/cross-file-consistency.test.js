@@ -172,20 +172,16 @@ describe('app.js fallback axes match progression.yaml', () => {
 
 // --- 6. Playtest setting wiring ---
 
-describe('playtest setting wiring', () => {
+describe('playtester mode removed', () => {
   const indexHtml = readFile('web/public/index.html');
   const appJs = readFile('web/public/app.js');
 
-  it('index.html has playtest select element', () => {
-    assert.ok(indexHtml.includes('select-playtest'), 'settings modal should have playtest dropdown');
+  it('index.html does not have playtest select element', () => {
+    assert.ok(!indexHtml.includes('select-playtest'), 'settings modal should not have playtest dropdown');
   });
 
-  it('app.js reads playtest setting', () => {
-    assert.ok(appJs.includes("getSetting('playtest'"), 'app.js should read playtest setting');
-  });
-
-  it('app.js sends playtest in startSim body', () => {
-    assert.ok(appJs.includes('playtest'), 'startSim should include playtest in request body');
+  it('app.js does not read playtest setting', () => {
+    assert.ok(!appJs.includes("getSetting('playtest'"), 'app.js should not read playtest setting');
   });
 });
 

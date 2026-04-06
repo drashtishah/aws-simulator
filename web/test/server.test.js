@@ -244,13 +244,13 @@ function buildApp() {
 
   // Game endpoints return 503 without claude-process (acceptable for unit tests)
   app.post('/api/game/start', (req, res) => {
-    const { simId, themeId, assistMode } = req.body;
+    const { simId, themeId } = req.body;
     if (!simId) return res.status(400).json({ error: 'simId is required' });
     const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
     const simExists = registry.sims.some(s => s.id === simId);
     if (!simExists) return res.status(400).json({ error: 'Invalid simId' });
     // Would normally start Claude process; return mock for testing
-    res.json({ simId, themeId: themeId || 'calm-mentor', assistMode: assistMode || 'standard' });
+    res.json({ simId, themeId: themeId || 'calm-mentor' });
   });
 
   app.post('/api/game/message', (req, res) => {

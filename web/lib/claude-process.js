@@ -34,7 +34,6 @@ function persistSession(sessionId, sessionData) {
     model: sessionData.model,
     modelId: sessionData.modelId,
     startedAt: sessionData.startedAt instanceof Date ? sessionData.startedAt.toISOString() : sessionData.startedAt,
-    playtest: sessionData.playtest || false,
     turnCount: sessionData.turnCount || 0
   };
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
@@ -76,7 +75,6 @@ function recoverSessions() {
       model: data.model,
       modelId: data.modelId,
       startedAt: new Date(data.startedAt),
-      playtest: data.playtest || false,
       turnCount: data.turnCount || 0,
       systemPrompt
     });
@@ -503,7 +501,6 @@ async function* streamSession(simId, themeId, options = {}) {
     model: modelKey,
     modelId,
     startedAt: new Date(),
-    playtest: options.playtest || false,
     turnCount: 0,
     systemPrompt: promptText,
     abortController
@@ -547,13 +544,6 @@ async function* streamSession(simId, themeId, options = {}) {
         error: metadata.resultError.error
       });
     }
-  }
-
-  if (options.playtest && metadata) {
-    const transcript = require('./transcript');
-    const { events: parsedEvents } = parseEvents(metadata.fullText);
-    const narratorText = parsedEvents.filter(e => e.type === 'text').map(e => e.content).join('\n');
-    transcript.appendTurn(simId, { turn: 0, narrator: narratorText || null, mode: 'narrator' });
   }
 
   yield { type: 'done' };
@@ -668,16 +658,6 @@ async function* streamMessage(sessionId, message) {
   }
   updateGameSession(session.simId, gameSessionUpdate);
 
-  if (session.playtest && metadata) {
-    const transcript = require('./transcript');
-    const { events: parsedEvents } = parseEvents(metadata.fullText);
-    const narratorText = parsedEvents.filter(e => e.type === 'text').map(e => e.content).join('\n');
-    const consoleText = parsedEvents.filter(e => e.type === 'console').map(e => e.content).join('\n');
-    const coachingText = parsedEvents.filter(e => e.type === 'coaching').map(e => e.content).join('\n');
-    const mode = consoleText ? 'console' : coachingText ? 'coaching' : 'narrator';
-    transcript.appendTurn(session.simId, { turn: turnNumber, player: message, narrator: narratorText || null, console: consoleText || null, coaching: coachingText || null, mode });
-  }
-
   if (sessionComplete) {
     yield { type: 'complete' };
   }
@@ -729,7 +709,6 @@ async function startSession(simId, themeId, options = {}) {
     model: modelKey,
     modelId,
     startedAt: new Date(),
-    playtest: options.playtest || false,
     turnCount: 0,
     systemPrompt: promptText
   };
@@ -747,34 +726,12 @@ async function startSession(simId, themeId, options = {}) {
     claude_session_id: parsed.claudeSessionId
   });
 
-  if (options.playtest) {
-    logger.logEvent(sessionId, {
-      level: 'info',
-      event: 'playtest_mode_active',
-      sim_id: simId
-    });
-  }
-
   if (parsed.claudeModel && parsed.claudeModel !== modelKey && !parsed.claudeModel.includes(modelKey)) {
     logger.logEvent(sessionId, {
       level: 'warn',
       event: 'MODEL_MISMATCH',
       model_requested: modelKey,
       model_actual: parsed.claudeModel
-    });
-  }
-
-  if (options.playtest) {
-    const transcript = require('./transcript');
-    const narratorText = events
-      .filter(e => e.type === 'text')
-      .map(e => e.content)
-      .join('\n');
-
-    transcript.appendTurn(simId, {
-      turn: 0,
-      narrator: narratorText || null,
-      mode: 'narrator'
     });
   }
 
@@ -879,34 +836,6 @@ async function sendMessage(sessionId, message) {
     gameSessionUpdate.status = 'completed';
   }
   updateGameSession(session.simId, gameSessionUpdate);
-
-  if (session.playtest) {
-    const transcript = require('./transcript');
-
-    const narratorText = events
-      .filter(e => e.type === 'text')
-      .map(e => e.content)
-      .join('\n');
-    const consoleText = events
-      .filter(e => e.type === 'console')
-      .map(e => e.content)
-      .join('\n');
-    const coachingText = events
-      .filter(e => e.type === 'coaching')
-      .map(e => e.content)
-      .join('\n');
-
-    const mode = consoleText ? 'console' : coachingText ? 'coaching' : 'narrator';
-
-    transcript.appendTurn(session.simId, {
-      turn: turnNumber,
-      player: message,
-      narrator: narratorText || null,
-      console: consoleText || null,
-      coaching: coachingText || null,
-      mode
-    });
-  }
 
   logger.logEvent(sessionId, {
     level: 'info',

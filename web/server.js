@@ -285,7 +285,7 @@ try {
 app.post('/api/game/start', async (req, res) => {
   if (!claudeProcess) return res.status(503).json({ error: 'Game engine not available' });
 
-  const { simId, themeId, assistMode, playtest } = req.body;
+  const { simId, themeId } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
   const registry = readJSON(paths.REGISTRY, { sims: [] });
@@ -298,7 +298,7 @@ app.post('/api/game/start', async (req, res) => {
   res.flushHeaders();
 
   try {
-    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', { assistMode, playtest: playtest === 'playtester' })) {
+    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', {})) {
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
@@ -386,7 +386,7 @@ app.post('/api/game/quit', async (req, res) => {
 app.post('/api/game/resume', async (req, res) => {
   if (!claudeProcess) return res.status(503).json({ error: 'Game engine not available' });
 
-  const { simId, themeId, playtest } = req.body;
+  const { simId, themeId } = req.body;
   if (!simId) return res.status(400).json({ error: 'simId is required' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -397,8 +397,7 @@ app.post('/api/game/resume', async (req, res) => {
   try {
     for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', {
       resume: true,
-      resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`,
-      playtest: playtest === 'playtester'
+      resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`
     })) {
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
