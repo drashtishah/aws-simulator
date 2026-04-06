@@ -180,6 +180,7 @@ function buildPrompt(simId, themeId) {
 - When switching to Console Mode, prefix your response with [CONSOLE_START] and end with [CONSOLE_END]
 - When delivering coaching analysis, prefix with [COACHING_START] and end with [COACHING_END]
 - When coaching analysis is delivered, output [SESSION_COMPLETE] as the final line. Do NOT update profile.json, catalog.csv, or vault files. The server handles post-session updates separately.
+- After delivering coaching analysis and [SESSION_COMPLETE], do not continue the conversation. Do not offer another simulation. The server handles session completion.
 - Do not use Markdown headers in responses (use bold text and line breaks instead)`;
 
   // Validate: check for unresolved placeholders

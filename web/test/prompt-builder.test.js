@@ -135,4 +135,9 @@ describe('buildPrompt', () => {
       assert.ok(prompt.includes(marker), `should include marker: ${marker}`);
     }
   });
+
+  it('contains no-play-another rule in web session rules', () => {
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    assert.ok(prompt.includes('Do not offer another simulation'), 'should contain no-play-another rule');
+  });
 });
