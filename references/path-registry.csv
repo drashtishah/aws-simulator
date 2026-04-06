@@ -270,11 +270,11 @@ references/game-design-document.md,learning/vault/patterns/behavioral-profile.md
 references/game-design-document.md,references/progression.yaml,202
 references/game-design-document.md,.claude/skills/play/references/coaching-patterns.md,203
 references/game-design-document.md,learning/vault/index.md,204
-references/permission-bypass-registry.md,scripts/audit-permissions.js,34
-references/permission-bypass-registry.md,.claude/,35
-references/permission-bypass-registry.md,references/permission-bypass-registry.md,35
-references/permission-bypass-registry.md,scripts/,35
-references/permission-bypass-registry.md,web/,35
+references/permission-bypass-registry.md,scripts/audit-permissions.js,38
+references/permission-bypass-registry.md,.claude/,39
+references/permission-bypass-registry.md,references/permission-bypass-registry.md,39
+references/permission-bypass-registry.md,scripts/,39
+references/permission-bypass-registry.md,web/,39
 references/testing-system.md,learning/sessions/{sim_id}/transcript.jsonl,138
 references/testing-system.md,web/test-results/personas/{persona-id}-{timestamp}.json,152
 references/testing-system.md,references/eval-scoring.yaml,167
