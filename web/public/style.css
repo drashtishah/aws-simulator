@@ -715,6 +715,7 @@ a:hover {
   background: var(--narrator-bg);
   color: var(--text-primary);
   border-bottom-left-radius: 4px;
+  white-space: normal;
 }
 
 .chat-message.player {
@@ -742,6 +743,7 @@ a:hover {
   color: var(--text-primary);
   border-bottom-left-radius: 4px;
   border-left: 3px solid var(--accent-green);
+  white-space: normal;
 }
 
 .chat-message.system {
@@ -788,7 +790,7 @@ a:hover {
   padding: 8px 12px;
   border-radius: 6px;
   overflow-x: auto;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .chat-message pre code {

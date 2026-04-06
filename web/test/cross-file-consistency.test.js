@@ -295,6 +295,18 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('index.html includes marked.min.js CDN script', () => {
+    const html = readFile('web/public/index.html');
+    assert.ok(html.includes('marked.min.js'),
+      'index.html should include marked.min.js CDN');
+  });
+
+  it('style.css uses white-space: normal for narrator messages', () => {
+    const css = readFile('web/public/style.css');
+    assert.ok(/\.chat-message\.narrator\s*\{[^}]*white-space:\s*normal/s.test(css),
+      'narrator messages should use white-space: normal');
+  });
+
   it('registry summaries share keywords with manifest summaries', () => {
     const registry = JSON.parse(readFile('sims/registry.json'));
     for (const sim of registry.sims) {
