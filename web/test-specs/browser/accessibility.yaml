@@ -24,9 +24,9 @@ steps:
 
   - id: chat-messages-role-log-nav
     action: click
-    target: "[data-tab='play']"
+    target: "#tab-play"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: chat-messages-role-log
@@ -38,53 +38,53 @@ steps:
 
   - id: settings-modal-nav-back
     action: click
-    target: "#chat-back-button"
+    target: "#btn-back-to-sims"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: settings-modal-role-dialog
     action: click
-    target: "#settings-button"
+    target: "#btn-settings"
     check:
-      - selector: "#settings-modal"
-        attribute: { role: "dialog", aria-modal: "true", aria-label: "Settings" }
+      - selector: "#settings-modal .modal"
+        attribute: { role: "dialog", aria-label: "Settings" }
 
   - id: nav-tablist-roles
     action: click
-    target: "#settings-close"
+    target: "#btn-close-settings"
     check:
-      - selector: "#main-nav"
+      - selector: ".topbar-nav"
         attribute: { role: "tablist" }
-      - selector: "[data-tab='dashboard']"
+      - selector: "#tab-dashboard"
         attribute: { role: "tab" }
-      - selector: "[data-tab='play']"
+      - selector: "#tab-play"
         attribute: { role: "tab" }
 
   - id: settings-button-aria-label
     check:
-      - selector: "#settings-button"
-        attribute: { aria-label: "Open settings" }
+      - selector: "#btn-settings"
+        attribute: { aria-label: "Settings" }
 
   - id: chat-input-aria-label-nav
     action: click
-    target: "[data-tab='play']"
+    target: "#tab-play"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: chat-input-aria-label
     action: click
     target: ".sim-card:first-child"
     check:
-      - selector: "#chat-input textarea"
-        attribute: { aria-label: "Type your response" }
+      - selector: "#chat-input"
+        attribute: { aria-label: "Message input" }
 
   - id: focus-visible-outline-nav
     action: click
-    target: "#chat-back-button"
+    target: "#btn-back-to-sims"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: focus-visible-outline

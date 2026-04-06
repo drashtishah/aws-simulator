@@ -2,6 +2,7 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
 
 const { loadConfig, axisNames } = require('../lib/progression');
 
@@ -368,5 +369,139 @@ describe('hardcoded theme IDs exist as files', () => {
       assert.ok(fs.existsSync(themeFile),
         'theme file for fallback "' + match[1] + '" must exist at themes/' + match[1] + '.md');
     }
+  });
+});
+
+// --- 9. YAML browser spec selector drift ---
+
+describe('YAML browser spec selector drift', () => {
+  const specsDir = path.join(ROOT, 'web', 'test-specs', 'browser');
+  const specFiles = fs.readdirSync(specsDir).filter(f => f.endsWith('.yaml'));
+
+  const indexHtml = readFile('web/public/index.html');
+  const styleCss = readFile('web/public/style.css');
+  const appTs = readFile('web/public/app.ts');
+
+  // Allowlisted selectors (dynamic content, not in static HTML)
+  const allowlist = [
+    '.chat-message',
+    '.sim-card',
+    '.custom-select-option',
+  ];
+
+  // Selectors that assert absence (visible: false for removed elements)
+  const absenceSelectors = new Set([
+    '#legacy-progress-bar',
+    '#old-level-display',
+  ]);
+
+  function isAllowlisted(selector) {
+    // Skip pseudo-selectors
+    if (/:focus/.test(selector) || /:first-child/.test(selector) ||
+        /:last-child/.test(selector) || /:nth-child/.test(selector) ||
+        /:focus-visible/.test(selector)) {
+      return true;
+    }
+    // Skip allowlisted classes and their sub-selectors
+    for (const prefix of allowlist) {
+      if (selector === prefix || selector.startsWith(prefix + '.') ||
+          selector.startsWith(prefix + ':') || selector.startsWith(prefix + ' ') ||
+          selector.startsWith(prefix + '[')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function extractSelectors(obj) {
+    const selectors = [];
+    if (!obj || typeof obj !== 'object') return selectors;
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        selectors.push(...extractSelectors(item));
+      }
+      return selectors;
+    }
+    if (typeof obj.selector === 'string') selectors.push(obj.selector);
+    if (typeof obj.target === 'string') selectors.push(obj.target);
+    for (const val of Object.values(obj)) {
+      if (typeof val === 'object' && val !== null) {
+        selectors.push(...extractSelectors(val));
+      }
+    }
+    return selectors;
+  }
+
+  function splitCompoundSelector(selector) {
+    // Split compound selectors like "#view-dashboard #stat-rank-title" or ".topbar .topbar-title-full"
+    return selector.trim().split(/\s+/);
+  }
+
+  function validateSimpleSelector(sel) {
+    // Returns an error message if the selector cannot be found, or null if OK.
+
+    // ID selector: #foo or #foo.bar or #foo[attr]
+    const idMatch = sel.match(/^#([a-zA-Z0-9_-]+)/);
+    if (idMatch) {
+      const id = idMatch[1];
+      const pattern = 'id="' + id + '"';
+      if (!indexHtml.includes(pattern) && !appTs.includes(pattern)) {
+        return 'id="' + id + '" not found in index.html or app.ts';
+      }
+      return null;
+    }
+
+    // Attribute selector: [data-foo='bar'] or [role="dialog"]
+    const attrMatch = sel.match(/^\[([a-zA-Z0-9_-]+)/);
+    if (attrMatch) {
+      const attr = attrMatch[1];
+      if (!indexHtml.includes(attr) && !appTs.includes(attr)) {
+        return 'attribute "' + attr + '" not found in index.html or app.ts';
+      }
+      return null;
+    }
+
+    // Class selector: .foo or .foo-bar
+    const classMatch = sel.match(/^\.([a-zA-Z][a-zA-Z0-9_-]*)/);
+    if (classMatch) {
+      const cls = classMatch[1];
+      if (!indexHtml.includes(cls) && !styleCss.includes(cls) && !appTs.includes(cls)) {
+        return 'class "' + cls + '" not found in index.html, style.css, or app.ts';
+      }
+      return null;
+    }
+
+    // Element selectors (h2, text, select) are always OK
+    return null;
+  }
+
+  it('YAML browser spec selectors match actual DOM', () => {
+    const missing = [];
+
+    for (const file of specFiles) {
+      const content = fs.readFileSync(path.join(specsDir, file), 'utf8');
+      const spec = yaml.load(content);
+      const selectors = extractSelectors(spec.steps || []);
+
+      for (const rawSelector of selectors) {
+        if (isAllowlisted(rawSelector) || absenceSelectors.has(rawSelector)) continue;
+
+        const parts = splitCompoundSelector(rawSelector);
+        for (const part of parts) {
+          if (isAllowlisted(part)) continue;
+
+          const error = validateSimpleSelector(part);
+          if (error) {
+            missing.push(file + ': selector "' + rawSelector + '" (' + error + ')');
+          }
+        }
+      }
+    }
+
+    assert.equal(
+      missing.length, 0,
+      'Selectors in YAML specs reference elements not found in source files:\n  ' +
+        missing.join('\n  ')
+    );
   });
 });

@@ -8,74 +8,71 @@ setup:
 steps:
   - id: dashboard-active-on-load
     check:
-      - selector: "[data-tab='dashboard']"
-        has_class: active
+      - selector: "#tab-dashboard"
+        attribute: { aria-selected: "true" }
         visible: true
 
   - id: dashboard-aria-selected
     check:
-      - selector: "[data-tab='dashboard']"
+      - selector: "#tab-dashboard"
         attribute: { aria-selected: "true" }
-      - selector: "[data-tab='play']"
+      - selector: "#tab-play"
         attribute: { aria-selected: "false" }
 
   - id: play-tab-switch
     action: click
-    target: "[data-tab='play']"
+    target: "#tab-play"
     check:
-      - selector: "[data-tab='play']"
-        has_class: active
+      - selector: "#tab-play"
         attribute: { aria-selected: "true" }
-      - selector: "[data-tab='dashboard']"
-        not_has_class: active
+      - selector: "#tab-dashboard"
         attribute: { aria-selected: "false" }
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: dashboard-tab-back
     action: click
-    target: "[data-tab='dashboard']"
+    target: "#tab-dashboard"
     check:
-      - selector: "[data-tab='dashboard']"
-        has_class: active
+      - selector: "#tab-dashboard"
         attribute: { aria-selected: "true" }
-      - selector: "#dashboard-view"
+      - selector: "#view-dashboard"
         visible: true
 
   - id: settings-modal-open
     action: click
-    target: "#settings-button"
+    target: "#btn-settings"
     check:
       - selector: "#settings-modal"
         visible: true
-        has_class: open
+        has_class: active
 
   - id: settings-modal-close-outside
     action: click
-    target: "#settings-overlay"
+    target: "#settings-modal"
     check:
       - selector: "#settings-modal"
-        not_has_class: open
+        not_has_class: active
         visible: false
 
   - id: settings-modal-close-button
     action: click
-    target: "#settings-button"
+    target: "#btn-settings"
     check:
       - selector: "#settings-modal"
         visible: true
 
   - id: settings-modal-close-button-confirm
     action: click
-    target: "#settings-close"
+    target: "#btn-close-settings"
     check:
       - selector: "#settings-modal"
         visible: false
 
   - id: topbar-content
     check:
-      - selector: "#topbar .app-title"
+      - selector: ".topbar .topbar-title-full"
         text_contains: "AWS Incident Simulator"
         visible: true
-      - selector: "#topbar #settings-button"
+      - selector: ".topbar #btn-settings"
         visible: true

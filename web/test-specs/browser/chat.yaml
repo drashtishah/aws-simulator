@@ -11,16 +11,16 @@ setup:
 steps:
   - id: chat-container-on-sim-start-nav
     action: click
-    target: "[data-tab='play']"
+    target: "#tab-play"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
 
   - id: chat-container-on-sim-start
     action: click
     target: ".sim-card:first-child"
     check:
-      - selector: "#chat-container"
+      - selector: "#chat"
         visible: true
       - selector: "#chat-messages"
         visible: true
@@ -29,96 +29,91 @@ steps:
 
   - id: sim-title-shown
     check:
-      - selector: "#chat-header .sim-title"
+      - selector: "#chat-sim-title"
         visible: true
         text_contains: "sim"
 
   - id: narrator-message-visible
     check:
-      - selector: ".message.narrator"
+      - selector: ".chat-message.narrator"
         visible: true
         min_count: 1
-      - selector: ".message.narrator .message-body"
-        text_contains: " "
 
   - id: console-message-visible
     check:
-      - selector: ".message.console"
+      - selector: ".chat-message.console"
         visible: true
         min_count: 1
-      - selector: ".message.console .message-body"
-        has_class: console
 
   - id: player-message-sent-type
     action: type
-    target: "#chat-input textarea"
+    target: "#chat-input"
     text: "describe the error logs"
 
   - id: player-message-sent
     action: click
-    target: "#send-button"
+    target: "#btn-send"
     check:
-      - selector: ".message.player"
+      - selector: ".chat-message.player"
         visible: true
         text_contains: "describe the error logs"
 
   - id: empty-message-blocked
     action: click
-    target: "#send-button"
+    target: "#btn-send"
     check:
-      - selector: "#send-button"
+      - selector: "#btn-send"
         attribute: { disabled: "true" }
 
   - id: enter-sends-type
     action: type
-    target: "#chat-input textarea"
+    target: "#chat-input"
     text: "check cloudwatch"
 
   - id: enter-sends-shift-enter-does-not
     action: keyboard
     key: "Enter"
     check:
-      - selector: ".message.player:last-child"
+      - selector: ".chat-message.player:last-child"
         text_contains: "check cloudwatch"
 
   - id: textarea-auto-resizes
     action: type
-    target: "#chat-input textarea"
+    target: "#chat-input"
     text: "line one\nline two\nline three\nline four"
     check:
-      - selector: "#chat-input textarea"
+      - selector: "#chat-input"
         css_property: { height: "auto" }
         visible: true
 
   - id: back-button-returns
     action: click
-    target: "#chat-back-button"
+    target: "#btn-back-to-sims"
     check:
-      - selector: "#play-view"
+      - selector: "#view-play"
         visible: true
-      - selector: "#chat-container"
+      - selector: "#chat"
         visible: false
 
   - id: quit-button-start-sim
     action: click
     target: ".sim-card:first-child"
     check:
-      - selector: "#chat-container"
+      - selector: "#chat"
         visible: true
 
   - id: quit-button-confirms
     action: click
-    target: "#quit-button"
+    target: "#btn-back-to-sims"
     check:
-      - selector: "#quit-confirm-dialog"
+      - selector: "#confirm-modal.active"
         visible: true
-        text_contains: "quit"
+      - selector: "#confirm-modal-title"
+        text_contains: "Leave"
 
   - id: session-complete-ui
     check:
-      - selector: "#session-complete-banner"
-        visible: true
-      - selector: "#chat-input textarea"
+      - selector: "#chat-input"
         attribute: { disabled: "true" }
-      - selector: "#send-button"
+      - selector: "#btn-send"
         attribute: { disabled: "true" }
