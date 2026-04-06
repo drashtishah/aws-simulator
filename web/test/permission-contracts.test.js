@@ -64,12 +64,10 @@ describe('web app tool whitelist', () => {
     );
   });
 
-  it('does not contain raw skipPermissions outside allowDangerouslySkipPermissions', () => {
-    // Remove all occurrences of the safe variant, then check for any remaining
-    const sanitized = source.replace(/allowDangerouslySkipPermissions/g, '');
+  it('does not contain allowDangerouslySkipPermissions', () => {
     assert.ok(
-      !sanitized.includes('skipPermissions'),
-      'source must not contain skipPermissions outside of allowDangerouslySkipPermissions'
+      !source.includes('allowDangerouslySkipPermissions'),
+      'source must not contain allowDangerouslySkipPermissions'
     );
   });
 });

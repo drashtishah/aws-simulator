@@ -484,7 +484,7 @@ async function* streamSession(simId, themeId, options = {}) {
     model: modelId,
     systemPrompt: promptText,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
+
     maxTurns: 50
   };
 
@@ -569,7 +569,7 @@ async function* streamMessage(sessionId, message) {
     allowedTools: ['Read', 'Write'],
     model: session.modelId,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
+
     maxTurns: 50
   };
 
@@ -619,7 +619,7 @@ async function* streamMessage(sessionId, message) {
         model: session.modelId,
         systemPrompt: session.systemPrompt,
         permissionMode: 'bypassPermissions',
-        allowDangerouslySkipPermissions: true,
+    
         maxTurns: 50
       };
 
@@ -690,7 +690,7 @@ async function startSession(simId, themeId, options = {}) {
     model: modelId,
     systemPrompt: promptText,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
+
     maxTurns: 50
   };
 
@@ -757,7 +757,7 @@ async function sendMessage(sessionId, message) {
     allowedTools: ['Read', 'Write'],
     model: session.modelId,
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
+
     maxTurns: 50
   };
 
@@ -791,7 +791,7 @@ async function sendMessage(sessionId, message) {
         model: session.modelId,
         systemPrompt: session.systemPrompt,
         permissionMode: 'bypassPermissions',
-        allowDangerouslySkipPermissions: true,
+    
         maxTurns: 50
       };
 
@@ -903,7 +903,7 @@ async function runPostSessionAgent(simId) {
     allowedTools: ['Read', 'Write'],
     model: 'claude-opus-4-6',
     permissionMode: 'bypassPermissions',
-    allowDangerouslySkipPermissions: true,
+
     maxTurns: 30
   };
 
