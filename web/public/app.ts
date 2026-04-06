@@ -3,19 +3,132 @@
 (function () {
   'use strict';
 
+  // --- Types ---
+
+  interface SimEntry {
+    id: string;
+    title: string;
+    category?: string;
+    difficulty?: number;
+    services?: string[];
+    summary?: string;
+  }
+
+  interface Registry {
+    sims: SimEntry[];
+  }
+
+  interface Profile {
+    completed_sims: string[];
+  }
+
+  interface CompletedSim {
+    title: string;
+    difficulty?: number;
+    category?: string;
+    questionTypes?: string[];
+    summary?: string;
+  }
+
+  interface RankGate {
+    all_axes_min?: number;
+    axes_min?: Record<string, number>;
+  }
+
+  interface QualityGate {
+    avg_question_quality: number;
+    min_sessions_at_rank: number;
+  }
+
+  interface NextRank {
+    id: string;
+    title: string;
+    gate?: RankGate;
+    quality_gate?: QualityGate;
+  }
+
+  interface ProgressData {
+    rank: string;
+    rankTitle: string;
+    polygon: Record<string, number>;
+    rawPolygon: Record<string, number>;
+    axisNames: string[];
+    axisLabels: Record<string, string>;
+    simsCompleted: number;
+    servicesEncountered: string[];
+    polygonLastAdvanced: Record<string, string>;
+    rankHistory: RankHistoryEntry[];
+    challengeRuns: unknown[];
+    maxDifficulty: number;
+    assist: Record<string, unknown>;
+    nextRank?: NextRank;
+    completedSims?: CompletedSim[];
+    categoryMap?: Record<string, string[]>;
+    questionQuality?: { avg_overall: number };
+    sessionsAtCurrentRank?: number;
+  }
+
+  interface RankHistoryEntry {
+    rank: string;
+    achieved: string;
+  }
+
+  interface RankMeta {
+    description: string;
+    icon: string;
+  }
+
+  interface StreamEvent {
+    type: string;
+    sessionId?: string;
+    content?: string;
+    message?: string;
+  }
+
+  type StreamHandlers = Record<string, (data: StreamEvent) => void>;
+
+  interface ModalAction {
+    label: string;
+    primary: boolean;
+    onClick: () => void;
+  }
+
+  interface ModalConfig {
+    title: string;
+    body: string;
+    actions: ModalAction[];
+  }
+
+  interface SelectOption {
+    value: string;
+    label: string;
+  }
+
+  interface GapEntry {
+    label: string;
+    current: number | string;
+    needed: number;
+  }
+
+  // --- Helpers ---
+
+  function $(id: string): HTMLElement {
+    return document.getElementById(id)!;
+  }
+
   // --- State ---
   let currentView = 'dashboard';
-  let currentSessionId = null;
-  let currentSimId = null;
-  let registry = { sims: [] };
-  let profile = { completed_sims: [] };
-  let progressData = null;
+  let currentSessionId: string | null = null;
+  let currentSimId: string | null = null;
+  let registry: Registry = { sims: [] };
+  let profile: Profile = { completed_sims: [] };
+  let progressData: ProgressData | null = null;
   let isScrollPinned = true;
   let sessionCompleted = false;
 
   // --- Settings (localStorage with fallback) ---
 
-  function getSetting(key, fallback) {
+  function getSetting(key: string, fallback: string): string {
     try {
       return localStorage.getItem(key) || fallback;
     } catch {
@@ -23,7 +136,7 @@
     }
   }
 
-  function setSetting(key, value) {
+  function setSetting(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
     } catch {
@@ -33,8 +146,8 @@
 
   // --- Theme Loading ---
 
-  function loadUiTheme(themeId) {
-    const link = document.getElementById('ui-theme');
+  function loadUiTheme(themeId: string): void {
+    const link = document.getElementById('ui-theme') as HTMLLinkElement | null;
     if (link) {
       link.href = '/ui-themes/' + themeId + '.css';
     }
@@ -42,7 +155,7 @@
 
   // --- API Helpers ---
 
-  async function fetchJSON(url) {
+  async function fetchJSON(url: string): Promise<any> {
     const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch ' + url);
     return res.json();
@@ -50,8 +163,8 @@
 
   // --- SSE Stream Consumer ---
 
-  async function streamResponse(response, handlers) {
-    const reader = response.body.getReader();
+  async function streamResponse(response: Response, handlers: StreamHandlers): Promise<void> {
+    const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     while (true) {
@@ -59,13 +172,14 @@
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
-      buffer = lines.pop();
+      buffer = lines.pop()!;
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           try {
-            const data = JSON.parse(line.slice(6));
-            if (handlers[data.type]) {
-              handlers[data.type](data);
+            const data = JSON.parse(line.slice(6)) as StreamEvent;
+            const handler = handlers[data.type];
+            if (handler) {
+              handler(data);
             }
           } catch {
             // skip unparseable lines
@@ -77,12 +191,12 @@
 
   // --- View Management ---
 
-  function switchView(view) {
+  function switchView(view: string): void {
     currentView = view;
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + view).classList.add('active');
+    $('view-' + view).classList.add('active');
 
-    document.querySelectorAll('[role="tab"]').forEach(tab => {
+    document.querySelectorAll<HTMLElement>('[role="tab"]').forEach(tab => {
       tab.setAttribute('aria-selected', tab.dataset.view === view ? 'true' : 'false');
     });
 
@@ -96,8 +210,8 @@
 
   // --- Dashboard ---
 
-  async function loadDashboard() {
-    let progress;
+  async function loadDashboard(): Promise<void> {
+    let progress: ProgressData;
     try {
       progress = await fetchJSON('/api/progress');
     } catch {
@@ -119,8 +233,8 @@
     }
     progressData = progress;
 
-    document.getElementById('stat-rank-title').textContent = progress.rankTitle;
-    document.getElementById('stat-completed').textContent = progress.simsCompleted;
+    $('stat-rank-title').textContent = progress.rankTitle;
+    $('stat-completed').textContent = String(progress.simsCompleted);
 
     // Dynamic polygon SVG
     renderPolygon(progress.polygon, progress.axisNames, progress.axisLabels, progress.polygonLastAdvanced);
@@ -132,9 +246,9 @@
     renderRankProgression(progress.rankHistory || []);
 
     // Services encountered
-    const servicesList = document.getElementById('services-list');
+    const servicesList = $('services-list');
     if (progress.servicesEncountered.length) {
-      servicesList.innerHTML = progress.servicesEncountered.map(name =>
+      servicesList.innerHTML = progress.servicesEncountered.map((name: string) =>
         '<span class="service-encountered-tag">' + escapeHtml(name) + '</span>'
       ).join('');
     } else {
@@ -142,21 +256,21 @@
     }
   }
 
-  function showCompletedDrilldown() {
+  function showCompletedDrilldown(): void {
     if (!progressData || !progressData.completedSims || !progressData.completedSims.length) return;
 
-    document.getElementById('dashboard-content').style.display = 'none';
-    const drilldown = document.getElementById('completed-drilldown');
+    $('dashboard-content').style.display = 'none';
+    const drilldown = $('completed-drilldown');
     drilldown.style.display = 'block';
 
-    const grid = document.getElementById('completed-grid');
-    grid.innerHTML = progressData.completedSims.map(sim => {
+    const grid = $('completed-grid');
+    grid.innerHTML = progressData.completedSims.map((sim: CompletedSim) => {
       const maxDiff = 4;
       const dots = Array.from({ length: maxDiff }, (_, i) =>
         '<span class="difficulty-dot' + (i >= (sim.difficulty || 1) ? ' empty' : '') + '"></span>'
       ).join('');
 
-      const qTypes = (sim.questionTypes || []).map(t =>
+      const qTypes = (sim.questionTypes || []).map((t: string) =>
         '<span class="question-type-tag">' + escapeHtml(t) + '</span>'
       ).join('');
 
@@ -172,31 +286,31 @@
     }).join('');
   }
 
-  function hideCompletedDrilldown() {
-    document.getElementById('completed-drilldown').style.display = 'none';
-    document.getElementById('dashboard-content').style.display = 'block';
+  function hideCompletedDrilldown(): void {
+    $('completed-drilldown').style.display = 'none';
+    $('dashboard-content').style.display = 'block';
   }
 
-  function renderPolygon(polygon, axes, axisLabels, polygonLastAdvanced) {
-    const svg = document.getElementById('hexagon-svg');
+  function renderPolygon(polygon: Record<string, number>, axes: string[], axisLabels: Record<string, string>, polygonLastAdvanced: Record<string, string>): void {
+    const svg = $('hexagon-svg');
     const cx = 150, cy = 150, radius = 110;
     const n = axes.length;
     if (n === 0) return;
 
     // Check which axes are fading (> 21 days since last advanced)
-    const fadingAxes = new Set();
+    const fadingAxes = new Set<string>();
     if (polygonLastAdvanced) {
       const now = new Date();
       for (const axis of axes) {
         const last = polygonLastAdvanced[axis];
         if (last) {
-          const daysSince = (now - new Date(last)) / (1000 * 60 * 60 * 24);
+          const daysSince = (now.getTime() - new Date(last).getTime()) / (1000 * 60 * 60 * 24);
           if (daysSince >= 21) fadingAxes.add(axis);
         }
       }
     }
 
-    function getPoint(index, value, maxVal) {
+    function getPoint(index: number, value: number, maxVal: number): { x: number; y: number } {
       const angle = (Math.PI * 2 * index / n) - Math.PI / 2;
       const r = (value / maxVal) * radius;
       return {
@@ -209,7 +323,7 @@
 
     // Background grid rings
     for (const pct of [0.25, 0.5, 0.75, 1.0]) {
-      const points = [];
+      const points: string[] = [];
       for (let i = 0; i < n; i++) {
         const p = getPoint(i, pct * 10, 10);
         points.push(p.x + ',' + p.y);
@@ -224,9 +338,9 @@
     }
 
     // Data polygon
-    const dataPoints = [];
+    const dataPoints: string[] = [];
     for (let i = 0; i < n; i++) {
-      const val = polygon[axes[i]] || 0;
+      const val = polygon[axes[i]!] || 0;
       const p = getPoint(i, val, 10);
       dataPoints.push(p.x + ',' + p.y);
     }
@@ -234,7 +348,7 @@
 
     // Data points (dots), with fading indicator
     for (let i = 0; i < n; i++) {
-      const axis = axes[i];
+      const axis = axes[i]!;
       const val = polygon[axis] || 0;
       const p = getPoint(i, val, 10);
       const fadingClass = fadingAxes.has(axis) ? ' hexagon-dot-fading' : '';
@@ -242,7 +356,7 @@
     }
 
     // Axis descriptions: example questions for each type
-    const axisDescriptions = {
+    const axisDescriptions: Record<string, string> = {
       gather: 'What do the logs and metrics show?',
       diagnose: 'What is causing this behavior?',
       correlate: 'What else changed around the same time?',
@@ -253,7 +367,7 @@
 
     // Labels, with fading indicator
     for (let i = 0; i < n; i++) {
-      const axis = axes[i];
+      const axis = axes[i]!;
       const label = (axisLabels && axisLabels[axis]) || axis;
       const p = getPoint(i, 12, 10);
       const anchor = p.x < cx - 5 ? 'end' : p.x > cx + 5 ? 'start' : 'middle';
@@ -267,13 +381,13 @@
     // Render interactive hotspots over each label
     const hotspots = document.getElementById('hexagon-hotspots');
     if (hotspots) {
-      const svgEl = document.getElementById('hexagon-svg');
+      const svgEl = $('hexagon-svg');
       const svgRect = svgEl.getBoundingClientRect();
       const vb = { x: -40, y: -10, w: 380, h: 320 };
       const scaleX = svgRect.width / vb.w;
       const scaleY = svgRect.height / vb.h;
 
-      hotspots.innerHTML = axes.map((axis, i) => {
+      hotspots.innerHTML = axes.map((axis: string, i: number) => {
         const label = (axisLabels && axisLabels[axis]) || axis;
         const desc = axisDescriptions[axis] || '';
         const p = getPoint(i, 12, 10);
@@ -286,7 +400,7 @@
   }
 
   // Rank metadata
-  var rankMeta = {
+  const rankMeta: Record<string, RankMeta> = {
     'responder': { description: 'You respond to alerts and follow runbooks.', icon: 'dot' },
     'junior-investigator': { description: 'You ask targeted questions about specific services.', icon: 'dot' },
     'investigator': { description: 'You dig into logs and identify patterns.', icon: 'triangle' },
@@ -299,7 +413,7 @@
     'chaos-architect': { description: 'You anticipate failures before they happen.', icon: 'star' }
   };
 
-  function renderNextRank(progress) {
+  function renderNextRank(progress: ProgressData): void {
     const container = document.getElementById('next-rank-info');
     if (!container) return;
 
@@ -309,10 +423,10 @@
       return;
     }
 
-    const meta = rankMeta[nextRank.id] || {};
+    const meta = rankMeta[nextRank.id] || { description: '', icon: 'dot' };
     const rawPolygon = progress.rawPolygon || {};
     const gate = nextRank.gate || {};
-    let gaps = [];
+    const gaps: GapEntry[] = [];
 
     if (gate.all_axes_min !== undefined) {
       const axes = progress.axisNames || [];
@@ -357,8 +471,8 @@
       html += '<span class="text-muted">All requirements met. Complete a sim to advance.</span>';
     } else {
       html += '<div class="next-rank-gaps">' +
-        gaps.map(g => {
-          const pct = Math.min(100, Math.round((parseFloat(g.current) / g.needed) * 100));
+        gaps.map((g: GapEntry) => {
+          const pct = Math.min(100, Math.round((parseFloat(String(g.current)) / g.needed) * 100));
           return '<div class="next-rank-gap">' +
             '<span class="next-rank-gap-label">' + escapeHtml(g.label) + '</span>' +
             '<div class="next-rank-gap-bar"><div class="next-rank-gap-fill" style="width:' + pct + '%"></div></div>' +
@@ -371,7 +485,7 @@
     container.innerHTML = html;
   }
 
-  function renderRankProgression(history) {
+  function renderRankProgression(history: RankHistoryEntry[]): void {
     const container = document.getElementById('rank-progression');
     if (!container) return;
 
@@ -380,9 +494,9 @@
       return;
     }
 
-    container.innerHTML = history.map(entry => {
+    container.innerHTML = history.map((entry: RankHistoryEntry) => {
       const id = entry.rank;
-      const meta = rankMeta[id] || {};
+      const meta = rankMeta[id] || { description: '', icon: 'dot' };
       const icon = meta.icon || 'dot';
       return '<div class="rank-step">' +
         '<div class="rank-icon"><div class="rank-icon-' + icon + '"></div></div>' +
@@ -392,31 +506,31 @@
     }).join('');
   }
 
-  function formatRankId(id) {
-    return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  function formatRankId(id: string): string {
+    return id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   // --- Sim Picker ---
 
-  async function loadSimPicker() {
+  async function loadSimPicker(): Promise<void> {
     try {
       registry = await fetchJSON('/api/registry');
     } catch {
       registry = { sims: [] };
     }
 
-    let inProgressIds = [];
+    let inProgressIds: string[] = [];
     try {
-      const sessions = await fetchJSON('/api/sessions');
+      const sessions: Array<{ status: string; sim_id: string }> = await fetchJSON('/api/sessions');
       inProgressIds = sessions.filter(s => s.status === 'in_progress').map(s => s.sim_id);
     } catch {
       // ignore
     }
 
-    const grid = document.getElementById('sim-grid');
-    const empty = document.getElementById('sim-empty');
-    const picker = document.getElementById('sim-picker');
-    const chat = document.getElementById('chat');
+    const grid = $('sim-grid');
+    const empty = $('sim-empty');
+    const picker = $('sim-picker');
+    const chat = $('chat');
 
     // If there is an active chat, keep showing it
     if (currentSessionId) {
@@ -439,35 +553,32 @@
     empty.style.display = 'none';
 
     // Sort using server-provided sort scores, or fallback to weakness-first
-    let progress;
+    let progress: ProgressData;
     try {
       progress = progressData || await fetchJSON('/api/progress');
     } catch {
-      progress = { rawPolygon: {}, maxDifficulty: 1, categoryMap: {}, axisNames: [] };
+      progress = { rawPolygon: {}, maxDifficulty: 1, categoryMap: {}, axisNames: [] } as unknown as ProgressData;
     }
 
     const rawPolygon = progress.rawPolygon || {};
-    const pMaxDiff = progress.maxDifficulty || 1;
     const categoryMap = progress.categoryMap || {};
 
-    const sorted = [...sims].sort((a, b) => {
+    const sorted = [...sims].sort((a: SimEntry, b: SimEntry) => {
       const aTypes = categoryMap[(a.category || '').toLowerCase()] || ['gather'];
       const bTypes = categoryMap[(b.category || '').toLowerCase()] || ['gather'];
-      const aGap = aTypes.reduce((sum, t) => sum + (rawPolygon[t] || 0), 0) / aTypes.length;
-      const bGap = bTypes.reduce((sum, t) => sum + (rawPolygon[t] || 0), 0) / bTypes.length;
+      const aGap = aTypes.reduce((sum: number, t: string) => sum + (rawPolygon[t] || 0), 0) / aTypes.length;
+      const bGap = bTypes.reduce((sum: number, t: string) => sum + (rawPolygon[t] || 0), 0) / bTypes.length;
       if (aGap !== bGap) return aGap - bGap;
       return (a.difficulty || 1) - (b.difficulty || 1);
     });
 
-    const completedSims = (profile.completed_sims || []);
-
-    grid.innerHTML = sorted.map(sim => {
+    grid.innerHTML = sorted.map((sim: SimEntry) => {
       const maxDiff = 4;
       const dots = Array.from({ length: maxDiff }, (_, i) =>
         '<span class="difficulty-dot' + (i >= (sim.difficulty || 1) ? ' empty' : '') + '"></span>'
       ).join('');
 
-      const services = (sim.services || []).map(s =>
+      const services = (sim.services || []).map((s: string) =>
         '<span class="service-tag">' + escapeHtml(s) + '</span>'
       ).join('');
 
@@ -486,12 +597,12 @@
     }).join('');
 
     // Bind click events
-    grid.querySelectorAll('.sim-card').forEach(card => {
-      card.addEventListener('click', () => startSim(card.dataset.simId, false));
-      card.addEventListener('keydown', (e) => {
+    grid.querySelectorAll<HTMLElement>('.sim-card').forEach(card => {
+      card.addEventListener('click', () => startSim(card.dataset.simId!, false));
+      card.addEventListener('keydown', (e: KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          startSim(card.dataset.simId, false);
+          startSim(card.dataset.simId!, false);
         }
       });
     });
@@ -499,7 +610,7 @@
 
   // --- Chat ---
 
-  async function startSim(simId, isResume) {
+  async function startSim(simId: string, isResume: boolean): Promise<void> {
     // Single-sim enforcement: block if a session is already active
     if (currentSessionId && !isResume) {
       appendMessage('system', 'A simulation is already in progress. Quit it first before starting another.');
@@ -508,20 +619,19 @@
     currentSimId = simId;
 
     // Find sim title
-    const sim = (registry.sims || []).find(s => s.id === simId);
-    document.getElementById('chat-sim-title').textContent = sim ? sim.title : simId;
+    const sim = (registry.sims || []).find((s: SimEntry) => s.id === simId);
+    $('chat-sim-title').textContent = sim ? sim.title : simId;
 
     // Show chat, hide picker
-    document.getElementById('sim-picker').style.display = 'none';
-    const chat = document.getElementById('chat');
+    $('sim-picker').style.display = 'none';
+    const chat = $('chat');
     chat.classList.add('active');
 
     // Clear messages
-    const messages = document.getElementById('chat-messages');
+    const messages = $('chat-messages');
     messages.innerHTML = '';
 
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('btn-send');
+    const input = $('chat-input') as HTMLTextAreaElement;
     setInputEnabled(false);
     showTyping(true);
 
@@ -536,17 +646,17 @@
       });
 
       await streamResponse(response, {
-        session: (data) => {
-          currentSessionId = data.sessionId;
+        session: (data: StreamEvent) => {
+          currentSessionId = data.sessionId || null;
         },
-        text: (data) => {
-          appendMessage('narrator', data.content);
+        text: (data: StreamEvent) => {
+          appendMessage('narrator', data.content || '');
         },
-        console: (data) => {
-          appendMessage('console', data.content);
+        console: (data: StreamEvent) => {
+          appendMessage('console', data.content || '');
         },
-        coaching: (data) => {
-          appendMessage('coaching', data.content);
+        coaching: (data: StreamEvent) => {
+          appendMessage('coaching', data.content || '');
         },
         complete: () => {
           sessionCompleted = true;
@@ -559,15 +669,15 @@
         profile_updated: () => {
           handleSessionComplete('updated');
         },
-        profile_update_failed: (data) => {
+        profile_update_failed: (data: StreamEvent) => {
           appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
           handleSessionComplete('failed', data.message);
         },
-        error: (data) => {
+        error: (data: StreamEvent) => {
           appendMessage('system', 'Error: ' + (data.message || 'Unknown error'));
         },
-        warning: (data) => {
-          appendMessage('system', data.message);
+        warning: (data: StreamEvent) => {
+          appendMessage('system', data.message || '');
         },
         done: () => {
           showTyping(false);
@@ -577,15 +687,15 @@
           }
         }
       });
-    } catch (err) {
+    } catch {
       showTyping(false);
       appendMessage('system', 'Connection lost. Please try again.');
       setInputEnabled(true);
     }
   }
 
-  async function sendMessage() {
-    const input = document.getElementById('chat-input');
+  async function sendMessage(): Promise<void> {
+    const input = $('chat-input') as HTMLTextAreaElement;
     const message = input.value.trim();
     if (!message || !currentSessionId) return;
 
@@ -606,14 +716,14 @@
       });
 
       await streamResponse(response, {
-        text: (data) => {
-          appendMessage('narrator', data.content);
+        text: (data: StreamEvent) => {
+          appendMessage('narrator', data.content || '');
         },
-        console: (data) => {
-          appendMessage('console', data.content);
+        console: (data: StreamEvent) => {
+          appendMessage('console', data.content || '');
         },
-        coaching: (data) => {
-          appendMessage('coaching', data.content);
+        coaching: (data: StreamEvent) => {
+          appendMessage('coaching', data.content || '');
         },
         complete: () => {
           sessionCompleted = true;
@@ -626,15 +736,15 @@
         profile_updated: () => {
           handleSessionComplete('updated');
         },
-        profile_update_failed: (data) => {
+        profile_update_failed: (data: StreamEvent) => {
           appendMessage('system', 'Warning: profile update failed. ' + (data.message || ''));
           handleSessionComplete('failed', data.message);
         },
-        error: (data) => {
+        error: (data: StreamEvent) => {
           appendMessage('system', 'Error: ' + (data.message || 'Unknown error'));
         },
-        warning: (data) => {
-          appendMessage('system', data.message);
+        warning: (data: StreamEvent) => {
+          appendMessage('system', data.message || '');
         },
         done: () => {
           showTyping(false);
@@ -644,7 +754,7 @@
           }
         }
       });
-    } catch (err) {
+    } catch {
       showTyping(false);
       appendMessage('system', 'Connection lost. Retrying...');
 
@@ -656,14 +766,14 @@
           body: JSON.stringify({ sessionId: currentSessionId, message })
         });
         await streamResponse(retryResponse, {
-          text: (data) => appendMessage('narrator', data.content),
-          console: (data) => appendMessage('console', data.content),
-          coaching: (data) => appendMessage('coaching', data.content),
+          text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
+          console: (data: StreamEvent) => appendMessage('console', data.content || ''),
+          coaching: (data: StreamEvent) => appendMessage('coaching', data.content || ''),
           complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
           profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
           profile_updated: () => handleSessionComplete('updated'),
-          profile_update_failed: (data) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
-          error: (data) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
+          profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
+          error: (data: StreamEvent) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
           done: () => {
             showTyping(false);
             if (!sessionCompleted) {
@@ -680,9 +790,9 @@
     }
   }
 
-  function handleSessionComplete(profileStatus, errorMessage) {
+  function handleSessionComplete(profileStatus: string, errorMessage?: string): void {
     const title = 'Simulation Complete';
-    let body;
+    let body: string;
     if (profileStatus === 'updated') {
       body = 'Your learning profile has been updated.';
     } else if (profileStatus === 'failed') {
@@ -701,15 +811,13 @@
           resetChat();
           switchView('dashboard');
           loadDashboard();
-          if (typeof showCompletedDrilldown === 'function') {
-            showCompletedDrilldown();
-          }
+          showCompletedDrilldown();
         }}
       ]
     });
   }
 
-  async function quitSim() {
+  async function quitSim(): Promise<void> {
     if (!currentSessionId) return;
     showConfirmModal({
       title: 'Leave Simulation',
@@ -731,23 +839,23 @@
     });
   }
 
-  function resetChat() {
+  function resetChat(): void {
     currentSessionId = null;
     currentSimId = null;
     sessionCompleted = false;
-    document.getElementById('chat-messages').innerHTML = '';
-    document.getElementById('chat').classList.remove('active');
-    document.getElementById('sim-picker').style.display = 'block';
+    $('chat-messages').innerHTML = '';
+    $('chat').classList.remove('active');
+    $('sim-picker').style.display = 'block';
     showTyping(false);
     setInputEnabled(true);
   }
 
   // --- Confirmation Modal ---
 
-  function showConfirmModal({ title, body, actions }) {
-    document.getElementById('confirm-modal-title').textContent = title;
-    document.getElementById('confirm-modal-body').textContent = body;
-    const actionsEl = document.getElementById('confirm-modal-actions');
+  function showConfirmModal({ title, body, actions }: ModalConfig): void {
+    $('confirm-modal-title').textContent = title;
+    $('confirm-modal-body').textContent = body;
+    const actionsEl = $('confirm-modal-actions');
     actionsEl.innerHTML = '';
     for (const action of actions) {
       const btn = document.createElement('button');
@@ -759,18 +867,18 @@
       });
       actionsEl.appendChild(btn);
     }
-    document.getElementById('confirm-modal').classList.add('active');
+    $('confirm-modal').classList.add('active');
   }
 
-  function hideConfirmModal() {
-    document.getElementById('confirm-modal').classList.remove('active');
+  function hideConfirmModal(): void {
+    $('confirm-modal').classList.remove('active');
   }
 
   // --- Chat UI Helpers ---
 
-  function appendMessage(type, content) {
+  function appendMessage(type: string, content: string): void {
     if (!content || !content.trim()) return;
-    const messages = document.getElementById('chat-messages');
+    const messages = $('chat-messages');
     const div = document.createElement('div');
     div.className = 'chat-message ' + type + ' msg-enter';
     if (type === 'narrator' || type === 'coaching') {
@@ -778,15 +886,15 @@
       // Render any Mermaid diagrams in the message
       if (typeof mermaid !== 'undefined') {
         const codeBlocks = div.querySelectorAll('pre code.language-mermaid');
-        codeBlocks.forEach(async (block, idx) => {
+        codeBlocks.forEach(async (block: Element, idx: number) => {
           const pre = block.parentElement;
           const id = 'mermaid-' + Date.now() + '-' + idx;
           try {
-            const { svg } = await mermaid.render(id, block.textContent);
+            const { svg } = await mermaid.render(id, block.textContent || '');
             const wrapper = document.createElement('div');
             wrapper.className = 'mermaid-diagram';
             wrapper.innerHTML = svg;
-            pre.replaceWith(wrapper);
+            pre?.replaceWith(wrapper);
           } catch { /* leave as code block if mermaid fails */ }
         });
       }
@@ -798,58 +906,59 @@
     if (isScrollPinned) {
       scrollToBottom();
     } else {
-      document.getElementById('new-messages-pill').classList.add('visible');
+      $('new-messages-pill').classList.add('visible');
     }
   }
 
-  function showTyping(show) {
-    const indicator = document.getElementById('typing-indicator');
+  function showTyping(show: boolean): void {
+    const indicator = $('typing-indicator');
     indicator.classList.toggle('visible', show);
     if (show) scrollToBottom();
   }
 
-  function setInputEnabled(enabled) {
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('btn-send');
+  function setInputEnabled(enabled: boolean): void {
+    const input = $('chat-input') as HTMLTextAreaElement;
+    const sendBtn = $('btn-send') as HTMLButtonElement;
     input.disabled = !enabled;
     sendBtn.disabled = !enabled;
   }
 
-  function scrollToBottom() {
-    const messages = document.getElementById('chat-messages');
+  function scrollToBottom(): void {
+    const messages = $('chat-messages');
     messages.scrollTop = messages.scrollHeight;
   }
 
   // --- Scroll Detection ---
 
-  function setupScrollDetection() {
-    const messages = document.getElementById('chat-messages');
+  function setupScrollDetection(): void {
+    const messages = $('chat-messages');
     messages.addEventListener('scroll', () => {
       const threshold = 50;
       isScrollPinned = messages.scrollHeight - messages.scrollTop - messages.clientHeight < threshold;
       if (isScrollPinned) {
-        document.getElementById('new-messages-pill').classList.remove('visible');
+        $('new-messages-pill').classList.remove('visible');
       }
     });
 
-    document.getElementById('new-messages-pill').addEventListener('click', () => {
+    $('new-messages-pill').addEventListener('click', () => {
       scrollToBottom();
-      document.getElementById('new-messages-pill').classList.remove('visible');
+      $('new-messages-pill').classList.remove('visible');
     });
   }
 
   // --- Settings ---
 
-  function initCustomSelect(el, options, currentValue, onChange) {
-    const trigger = el.querySelector('.custom-select-trigger');
-    const optionsList = el.querySelector('.custom-select-options');
+  function initCustomSelect(el: HTMLElement, options: SelectOption[], currentValue: string, onChange: (val: string) => void): { setValue(val: string): void } {
+    const trigger = el.querySelector('.custom-select-trigger') as HTMLElement;
+    const optionsList = el.querySelector('.custom-select-options') as HTMLElement;
+    let selectedValue = currentValue;
 
-    function render() {
-      const current = options.find(o => o.value === currentValue) || options[0];
+    function render(): void {
+      const current = options.find(o => o.value === selectedValue) || options[0];
       if (current) trigger.textContent = current.label;
 
-      optionsList.innerHTML = options.map(o =>
-        '<div class="custom-select-option' + (o.value === currentValue ? ' selected' : '') +
+      optionsList.innerHTML = options.map((o: SelectOption) =>
+        '<div class="custom-select-option' + (o.value === selectedValue ? ' selected' : '') +
         '" data-value="' + escapeAttr(o.value) + '" role="option">' +
         escapeHtml(o.label) + '</div>'
       ).join('');
@@ -860,27 +969,27 @@
         if (s !== el) s.classList.remove('open');
       });
       el.classList.toggle('open');
-      trigger.setAttribute('aria-expanded', el.classList.contains('open'));
+      trigger.setAttribute('aria-expanded', el.classList.contains('open') ? 'true' : 'false');
     });
 
-    optionsList.addEventListener('click', (e) => {
-      const opt = e.target.closest('.custom-select-option');
+    optionsList.addEventListener('click', (e: Event) => {
+      const opt = (e.target as HTMLElement).closest('.custom-select-option') as HTMLElement | null;
       if (!opt) return;
-      currentValue = opt.dataset.value;
+      selectedValue = opt.dataset.value || '';
       el.classList.remove('open');
       trigger.setAttribute('aria-expanded', 'false');
       render();
-      onChange(currentValue);
+      onChange(selectedValue);
     });
 
-    document.addEventListener('click', (e) => {
-      if (!el.contains(e.target)) {
+    document.addEventListener('click', (e: Event) => {
+      if (!el.contains(e.target as Node)) {
         el.classList.remove('open');
         trigger.setAttribute('aria-expanded', 'false');
       }
     });
 
-    trigger.addEventListener('keydown', (e) => {
+    trigger.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         trigger.click();
@@ -892,20 +1001,20 @@
 
     render();
     return {
-      setValue(val) { currentValue = val; render(); }
+      setValue(val: string) { selectedValue = val; render(); }
     };
   }
 
-  async function loadSettings() {
+  async function loadSettings(): Promise<void> {
     // UI themes
     try {
-      const uiThemes = await fetchJSON('/api/ui-themes');
-      const options = uiThemes.map(t => ({ value: t, label: formatThemeName(t) }));
+      const uiThemes: string[] = await fetchJSON('/api/ui-themes');
+      const options = uiThemes.map((t: string) => ({ value: t, label: formatThemeName(t) }));
       initCustomSelect(
-        document.getElementById('select-ui-theme'),
+        $('select-ui-theme'),
         options,
         getSetting('uiTheme', 'ops-center'),
-        (val) => { setSetting('uiTheme', val); loadUiTheme(val); }
+        (val: string) => { setSetting('uiTheme', val); loadUiTheme(val); }
       );
     } catch {
       // ignore
@@ -914,14 +1023,14 @@
 
   }
 
-  function formatThemeName(id) {
-    return id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  function formatThemeName(id: string): string {
+    return id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   // --- Textarea Auto-resize ---
 
-  function setupTextareaResize() {
-    const input = document.getElementById('chat-input');
+  function setupTextareaResize(): void {
+    const input = $('chat-input') as HTMLTextAreaElement;
     input.addEventListener('input', () => {
       input.style.height = 'auto';
       input.style.height = Math.min(input.scrollHeight, 120) + 'px';
@@ -930,19 +1039,19 @@
 
   // --- Escape Helpers ---
 
-  function escapeHtml(str) {
+  function escapeHtml(str: string): string {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  function escapeAttr(str) {
+  function escapeAttr(str: string): string {
     return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   // --- Event Bindings ---
 
-  function init() {
+  function init(): void {
     // Initialize Mermaid with dark theme
     if (typeof mermaid !== 'undefined') {
       mermaid.initialize({ startOnLoad: false, theme: 'dark' });
@@ -953,35 +1062,36 @@
     loadUiTheme(uiTheme);
 
     // Tab navigation
-    document.querySelectorAll('[role="tab"]').forEach(tab => {
-      tab.addEventListener('click', () => switchView(tab.dataset.view));
+    document.querySelectorAll<HTMLElement>('[role="tab"]').forEach(tab => {
+      tab.addEventListener('click', () => switchView(tab.dataset.view || ''));
     });
 
     // Settings
-    document.getElementById('btn-settings').addEventListener('click', () => {
-      document.getElementById('settings-modal').classList.add('active');
+    $('btn-settings').addEventListener('click', () => {
+      $('settings-modal').classList.add('active');
     });
 
-    document.getElementById('btn-close-settings').addEventListener('click', () => {
-      document.getElementById('settings-modal').classList.remove('active');
+    $('btn-close-settings').addEventListener('click', () => {
+      $('settings-modal').classList.remove('active');
     });
 
-    document.getElementById('settings-modal').addEventListener('click', (e) => {
+    $('settings-modal').addEventListener('click', (e: Event) => {
       if (e.target === e.currentTarget) {
-        e.currentTarget.classList.remove('active');
+        (e.currentTarget as HTMLElement).classList.remove('active');
       }
     });
 
     // Chat controls
-    document.getElementById('btn-send').addEventListener('click', sendMessage);
-    document.getElementById('chat-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
+    $('btn-send').addEventListener('click', sendMessage);
+    $('chat-input').addEventListener('keydown', (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key === 'Enter' && !ke.shiftKey) {
+        ke.preventDefault();
         sendMessage();
       }
     });
 
-    document.getElementById('btn-back-to-sims').addEventListener('click', () => {
+    $('btn-back-to-sims').addEventListener('click', () => {
       if (currentSessionId) {
         quitSim();
       } else {
@@ -991,13 +1101,15 @@
     });
 
     // Completed drilldown
-    document.getElementById('stat-completed-card').addEventListener('click', showCompletedDrilldown);
-    document.getElementById('stat-completed-card').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCompletedDrilldown(); }
+    $('stat-completed-card').addEventListener('click', showCompletedDrilldown);
+    $('stat-completed-card').addEventListener('keydown', (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key === 'Enter' || ke.key === ' ') { ke.preventDefault(); showCompletedDrilldown(); }
     });
-    document.getElementById('stat-rank-card').addEventListener('click', hideCompletedDrilldown);
-    document.getElementById('stat-rank-card').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hideCompletedDrilldown(); }
+    $('stat-rank-card').addEventListener('click', hideCompletedDrilldown);
+    $('stat-rank-card').addEventListener('keydown', (e: Event) => {
+      const ke = e as KeyboardEvent;
+      if (ke.key === 'Enter' || ke.key === ' ') { ke.preventDefault(); hideCompletedDrilldown(); }
     });
 
     // Setup helpers

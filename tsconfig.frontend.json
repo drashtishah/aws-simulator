@@ -7,6 +7,8 @@
     "noUncheckedIndexedAccess": true,
     "outDir": "dist/public",
     "rootDir": "web/public",
+    "declaration": false,
+    "sourceMap": false,
     "lib": ["ES2020", "DOM", "DOM.Iterable"]
   },
   "include": ["web/public/**/*.ts"]
