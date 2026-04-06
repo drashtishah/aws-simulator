@@ -584,7 +584,7 @@ function main() {
 
   const libFiles = discoverFiles(['web/lib'], ['.js', '.ts']);
   const prodFiles = discoverFiles(
-    ['web/lib', 'web/server.js', 'web/public', '.claude/hooks', 'scripts'],
+    ['web/lib', 'web/server.ts', 'web/public', '.claude/hooks', 'scripts'],
     ['.js', '.ts']
   );
   // Exclude this script itself from production analysis

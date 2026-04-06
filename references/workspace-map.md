@@ -210,17 +210,17 @@ When changing a component, check what else reads/writes the same data:
 
 | If you change... | Also check... |
 |---|---|
-| `catalog.csv` format | setup (creates it), create-sim (reads + writes), play (reads + writes), web/ server.js (reads for dashboard) |
-| `profile.json` format | setup (creates it), play (reads + writes), web/ server.js (reads for dashboard), web/ app.js (renders stats) |
+| `catalog.csv` format | setup (creates it), create-sim (reads + writes), play (reads + writes), web/ server.ts (reads for dashboard) |
+| `profile.json` format | setup (creates it), play (reads + writes), web/ server.ts (reads for dashboard), web/ app.js (renders stats) |
 | `manifest.json` schema | create-sim (generates), play (consumes), manifest-schema.json (validates), web/ prompt-builder.js (populates template from manifest) |
 | `agent-prompts.md` template | play (populates it from manifest data), web/ prompt-builder.js (must match all placeholders) |
 | `coaching-patterns.md` | play (uses for post-game analysis + scoring) |
 | `sim-template.md` | create-sim (gold-standard example for generation) |
-| `sims/registry.json` format | setup (validates), create-sim (writes), play (reads for filtering), web/ server.js + app.js (reads for sim picker) |
-| `sessions/*.json` format | play (reads + writes), feedback (writes), web/ server.js (reads for resume detection) |
+| `sims/registry.json` format | setup (validates), create-sim (writes), play (reads for filtering), web/ server.ts + app.js (reads for sim picker) |
+| `sessions/*.json` format | play (reads + writes), feedback (writes), web/ server.ts (reads for resume detection) |
 | Theme files (themes/) | play (theme selection + injection + rendering), agent-prompts.md (voice placeholder), web/ prompt-builder.js (reads for prompt), web/ settings (lists for dropdown) |
 | Resolution sections | create-sim (generates), play (delivers in Phase 4), sim-template.md (example) |
-| `journal.md` format | play (writes entries), web/ server.js `/api/journal-summary` parser |
+| `journal.md` format | play (writes entries), web/ server.ts `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
 | GitHub Issues | /git (creates), /fix (reads in step 3b, creates in step 6b), /fight-team (creates from debate findings) |

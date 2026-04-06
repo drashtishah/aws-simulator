@@ -56,7 +56,7 @@ Are open issues well-scoped? Are there missing issues for known problems? What n
 
 Does the web app correctly consume all shared data files? Are API endpoints tested for edge cases? Is the prompt-builder aligned with all sim manifests?
 
-**Look at:** `web/server.js`, `web/lib/`, `web/test/`, `web/public/`.
+**Look at:** `web/server.ts`, `web/lib/`, `web/test/`, `web/public/`.
 
 ## 10. Sim quality and consistency
 

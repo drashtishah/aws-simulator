@@ -53,7 +53,7 @@ file,path,line_number
 .claude/skills/fight-team/references/default-checklist.md,.claude/skills/play/references/coaching-patterns.md,41
 .claude/skills/fight-team/references/default-checklist.md,web/lib/,59
 .claude/skills/fight-team/references/default-checklist.md,web/public/,59
-.claude/skills/fight-team/references/default-checklist.md,web/server.js,59
+.claude/skills/fight-team/references/default-checklist.md,web/server.ts,59
 .claude/skills/fight-team/references/default-checklist.md,web/test/,59
 .claude/skills/fight-team/references/default-checklist.md,sims/,65
 .claude/skills/fight-team/references/default-checklist.md,sims/registry.json,65
@@ -248,7 +248,7 @@ references/contributing.md,references/workspace-map.md,21
 references/contributing.md,web/lib/prompt-builder.ts,22
 references/contributing.md,web/lib/prompt-builder.ts,23
 references/contributing.md,web/public/app.js,24
-references/contributing.md,web/server.js,24
+references/contributing.md,web/server.ts,24
 references/contributing.md,learning/feedback.md,43
 references/contributing.md,web/test-results/summary.json,44
 references/contributing.md,web/test-results/,59
@@ -259,7 +259,7 @@ references/contributing.md,web/lib/claude-process.ts,71
 references/contributing.md,web/lib/logger.ts,71
 references/contributing.md,web/lib/paths.ts,71
 references/contributing.md,web/lib/prompt-builder.ts,71
-references/contributing.md,web/server.js,71
+references/contributing.md,web/server.ts,71
 references/contributing.md,references/path-registry.csv,74
 references/contributing.md,scripts/extract_paths.py,74
 references/contributing.md,web/test/path-registry.test.js,74

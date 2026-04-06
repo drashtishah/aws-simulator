@@ -21,7 +21,7 @@ tags:
 2. Read `references/workspace-map.md` to understand data flow and impact
 3. If changing `agent-prompts.md` placeholders, also update `web/lib/prompt-builder.ts`
 4. If changing `manifest.json` schema, also update `web/lib/prompt-builder.ts`
-5. If changing `profile.json`, `journal.md`, or `sessions/*.json` schemas, also update `web/server.js` API routes and `web/public/app.js`
+5. If changing `profile.json`, `journal.md`, or `sessions/*.json` schemas, also update `web/server.ts` API routes and `web/public/app.js`
 
 ## Testing
 
@@ -68,7 +68,7 @@ tags:
 ## Updating Paths
 
 **Code files (JS):**
-All project paths are centralized in `web/lib/paths.ts`. To rename or move a directory, update the constant or helper there. Consumers (`web/server.js`, `web/lib/prompt-builder.ts`, `web/lib/claude-process.ts`, `web/lib/logger.ts`) import from this file. Test files define their own ROOT and are self-contained.
+All project paths are centralized in `web/lib/paths.ts`. To rename or move a directory, update the constant or helper there. Consumers (`web/server.ts`, `web/lib/prompt-builder.ts`, `web/lib/claude-process.ts`, `web/lib/logger.ts`) import from this file. Test files define their own ROOT and are self-contained.
 
 **Text files (markdown, JSON):**
 Paths in backticks (`.md`) and string values (`.json`) are tracked by `scripts/extract_paths.py`, which writes `references/path-registry.csv`. Run `npm test` to regenerate the CSV and validate all paths resolve on disk. The test (`web/test/path-registry.test.js`) checks: concrete paths exist, template paths have valid directory prefixes, source files exist.

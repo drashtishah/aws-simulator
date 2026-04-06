@@ -100,7 +100,7 @@ describe('no stale theme references', () => {
 
   const files = [
     'web/public/app.js',
-    'web/server.js',
+    'web/server.ts',
     '.claude/skills/play/SKILL.md',
     'references/web-app-checklist.md',
   ];
@@ -360,7 +360,7 @@ describe('hardcoded theme IDs exist as files', () => {
   });
 
   it('server.js fallback theme file exists', () => {
-    const serverJs = readFile('web/server.js');
+    const serverJs = readFile('web/server.ts');
     // Match patterns like: themeId || 'calm-mentor'
     const matches = serverJs.matchAll(/themeId\s*\|\|\s*'([^']+)'/g);
     for (const match of matches) {
