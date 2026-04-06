@@ -9,7 +9,7 @@ hooks:
     - matcher: "Edit|Write"
       hooks:
         - type: command
-          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/setup/ownership.json"
+          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/setup/ownership.json"
 ---
 
 # setup Skill

@@ -16,8 +16,8 @@ Before checking sources, read these files to build a context summary describing 
 | `CLAUDE.md` | Project type, conventions, skills list, tooling commands |
 | `.mcp.json` | MCP servers in use: aws-knowledge, chrome-devtools |
 | `.claude/settings.local.json` | Plugins (superpowers, playground, cli-anything), agent teams flag |
-| `.claude/hooks/guard-write.js` | Hook type (PreToolUse Write), protection model (skill ownership, protected paths) |
-| `.claude/hooks/log-hook.js` | Hook types (PostToolUse, SessionStart/End, PreCompact, PostCompact, UserPromptSubmit, PostToolUseFailure), JSONL logging pattern |
+| `.claude/hooks/guard-write.ts` | Hook type (PreToolUse Write), protection model (skill ownership, protected paths) |
+| `.claude/hooks/log-hook.ts` | Hook types (PostToolUse, SessionStart/End, PreCompact, PostCompact, UserPromptSubmit, PostToolUseFailure), JSONL logging pattern |
 | `references/workspace-map.md` | Component diagram, data flow, shared data files, test layers |
 | `package.json` | Scripts (test, health, extract-paths, feedback:personas), dependencies (express, js-yaml, acorn, commander) |
 | `references/testing-system.md` | 3-layer test architecture: deterministic (node --test), agent browser (YAML specs + Chrome DevTools MCP), agent persona (JSON profiles) |
@@ -69,8 +69,8 @@ Return format per finding:
   "url": "...",
   "details": "... (quoted release notes or commit message)",
   "workspace_relevance": "HIGH/MEDIUM/LOW/NONE",
-  "relevance_reason": "Affects guard-write.js because...",
-  "affected_files": [".claude/hooks/guard-write.js"]
+  "relevance_reason": "Affects guard-write.ts because...",
+  "affected_files": [".claude/hooks/guard-write.ts"]
 }
 
 Filter out findings with workspace_relevance = NONE.
@@ -111,8 +111,8 @@ Return format per finding:
   "date": "...",
   "details": "> PreToolUse hooks can now return { additionalContext: '...' } to inject reasoning context before tool execution",
   "workspace_relevance": "HIGH/MEDIUM/LOW",
-  "relevance_reason": "guard-write.js currently returns allow/block. additionalContext would let it inject warnings instead of hard-blocking.",
-  "affected_files": [".claude/hooks/guard-write.js"],
+  "relevance_reason": "guard-write.ts currently returns allow/block. additionalContext would let it inject warnings instead of hard-blocking.",
+  "affected_files": [".claude/hooks/guard-write.ts"],
   "technique": "return { decision: 'allow', additionalContext: 'WARNING: Protected file.' };"
 }
 ```

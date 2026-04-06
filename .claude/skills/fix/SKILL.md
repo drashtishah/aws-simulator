@@ -18,11 +18,11 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 | 2 | Load metrics config | Read | `scripts/metrics.config.json` |
 | 3 | Load test results | Read | `web/test-results/summary.json` |
 | 3b | List open issues | Bash | gh issue list |
-| 4 | Run health check | Bash | node scripts/code-health.js |
+| 4 | Run health check | Bash | tsx scripts/code-health.ts |
 | 8a | Read target skill | Read | `.claude/skills/*/SKILL.md` |
 | 8c | Search code | Grep | Source files |
 | 8e | Apply edits | Edit | Target skill/reference files |
-| 8f | Run health check | Bash | node scripts/code-health.js |
+| 8f | Run health check | Bash | tsx scripts/code-health.ts |
 | 8g | Log health scores | Write | `learning/logs/health-scores.jsonl` |
 | 8h-verify | Verification | Agent | Separate subagent |
 | 9 | Clear feedback | Write | `learning/feedback.md` |
@@ -87,7 +87,7 @@ Note issue numbers for any that align with feedback or log findings. These will 
 
 ### 4. Run code health baseline
 
-Run `node scripts/code-health.js` and capture the six scores + composite. Also read the last entry in `learning/logs/health-scores.jsonl` (if the file exists and has entries) to compute deltas. Flag any metric that dropped by 5+ points since the last recorded score.
+Run `tsx scripts/code-health.ts` and capture the six scores + composite. Also read the last entry in `learning/logs/health-scores.jsonl` (if the file exists and has entries) to compute deltas. Flag any metric that dropped by 5+ points since the last recorded score.
 
 ---
 
@@ -152,7 +152,7 @@ b. Use the skill-creator skill for guidance on skill editing best practices.
 c. Enter plan mode to design the changes.
 d. Present the plan to the user for approval.
 e. After approval, apply edits to the target files.
-f. **Immediately run `node scripts/code-health.js` after applying the edits.** Compare against the baseline from step 3. Report:
+f. **Immediately run `tsx scripts/code-health.ts` after applying the edits.** Compare against the baseline from step 3. Report:
    - Which scores improved, stayed stable, or regressed
    - If any score regressed by 5+ points, flag it and ask whether to proceed or revert
 g. Log the post-edit scores to `learning/logs/health-scores.jsonl`:
@@ -183,7 +183,7 @@ After all changes applied:
 
 ### 10. Final health comparison
 
-Run `node scripts/code-health.js` one final time. Report overall before/after comparison (baseline from step 3 vs final). Log to `learning/logs/health-scores.jsonl` with `"source": "fix-final"`.
+Run `tsx scripts/code-health.ts` one final time. Report overall before/after comparison (baseline from step 3 vs final). Log to `learning/logs/health-scores.jsonl` with `"source": "fix-final"`.
 
 ### 11. Verify all test layers
 

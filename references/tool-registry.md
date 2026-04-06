@@ -19,8 +19,8 @@ The web app spawns Claude via `@anthropic-ai/claude-agent-sdk` `query()` with a 
 | WebFetch | NO | Not in allowedTools |
 | MCP tools | NO | Not in allowedTools |
 
-Enforcement: `web/lib/claude-process.js` lines 195, 280, 311.
-Test: `web/test/permission-contracts.test.js`.
+Enforcement: `web/lib/claude-process.ts` lines 195, 280, 311.
+Test: `web/test/permission-contracts.test.ts`.
 
 ## Terminal (Claude Code via /play skill)
 

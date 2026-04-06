@@ -2,20 +2,22 @@
   "name": "aws-incident-simulator",
   "version": "1.0.0",
   "scripts": {
-    "start": "node web/server.js",
-    "dev": "NODE_ENV=development node web/server.js",
-    "test": "python3 scripts/extract_paths.py && node scripts/sim-test.js run",
-    "test:agent": "node scripts/sim-test.js agent",
-    "test:personas": "node scripts/sim-test.js personas",
-    "test:evals": "node scripts/sim-test.js evals",
-    "test:validate": "node scripts/sim-test.js validate",
-    "test:summary": "node scripts/sim-test.js summary",
-    "test:content": "node scripts/sim-test.js content",
+    "start": "tsc -p tsconfig.frontend.json && tsx web/server.ts",
+    "dev": "tsc -p tsconfig.frontend.json && NODE_ENV=development tsx web/server.ts",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.frontend.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.frontend.json",
+    "test": "python3 scripts/extract_paths.py && mypy --strict scripts/extract_paths.py && npm run typecheck && tsx scripts/sim-test.ts run",
+    "test:agent": "tsx scripts/sim-test.ts agent",
+    "test:personas": "tsx scripts/sim-test.ts personas",
+    "test:evals": "tsx scripts/sim-test.ts evals",
+    "test:validate": "tsx scripts/sim-test.ts validate",
+    "test:summary": "tsx scripts/sim-test.ts summary",
+    "test:content": "tsx scripts/sim-test.ts content",
     "extract-paths": "python3 scripts/extract_paths.py",
-    "health": "node scripts/code-health.js",
-    "feedback:personas": "node scripts/sim-test.js personas --feedback",
-    "audit:permissions": "node scripts/audit-permissions.js",
-    "generate-index": "node scripts/generate-agent-index.js"
+    "health": "tsx scripts/code-health.ts",
+    "feedback:personas": "tsx scripts/sim-test.ts personas --feedback",
+    "audit:permissions": "tsx scripts/audit-permissions.ts",
+    "generate-index": "tsx scripts/generate-agent-index.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.91",
@@ -23,9 +25,14 @@
     "js-yaml": "^4.1.1"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.5.2",
     "acorn": "^8.16.0",
     "commander": "^12.1.0",
     "connect-livereload": "^0.6.1",
-    "livereload": "^0.10.3"
+    "livereload": "^0.10.3",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
   }
 }

@@ -13,7 +13,7 @@ hooks:
     - matcher: "Edit|Write"
       hooks:
         - type: command
-          command: "node .claude/hooks/guard-write.js --ownership .claude/skills/git/ownership.json"
+          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/git/ownership.json"
 ---
 
 # git Skill

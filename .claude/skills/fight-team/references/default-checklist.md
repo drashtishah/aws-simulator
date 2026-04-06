@@ -14,7 +14,7 @@ Are skills modular with clean boundaries? Does `ownership.json` correctly partit
 
 Are the unit tests sufficient? What code paths lack coverage? What creative deterministic tests can we add (property-based, round-trip, schema validation, idempotency, regression)? Can we generate fixtures from real session data?
 
-**Look at:** `web/test/`, `web/test-specs/`, `references/testing-system.md`, `scripts/code-health.js` test_sync metric.
+**Look at:** `web/test/`, `web/test-specs/`, `references/testing-system.md`, `scripts/code-health.ts` test_sync metric.
 
 ## 3. Simplification opportunities
 
@@ -56,7 +56,7 @@ Are open issues well-scoped? Are there missing issues for known problems? What n
 
 Does the web app correctly consume all shared data files? Are API endpoints tested for edge cases? Is the prompt-builder aligned with all sim manifests?
 
-**Look at:** `web/server.js`, `web/lib/`, `web/test/`, `web/public/`.
+**Look at:** `web/server.ts`, `web/lib/`, `web/test/`, `web/public/`.
 
 ## 10. Sim quality and consistency
 
@@ -68,7 +68,7 @@ Are all sims consistent in structure? Do manifests follow the schema? Are storie
 
 Are hooks correctly enforcing constraints? Is guard-write coverage complete? Are there gaps where unprotected writes could happen?
 
-**Look at:** `.claude/hooks/`, `web/test/guard-write.test.js`, `web/test/guard-coverage.test.js`.
+**Look at:** `.claude/hooks/`, `web/test/guard-write.test.ts`, `web/test/guard-coverage.test.ts`.
 
 ## 12. Data flow integrity
 

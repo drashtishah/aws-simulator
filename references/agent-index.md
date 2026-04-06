@@ -19,24 +19,24 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 
 | Hook File | Event | Matcher | Purpose |
 |-----------|-------|---------|---------|
-| `.claude/hooks/guard-write.js` | PreToolUse | Edit|Write | Block writes to protected files and directories |
-| `.claude/hooks/git-discipline-reminder.js` | PreToolUse | Edit|Write | Remind about git workflow before edits |
-| `.claude/hooks/pre-commit-issues.js` | PreToolUse | Bash | Require GitHub Issue before commits |
-| `.claude/hooks/pre-commit-self-audit.js` | PreToolUse | Bash | Self-audit checklist before commits |
-| `.claude/hooks/log-hook.js` | PostToolUse | Edit|Write|Bash|Agent | Log tool call events to activity.jsonl |
-| `.claude/hooks/plan-exit-reminder.js` | PostToolUse | ExitPlanMode | Remind about next steps after plan mode |
-| `.claude/hooks/log-hook.js` | Stop | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | UserPromptSubmit | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | SessionStart | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | SessionEnd | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | PostToolUseFailure | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | StopFailure | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | PreCompact | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | PostCompact | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | PermissionDenied | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | TaskCreated | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | FileChanged | (all) | Log tool call events to activity.jsonl |
-| `.claude/hooks/log-hook.js` | CwdChanged | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/guard-write.ts` | PreToolUse | Edit|Write | Block writes to protected files and directories |
+| `.claude/hooks/git-discipline-reminder.ts` | PreToolUse | Edit|Write | Remind about git workflow before edits |
+| `.claude/hooks/pre-commit-issues.ts` | PreToolUse | Bash | Require GitHub Issue before commits |
+| `.claude/hooks/pre-commit-self-audit.ts` | PreToolUse | Bash | Self-audit checklist before commits |
+| `.claude/hooks/log-hook.ts` | PostToolUse | Edit|Write|Bash|Agent | Log tool call events to activity.jsonl |
+| `.claude/hooks/plan-exit-reminder.ts` | PostToolUse | ExitPlanMode | Remind about next steps after plan mode |
+| `.claude/hooks/log-hook.ts` | Stop | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | UserPromptSubmit | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | SessionStart | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | SessionEnd | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | PostToolUseFailure | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | StopFailure | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | PreCompact | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | PostCompact | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | PermissionDenied | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | TaskCreated | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | FileChanged | (all) | Log tool call events to activity.jsonl |
+| `.claude/hooks/log-hook.ts` | CwdChanged | (all) | Log tool call events to activity.jsonl |
 
 ## Key References
 
@@ -50,12 +50,6 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 
 | File | Protected? |
 |------|------------|
-| `references/path-registry.csv` | Yes |
-| `learning/logs/activity.jsonl` | Yes |
-| `package-lock.json` | Yes |
-| `scripts/sim-test.js` | Yes |
-| `node_modules/` | Yes (entire directory) |
-| `web/test-specs/` | Yes (entire directory) |
 
 ## Tests
 

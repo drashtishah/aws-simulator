@@ -6,7 +6,7 @@ tags:
 
 # Code Health Scores
 
-Deterministic static analysis scores computed by `scripts/code-health.js`.
+Deterministic static analysis scores computed by `scripts/code-health.ts`.
 Run with `npm run health`.
 
 ## When it runs
@@ -39,6 +39,6 @@ Weighted average of all six scores. Weights are configurable in `scripts/metrics
 
 ## Files
 
-- `scripts/code-health.js`: the scorer (do not modify during refactors)
+- `scripts/code-health.ts`: the scorer (do not modify during refactors)
 - `scripts/metrics.config.json`: weights and last_fix_analyzed timestamp
 - `learning/logs/health-scores.jsonl`: historical scores (created by `/fix` after each edit group)

@@ -25,5 +25,8 @@ web/test-results/
 docs/
 .claude/plans/
 
+# TypeScript build output
+dist/
+
 # Git worktrees
 .worktrees/
