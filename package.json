@@ -10,6 +10,7 @@
     "test:evals": "node scripts/sim-test.js evals",
     "test:validate": "node scripts/sim-test.js validate",
     "test:summary": "node scripts/sim-test.js summary",
+    "test:content": "node scripts/sim-test.js content",
     "extract-paths": "python3 scripts/extract_paths.py",
     "health": "node scripts/code-health.js",
     "feedback:personas": "node scripts/sim-test.js personas --feedback",

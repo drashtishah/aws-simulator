@@ -643,4 +643,76 @@ program
     process.exit(0);
   });
 
+program
+  .command('content <simId>')
+  .description('Validate sim content with agent-in-the-loop check (uses Sonnet)')
+  .option('--json', 'Output structured JSON')
+  .action(async (simId, opts) => {
+    const contentChecks = require('./content-checks');
+    const results = { command: 'content', ts: timestamp(), simId };
+
+    // Validate simId exists
+    const registryPath = path.join(__dirname, '..', 'sims', 'registry.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    const simExists = registry.sims.some(s => s.id === simId);
+    if (!simExists) {
+      console.error('Error: sim "' + simId + '" not found in registry');
+      process.exit(2);
+    }
+
+    try {
+      if (!opts.json) {
+        console.log('\nContent validation: ' + simId + '\n');
+      }
+
+      const result = await contentChecks.runContentCheck(simId);
+      results.pass = result.pass;
+      results.findings = result.findings;
+      results.usage = result.usage;
+      results.error = result.error;
+
+      if (opts.json) {
+        console.log(JSON.stringify(results, null, 2));
+      } else {
+        const dimensions = [
+          'summary', 'title', 'difficulty', 'services',
+          'tags', 'category', 'learning_objectives'
+        ];
+        for (const dim of dimensions) {
+          const f = (result.findings || []).find(f => f.dimension === dim);
+          const status = f ? (f.pass ? 'PASS' : 'FAIL') : 'SKIP';
+          const pad = '.'.repeat(Math.max(1, 22 - dim.length));
+          console.log('  ' + dim + ' ' + pad + ' ' + status);
+          if (f && !f.pass && f.detail) {
+            console.log('    ' + f.detail);
+          }
+        }
+        const passCount = (result.findings || []).filter(f => f.pass).length;
+        const total = (result.findings || []).length;
+        console.log('\n  result: ' + (result.pass ? 'PASS' : 'FAIL') + ' (' + passCount + '/' + total + ')');
+        if (result.usage) {
+          console.log('  tokens: ' + result.usage.input_tokens.toLocaleString() + ' in / ' + result.usage.output_tokens.toLocaleString() + ' out');
+        }
+        if (result.error) {
+          console.log('  error: ' + result.error);
+        }
+      }
+
+      // Write result file
+      const resultsDir = path.join(__dirname, '..', 'web', 'test-results', 'content');
+      if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true });
+      const resultFile = path.join(resultsDir, simId + '-' + timestamp() + '.json');
+      fs.writeFileSync(resultFile, JSON.stringify(results, null, 2));
+
+      process.exit(result.pass ? 0 : 1);
+    } catch (err) {
+      console.error('Error: ' + err.message);
+      if (opts.json) {
+        results.error = err.message;
+        console.log(JSON.stringify(results, null, 2));
+      }
+      process.exit(2);
+    }
+  });
+
 program.parse();
