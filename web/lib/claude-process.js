@@ -334,6 +334,45 @@ async function collectMessages(asyncIterator, timeoutMs = COLLECT_TIMEOUT_MS) {
   return Promise.race([collect(), timeout]);
 }
 
+// --- Retry helper ---
+
+/**
+ * Retry wrapper with exponential backoff.
+ * Handles SESSION_LOST (retry immediately with fresh session) and
+ * rate limits (429/529, longer backoff).
+ */
+async function withRetry(fn, { maxAttempts = 3, delays = [1000, 2000, 4000], sessionId = null } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const isRateLimit = err.status === 429 || err.status === 529 || (err.message && err.message.includes('rate_limit'));
+
+      if (attempt === maxAttempts - 1) throw err;
+
+      let delay = delays[attempt] || delays[delays.length - 1];
+      if (isRateLimit) {
+        const retryAfter = err.headers?.get?.('retry-after');
+        delay = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.max(5000, delay);
+      }
+
+      logger.logEvent(sessionId, {
+        level: 'warn',
+        event: 'retry',
+        attempt: attempt + 1,
+        reason: isRateLimit ? 'RATE_LIMIT' : 'UNKNOWN',
+        delay_ms: delay,
+        error: err.message
+      });
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  throw lastError;
+}
+
 // --- Streaming helpers ---
 
 /**
@@ -988,6 +1027,7 @@ module.exports = {
   updateGameSession,
   buildPostSessionPrompt,
   runPostSessionAgent,
+  withRetry,
   streamQuery,
   streamSession,
   streamMessage,

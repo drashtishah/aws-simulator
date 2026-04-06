@@ -416,6 +416,35 @@ describe('queryOptions includes maxTurns', () => {
   });
 });
 
+// --- withRetry ---
+
+describe('withRetry', () => {
+  const { withRetry } = require('../lib/claude-process');
+
+  it('returns result on first success', async () => {
+    const result = await withRetry(() => Promise.resolve('ok'));
+    assert.equal(result, 'ok');
+  });
+
+  it('retries on failure and eventually succeeds', async () => {
+    let attempt = 0;
+    const result = await withRetry(() => {
+      attempt++;
+      if (attempt < 3) throw new Error('fail');
+      return 'ok';
+    }, { delays: [1, 1, 1] });
+    assert.equal(result, 'ok');
+    assert.equal(attempt, 3);
+  });
+
+  it('throws after maxAttempts exhausted', async () => {
+    await assert.rejects(
+      () => withRetry(() => { throw new Error('always fail'); }, { maxAttempts: 2, delays: [1, 1] }),
+      { message: 'always fail' }
+    );
+  });
+});
+
 // --- Post-session prompt includes solves pattern ---
 
 describe('buildPostSessionPrompt includes solves', () => {
