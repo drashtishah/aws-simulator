@@ -1061,6 +1061,24 @@ a:hover {
   width: 100%;
 }
 
+/* === Confirmation Modal === */
+
+.modal-body {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
 /* === New Messages Pill === */
 
 .new-messages-pill {
