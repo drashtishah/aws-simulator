@@ -1,19 +1,26 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx tsx
 // PreToolUse hook for Edit|Write: reminds Claude to follow git discipline once per session.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
+interface HookInput {
+  tool_name?: string;
+  tool_input?: Record<string, unknown>;
+  session_id?: string;
+  [key: string]: unknown;
+}
 
 let input = '';
-process.stdin.on('data', d => input += d);
+process.stdin.on('data', (d: Buffer) => input += d);
 process.stdin.on('end', () => {
   try {
-    const data = JSON.parse(input);
-    const sessionId = data.session_id;
+    const data: HookInput = JSON.parse(input);
+    const sessionId: string | undefined = data.session_id;
     if (!sessionId) process.exit(0);
 
-    const marker = path.join(os.tmpdir(), `claude-git-reminded-${sessionId}`);
+    const marker: string = path.join(os.tmpdir(), `claude-git-reminded-${sessionId}`);
     if (fs.existsSync(marker)) process.exit(0);
 
     // Create marker for this session

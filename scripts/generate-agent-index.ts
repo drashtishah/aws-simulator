@@ -8,7 +8,7 @@ import path from 'node:path';
 const ROOT = path.resolve(__dirname, '..');
 const SKILLS_DIR = path.join(ROOT, '.claude', 'skills');
 const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.local.json');
-const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.js');
+const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.ts');
 const OUTPUT_PATH = path.join(ROOT, 'references', 'agent-index.md');
 
 interface SkillEntry {
@@ -111,14 +111,15 @@ function parseHooks(): HookEntry[] {
       for (const hook of hookList) {
         const cmd = hook.command || '';
         // Extract script path from command
-        const scriptMatch = cmd.match(/node\s+(.+?)$/);
+        const scriptMatch = cmd.match(/(?:node|npx\s+tsx)\s+(.+?)$/);
         if (!scriptMatch) continue;
         const scriptPath = scriptMatch[1]!.trim();
         const key = `${scriptPath}|${event}|${matcher}`;
         if (seen.has(key)) continue;
         seen.add(key);
 
-        const basename = path.basename(scriptPath, '.js');
+        const ext = path.extname(scriptPath);
+        const basename = path.basename(scriptPath, ext);
         const purpose = inferPurpose(basename);
         rows.push({ file: scriptPath, event, matcher, purpose });
       }

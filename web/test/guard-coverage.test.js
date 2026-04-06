@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.js');
+const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.ts');
 
 describe('guard-write coverage', () => {
   const guardSource = fs.readFileSync(GUARD_PATH, 'utf8');

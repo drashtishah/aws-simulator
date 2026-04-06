@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx tsx
 // PostToolUse hook for ExitPlanMode: reinforces git discipline at plan approval.
 
 process.stdout.write(`[Git Discipline] Plan approved. Before implementing:

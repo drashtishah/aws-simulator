@@ -272,7 +272,8 @@ program
         cwd: ROOT,
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 120000
+        timeout: 600000,
+        maxBuffer: 10 * 1024 * 1024
       });
       const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
       const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);

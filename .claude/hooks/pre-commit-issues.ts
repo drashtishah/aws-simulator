@@ -1,17 +1,22 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx tsx
 // PreToolUse hook for Bash: blocks commits without issue references.
 
-let input = '';
-process.stdin.on('data', d => input += d);
+interface HookInput {
+  tool_name?: string;
+  tool_input?: Record<string, unknown>;
+}
+
+let hookInput = '';
+process.stdin.on('data', (d: Buffer) => hookInput += d);
 process.stdin.on('end', () => {
   try {
-    const data = JSON.parse(input);
-    const cmd = (data.tool_input && data.tool_input.command) || '';
+    const data: HookInput = JSON.parse(hookInput);
+    const cmd: string = (data.tool_input && (data.tool_input.command as string)) || '';
     if (!/\bgit\s+commit\b/.test(cmd)) process.exit(0);
 
     // Search the entire command for issue reference patterns
-    const hasRef = /(?:closes|fixes|ref|part of)\s+#\d+/i.test(cmd);
-    const hasExplicit = /no related issue/i.test(cmd);
+    const hasRef: boolean = /(?:closes|fixes|ref|part of)\s+#\d+/i.test(cmd);
+    const hasExplicit: boolean = /no related issue/i.test(cmd);
 
     if (!hasRef && !hasExplicit) {
       process.stderr.write(

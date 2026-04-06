@@ -1,12 +1,17 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx tsx
 // PreToolUse hook for Bash: asks the agent to self-audit before committing.
 
-let input = '';
-process.stdin.on('data', d => input += d);
+interface SelfAuditInput {
+  tool_name?: string;
+  tool_input?: Record<string, unknown>;
+}
+
+let auditInput = '';
+process.stdin.on('data', (d: Buffer) => auditInput += d);
 process.stdin.on('end', () => {
   try {
-    const data = JSON.parse(input);
-    const cmd = (data.tool_input && data.tool_input.command) || '';
+    const data: SelfAuditInput = JSON.parse(auditInput);
+    const cmd: string = (data.tool_input && (data.tool_input.command as string)) || '';
     if (!/\bgit\s+commit\b/.test(cmd)) process.exit(0);
 
     process.stdout.write(`[Self-Audit] Before committing, pause and ask yourself:

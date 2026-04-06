@@ -90,10 +90,10 @@ describe('settings.local.json hook integrity', () => {
         const hookList = entry.hooks || [];
         for (const hook of hookList) {
           if (hook.type === 'command' && hook.command) {
-            // Extract script path from commands like "node .claude/hooks/guard-write.js"
-            const match = hook.command.match(/node\s+(.+\.js)/);
+            // Extract script path from commands like "npx tsx .claude/hooks/guard-write.ts"
+            const match = hook.command.match(/(?:node|npx\s+tsx)\s+(.+\.(?:js|ts))/);
             assert.ok(match,
-              'hook command in ' + eventType + ' should reference a .js file: ' + hook.command);
+              'hook command in ' + eventType + ' should reference a script file: ' + hook.command);
             const scriptPath = path.join(ROOT, match[1]);
             assert.ok(fs.existsSync(scriptPath),
               'script ' + match[1] + ' referenced by ' + eventType + ' hook must exist on disk');
@@ -103,39 +103,39 @@ describe('settings.local.json hook integrity', () => {
     }
   });
 
-  it('PreToolUse has Edit|Write matcher with guard-write.js', () => {
+  it('PreToolUse has Edit|Write matcher with guard-write', () => {
     const preToolUse = hooks.PreToolUse;
     assert.ok(preToolUse, 'PreToolUse hooks must exist');
     const guardEntry = preToolUse.find(entry =>
       entry.matcher && entry.matcher.includes('Edit') && entry.matcher.includes('Write') &&
-      entry.hooks.some(h => h.command && h.command.includes('guard-write.js'))
+      entry.hooks.some(h => h.command && h.command.includes('guard-write'))
     );
     assert.ok(guardEntry,
-      'PreToolUse must have an Edit|Write matcher with guard-write.js');
+      'PreToolUse must have an Edit|Write matcher with guard-write');
   });
 
-  it('PreToolUse has Bash matcher with pre-commit-issues.js', () => {
+  it('PreToolUse has Bash matcher with pre-commit-issues', () => {
     const preToolUse = hooks.PreToolUse;
     assert.ok(preToolUse, 'PreToolUse hooks must exist');
     const bashEntry = preToolUse.find(entry =>
       entry.matcher === 'Bash' &&
-      entry.hooks.some(h => h.command && h.command.includes('pre-commit-issues.js'))
+      entry.hooks.some(h => h.command && h.command.includes('pre-commit-issues'))
     );
     assert.ok(bashEntry,
-      'PreToolUse must have a Bash matcher with pre-commit-issues.js');
+      'PreToolUse must have a Bash matcher with pre-commit-issues');
   });
 
-  it('PostToolUse has Edit|Write|Bash|Agent matcher with log-hook.js', () => {
+  it('PostToolUse has Edit|Write|Bash|Agent matcher with log-hook', () => {
     const postToolUse = hooks.PostToolUse;
     assert.ok(postToolUse, 'PostToolUse hooks must exist');
     const logEntry = postToolUse.find(entry => {
       if (!entry.matcher) return false;
       const parts = entry.matcher.split('|');
       return ['Edit', 'Write', 'Bash', 'Agent'].every(t => parts.includes(t)) &&
-        entry.hooks.some(h => h.command && h.command.includes('log-hook.js'));
+        entry.hooks.some(h => h.command && h.command.includes('log-hook'));
     });
     assert.ok(logEntry,
-      'PostToolUse must have an Edit|Write|Bash|Agent matcher with log-hook.js');
+      'PostToolUse must have an Edit|Write|Bash|Agent matcher with log-hook');
   });
 });
 
@@ -143,11 +143,11 @@ describe('settings.local.json hook integrity', () => {
 
 describe('guard-write contract', () => {
   const guardSource = fs.readFileSync(
-    path.join(ROOT, '.claude', 'hooks', 'guard-write.js'), 'utf8'
+    path.join(ROOT, '.claude', 'hooks', 'guard-write.ts'), 'utf8'
   );
 
   function extractArrayValues(source, varName) {
-    const regex = new RegExp('const ' + varName + '\\s*=\\s*\\[([^\\]]+)\\]');
+    const regex = new RegExp('const ' + varName + '(?::\\s*\\w+\\[\\])?\\s*=\\s*\\[([^\\]]+)\\]');
     const match = source.match(regex);
     assert.ok(match, varName + ' array must exist in guard-write.js');
     return match[1]

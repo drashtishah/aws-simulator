@@ -36,4 +36,4 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | scripts/audit-permissions.ts | 17 | `bypassPermissions` | `'bypassPermissions'` | none detected |
 | scripts/audit-permissions.ts | 126 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
 
-_Last updated: 2026-04-06T09:31:49.350Z_
+_Last updated: 2026-04-06T10:46:38.678Z_

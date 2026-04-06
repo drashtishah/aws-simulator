@@ -12,7 +12,7 @@ describe('permission bypass audit', () => {
 
   it('permission-bypass-registry.md exists after running audit', () => {
     const { execSync } = require('child_process');
-    execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT });
+    execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT, timeout: 60000 });
     assert.ok(fs.existsSync(path.join(ROOT, 'references', 'permission-bypass-registry.md')));
   });
 

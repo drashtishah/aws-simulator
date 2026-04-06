@@ -1,23 +1,53 @@
-#!/usr/bin/env node
+#!/usr/bin/env npx tsx
 // Shared hook: logs tool calls + session events for both terminal /play and web app.
 // Reads hook input from stdin, appends JSONL to learning/logs/.
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+
+interface HookInput {
+  hook_event_name?: string;
+  session_id?: string;
+  tool_name?: string;
+  tool_input?: Record<string, unknown>;
+  prompt?: string;
+  source?: string;
+  model?: string;
+  reason?: string;
+  error?: string;
+  error_details?: string;
+  is_interrupt?: boolean;
+  trigger?: string;
+  task_id?: string;
+  subject?: string;
+  file_path?: string;
+  change_type?: string;
+  old_cwd?: string;
+  new_cwd?: string;
+  [key: string]: unknown;
+}
+
+interface LogRecord {
+  ts: string;
+  event: string | undefined;
+  session_id: string | undefined;
+  tool: string | null;
+  [key: string]: unknown;
+}
 
 // System events go to system.jsonl, learning events go to activity.jsonl
-const SYSTEM_EVENTS = new Set([
+const SYSTEM_EVENTS: Set<string> = new Set([
   'PostToolUse', 'PostToolUseFailure', 'StopFailure',
   'PreCompact', 'PostCompact',
   'PermissionDenied', 'CwdChanged', 'FileChanged'
 ]);
 
-function logDestination(eventName) {
+function logDestination(eventName: string): string {
   return SYSTEM_EVENTS.has(eventName) ? 'system.jsonl' : 'activity.jsonl';
 }
 
-function buildRecord(data) {
-  const base = {
+function buildRecord(data: HookInput): LogRecord {
+  const base: LogRecord = {
     ts: new Date().toISOString(),
     event: data.hook_event_name,
     session_id: data.session_id,
@@ -41,7 +71,7 @@ function buildRecord(data) {
       base.source = data.source || null;
       base.model = data.model || null;
       if (data.model) {
-        const modelPath = path.join(process.cwd(), 'learning', '.current-model');
+        const modelPath: string = path.join(process.cwd(), 'learning', '.current-model');
         try { fs.writeFileSync(modelPath, data.model, 'utf8'); } catch {}
       }
       break;
@@ -93,22 +123,21 @@ function buildRecord(data) {
   return base;
 }
 
-if (require.main === module) {
-  let input = '';
-  process.stdin.on('data', d => input += d);
-  process.stdin.on('end', () => {
-    try {
-      const data = JSON.parse(input);
-      const dir = path.join(process.cwd(), 'learning', 'logs');
-      fs.mkdirSync(dir, { recursive: true });
-      const record = buildRecord(data);
-      const line = JSON.stringify(record) + '\n';
-      const dest = logDestination(data.hook_event_name);
-      fs.appendFileSync(path.join(dir, dest), line);
-    } catch {
-      // Silently ignore parse errors to avoid breaking the hook chain
-    }
-  });
-}
+// Main execution
+let input = '';
+process.stdin.on('data', (d: Buffer) => input += d);
+process.stdin.on('end', () => {
+  try {
+    const data: HookInput = JSON.parse(input);
+    const dir: string = path.join(process.cwd(), 'learning', 'logs');
+    fs.mkdirSync(dir, { recursive: true });
+    const record: LogRecord = buildRecord(data);
+    const line: string = JSON.stringify(record) + '\n';
+    const dest: string = logDestination(data.hook_event_name || '');
+    fs.appendFileSync(path.join(dir, dest), line);
+  } catch {
+    // Silently ignore parse errors to avoid breaking the hook chain
+  }
+});
 
-module.exports = { buildRecord, logDestination };
+export { buildRecord, logDestination };
