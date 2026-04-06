@@ -203,6 +203,7 @@ function parseAgentMessages(messages) {
     claudeModel,
     fullText: textParts.join(''),
     toolCalls,
+    hasToolUse: toolCalls.length > 0,
     usage,
     resultError,
     terminalReason
@@ -576,7 +577,15 @@ async function* streamMessage(sessionId, message) {
     maxTurns: 50
   };
 
-  if (session.claudeSessionId) {
+  if (session.claudeSessionId && session.lastTurnHadToolUse) {
+    // Skip resume to avoid unresolved tool_use errors
+    logger.logEvent(sessionId, {
+      level: 'warn',
+      event: 'RESUME_SKIPPED',
+      reason: 'Previous turn had unresolved tool_use blocks'
+    });
+    queryOptions.systemPrompt = session.systemPrompt;
+  } else if (session.claudeSessionId) {
     queryOptions.resume = session.claudeSessionId;
   } else {
     queryOptions.systemPrompt = session.systemPrompt;
@@ -638,6 +647,7 @@ async function* streamMessage(sessionId, message) {
 
   // Bookkeeping
   if (metadata) {
+    session.lastTurnHadToolUse = metadata.toolCalls && metadata.toolCalls.length > 0;
     if (metadata.resultError) {
       logger.logEvent(sessionId, { level: 'warn', event: 'AGENT_RESULT_ERROR', subtype: metadata.resultError.subtype, error: metadata.resultError.error });
     }

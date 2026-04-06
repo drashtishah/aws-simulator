@@ -416,6 +416,44 @@ describe('queryOptions includes maxTurns', () => {
   });
 });
 
+// --- parseAgentMessages hasToolUse ---
+
+describe('parseAgentMessages hasToolUse', () => {
+  const { parseAgentMessages } = require('../lib/claude-process');
+
+  it('returns hasToolUse: true when messages contain tool_use blocks', () => {
+    const messages = [
+      { type: 'assistant', message: { content: [
+        { type: 'text', text: 'hello' },
+        { type: 'tool_use', name: 'Read', input: { path: '/foo' }, id: 'tu_1' }
+      ]}}
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.hasToolUse, true);
+  });
+
+  it('returns hasToolUse: false when no tool_use blocks', () => {
+    const messages = [
+      { type: 'assistant', message: { content: [
+        { type: 'text', text: 'hello' }
+      ]}}
+    ];
+    const result = parseAgentMessages(messages);
+    assert.equal(result.hasToolUse, false);
+  });
+});
+
+// --- streamMessage resume validation ---
+
+describe('streamMessage resume validation', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+
+  it('checks lastTurnHadToolUse before resume', () => {
+    assert.ok(source.includes('lastTurnHadToolUse'),
+      'streamMessage should check lastTurnHadToolUse');
+  });
+});
+
 // --- withRetry ---
 
 describe('withRetry', () => {
