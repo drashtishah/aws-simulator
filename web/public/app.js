@@ -683,20 +683,24 @@
 
   async function quitSim() {
     if (!currentSessionId) return;
-    if (!confirm('Quit this simulation? Your progress is saved.')) return;
-
-    try {
-      await fetch('/api/game/quit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: currentSessionId })
-      });
-    } catch {
-      // ignore quit errors
-    }
-
-    resetChat();
-    loadSimPicker();
+    showConfirmModal({
+      title: 'Leave Simulation',
+      body: 'Your progress is saved. You can resume this simulation later.',
+      actions: [
+        { label: 'Continue', primary: false, onClick: () => {} },
+        { label: 'Quit', primary: true, onClick: async () => {
+          try {
+            await fetch('/api/game/quit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId: currentSessionId })
+            });
+          } catch { /* ignore quit errors */ }
+          resetChat();
+          loadSimPicker();
+        }}
+      ]
+    });
   }
 
   function resetChat() {
@@ -707,6 +711,30 @@
     document.getElementById('sim-picker').style.display = 'block';
     showTyping(false);
     setInputEnabled(true);
+  }
+
+  // --- Confirmation Modal ---
+
+  function showConfirmModal({ title, body, actions }) {
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-modal-body').textContent = body;
+    const actionsEl = document.getElementById('confirm-modal-actions');
+    actionsEl.innerHTML = '';
+    for (const action of actions) {
+      const btn = document.createElement('button');
+      btn.className = 'btn ' + (action.primary ? 'btn-primary' : 'btn-secondary');
+      btn.textContent = action.label;
+      btn.addEventListener('click', () => {
+        hideConfirmModal();
+        if (action.onClick) action.onClick();
+      });
+      actionsEl.appendChild(btn);
+    }
+    document.getElementById('confirm-modal').classList.add('active');
+  }
+
+  function hideConfirmModal() {
+    document.getElementById('confirm-modal').classList.remove('active');
   }
 
   // --- Chat UI Helpers ---
