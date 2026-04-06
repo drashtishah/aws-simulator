@@ -277,11 +277,13 @@ app.get('/api/progress', (req, res) => {
 
 let claudeProcess;
 let claudeSession;
+let claudeStream;
 try {
   claudeProcess = require('./lib/claude-process');
   claudeSession = require('./lib/claude-session');
+  claudeStream = require('./lib/claude-stream');
 } catch {
-  // claude-process.js or claude-session.js not yet created
+  // claude modules not yet created
 }
 
 app.post('/api/game/start', async (req, res) => {
@@ -300,7 +302,7 @@ app.post('/api/game/start', async (req, res) => {
   res.flushHeaders();
 
   try {
-    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', {})) {
+    for await (const event of claudeStream.streamSession(simId, themeId || 'calm-mentor', {})) {
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       }
@@ -339,7 +341,7 @@ app.post('/api/game/message', async (req, res) => {
     }
 
     let sessionComplete = false;
-    for await (const event of claudeProcess.streamMessage(sessionId, msg)) {
+    for await (const event of claudeStream.streamMessage(sessionId, msg)) {
       if (event.type === 'done' && event.sessionComplete) {
         sessionComplete = true;
       }
@@ -397,7 +399,7 @@ app.post('/api/game/resume', async (req, res) => {
   res.flushHeaders();
 
   try {
-    for await (const event of claudeProcess.streamSession(simId, themeId || 'calm-mentor', {
+    for await (const event of claudeStream.streamSession(simId, themeId || 'calm-mentor', {
       resume: true,
       resumeMessage: `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`
     })) {

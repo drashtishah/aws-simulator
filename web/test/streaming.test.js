@@ -8,11 +8,11 @@ const ROOT = path.resolve(__dirname, '..', '..');
 // --- streamQuery source-level tests ---
 
 describe('streamQuery', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
 
-  it('is exported from claude-process.js', () => {
+  it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamQuery'),
-      'claude-process.js should define streamQuery');
+      'claude-stream.js should define streamQuery');
   });
 
   it('is an async generator function', () => {
@@ -39,11 +39,11 @@ describe('streamQuery', () => {
 // --- streamSession source-level tests ---
 
 describe('streamSession', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
 
-  it('is exported from claude-process.js', () => {
+  it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamSession'),
-      'claude-process.js should export streamSession');
+      'claude-stream.js should export streamSession');
   });
 
   it('is an async generator function', () => {
@@ -62,11 +62,11 @@ describe('streamSession', () => {
 // --- streamMessage source-level tests ---
 
 describe('streamMessage', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
 
-  it('is exported from claude-process.js', () => {
+  it('is exported from claude-stream.js', () => {
     assert.ok(source.includes('streamMessage'),
-      'claude-process.js should export streamMessage');
+      'claude-stream.js should export streamMessage');
   });
 
   it('is an async generator function', () => {

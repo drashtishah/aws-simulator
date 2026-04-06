@@ -464,7 +464,7 @@ describe('parseAgentMessages hasToolUse', () => {
 // --- streamMessage resume validation ---
 
 describe('streamMessage resume validation', () => {
-  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8');
 
   it('checks lastTurnHadToolUse before resume', () => {
     assert.ok(source.includes('lastTurnHadToolUse'),

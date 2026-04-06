@@ -14,6 +14,8 @@ const ROOT = path.resolve(__dirname, '..', '..');
 describe('web app tool whitelist', () => {
   const source = fs.readFileSync(
     path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8'
+  ) + '\n' + fs.readFileSync(
+    path.join(ROOT, 'web', 'lib', 'claude-stream.js'), 'utf8'
   );
   const lines = source.split('\n');
 
