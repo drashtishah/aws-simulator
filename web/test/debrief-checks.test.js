@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('debrief-checks', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'debrief-checks.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'debrief-checks.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/debrief-checks.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/debrief-checks.ts should exist');
   });
 
   it('exports buildDebriefPrompt function', () => {

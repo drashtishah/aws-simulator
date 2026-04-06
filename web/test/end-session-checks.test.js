@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('end-session-checks', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'end-session-checks.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'end-session-checks.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/end-session-checks.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/end-session-checks.ts should exist');
   });
 
   it('exports buildEndSessionPrompt function', () => {

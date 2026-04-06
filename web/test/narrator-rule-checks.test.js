@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('narrator-rule-checks', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'narrator-rule-checks.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'narrator-rule-checks.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/narrator-rule-checks.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/narrator-rule-checks.ts should exist');
   });
 
   it('exports buildNarratorRulesPrompt function', () => {

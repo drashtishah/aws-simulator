@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CLI = 'node scripts/sim-test.js';
+const CLI = 'npx tsx scripts/sim-test.ts';
 
 function run(args) {
   return execSync(CLI + ' ' + args, { cwd: ROOT, encoding: 'utf8', timeout: 30000 });

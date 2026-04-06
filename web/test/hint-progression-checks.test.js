@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('hint-progression-checks', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'hint-progression-checks.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'hint-progression-checks.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/hint-progression-checks.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/hint-progression-checks.ts should exist');
   });
 
   it('exports buildHintProgressionPrompt function', () => {

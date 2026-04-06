@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('agent-test-runner', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'agent-test-runner.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'agent-test-runner.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/agent-test-runner.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/agent-test-runner.ts should exist');
   });
 
   it('exports runAgentCheck function', () => {

@@ -260,9 +260,9 @@ describe('eval runner: transcript checks', () => {
 
 describe('eval runner: stub tracking', () => {
   it('tracks known number of one-liner stub rules', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'scripts', 'eval-runner.js'), 'utf8');
+    const source = fs.readFileSync(path.join(ROOT, 'scripts', 'eval-runner.ts'), 'utf8');
     // One-liner stubs match the pattern: funcName() { return { pass: true }; }
-    const stubPattern = /\w+\(\)\s*\{\s*return\s*\{\s*pass:\s*true\s*\};\s*\}/g;
+    const stubPattern = /\w+\(\)(?::\s*\w+)?\s*\{\s*return\s*\{\s*pass:\s*true\s*\};\s*\}/g;
     const stubs = source.match(stubPattern) || [];
     // If this number changes, someone implemented a stub (decrease) or added one (increase).
     // Update the expected count accordingly.

@@ -11,7 +11,7 @@ const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.local.json');
 
 describe('agent-index generator', () => {
   before(() => {
-    execSync('node scripts/generate-agent-index.js', { cwd: ROOT });
+    execSync('npx tsx scripts/generate-agent-index.ts', { cwd: ROOT });
   });
 
   it('generates references/agent-index.md', () => {

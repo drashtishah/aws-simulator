@@ -27,13 +27,13 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | web/test/permission-contracts.test.js | 71 | `DangerouslySkipPermissions` | `it('does not contain allowDangerouslySkipPermissions', () => {` | none detected |
 | web/test/permission-contracts.test.js | 73 | `DangerouslySkipPermissions` | `!source.includes('allowDangerouslySkipPermissions'),` | none detected |
 | web/test/permission-contracts.test.js | 74 | `DangerouslySkipPermissions` | `'source must not contain allowDangerouslySkipPermissions'` | none detected |
-| scripts/agent-test-runner.js | 41 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | none detected |
-| scripts/audit-permissions.js | 2 | `dangerously-skip-permissions` | `// audit-permissions.js: Scan for --dangerously-skip-permissions usage and generate registry.` | none detected |
-| scripts/audit-permissions.js | 15 | `dangerously-skip-permissions` | `'dangerously-skip-permissions',` | none detected |
-| scripts/audit-permissions.js | 16 | `dangerouslySkipPermissions` | `'dangerouslySkipPermissions',` | none detected |
-| scripts/audit-permissions.js | 17 | `DangerouslySkipPermissions` | `'DangerouslySkipPermissions',` | none detected |
-| scripts/audit-permissions.js | 18 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox',` | none detected |
-| scripts/audit-permissions.js | 19 | `bypassPermissions` | `'bypassPermissions'` | none detected |
-| scripts/audit-permissions.js | 120 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
+| scripts/agent-test-runner.ts | 84 | `bypassPermissions` | `permissionMode: 'bypassPermissions',` | none detected |
+| scripts/audit-permissions.ts | 2 | `dangerously-skip-permissions` | `// audit-permissions.ts: Scan for --dangerously-skip-permissions usage and generate registry.` | none detected |
+| scripts/audit-permissions.ts | 13 | `dangerously-skip-permissions` | `'dangerously-skip-permissions',` | none detected |
+| scripts/audit-permissions.ts | 14 | `dangerouslySkipPermissions` | `'dangerouslySkipPermissions',` | none detected |
+| scripts/audit-permissions.ts | 15 | `DangerouslySkipPermissions` | `'DangerouslySkipPermissions',` | none detected |
+| scripts/audit-permissions.ts | 16 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox',` | none detected |
+| scripts/audit-permissions.ts | 17 | `bypassPermissions` | `'bypassPermissions'` | none detected |
+| scripts/audit-permissions.ts | 126 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
 
-_Last updated: 2026-04-06T09:03:00.434Z_
+_Last updated: 2026-04-06T09:31:49.350Z_

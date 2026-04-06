@@ -6,13 +6,13 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('permission bypass audit', () => {
-  it('audit-permissions.js exists', () => {
-    assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'audit-permissions.js')));
+  it('audit-permissions.ts exists', () => {
+    assert.ok(fs.existsSync(path.join(ROOT, 'scripts', 'audit-permissions.ts')));
   });
 
   it('permission-bypass-registry.md exists after running audit', () => {
     const { execSync } = require('child_process');
-    execSync('node scripts/audit-permissions.js', { cwd: ROOT });
+    execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT });
     assert.ok(fs.existsSync(path.join(ROOT, 'references', 'permission-bypass-registry.md')));
   });
 

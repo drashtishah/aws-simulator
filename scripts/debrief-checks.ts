@@ -1,21 +1,42 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import type { AgentCheckResult } from './agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..');
+
+interface FixCriterion {
+  required: boolean;
+  id: string;
+  description: string;
+}
+
+interface Resolution {
+  root_cause?: string;
+  fix_criteria?: FixCriterion[];
+  learning_objectives?: string[];
+  related_failure_modes?: string[];
+  sop_steps?: string[];
+}
+
+interface Manifest {
+  title: string;
+  resolution?: Resolution;
+}
 
 /**
  * Build a debrief quality validation prompt for a sim.
  * Reads the manifest to understand what the debrief should cover,
  * then asks the agent to validate the three-stage protocol.
  */
-function buildDebriefPrompt(simId) {
+function buildDebriefPrompt(simId: string): string {
   const manifestPath = path.join(ROOT, 'sims', simId, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Sim not found: ${simId}`);
   }
 
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  const resolution = manifest.resolution || {};
+  const manifest: Manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const resolution: Resolution = manifest.resolution || {};
 
   return `You are a QA reviewer validating the debrief protocol for an AWS incident simulation.
 
@@ -27,16 +48,16 @@ function buildDebriefPrompt(simId) {
 Root cause: ${resolution.root_cause || 'not specified'}
 
 Fix criteria:
-${(resolution.fix_criteria || []).map(c => `- [${c.required ? 'required' : 'optional'}] ${c.id}: ${c.description}`).join('\n')}
+${(resolution.fix_criteria || []).map((c: FixCriterion) => `- [${c.required ? 'required' : 'optional'}] ${c.id}: ${c.description}`).join('\n')}
 
 Learning objectives:
-${(resolution.learning_objectives || []).map(o => `- ${o}`).join('\n')}
+${(resolution.learning_objectives || []).map((o: string) => `- ${o}`).join('\n')}
 
 Related failure modes:
-${(resolution.related_failure_modes || []).map(f => `- ${f}`).join('\n')}
+${(resolution.related_failure_modes || []).map((f: string) => `- ${f}`).join('\n')}
 
 SOP steps:
-${(resolution.sop_steps || []).map(s => `- ${s}`).join('\n')}
+${(resolution.sop_steps || []).map((s: string) => `- ${s}`).join('\n')}
 
 ## Debrief Protocol Rules
 
@@ -73,13 +94,11 @@ Set "pass" at the top level to false if ANY dimension fails.`;
 
 /**
  * Run debrief quality check.
- * @param {string} simId
- * @returns {Promise<{ pass: boolean, findings: Array, usage: object|null, error: string|null }>}
  */
-async function runDebriefCheck(simId) {
-  const { runAgentCheck } = require('./agent-test-runner');
+async function runDebriefCheck(simId: string): Promise<AgentCheckResult> {
+  const { runAgentCheck } = await import('./agent-test-runner');
   const prompt = buildDebriefPrompt(simId);
   return runAgentCheck({ prompt });
 }
 
-module.exports = { buildDebriefPrompt, runDebriefCheck };
+export { buildDebriefPrompt, runDebriefCheck };

@@ -1,6 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const { buildPrompt } = require('../web/lib/prompt-builder');
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildPrompt } from '../web/lib/prompt-builder';
+
+import type { AgentCheckResult } from './agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -8,7 +10,7 @@ const ROOT = path.resolve(__dirname, '..');
  * Build an end-of-session compliance prompt for a sim.
  * Verifies the narrator does not offer another simulation after resolution.
  */
-function buildEndSessionPrompt(simId) {
+function buildEndSessionPrompt(simId: string): string {
   const manifestPath = path.join(ROOT, 'sims', simId, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Sim not found: ${simId}`);
@@ -17,7 +19,7 @@ function buildEndSessionPrompt(simId) {
   const systemPrompt = buildPrompt(simId, 'calm-mentor');
 
   // Extract end-of-session rules from the system prompt
-  const rules = [];
+  const rules: string[] = [];
   if (systemPrompt.includes('Do not offer another simulation')) {
     rules.push('Rule found: "Do not offer another simulation"');
   }
@@ -67,13 +69,11 @@ Set "pass" at the top level to false if ANY dimension fails.`;
 
 /**
  * Run end-of-session compliance check.
- * @param {string} simId
- * @returns {Promise<{ pass: boolean, findings: Array, usage: object|null, error: string|null }>}
  */
-async function runEndSessionCheck(simId) {
-  const { runAgentCheck } = require('./agent-test-runner');
+async function runEndSessionCheck(simId: string): Promise<AgentCheckResult> {
+  const { runAgentCheck } = await import('./agent-test-runner');
   const prompt = buildEndSessionPrompt(simId);
   return runAgentCheck({ prompt });
 }
 
-module.exports = { buildEndSessionPrompt, runEndSessionCheck };
+export { buildEndSessionPrompt, runEndSessionCheck };

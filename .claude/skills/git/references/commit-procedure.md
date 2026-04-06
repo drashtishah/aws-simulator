@@ -46,9 +46,9 @@ This runs path extraction + all deterministic tests (~5-10 seconds).
 
 ### 6b. Run eval scorecard (if play-related files changed)
 
-If the commit touches files in `.claude/skills/play/`, `scripts/eval-runner.js`, or `references/eval-scoring.yaml`:
+If the commit touches files in `.claude/skills/play/`, `scripts/eval-runner.ts`, or `references/eval-scoring.yaml`:
 
-    node scripts/sim-test.js evals --dry-run
+    tsx scripts/sim-test.ts evals --dry-run
 
 This validates the 60-check scorecard parses correctly (~1 second). If completed play sessions exist, run `sim-test evals` to score them.
 
@@ -61,7 +61,7 @@ This validates the 60-check scorecard parses correctly (~1 second). If completed
 
 At the end of /fix or after completing a refactoring task, run full validation:
 
-    node scripts/sim-test.js validate
+    tsx scripts/sim-test.ts validate
 
 This runs all 4 test layers in sequence. Judgment evals (Track B) are opt-in and prompted separately.
 

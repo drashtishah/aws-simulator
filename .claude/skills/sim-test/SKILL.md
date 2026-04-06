@@ -45,7 +45,7 @@ Choose one of these options depending on what is needed.
 
 ### Option C: Add a CLI command
 
-1. Only possible in dev mode (no active skill), since `scripts/sim-test.js` is NEVER_WRITABLE during skill execution
+1. Only possible in dev mode (no active skill), since `scripts/sim-test.ts` is NEVER_WRITABLE during skill execution
 2. Register with commander: `.command('name').description('...').option('--json').action(async (opts) => { ... })`
 3. Must support --json flag, exit codes (0/1/2), --help
 4. Add corresponding npm script alias in `package.json`
@@ -76,7 +76,7 @@ Follow `.claude/skills/git/references/commit-procedure.md`. If a GitHub Issue ex
 ## Rules
 
 1. No emojis.
-2. Never edit `scripts/sim-test.js` during skill execution. It is NEVER_WRITABLE.
+2. Never edit `scripts/sim-test.ts` during skill execution. It is NEVER_WRITABLE.
 3. Never edit files in `web/test-specs/` via Edit/Write tools. Use Bash or the CLI scripts.
 4. Always validate new specs with --dry-run before committing.
 5. The test skill owns `web/test-results/` directory only.

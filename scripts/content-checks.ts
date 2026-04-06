@@ -1,16 +1,27 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import type { AgentCheckResult } from './agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..');
 const SIMS_DIR = path.join(ROOT, 'sims');
 const REGISTRY_PATH = path.join(SIMS_DIR, 'registry.json');
+
+interface RegistryEntry {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface Registry {
+  sims: RegistryEntry[];
+}
 
 /**
  * Build a validation prompt for a specific sim.
  * Reads manifest, story, resolution, artifacts, and registry entry.
  * Returns a prompt string for the agent to evaluate.
  */
-function buildContentPrompt(simId) {
+function buildContentPrompt(simId: string): string {
   const simDir = path.join(SIMS_DIR, simId);
   if (!fs.existsSync(simDir)) {
     throw new Error(`Sim not found: ${simId}`);
@@ -49,8 +60,8 @@ function buildContentPrompt(simId) {
   if (!artifactsText) artifactsText = '(no artifacts)';
 
   // Read registry entry
-  const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
-  const registryEntry = registry.sims.find(s => s.id === simId);
+  const registry: Registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+  const registryEntry = registry.sims.find((s: RegistryEntry) => s.id === simId);
   const registryText = registryEntry
     ? JSON.stringify(registryEntry, null, 2)
     : '(not found in registry)';
@@ -117,13 +128,11 @@ Set "pass" at the top level to false if ANY dimension fails. Include all 7 dimen
 /**
  * Run a content validation check on a sim.
  * Calls the agent test runner with the built prompt.
- * @param {string} simId
- * @returns {Promise<{ pass: boolean, findings: Array, usage: object|null, error: string|null }>}
  */
-async function runContentCheck(simId) {
-  const { runAgentCheck } = require('./agent-test-runner');
+async function runContentCheck(simId: string): Promise<AgentCheckResult> {
+  const { runAgentCheck } = await import('./agent-test-runner');
   const prompt = buildContentPrompt(simId);
   return runAgentCheck({ prompt });
 }
 
-module.exports = { buildContentPrompt, runContentCheck };
+export { buildContentPrompt, runContentCheck };

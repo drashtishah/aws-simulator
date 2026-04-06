@@ -44,7 +44,7 @@ file,path,line_number
 .claude/skills/fight-team/SKILL.md,.claude/skills/git/references/task-to-issue.md,141
 .claude/skills/fight-team/references/default-checklist.md,references/workspace-map.md,11
 .claude/skills/fight-team/references/default-checklist.md,references/testing-system.md,17
-.claude/skills/fight-team/references/default-checklist.md,scripts/code-health.js,17
+.claude/skills/fight-team/references/default-checklist.md,scripts/code-health.ts,17
 .claude/skills/fight-team/references/default-checklist.md,web/test-specs/,17
 .claude/skills/fight-team/references/default-checklist.md,web/test/,17
 .claude/skills/fight-team/references/default-checklist.md,web/lib/,29
@@ -115,7 +115,7 @@ file,path,line_number
 .claude/skills/git/references/commit-procedure.md,.claude/skills/git/references/contextual-commits-spec.md,25
 .claude/skills/git/references/commit-procedure.md,.claude/skills/play/,49
 .claude/skills/git/references/commit-procedure.md,references/eval-scoring.yaml,49
-.claude/skills/git/references/commit-procedure.md,scripts/eval-runner.js,49
+.claude/skills/git/references/commit-procedure.md,scripts/eval-runner.ts,49
 .claude/skills/git/references/commit-procedure.md,.claude/skills/git/references/rollback-procedure.md,58
 .claude/skills/git/references/issue-workflow.md,.claude/skills/git/references/task-to-issue.md,22
 .claude/skills/git/references/rollback-procedure.md,.claude/skills/git/references/commit-procedure.md,39
@@ -186,11 +186,11 @@ file,path,line_number
 .claude/skills/sim-test/SKILL.md,web/test-specs/personas/,26
 .claude/skills/sim-test/SKILL.md,web/test-specs/browser/{name}.yaml,34
 .claude/skills/sim-test/SKILL.md,web/test-specs/personas/{id}.json,42
-.claude/skills/sim-test/SKILL.md,scripts/sim-test.js,48
+.claude/skills/sim-test/SKILL.md,scripts/sim-test.ts,48
 .claude/skills/sim-test/SKILL.md,sims/registry.json,55
 .claude/skills/sim-test/SKILL.md,web/test-results/content/,60
 .claude/skills/sim-test/SKILL.md,.claude/skills/git/references/commit-procedure.md,72
-.claude/skills/sim-test/SKILL.md,scripts/sim-test.js,79
+.claude/skills/sim-test/SKILL.md,scripts/sim-test.ts,79
 .claude/skills/sim-test/SKILL.md,web/test-specs/,80
 .claude/skills/sim-test/SKILL.md,web/test-results/,82
 .claude/skills/sim-test/ownership.json,web/test-results/,3
@@ -237,10 +237,10 @@ references/agent-index.md,references/path-registry.csv,53
 references/agent-index.md,learning/logs/activity.jsonl,54
 references/agent-index.md,node_modules/,56
 references/agent-index.md,web/test-specs/,57
-references/code-health.md,scripts/code-health.js,9
+references/code-health.md,scripts/code-health.ts,9
 references/code-health.md,learning/logs/health-scores.jsonl,15
 references/code-health.md,scripts/metrics.config.json,31
-references/code-health.md,scripts/code-health.js,42
+references/code-health.md,scripts/code-health.ts,42
 references/code-health.md,scripts/metrics.config.json,43
 references/code-health.md,learning/logs/health-scores.jsonl,44
 references/contributing.md,references/web-app-checklist.md,20
@@ -298,7 +298,7 @@ references/workspace-map.md,learning/.current-model,136
 references/workspace-map.md,learning/logs/activity.jsonl,138
 references/workspace-map.md,learning/logs/system.jsonl,139
 references/workspace-map.md,learning/logs/health-scores.jsonl,140
-references/workspace-map.md,scripts/code-health.js,141
+references/workspace-map.md,scripts/code-health.ts,141
 references/workspace-map.md,scripts/metrics.config.json,141
 references/workspace-map.md,sims/registry.json,142
 references/workspace-map.md,web/test-results/summary.json,143
@@ -306,7 +306,7 @@ references/workspace-map.md,learning/.current-model,147
 references/workspace-map.md,.claude/skills/play/references/prompt-overlay-medium.md,152
 references/workspace-map.md,.claude/skills/play/references/prompt-overlay-small.md,153
 references/workspace-map.md,references/testing-system.md,157
-references/workspace-map.md,scripts/sim-test.js,157
+references/workspace-map.md,scripts/sim-test.ts,157
 references/workspace-map.md,web/test/server.test.js,163
 references/workspace-map.md,web/test/logger.test.js,164
 references/workspace-map.md,web/test/claude-process.test.js,165

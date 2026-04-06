@@ -96,7 +96,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                 v
 /fix ---------> reads feedback.md + learning/logs/activity.jsonl + system.jsonl + health scores
             --> reads web/test-results/summary.json (if exists) for recent test failures
-            --> runs node scripts/code-health.js (before, after each edit, final)
+            --> runs tsx scripts/code-health.ts (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
             --> writes learning/logs/health-scores.jsonl (per-edit + final scores)
             --> clears feedback.md
@@ -138,7 +138,7 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: learning events (session lifecycle, user prompts, tasks) |
 | `learning/logs/system.jsonl` | hooks, web logger | fix | JSONL: system events (tool calls, failures, compaction, warnings) |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
-| `scripts/metrics.config.json` | fix | `scripts/code-health.js`, fix | JSON: health score weights and last_fix_analyzed timestamp |
+| `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
 
@@ -154,7 +154,7 @@ The tier system uses `learning/.current-model` to select prompt overlays:
 
 ## Tests
 
-All tests run through the `sim-test` CLI (`scripts/sim-test.js`). See `references/testing-system.md` for full architecture.
+All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `references/testing-system.md` for full architecture.
 
 ### Layer 1: Deterministic (`sim-test run`)
 

@@ -1,25 +1,46 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import type { AgentCheckResult } from './agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..');
+
+interface Hint {
+  hint?: string;
+  text?: string;
+  relevant_services?: string[];
+  skip_if_queried?: string[];
+}
+
+interface Narrator {
+  hints?: Hint[];
+  max_hints_before_nudge?: number;
+}
+
+interface Manifest {
+  title: string;
+  team: {
+    narrator: Narrator;
+  };
+}
 
 /**
  * Build a hint progression validation prompt for a sim.
  * Given a sequence of unproductive player questions, verify
  * hint ordering and skip logic.
  */
-function buildHintProgressionPrompt(simId) {
+function buildHintProgressionPrompt(simId: string): string {
   const manifestPath = path.join(ROOT, 'sims', simId, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Sim not found: ${simId}`);
   }
 
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  const narrator = manifest.team.narrator;
-  const hints = narrator.hints || [];
-  const maxHints = narrator.max_hints_before_nudge || 3;
+  const manifest: Manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const narrator: Narrator = manifest.team.narrator;
+  const hints: Hint[] = narrator.hints || [];
+  const maxHints: number = narrator.max_hints_before_nudge || 3;
 
-  const hintsText = hints.map((h, i) => {
+  const hintsText = hints.map((h: Hint, i: number) => {
     const text = h.hint || h.text || '';
     const services = (h.relevant_services || []).join(', ');
     const skip = (h.skip_if_queried || []).join(', ');
@@ -78,13 +99,11 @@ Set "pass" at the top level to false if ANY dimension fails.`;
 
 /**
  * Run hint progression check.
- * @param {string} simId
- * @returns {Promise<{ pass: boolean, findings: Array, usage: object|null, error: string|null }>}
  */
-async function runHintProgressionCheck(simId) {
-  const { runAgentCheck } = require('./agent-test-runner');
+async function runHintProgressionCheck(simId: string): Promise<AgentCheckResult> {
+  const { runAgentCheck } = await import('./agent-test-runner');
   const prompt = buildHintProgressionPrompt(simId);
   return runAgentCheck({ prompt });
 }
 
-module.exports = { buildHintProgressionPrompt, runHintProgressionCheck };
+export { buildHintProgressionPrompt, runHintProgressionCheck };

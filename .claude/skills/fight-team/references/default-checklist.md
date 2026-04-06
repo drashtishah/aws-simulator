@@ -14,7 +14,7 @@ Are skills modular with clean boundaries? Does `ownership.json` correctly partit
 
 Are the unit tests sufficient? What code paths lack coverage? What creative deterministic tests can we add (property-based, round-trip, schema validation, idempotency, regression)? Can we generate fixtures from real session data?
 
-**Look at:** `web/test/`, `web/test-specs/`, `references/testing-system.md`, `scripts/code-health.js` test_sync metric.
+**Look at:** `web/test/`, `web/test-specs/`, `references/testing-system.md`, `scripts/code-health.ts` test_sync metric.
 
 ## 3. Simplification opportunities
 

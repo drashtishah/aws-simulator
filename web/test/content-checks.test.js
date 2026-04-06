@@ -6,10 +6,10 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('content-checks', () => {
-  const sourcePath = path.join(ROOT, 'scripts', 'content-checks.js');
+  const sourcePath = path.join(ROOT, 'scripts', 'content-checks.ts');
 
   it('module exists', () => {
-    assert.ok(fs.existsSync(sourcePath), 'scripts/content-checks.js should exist');
+    assert.ok(fs.existsSync(sourcePath), 'scripts/content-checks.ts should exist');
   });
 
   it('exports buildContentPrompt function', () => {

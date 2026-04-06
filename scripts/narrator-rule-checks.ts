@@ -1,6 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const { buildPrompt } = require('../web/lib/prompt-builder');
+import fs from 'node:fs';
+import path from 'node:path';
+import { buildPrompt } from '../web/lib/prompt-builder';
+
+import type { AgentCheckResult } from './agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -9,7 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
  * Uses the fully populated system prompt and a scripted player message
  * to verify the narrator follows behavioral rules.
  */
-function buildNarratorRulesPrompt(simId) {
+function buildNarratorRulesPrompt(simId: string): string {
   const manifestPath = path.join(ROOT, 'sims', simId, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     throw new Error(`Sim not found: ${simId}`);
@@ -70,13 +72,11 @@ Set "pass" at the top level to false if ANY dimension fails.`;
 
 /**
  * Run narrator rule compliance check.
- * @param {string} simId
- * @returns {Promise<{ pass: boolean, findings: Array, usage: object|null, error: string|null }>}
  */
-async function runNarratorRulesCheck(simId) {
-  const { runAgentCheck } = require('./agent-test-runner');
+async function runNarratorRulesCheck(simId: string): Promise<AgentCheckResult> {
+  const { runAgentCheck } = await import('./agent-test-runner');
   const prompt = buildNarratorRulesPrompt(simId);
   return runAgentCheck({ prompt });
 }
 
-module.exports = { buildNarratorRulesPrompt, runNarratorRulesCheck };
+export { buildNarratorRulesPrompt, runNarratorRulesCheck };

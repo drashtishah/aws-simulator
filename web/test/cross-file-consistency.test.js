@@ -188,7 +188,7 @@ describe('playtester mode removed', () => {
 // --- 7. sim-test CLI commands ---
 
 describe('sim-test CLI commands', () => {
-  const simTestJs = readFile('scripts/sim-test.js');
+  const simTestJs = readFile('scripts/sim-test.ts');
 
   it('has evals command', () => {
     assert.ok(simTestJs.includes(".command('evals')"), 'sim-test should have evals command');
@@ -267,7 +267,7 @@ describe('skill tool references', () => {
         // Skip template paths, runtime paths, commands, and descriptions
         if (target.includes('{') || target.includes('*') || !target.includes('/') || !target.includes('.')) continue;
         if (target.startsWith('learning/') || target.startsWith('web/test-results/')) continue;
-        if (target.startsWith('node ') || target.startsWith('npm ') || target.startsWith('gh ')) continue;
+        if (target.startsWith('node ') || target.startsWith('npm ') || target.startsWith('gh ') || target.startsWith('tsx ')) continue;
         if (/^[A-Z]/.test(target)) continue; // Skip descriptions like "AWS incident patterns"
         const fullPath = path.join(ROOT, target);
         if (!fs.existsSync(fullPath)) {
