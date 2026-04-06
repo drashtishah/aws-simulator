@@ -533,7 +533,6 @@
     showTyping(true);
 
     const themeId = 'calm-mentor';
-    const model = getSetting('model', 'sonnet');
     const assistMode = getSetting('assistMode', 'standard');
     const playtest = getSetting('playtest', 'player');
     const endpoint = isResume ? '/api/game/resume' : '/api/game/start';
@@ -542,7 +541,7 @@
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ simId, themeId, model, assistMode, playtest })
+        body: JSON.stringify({ simId, themeId, assistMode, playtest })
       });
 
       await streamResponse(response, {
@@ -860,19 +859,6 @@
       assistOptions,
       getSetting('assistMode', 'standard'),
       (val) => { setSetting('assistMode', val); }
-    );
-
-    // Model selector
-    const modelOptions = [
-      { value: 'sonnet', label: 'Sonnet' },
-      { value: 'opus', label: 'Opus' },
-      { value: 'haiku', label: 'Haiku' }
-    ];
-    initCustomSelect(
-      document.getElementById('select-model'),
-      modelOptions,
-      getSetting('model', 'sonnet'),
-      (val) => { setSetting('model', val); }
     );
 
     // Play mode

@@ -295,6 +295,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('index.html does not contain model selector', () => {
+    const html = readFile('web/public/index.html');
+    assert.ok(!html.includes('id="select-model"'),
+      'index.html should not contain model selector (id="select-model")');
+  });
+
   it('server.js fallback theme file exists', () => {
     const serverJs = readFile('web/server.js');
     // Match patterns like: themeId || 'calm-mentor'

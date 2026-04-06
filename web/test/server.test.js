@@ -244,13 +244,13 @@ function buildApp() {
 
   // Game endpoints return 503 without claude-process (acceptable for unit tests)
   app.post('/api/game/start', (req, res) => {
-    const { simId, themeId, model, assistMode } = req.body;
+    const { simId, themeId, assistMode } = req.body;
     if (!simId) return res.status(400).json({ error: 'simId is required' });
     const registry = readJSON(path.join(ROOT, 'sims', 'registry.json'), { sims: [] });
     const simExists = registry.sims.some(s => s.id === simId);
     if (!simExists) return res.status(400).json({ error: 'Invalid simId' });
     // Would normally start Claude process; return mock for testing
-    res.json({ simId, themeId: themeId || 'calm-mentor', model: model || 'sonnet', assistMode: assistMode || 'standard' });
+    res.json({ simId, themeId: themeId || 'calm-mentor', assistMode: assistMode || 'standard' });
   });
 
   app.post('/api/game/message', (req, res) => {
@@ -524,20 +524,12 @@ describe('POST /api/game/start', () => {
     assert.ok(res.body.error.includes('Invalid'));
   });
 
-  it('accepts valid simId and passes model through', async () => {
-    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
-    const simId = registry.sims[0].id;
-    const res = await request(app, 'POST', '/api/game/start', { simId, model: 'opus' });
-    assert.equal(res.status, 200);
-    assert.equal(res.body.model, 'opus');
-  });
-
-  it('defaults model to sonnet when not provided', async () => {
+  it('accepts valid simId and returns 200', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
     const simId = registry.sims[0].id;
     const res = await request(app, 'POST', '/api/game/start', { simId });
     assert.equal(res.status, 200);
-    assert.equal(res.body.model, 'sonnet');
+    assert.equal(res.body.simId, simId);
   });
 
   it('defaults themeId to calm-mentor when not provided', async () => {
