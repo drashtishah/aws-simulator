@@ -295,6 +295,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'theme file for "' + match[1] + '" must exist at themes/' + match[1] + '.md');
   });
 
+  it('coaching-patterns.md contains Service Solves Pattern', () => {
+    const coaching = readFile('.claude/skills/play/references/coaching-patterns.md');
+    assert.ok(coaching.includes('## Service "Solves" Pattern'),
+      'coaching-patterns.md should contain Service Solves Pattern section');
+  });
+
   it('agent-prompts.md contains mermaid instruction', () => {
     const prompts = readFile('.claude/skills/play/references/agent-prompts.md');
     assert.ok(prompts.toLowerCase().includes('mermaid'),

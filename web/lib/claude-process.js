@@ -610,6 +610,7 @@ Instructions:
 6. Update profile.json: add sim to completed_sims, update skill_polygon with quality-weighted diminishing returns, update question_quality running averages, derive rank, increment total_sessions and sessions_at_current_rank.
 7. Update catalog.csv: increment sims_completed, update knowledge_score, set last_practiced.
 8. Compile vault notes: create session note, update question quality patterns, update behavioral profile, create/update concept and service notes.
+8b. For each service note in the vault, include a "solves" field in the frontmatter: the single question this service exists to answer. Examples: SageMaker solves "How do I run ML models at scale?", Lambda solves "How do I run code in response to events?", Auto Scaling solves "How do I automatically add/remove capacity?", CloudWatch solves "How do I see what is happening?"
 9. Set session status to "completed" in session.json.
 
 Do not skip any step. Write all updates to the files listed above.`;

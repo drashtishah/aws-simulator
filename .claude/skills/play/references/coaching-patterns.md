@@ -315,6 +315,26 @@ Update these counters after each sim to build a picture of the player's investig
 
 ---
 
+## Service "Solves" Pattern
+
+Every AWS service exists to answer one core question. When creating or updating service notes in the vault, include a "solves" field in the YAML frontmatter:
+
+```yaml
+---
+service: SageMaker
+solves: "How do I run ML models at scale?"
+---
+```
+
+Examples:
+- Lambda solves "How do I run code in response to events?"
+- Auto Scaling solves "How do I automatically add/remove capacity?"
+- CloudWatch solves "How do I see what is happening?"
+- S3 solves "How do I store and retrieve any amount of data?"
+- IAM solves "How do I control who can do what?"
+
+Players stack services to solve their specific set of problems. The "solves" question helps connect individual service knowledge to real incident diagnosis.
+
 ## Related
 
 - [[SKILL]] -- Play skill workflow that triggers coaching analysis

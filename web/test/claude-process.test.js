@@ -416,6 +416,21 @@ describe('queryOptions includes maxTurns', () => {
   });
 });
 
+// --- Post-session prompt includes solves pattern ---
+
+describe('buildPostSessionPrompt includes solves', () => {
+  const { buildPostSessionPrompt } = require('../lib/claude-process');
+
+  it('prompt includes solves instruction', () => {
+    // Use a known sim ID from registry
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const simId = registry.sims[0].id;
+    const prompt = buildPostSessionPrompt(simId);
+    assert.ok(prompt.includes('solves'),
+      'buildPostSessionPrompt should include solves instruction');
+  });
+});
+
 // --- Model hardcoding ---
 
 describe('model is hardcoded', () => {
