@@ -145,8 +145,7 @@ function updateGameSession(simId, updates) {
 
 const MODEL_MAP = {
   sonnet: 'claude-sonnet-4-6',
-  opus: 'claude-opus-4-6',
-  haiku: 'claude-haiku-4-5'
+  opus: 'claude-opus-4-6'
 };
 
 // --- Message parsing ---
@@ -343,9 +342,8 @@ async function startSession(simId, themeId, options = {}) {
     await endSession(id);
   }
 
-  const VALID_MODELS = ['sonnet', 'opus', 'haiku'];
-  const modelKey = VALID_MODELS.includes(options.model) ? options.model : 'sonnet';
-  const modelId = MODEL_MAP[modelKey];
+  const modelKey = 'sonnet';
+  const modelId = 'claude-sonnet-4-6';
 
   const sessionId = crypto.randomUUID();
 

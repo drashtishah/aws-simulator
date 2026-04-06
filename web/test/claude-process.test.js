@@ -416,6 +416,26 @@ describe('queryOptions includes maxTurns', () => {
   });
 });
 
+// --- Model hardcoding ---
+
+describe('model is hardcoded', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.js'), 'utf8');
+
+  it('startSession hardcodes claude-sonnet-4-6', () => {
+    const startIdx = source.indexOf('async function startSession');
+    const endIdx = source.indexOf('async function', startIdx + 1);
+    const fn = source.slice(startIdx, endIdx);
+    assert.ok(fn.includes("'claude-sonnet-4-6'"), 'startSession should hardcode claude-sonnet-4-6');
+  });
+
+  it('MODEL_MAP does not contain haiku', () => {
+    const mapIdx = source.indexOf('const MODEL_MAP');
+    const mapEnd = source.indexOf('};', mapIdx);
+    const block = source.slice(mapIdx, mapEnd);
+    assert.ok(!block.includes('haiku'), 'MODEL_MAP should not contain haiku');
+  });
+});
+
 // --- playtest transcript logging ---
 
 describe('playtest transcript logging', () => {
