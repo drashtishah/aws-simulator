@@ -389,7 +389,7 @@ references/config/code-health.md,scripts/code-health.ts,9
 references/config/code-health.md,scripts/lib/classify.ts,33
 references/config/code-health.md,web/server.ts,38
 references/config/code-health.md,scripts/lib/classify.ts,67
-references/config/code-health.md,.claude/plans/,71
+references/config/code-health.md,.claude/plans,72
 references/config/code-health.md,scripts/metrics.config.json,73
 references/config/code-health.md,web/test/code-health-config.test.ts,82
 references/config/code-health.md,scripts/metrics.config.json,88
