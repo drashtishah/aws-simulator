@@ -227,3 +227,84 @@ rubric:
 ## MCP Servers
 
 - **Chrome DevTools MCP:** browser interaction for agent and persona tests.
+
+## Internals: How `npm test` Runs
+
+Knowing the wiring matters when a single test fails inside the aggregate `unit: N/M passed` summary, since `sim-test run` only prints the count, not the failing test name.
+
+### Pipeline
+
+`npm test` (defined in `package.json`) chains four steps:
+
+```
+python3 scripts/extract_paths.py        # regenerate references/path-registry.csv
+mypy --strict scripts/extract_paths.py  # typecheck the path extractor
+npm run typecheck                       # tsc --noEmit on tsconfig.json + tsconfig.frontend.json
+tsx scripts/sim-test.ts run             # run unit tests via the sim-test CLI boundary
+```
+
+### Per-file test spawn
+
+`sim-test run` does NOT call `node --test` on the whole `web/test/` directory. Instead, `scripts/sim-test.ts:270-318` reads every `web/test/*.test.ts` file and spawns each one in its own `tsx` subprocess:
+
+```
+spawnSync('tsx', ['--test', '--test-force-exit', testFile], { cwd: ROOT, ... })
+```
+
+Why per-file:
+
+- The unit test files are `.ts` but use CommonJS `require()`. Plain `node --test` cannot resolve `require('../lib/progression')` against `web/lib/progression.ts`, so they must run under `tsx`.
+- A single `tsx --test web/test/*.test.ts` invocation hangs when multiple files share one process (see inline comment at `scripts/sim-test.ts:270`).
+- `--test-force-exit` ensures each subprocess exits even if a test leaves an open handle.
+
+The runner parses `ℹ pass N` and `ℹ fail N` from each subprocess and aggregates into the `unit: N/M passed` summary line.
+
+### Debugging a single failing test
+
+When `npm test` reports `unit: 625/626 passed   FAIL` but does not name the failing file, run individual files yourself:
+
+```
+PATH="./node_modules/.bin:$PATH" tsx --test --test-force-exit web/test/path-registry.test.ts
+```
+
+Or sweep all files to find the one with `fail > 0`:
+
+```
+PATH="./node_modules/.bin:$PATH"
+for f in web/test/*.test.ts; do
+  result=$(tsx --test --test-force-exit "$f" 2>&1)
+  if ! echo "$result" | grep -q "fail 0"; then
+    echo "=== $f ==="
+    echo "$result" | tail -15
+  fi
+done
+```
+
+`tsx` is in `node_modules/.bin/` after `npm install`, but is not on the global PATH, so prefixing `PATH="./node_modules/.bin:$PATH"` is required when invoking it directly from the shell.
+
+### Auto-generated registry files
+
+Two files in `references/` are produced by scripts and must never be edited by hand. They are committed because tests assert against them:
+
+| File | Generator | What it tracks |
+|---|---|---|
+| `references/path-registry.csv` | `python3 scripts/extract_paths.py` | Every file path mentioned across markdown, YAML, JSON, and source. The `path-registry.test.ts` suite asserts every concrete entry resolves to a real file. |
+| `references/permission-bypass-registry.md` | `tsx scripts/audit-permissions.ts` | Every occurrence of `bypassPermissions`, `dangerouslySkipPermissions`, or `dangerouslyDisableSandbox` in `web/`, `scripts/`, and `.claude/`. |
+
+`extract_paths.py` runs automatically as the first step of `npm test`, so `path-registry.csv` is regenerated on every test run. `audit-permissions.ts` does NOT run from `npm test`; if you rename a file referenced in the permission registry, regenerate it manually:
+
+```
+PATH="./node_modules/.bin:$PATH" tsx scripts/audit-permissions.ts
+```
+
+A common failure mode after a file rename: `path-registry.test.ts` reports `references X which does not exist`. The fix is usually to update the source reference (a plan or doc that still mentions the old name), then regenerate both registries.
+
+### Drift-prevention tests
+
+`web/test/cross-file-consistency.test.ts` enforces invariants that span multiple files (CSS/HTML/TS). Notable sections:
+
+- **CSS class coverage:** classes used in `web/public/app.ts` HTML strings must exist in `web/public/style.css`.
+- **YAML browser spec selector drift:** every `selector:` and `target:` in `web/test-specs/browser/*.yaml` must resolve against `index.html`, `style.css`, or `app.ts` (with an allowlist for runtime-generated classes like `.chat-message`, `.sim-card`, `.custom-select-option`).
+- **Dashboard/progression invariants:** the hexagon SVG viewBox, axis names, and theme files must stay in sync across `app.ts`, `progression.yaml`, and the `themes/` directory.
+
+These tests catch the most common breakage class: a refactor on one side of the codebase that silently invalidates a selector, class name, or path on the other side.
