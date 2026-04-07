@@ -65,6 +65,7 @@ file,path,line_number
 .claude/skills/fight-team/references/default-checklist.md,learning/profile.json,75
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,77
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,81
+.claude/skills/fight-team/references/issue-template.md,scripts/lib/validate-fight-team-issue.ts,4
 .claude/skills/fix/SKILL.md,references/architecture/workspace-map.md,16
 .claude/skills/fix/SKILL.md,learning/feedback.md,17
 .claude/skills/fix/SKILL.md,learning/logs/raw.jsonl,18
@@ -292,8 +293,6 @@ file,path,line_number
 .claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/state/last-check.json,249
 .claude/skills/upgrade/SKILL.md,.claude/skills/git/references/task-to-issue.md,285
 .claude/skills/upgrade/SKILL.md,references/architecture/core-workflow.md,285
-.mypy_cache/3.8/extract_paths.data.json,scripts/extract_paths.py,1
-.mypy_cache/3.8/extract_paths.meta.json,scripts/extract_paths.py,1
 CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,18
 CLAUDE.md,references/registries/agent-index.md,21
 CLAUDE.md,references/registries/tool-registry.md,21
@@ -456,3 +455,8 @@ tsconfig.frontend.json,dist/public,8
 tsconfig.frontend.json,web/public,9
 tsconfig.json,web/public,22
 tsconfig.json,web/test,22
+web/test/fixtures/fight-team-issue-good.md,learning/sessions,12
+web/test/fixtures/fight-team-issue-good.md,learning/sessions,13
+web/test/fixtures/fight-team-issue-good.md,learning/sessions,16
+web/test/fixtures/fight-team-issue-good.md,learning/sessions,22
+web/test/fixtures/fight-team-issue-good.md,learning/sessions,24
