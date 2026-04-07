@@ -86,7 +86,9 @@ flowchart TB
 
 **Hooks.** Every tool call, session event, warning, and error lands in the logs automatically. Both terminal `/play` and the web app write to the same file.
 
-**Health score.** A composite across ten buckets. Floors are monotonic, so a regression below the post-refactor baseline trips an invariant. `/fix` reads the latest findings to drive plan grouping.
+**Types everywhere.** TypeScript on the web, CLI, and scripts side, enforced by `tsc --noEmit`. Python with strict type hints on the data side, enforced by `mypy --strict`. The build itself catches "I forgot to update the consumer" bugs.
+
+**Health score.** A composite across ten buckets. Floors only ever rise, so any regression trips an invariant.
 
 **Fight-team.** Three agents (coordinator, Challenger, Defender) debate the top health findings weekly. Subagents agree too easily; adversarial pressure surfaces weak claims.
 
