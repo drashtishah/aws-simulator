@@ -12,6 +12,7 @@ const JOBS_DIR = path.join(ROOT, '.claude', 'scheduled-jobs');
 const BOUNDARY: Record<string, string[]> = {
   'daily-compile-and-rotate': [
     'learning/system-vault/**',
+    'learning/logs/compile-pending.txt',
     'learning/logs/raw.jsonl',
     'learning/logs/raw.jsonl.*.gz',
     'learning/logs/archive/**',
