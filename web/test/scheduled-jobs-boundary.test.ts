@@ -13,6 +13,8 @@ const BOUNDARY: Record<string, string[]> = {
   'daily-compile-and-rotate': [
     'learning/system-vault/**',
     'learning/logs/compile-pending.txt',
+    'learning/logs/notes.jsonl',
+    'learning/logs/notes.jsonl.*.gz',
     'learning/logs/raw.jsonl',
     'learning/logs/raw.jsonl.*.gz',
     'learning/logs/archive/**',

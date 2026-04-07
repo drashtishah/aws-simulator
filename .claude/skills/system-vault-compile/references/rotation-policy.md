@@ -1,11 +1,12 @@
 # Rotation policy
 
-The daily-compile-and-rotate cron rotates `learning/logs/raw.jsonl`
-after a successful compile.
+The daily-compile-and-rotate cron rotates BOTH `learning/logs/raw.jsonl`
+and `learning/logs/notes.jsonl` after a successful compile.
 
 ## Window
 
-- Archives are gzipped to `learning/logs/archive/raw.jsonl.<YYYY-MM-DD>.gz`.
+- Archives are gzipped to `learning/logs/archive/raw.jsonl.<YYYY-MM-DD>.gz`
+  and `learning/logs/archive/notes.jsonl.<YYYY-MM-DD>.gz` respectively.
 - Archives older than 7 days may be considered for deletion.
 - Archives older than 90 days are out of window: deletion is refused.
 - Archives still referenced by any vault topic file (via `source_archives`
@@ -16,13 +17,15 @@ encodes these rules. The cron should consult it before any unlink.
 
 ## Procedure
 
-1. After compile succeeds, identify the segment of `raw.jsonl` whose
-   timestamps fall on the previous calendar day, in local time.
-2. Move that segment to `learning/logs/archive/raw.jsonl.<YYYY-MM-DD>`.
-3. Gzip the archive in place: produces `raw.jsonl.<YYYY-MM-DD>.gz`.
-4. For every existing `*.gz` archive, call the predicate. If the
-   predicate returns `allow: false`, leave the archive in place. If it
-   returns `allow: true`, unlink the archive.
+For each of `raw.jsonl` and `notes.jsonl`:
+
+1. After compile succeeds, identify the segment whose timestamps fall
+   on the previous calendar day, in local time.
+2. Move that segment to `learning/logs/archive/<filename>.<YYYY-MM-DD>`.
+3. Gzip the archive in place.
+4. For every existing `*.gz` archive, call the `canRotate` predicate.
+   If it returns `allow: false`, leave the archive in place. If
+   `allow: true`, unlink it.
 
 ## Failure mode
 

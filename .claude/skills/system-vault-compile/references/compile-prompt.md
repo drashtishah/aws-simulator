@@ -1,27 +1,39 @@
 # Compile prompt
 
-You are compiling 24 hours of `learning/logs/raw.jsonl` into the system
-vault. The vault is the system's long-term memory: stable, structured,
-small.
+You are compiling 24 hours of `learning/logs/notes.jsonl` (primary
+semantic source) and `learning/logs/raw.jsonl` (supplementary session
+metadata) into the system vault. The vault is the system's long-term
+memory: stable, structured, small.
 
 ## Inputs
 
-- `learning/logs/raw.jsonl` (last 24 hours, JSONL).
+- `learning/logs/notes.jsonl` (last 24 hours, JSONL). Each entry is
+  `{ts, kind, topic, body}` written by `scripts/note.ts`. This is the
+  primary semantic signal: every entry is a topic claim the agent made.
+- `learning/logs/raw.jsonl` (last 24 hours, JSONL). Mechanical session
+  metadata (SessionStart, PostToolUse, Stop, Failure events).
 - Existing files under `learning/system-vault/`.
 
 ## Output layout
 
-Each entry in the raw log belongs to exactly one topic. Choose the
-subdirectory by event type:
+The notes log carries the primary semantic signal. Map by `kind`:
 
-| Source event | Subdirectory | Notes |
-|--------------|--------------|-------|
-| `error`, `warning`, persistent failure | `findings/` | One file per recurring symptom |
-| Manual workaround applied during a session | `workarounds/` | Title summarizes the symptom |
-| Architectural choice or convention | `decisions/` | One file per decision, ADR style |
-| Sim play session lifecycle | `sessions/` | One file per session id |
+| `kind` | Subdirectory | Notes |
+|--------|--------------|-------|
+| `finding` | `findings/` | One file per recurring symptom; merge if existing |
+| `negative_result` | `findings/` | File name suffix `-negative.md`; preserves "tried X, did not work" trail |
+| `workaround` | `workarounds/` | One file per symptom and applied fix |
+| `decision` | `decisions/` | One file per decision, ADR style |
+| `none` | dropped | Escape hatch from the Stop hook; carries no signal |
+
+The raw log is supplementary. Use it for:
+
+| Source event in raw.jsonl | Subdirectory | Notes |
+|---------------------------|--------------|-------|
+| `Failure` (with `kind: tool` or `kind: stop`) | `findings/` | One file per recurring symptom |
+| `SessionStart` and `Stop` pair | `sessions/` | One file per `session_id`, summarizing session shape (tool counts, duration) |
+| Code health snapshot | `health/` | Single rolling file `current.md` |
 | Code health regression on a module | `components/` | One file per affected module |
-| Health snapshot | health subdir | Single rolling file `current.md` |
 
 ## File rules
 
@@ -42,6 +54,7 @@ bullet with a one-line summary. The index must be at most 200 lines.
 
 ## Failure mode
 
-If you cannot determine a topic for an entry, drop it (the raw log is
-the source of truth). Do not invent content. Do not summarize sessions
-that are still in progress.
+If you cannot determine a topic for a notes entry, use `topic` from
+the entry directly (it is already a slug). For raw log entries with
+no obvious topic, drop them. Do not invent content. Do not summarize
+sessions that are still in progress.
