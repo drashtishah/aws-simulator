@@ -30,12 +30,6 @@ All events (tool calls, session lifecycle, warnings, errors) go to one file: `le
 
 ## Git Discipline
 
-All code changes (except during /play sessions) follow the commit procedure in `.claude/skills/git/references/commit-procedure.md`. This means:
-
-- Create or reference a GitHub Issue before starting work
-- Commit after each small, logical change with contextual action lines
-- Run `npm test` after every commit
-- If tests fail: revert, diagnose, fix forward
-- When the self-audit hook fires before a commit, answer all four questions visibly in your response. Do not skip or summarize.
+All code changes (except during /play sessions) follow the canonical workflow in `references/architecture/core-workflow.md`. No squash merges, every commit independently revertable via `git revert <sha>`.
 
 For standalone git operations (rollback, recall, issue triage): use /git
