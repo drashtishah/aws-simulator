@@ -8,7 +8,7 @@ since there's no import/variable mechanism.
 The script only extracts and reports. It does not validate, resolve, or
 rewrite paths. The test (web/test/path-registry.test.ts) handles validation.
 
-Outputs a sorted, deduplicated CSV to references/path-registry.csv.
+Outputs a sorted, deduplicated CSV to references/registries/path-registry.csv.
 
 Usage:
     python3 scripts/extract_paths.py
@@ -151,7 +151,7 @@ def write_csv(entries: List[PathEntry], output: Path) -> None:
 
 def main() -> None:
     """Entry point: collect files, extract paths, write CSV."""
-    output_path = ROOT / 'references' / 'path-registry.csv'
+    output_path = ROOT / 'references' / 'registries' / 'path-registry.csv'
 
     files = collect_files(ROOT)
     all_entries: List[PathEntry] = []
