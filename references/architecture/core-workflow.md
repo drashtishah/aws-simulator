@@ -46,6 +46,23 @@ Commit message format: short imperative subject, body with `intent:` and `decisi
 
 After every commit, run the targeted subset of tests affected by the change via `sim-test --changed` (delivered by PR-I). This runs in 1 to 3 seconds so it stays frictionless per commit. At the end of the PR, run the full suite with `npm test` once before opening the PR. If targeted tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
 
+## 6b. Notes after every commit
+
+After every commit, write one entry to `learning/logs/notes.jsonl` via `scripts/note.ts`. This is the semantic stream the daily compile cron rolls into the system vault, and it is the project's only durable agent-to-agent memory. Writing one note per commit gives the vault a guaranteed cadence so it grows in lockstep with the work.
+
+```bash
+tsx scripts/note.ts --kind <finding|decision|workaround|none> --topic <slug> --body "<one or two sentences>"
+```
+
+Allowed kinds:
+
+- `finding`: a non-obvious thing the commit revealed (a constraint, a gotcha, a measurement, an architectural insight).
+- `decision`: a deliberate choice the commit embodies, with the reason why this option won.
+- `workaround`: a temporary fix or known-bad pattern that should be revisited later, with the symptom it papers over.
+- `none`: explicit "nothing worth recording" escape hatch, requires `--reason` so the gap is auditable.
+
+The Stop hook (`.claude/hooks/stop-journal-check.ts`) enforces at least one note per session before exit. The cadence rule above is stricter: one note per commit, not just one per session, so each individual change carries its own context forward rather than being collapsed into a session-level summary. Future agents querying the system vault see the same unit of detail the original author committed.
+
 ## 7. Verifier subagent separation
 
 Verification of a change must be performed by a **different subagent** than the one that wrote the code. The author subagent cannot grade its own work. Spawn a fresh verifier with a clean context and have it run the verification commands listed in the plan, then report pass or fail. This is enforced by convention in `/fix` and by plan structure.
