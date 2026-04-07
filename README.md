@@ -39,7 +39,14 @@ flowchart TB
     Fix[/fix]
     Git[/git]
     FightTeam[/fight-team]
+    CreateSim[/create-sim]
     SimTest[sim-test CLI]
+  end
+
+  subgraph Crons[Scheduled crons]
+    Compile[daily-compile-and-rotate]
+    Dream[weekly-dream]
+    WeeklyFight[weekly-fight-team]
   end
 
   subgraph Memory[Per-user memory, gitignored]
@@ -66,11 +73,15 @@ flowchart TB
   Setup --> PlayerVault
   Play --> PlayerVault
   Play --> Logs
-  Logs --> SystemVault
+  Logs --> Compile
+  Compile --> SystemVault
   SystemVault --> Fix
-  SystemVault --> FightTeam
+  SystemVault --> WeeklyFight
+  WeeklyFight --> FightTeam
+  Dream --> SystemVault
   Fix --> Logs
   Play --> AwsMcp
+  CreateSim --> AwsMcp
   SimTest --> DevtoolsMcp
 ```
 
@@ -97,6 +108,14 @@ flowchart TB
 **Verification by separate agents.** Whoever wrote a change does not verify it. A fresh subagent reads the diff and runs the tests.
 
 **Built with the Agent SDK.** The web app spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Sessions use Sonnet. The same prompt-builder feeds both terminal `/play` and the web UI, so a player can switch entry points mid-session.
+
+**Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `sim-test evals`.
+
+**Scheduled crons.** Three RemoteTrigger crons keep the system maintaining itself: a daily compile rolls `raw.jsonl` and `notes.jsonl` into the system vault and rotates the logs, a weekly dream consolidates the system vault, and a weekly fight-team debate files copy-paste-ready GitHub Issues from the top health findings. Each cron declares its own `allowed_tools` so unattended runs never prompt.
+
+**MCP integration.** The play skill and the sim author both query the AWS Knowledge MCP server for source-of-truth AWS facts, so the best practices the simulator teaches stay current with real AWS behavior. The browser test layer drives a real Chromium instance through the Chrome DevTools MCP server, so UI assertions land against the actual DOM, not a JSDOM polyfill.
+
+**Sim authoring agent.** A `/create-sim` skill generates new simulation packages: it picks an under-represented service from the catalog, drafts a story, generates fix criteria, hints, and narrator beats, and writes the manifest. The system can grow itself.
 
 ## Read more
 
