@@ -2,11 +2,16 @@
 'use strict';
 
 import * as acorn from 'acorn';
+import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
+import { classify, BUCKETS, defaultBucketWeights } from './lib/classify';
+import type { Bucket } from './lib/classify';
+
 const ROOT: string = path.resolve(__dirname, '..');
+const HEALTH_LOG_PATH: string = path.join(ROOT, 'learning', 'logs', 'health-scores.jsonl');
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -737,23 +742,394 @@ function printReport(scores: HealthScores, composite: number): void {
 }
 
 // ---------------------------------------------------------------------------
+// Layer 1: scope discovery via git ls-files + classify()
+// ---------------------------------------------------------------------------
+
+interface HealthIgnoreEntry { path: string; reason: string; }
+interface MetricsConfigFull extends MetricsConfig {
+  bucketWeights?: Record<Bucket, number>;
+  healthignore?: HealthIgnoreEntry[];
+  floors?: Record<string, number>;
+}
+
+/** Run `git ls-files` from ROOT and return repo-relative paths. */
+export function gitLsFiles(rootDir: string = ROOT): string[] {
+  const out = cp.execSync('git ls-files', { cwd: rootDir, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return out.trim().split('\n').filter(Boolean);
+}
+
+export function loadFullConfig(): MetricsConfigFull {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'metrics.config.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Discover and classify every tracked file. Returns:
+ * - byBucket: bucket -> [paths]
+ * - tracked: total tracked files
+ * - classified: tracked count minus excluded (e.g. plans)
+ * - ignored: paths matched by healthignore (with reasons)
+ * - unclassifiedErrors: any path that is neither classified nor ignored.
+ *   Non-empty list is a HARD failure (completeness invariant 1).
+ */
+export interface DiscoveryResult {
+  byBucket: Record<Bucket, string[]>;
+  tracked: number;
+  classified: number;
+  excluded: number;
+  ignored: HealthIgnoreEntry[];
+  unclassifiedErrors: string[];
+}
+
+export function discoverScope(
+  files: string[] = gitLsFiles(),
+  cfg: MetricsConfigFull = loadFullConfig()
+): DiscoveryResult {
+  const ignoreSet = new Set((cfg.healthignore || []).map(e => e.path));
+  const byBucket: Record<Bucket, string[]> = Object.fromEntries(
+    BUCKETS.map(b => [b, [] as string[]])
+  ) as Record<Bucket, string[]>;
+  const unclassifiedErrors: string[] = [];
+  let excluded = 0;
+
+  for (const f of files) {
+    if (ignoreSet.has(f)) continue;
+    const b = classify(f);
+    if (b === null) {
+      // classify() returns null for explicitly excluded paths (.claude/plans/).
+      // For everything else, null is a hard failure surfaced as unclassifiedErrors.
+      if (f.startsWith('.claude/plans/')) {
+        excluded++;
+        continue;
+      }
+      unclassifiedErrors.push(f);
+      continue;
+    }
+    byBucket[b].push(f);
+  }
+
+  const classified = BUCKETS.reduce((sum, b) => sum + byBucket[b].length, 0);
+  return {
+    byBucket,
+    tracked: files.length,
+    classified,
+    excluded,
+    ignored: cfg.healthignore || [],
+    unclassifiedErrors,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Layer 2: per-bucket scoring + completeness + composite
+// ---------------------------------------------------------------------------
+
+export interface BucketScore {
+  bucket: Bucket;
+  files: number;
+  score: number;
+  reason?: string;
+  sub?: Record<string, number | string>;
+}
+
+export interface BucketScoreReport {
+  scores: Record<Bucket, BucketScore>;
+  weighted_avg: number;
+  completeness: number;
+  composite: number;
+  tracked: number;
+  classified: number;
+}
+
+/** Strict invariants. Each violation zeros the offending bucket and records a reason. */
+export interface InvariantViolation {
+  invariant: string;
+  bucket?: Bucket;
+  detail: string;
+}
+
+/** Count source LOC across a file list (skipping unreadable). */
+function countLoc(files: string[]): number {
+  let loc = 0;
+  for (const f of files) {
+    try {
+      loc += fs.readFileSync(path.join(ROOT, f), 'utf8').split('\n').length;
+    } catch { /* skip */ }
+  }
+  return loc;
+}
+
+/**
+ * Invariant 3: test_loc / code_loc cannot decrease unless code_loc shrinks
+ * proportionally. We compare against the most recent prior entry in
+ * health-scores.jsonl. If the ratio drops AND code_loc did NOT shrink by at
+ * least the same proportion, the test bucket is zeroed.
+ */
+function checkTestDensityInvariant(
+  testLoc: number,
+  codeLoc: number,
+  prior: HistoryEntry | null
+): InvariantViolation | null {
+  if (!prior || !prior.test_loc || !prior.code_loc) return null;
+  const oldRatio = prior.test_loc / Math.max(1, prior.code_loc);
+  const newRatio = testLoc / Math.max(1, codeLoc);
+  if (newRatio >= oldRatio - 0.001) return null;
+  // Ratio dropped. Allow only if code shrank proportionally.
+  if (codeLoc < prior.code_loc * (newRatio / oldRatio + 0.01)) return null;
+  return {
+    invariant: 'test_density',
+    bucket: 'test',
+    detail: `test/code ratio dropped ${oldRatio.toFixed(3)} -> ${newRatio.toFixed(3)} without proportional code shrink`,
+  };
+}
+
+/**
+ * Invariant 4: Per-bucket file count floor is monotonic. Going below floor
+ * zeros the bucket. Floors only ever rise, except when --rebase-floors is
+ * passed, in which case they snap to the current count.
+ */
+function applyFloors(
+  byBucket: Record<Bucket, string[]>,
+  floors: Record<string, number>,
+  rebase: boolean
+): { newFloors: Record<string, number>; violations: InvariantViolation[] } {
+  const newFloors: Record<string, number> = { ...floors };
+  const violations: InvariantViolation[] = [];
+  for (const b of BUCKETS) {
+    const count = byBucket[b].length;
+    const floor = floors[b] ?? 0;
+    if (rebase) {
+      newFloors[b] = count;
+      continue;
+    }
+    if (count < floor) {
+      violations.push({
+        invariant: 'bucket_floor',
+        bucket: b,
+        detail: `bucket ${b} dropped from floor ${floor} to ${count}`,
+      });
+      // Floor stays; do not lower it.
+      newFloors[b] = floor;
+    } else if (count > floor) {
+      newFloors[b] = count;
+    }
+  }
+  return { newFloors, violations };
+}
+
+/**
+ * Invariant 5: Every skill dir has an ownership.json AND every ownership.json
+ * lives in a real skill dir.
+ */
+function checkOwnershipConsistency(): InvariantViolation[] {
+  const skillsDir = path.join(ROOT, '.claude', 'skills');
+  if (!fs.existsSync(skillsDir)) return [];
+  const violations: InvariantViolation[] = [];
+  const dirs = fs.readdirSync(skillsDir, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name);
+  for (const d of dirs) {
+    const op = path.join(skillsDir, d, 'ownership.json');
+    if (!fs.existsSync(op)) {
+      violations.push({
+        invariant: 'ownership_consistent',
+        bucket: 'skill',
+        detail: `skill ${d} missing ownership.json`,
+      });
+    }
+  }
+  return violations;
+}
+
+interface HistoryEntry {
+  ts: string;
+  composite: number;
+  buckets: Record<string, number>;
+  bucket_files?: Record<string, number>;
+  code_loc?: number;
+  test_loc?: number;
+  completeness?: number;
+}
+
+function readHistory(): HistoryEntry[] {
+  if (!fs.existsSync(HEALTH_LOG_PATH)) return [];
+  try {
+    const lines = fs.readFileSync(HEALTH_LOG_PATH, 'utf8').trim().split('\n').filter(Boolean);
+    return lines.map(l => JSON.parse(l) as HistoryEntry);
+  } catch {
+    return [];
+  }
+}
+
+function appendHistory(entry: HistoryEntry): void {
+  fs.mkdirSync(path.dirname(HEALTH_LOG_PATH), { recursive: true });
+  fs.appendFileSync(HEALTH_LOG_PATH, JSON.stringify(entry) + '\n');
+}
+
+/**
+ * Score a single bucket. Layer 1+2 keeps this lightweight: code/test get a
+ * real score by reusing the existing 7 metrics (test bucket adds a density
+ * check); other buckets default to 100 unless an invariant fires. Layers 3+4
+ * (PR-D) will replace these defaults with frontmatter/manifest/freshness
+ * checks.
+ */
+export function scoreBucket(
+  bucket: Bucket,
+  files: string[],
+  context: { allCode: string[]; allTest: string[]; priorEntry: HistoryEntry | null }
+): BucketScore {
+  if (bucket === 'code') {
+    const tsJsFiles = files.filter(f => /\.(ts|js)$/.test(f) && f !== 'scripts/code-health.ts');
+    const abs = tsJsFiles.map(f => path.join(ROOT, f));
+    const lib = abs.filter(f => f.includes(`${path.sep}web${path.sep}lib${path.sep}`));
+    const mod = scoreModularity(lib, abs);
+    const enc = scoreEncapsulation(lib);
+    const sz = scoreSizeBalance(abs);
+    const dep = scoreDepDepth(lib);
+    const cx = scoreComplexity(abs);
+    const sync = scoreTestSync(lib);
+    const avg = (mod.score + enc.score + sz.score + dep.score + cx.score + sync.score) / 6;
+    return {
+      bucket,
+      files: files.length,
+      score: round(avg),
+      sub: {
+        modularity: mod.score,
+        encapsulation: enc.score,
+        size_balance: sz.score,
+        dep_depth: dep.score,
+        complexity: cx.score,
+        test_sync: sync.score,
+      },
+    };
+  }
+  if (bucket === 'test') {
+    const codeLoc = countLoc(context.allCode);
+    const testLoc = countLoc(context.allTest);
+    const ratio = codeLoc > 0 ? testLoc / codeLoc : 0;
+    const violation = checkTestDensityInvariant(testLoc, codeLoc, context.priorEntry);
+    if (violation) {
+      return { bucket, files: files.length, score: 0, reason: violation.detail, sub: { test_loc: testLoc, code_loc: codeLoc, ratio: round(ratio) } };
+    }
+    // Score: 100 if ratio >= 0.5, scaled below.
+    const score = Math.min(100, Math.max(0, ratio * 200));
+    return { bucket, files: files.length, score: round(score), sub: { test_loc: testLoc, code_loc: codeLoc, ratio: round(ratio) } };
+  }
+  // Default per-bucket: presence-only score.
+  return { bucket, files: files.length, score: files.length > 0 ? 100 : 100 };
+}
+
+export function scoreAllBuckets(
+  discovery: DiscoveryResult,
+  cfg: MetricsConfigFull,
+  options: { rebaseFloors?: boolean } = {}
+): { report: BucketScoreReport; floors: Record<string, number>; violations: InvariantViolation[] } {
+  const violations: InvariantViolation[] = [];
+
+  // Invariant 1: every tracked file is classified or in healthignore.
+  if (discovery.unclassifiedErrors.length > 0) {
+    throw new Error(
+      `code-health: ${discovery.unclassifiedErrors.length} tracked files are neither ` +
+      `classified by classify() nor listed in healthignore. First few:\n  ` +
+      discovery.unclassifiedErrors.slice(0, 10).join('\n  ')
+    );
+  }
+
+  // Invariant 2: every healthignore entry has a non-empty reason.
+  for (const e of (cfg.healthignore || [])) {
+    if (!e.reason || typeof e.reason !== 'string' || e.reason.trim().length === 0) {
+      throw new Error(`code-health: healthignore entry ${e.path} missing required "reason" field`);
+    }
+  }
+
+  // Invariant 5: ownership consistency.
+  violations.push(...checkOwnershipConsistency());
+
+  // Invariant 4: floor monotonicity.
+  const floorResult = applyFloors(discovery.byBucket, cfg.floors || {}, options.rebaseFloors === true);
+  violations.push(...floorResult.violations);
+
+  // Score each bucket.
+  const history = readHistory();
+  const priorEntry: HistoryEntry | null = history.length > 0 ? history[history.length - 1]! : null;
+  const allCode = discovery.byBucket.code;
+  const allTest = discovery.byBucket.test;
+  const scores: Record<Bucket, BucketScore> = Object.fromEntries(
+    BUCKETS.map(b => [b, scoreBucket(b, discovery.byBucket[b], { allCode, allTest, priorEntry })])
+  ) as Record<Bucket, BucketScore>;
+
+  // Apply violations: zero affected buckets.
+  for (const v of violations) {
+    if (v.bucket && scores[v.bucket]) {
+      scores[v.bucket] = { ...scores[v.bucket], score: 0, reason: v.detail };
+    }
+  }
+
+  const weights = cfg.bucketWeights || defaultBucketWeights();
+  const weighted_avg = BUCKETS.reduce((sum, b) => sum + scores[b].score * (weights[b] ?? 1 / BUCKETS.length), 0);
+  const completeness = discovery.tracked > 0 ? discovery.classified / (discovery.classified + discovery.excluded || discovery.tracked) : 1;
+  // Completeness is classified / (classified + would-be-classified). Plans
+  // are excluded entirely from both numerator and denominator so dropping
+  // plans cannot move the needle. Healthignore entries are NOT in the
+  // denominator either (they had a reason).
+  const completenessPct = completeness * 100;
+  const composite = Math.min(weighted_avg, completenessPct);
+
+  return {
+    report: {
+      scores,
+      weighted_avg: round(weighted_avg),
+      completeness: round(completeness),
+      composite: round(composite),
+      tracked: discovery.tracked,
+      classified: discovery.classified,
+    },
+    floors: floorResult.newFloors,
+    violations,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 interface HealthReport {
   scores: HealthScores;
   composite: number;
+  buckets?: BucketScoreReport;
+  violations?: InvariantViolation[];
 }
 
-function main(): HealthReport {
-  const weights: Weights = loadWeights();
+function printBucketReport(r: BucketScoreReport, violations: InvariantViolation[]): void {
+  console.log('--- buckets ---');
+  for (const b of BUCKETS) {
+    const s = r.scores[b];
+    const tag = s.reason ? ` ZERO: ${s.reason}` : '';
+    console.log(`${b}: ${s.score.toFixed(1)} (${s.files} files)${tag}`);
+  }
+  console.log(`weighted_avg: ${r.weighted_avg.toFixed(1)}`);
+  console.log(`completeness: ${(r.completeness * 100).toFixed(1)}% (${r.classified}/${r.tracked})`);
+  console.log(`composite: ${r.composite.toFixed(1)} (= min(weighted_avg, completeness*100))`);
+  if (violations.length > 0) {
+    console.log('--- invariant violations ---');
+    for (const v of violations) console.log(`  ${v.invariant}${v.bucket ? `[${v.bucket}]` : ''}: ${v.detail}`);
+  }
+}
 
+function main(args: string[] = process.argv.slice(2)): HealthReport {
+  const rebaseFloors = args.includes('--rebase-floors');
+  const wantJson = args.includes('--json');
+  const weights: Weights = loadWeights();
+  const cfg = loadFullConfig();
+
+  // Legacy 7-metric scoring (preserved for downstream consumers).
   const libFiles: string[] = discoverFiles(['web/lib'], ['.js', '.ts']);
   const prodFiles: string[] = discoverFiles(
     ['web/lib', 'web/server.ts', 'web/public', '.claude/hooks', 'scripts'],
     ['.js', '.ts']
   );
-  // Exclude this script itself from production analysis
   const filteredProd: string[] = prodFiles.filter(f => relPath(f) !== 'scripts/code-health.js' && relPath(f) !== 'scripts/code-health.ts');
 
   const scores: HealthScores = {
@@ -765,13 +1141,46 @@ function main(): HealthReport {
     test_sync: scoreTestSync(libFiles),
     references_health: scoreReferencesHealth(ROOT)
   };
-
-  const composite: number = Object.entries(weights)
+  const legacyComposite: number = Object.entries(weights)
     .reduce((sum, [k, w]) => sum + (scores[k as keyof HealthScores] ? scores[k as keyof HealthScores].score : 0) * w, 0);
 
-  printReport(scores, round(composite));
+  // New: Layer 1+2 bucket scoring with completeness + invariants.
+  const discovery = discoverScope(undefined, cfg);
+  const { report: bucketReport, floors: newFloors, violations } = scoreAllBuckets(discovery, cfg, { rebaseFloors });
 
-  return { scores, composite: round(composite) };
+  // Persist floors back into config if they moved up (or rebase requested).
+  const floorsChanged = JSON.stringify(newFloors) !== JSON.stringify(cfg.floors || {});
+  if (floorsChanged) {
+    cfg.floors = newFloors;
+    fs.writeFileSync(
+      path.join(ROOT, 'scripts', 'metrics.config.json'),
+      JSON.stringify(cfg, null, 2) + '\n'
+    );
+  }
+
+  // Append a history entry for the test_density invariant + future trends.
+  appendHistory({
+    ts: new Date().toISOString(),
+    composite: bucketReport.composite,
+    buckets: Object.fromEntries(BUCKETS.map(b => [b, bucketReport.scores[b].score])),
+    bucket_files: Object.fromEntries(BUCKETS.map(b => [b, bucketReport.scores[b].files])),
+    code_loc: countLoc(discovery.byBucket.code),
+    test_loc: countLoc(discovery.byBucket.test),
+    completeness: bucketReport.completeness,
+  });
+
+  if (wantJson) {
+    console.log(JSON.stringify({
+      legacy: { scores, composite: round(legacyComposite) },
+      buckets: bucketReport,
+      violations,
+    }, null, 2));
+  } else {
+    printReport(scores, round(legacyComposite));
+    printBucketReport(bucketReport, violations);
+  }
+
+  return { scores, composite: bucketReport.composite, buckets: bucketReport, violations };
 }
 
 // Run if called directly

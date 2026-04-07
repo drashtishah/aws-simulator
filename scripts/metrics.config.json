@@ -23,10 +23,21 @@
     "memory_link": 0.1
   },
   "healthignore": [],
-  "floors": {},
+  "floors": {
+    "code": 37,
+    "test": 64,
+    "skill": 45,
+    "command": 1,
+    "hook": 7,
+    "sim": 278,
+    "reference": 15,
+    "registry": 4,
+    "config": 14,
+    "memory_link": 7
+  },
   "budgets": {
-    "game_session_usd": 2.00,
-    "post_session_usd": 5.00
+    "game_session_usd": 2,
+    "post_session_usd": 5
   },
   "last_fix_analyzed": "2026-04-06T12:00:00Z"
 }
