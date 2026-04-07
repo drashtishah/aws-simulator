@@ -14,6 +14,7 @@
     "test:summary": "tsx scripts/sim-test.ts summary",
     "test:content": "tsx scripts/sim-test.ts content",
     "extract-paths": "python3 scripts/extract_paths.py",
+    "doctor": "tsx scripts/doctor.ts",
     "health": "tsx scripts/code-health.ts",
     "feedback:personas": "tsx scripts/sim-test.ts personas --feedback",
     "audit:permissions": "tsx scripts/audit-permissions.ts",
