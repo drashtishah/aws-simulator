@@ -44,6 +44,7 @@ file,path,line_number
 .claude/skills/create-sim/ownership.json,sims/,3
 .claude/skills/create-sim/references/sim-template.md,learning/catalog.csv,261
 .claude/skills/fight-team/SKILL.md,.claude/skills/git/references/task-to-issue.md,142
+.claude/skills/fight-team/SKILL.md,.claude/skills/fight-team/references/issue-template.md,163
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,11
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/testing-system.md,17
 .claude/skills/fight-team/references/default-checklist.md,scripts/code-health.ts,17
@@ -455,8 +456,8 @@ tsconfig.frontend.json,dist/public,8
 tsconfig.frontend.json,web/public,9
 tsconfig.json,web/public,22
 tsconfig.json,web/test,22
-web/test/fixtures/fight-team-issue-good.md,learning/sessions,12
-web/test/fixtures/fight-team-issue-good.md,learning/sessions,13
-web/test/fixtures/fight-team-issue-good.md,learning/sessions,16
-web/test/fixtures/fight-team-issue-good.md,learning/sessions,22
-web/test/fixtures/fight-team-issue-good.md,learning/sessions,24
+web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,12
+web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,13
+web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,16
+web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,22
+web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,24

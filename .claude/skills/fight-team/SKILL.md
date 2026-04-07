@@ -159,18 +159,41 @@ Show the full task list. Ask the user which tasks to promote to GitHub Issues. T
 
 ### 3. Promote to issues
 
-For each confirmed task:
+For each confirmed task, the coordinator first composes a candidate Issue
+body that follows `.claude/skills/fight-team/references/issue-template.md`
+exactly. Then it runs the body through the validator BEFORE calling
+`gh issue create`:
 
 ```bash
-gh issue create --title "<type>(<scope>): <subject>" \
-  --label "<bug|enhancement|chore>" \
-  --body "<finding details, file refs, recommendation>"
+npx tsx -e "
+import fs from 'fs';
+import { validateFightTeamIssue } from './scripts/lib/validate-fight-team-issue';
+const body = fs.readFileSync('/tmp/fight-team-issue-body.md','utf8');
+const r = validateFightTeamIssue(body);
+if (!r.valid) { console.error(JSON.stringify(r.errors,null,2)); process.exit(1); }
+"
 ```
 
-Labels:
-- `bug`: broken things, failures, incorrect behavior
-- `enhancement`: improvements, new capabilities
-- `chore`: cleanup, documentation fixes, consistency
+Retry policy:
+- If the validator returns errors, regenerate the body addressing the
+  specific errors and re-run the validator. Up to 2 retries.
+- On the third failure, surface the malformed body and the validator
+  errors to the user. Do NOT call `gh issue create` with a malformed
+  body.
+
+Only when the validator returns `{valid: true}` does the coordinator run:
+
+```bash
+gh issue create --title "<one-sentence finding>" \
+  --label "source:fight-team-weekly,priority:high,bucket:<bucket>,metric:<metric>" \
+  --body-file /tmp/fight-team-issue-body.md
+```
+
+Labels (set in the body's `## Labels` section AND on the gh issue create call):
+- `source:fight-team-weekly` always
+- `priority:high` if both debaters agreed by r3, else `priority:investigate`
+- `bucket:<bucket>` from the health-score finding
+- `metric:<metric>` from the health-score finding
 
 ### 4. Report issue numbers
 
