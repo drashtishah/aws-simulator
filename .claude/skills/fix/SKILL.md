@@ -230,11 +230,9 @@ All changes were already committed per-change in step 8h. Verify with `git log -
 
 ## Rules
 
-1. No emojis.
-2. Always run health checks after each edit group. Never skip the comparison.
-3. Never edit `learning/logs/activity.jsonl` directly. It is append-only by hooks.
-4. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `scripts/metrics.config.json`.
-5. Do not push automatically. Let the user decide.
-6. Verification separation: any step that verifies work (health checks, test runs, visual regression) must be performed by a different subagent than the one that wrote the code or text being verified.
-7. Every feature change gets its own commit. If a group contains multiple independent changes (e.g., remove a button AND fix a border color), commit each separately. Structure changes so reverting one commit does not break others.
-8. Any /fix cycle that edits files under `web/public/**`, `web/server.ts`, or `web/test-specs/browser/**` must run `sim-test agent` and pass before finalizing. The pre-commit-ui-tests hook enforces this on commit.
+Global workflow rules (issue-first, TDD, small revertable commits, no-squash merges, verifier subagent separation) live in `references/architecture/core-workflow.md`. The rules below are fix-specific only.
+
+1. Always run health checks after each edit group. Never skip the baseline vs post-edit comparison.
+2. Never edit `learning/logs/activity.jsonl` directly. It is append-only by hooks.
+3. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `scripts/metrics.config.json`.
+4. Any /fix cycle that edits files under `web/public/**`, `web/server.ts`, or `web/test-specs/browser/**` must run `sim-test agent` and pass before finalizing. The pre-commit-ui-tests hook enforces this on commit.
