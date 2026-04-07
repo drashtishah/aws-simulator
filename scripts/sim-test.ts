@@ -9,6 +9,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import * as evalRunner from './eval-runner';
+import { filterByGlob, mapChangedToTests } from './sim-test-select';
 
 // ---------------------------------------------------------------------------
 // Path constants
@@ -206,6 +207,11 @@ interface JsonOpts {
   json?: boolean;
 }
 
+interface RunOpts extends JsonOpts {
+  files?: string;
+  changed?: boolean;
+}
+
 interface AgentOpts extends JsonOpts {
   spec?: string;
   dryRun?: boolean;
@@ -268,9 +274,11 @@ function timestamp(): string {
 
 program
   .command('run')
-  .description('Run all deterministic tests')
+  .description('Run deterministic tests (all, or a filtered subset)')
   .option('--json', 'Output structured JSON')
-  .action(async (opts: JsonOpts) => {
+  .option('--files <glob>', 'Run only test files matching the glob (relative to repo root)')
+  .option('--changed', 'Run tests affected by git diff --name-only HEAD~1 HEAD')
+  .action(async (opts: RunOpts) => {
     const results: RunResults = { command: 'run', ts: timestamp() };
     let exitCode = 0;
 
@@ -280,13 +288,68 @@ program
       const testDir = path.join(ROOT, 'web', 'test');
       const allTests = fs.readdirSync(testDir)
         .filter((f: string) => f.endsWith('.test.ts'))
-        .map((f: string) => path.join('web', 'test', f));
+        .map((f: string) => path.posix.join('web', 'test', f));
+
+      let selected: string[] = allTests;
+
+      if (opts.files) {
+        selected = filterByGlob(allTests, opts.files);
+        if (!opts.json) {
+          console.log('  --files ' + opts.files + ': ' + selected.length + ' matched');
+        }
+        if (selected.length === 0) {
+          if (!opts.json) console.log('  no test files matched, nothing to run');
+          results.unit = { total: 0, passed: 0, failed: 0 };
+          results.verdict = 'PASS';
+          jsonOut(opts.json, results);
+          if (!opts.json) console.log('  ' + results.verdict);
+          process.exit(0);
+        }
+      } else if (opts.changed) {
+        let changed: string[] = [];
+        try {
+          const diffOut = execSync('git diff --name-only HEAD~1 HEAD', {
+            cwd: ROOT,
+            encoding: 'utf8',
+          });
+          changed = diffOut.split('\n').map((s) => s.trim()).filter(Boolean);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (!opts.json) console.error('  git diff failed: ' + message);
+          results.unit = { total: 0, passed: 0, failed: 0, error: 'git diff failed' };
+          results.verdict = 'ERROR';
+          jsonOut(opts.json, results);
+          process.exit(2);
+        }
+        const allTestSet = new Set(allTests);
+        const mapping = mapChangedToTests(changed, {
+          hasTest: (rel) => allTestSet.has(rel),
+        });
+        for (const w of mapping.warnings) {
+          if (!opts.json) console.log('  warning: ' + w);
+        }
+        selected = mapping.tests;
+        if (!opts.json) {
+          console.log('  --changed: ' + changed.length + ' files changed, ' +
+            selected.length + ' test(s) selected');
+        }
+        if (selected.length === 0) {
+          if (!opts.json) console.log('  no tests selected for changed files');
+          results.unit = { total: 0, passed: 0, failed: 0 };
+          results.verdict = 'PASS';
+          jsonOut(opts.json, results);
+          if (!opts.json) console.log('  ' + results.verdict);
+          process.exit(0);
+        }
+      }
+
+      const testsToRun = selected;
 
       let totalPassed = 0;
       let totalFailed = 0;
       let hasError = false;
 
-      for (const testFile of allTests) {
+      for (const testFile of testsToRun) {
         const result = spawnSync('tsx', ['--test', '--test-force-exit', testFile], {
           cwd: ROOT,
           encoding: 'utf8',
