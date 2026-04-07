@@ -443,3 +443,6 @@ web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,13
 web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,16
 web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,22
 web/test/fixtures/fight-team-issue-good.md,learning/feedback.md,24
+web/test/fixtures/fix-plan-good.md,references/architecture/core-workflow.md,5
+web/test/fixtures/fix-plan-good.md,references/architecture/testing-system.md,10
+web/test/fixtures/fix-plan-good.md,web/test/code-health.test.ts,11
