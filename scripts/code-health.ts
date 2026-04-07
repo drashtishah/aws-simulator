@@ -1069,11 +1069,11 @@ export function scoreAllBuckets(
 
   const weights = cfg.bucketWeights || defaultBucketWeights();
   const weighted_avg = BUCKETS.reduce((sum, b) => sum + scores[b].score * (weights[b] ?? 1 / BUCKETS.length), 0);
-  const completeness = discovery.tracked > 0 ? discovery.classified / (discovery.classified + discovery.excluded || discovery.tracked) : 1;
-  // Completeness is classified / (classified + would-be-classified). Plans
-  // are excluded entirely from both numerator and denominator so dropping
-  // plans cannot move the needle. Healthignore entries are NOT in the
-  // denominator either (they had a reason).
+  // Completeness = (classified + excluded) / tracked. Plans (excluded) are
+  // counted as "accounted for" so excluding them does not penalize. Anything
+  // in unclassifiedErrors already throws above.
+  const denom = discovery.tracked > 0 ? discovery.tracked : 1;
+  const completeness = (discovery.classified + discovery.excluded) / denom;
   const completenessPct = completeness * 100;
   const composite = Math.min(weighted_avg, completenessPct);
 
