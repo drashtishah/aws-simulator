@@ -320,3 +320,7 @@ Why current state is sound (or honestly conceded): <one sentence>
 6. The fight-team skill does not write workspace files. Output is tasks and GitHub Issues only.
 7. If either agent fails to spawn or crashes mid-round, report the failure and continue with the surviving agent's positions. Note the gap in the synthesis report.
 8. Present the full report to the user before creating any tasks. User controls what becomes an issue.
+9. The 4-round structure (independent positions, cross-examination, steelman swap, convergence) is mandatory. No skipping rounds.
+10. Every Issue body filed by fight-team must pass `scripts/lib/validate-fight-team-issue.ts` before `gh issue create`. Up to 2 retries on failure; on the third failure, surface the malformed body and validator errors to the user instead of filing.
+11. Evidence sections require at least one absolute file:line citation. Relative paths in Evidence are rejected by the validator.
+12. Never edit Issue bodies after `gh issue create`. If a follow-up correction is needed, file a new Issue that links back to the original.
