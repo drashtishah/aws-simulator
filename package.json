@@ -20,7 +20,7 @@
     "feedback:personas": "tsx scripts/sim-test.ts personas --feedback",
     "audit:permissions": "tsx scripts/audit-permissions.ts",
     "install-git-hooks": "tsx scripts/install-git-hooks.ts",
-    "postinstall": "tsx scripts/install-git-hooks.ts",
+    "postinstall": "tsx scripts/install-git-hooks.ts && python3 scripts/extract_paths.py",
     "build-agent-index": "tsx scripts/build-agent-index.ts",
     "agent-browser-summary": "tsx scripts/agent-browser-summarize.ts"
   },
