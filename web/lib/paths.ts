@@ -22,6 +22,11 @@ const JOURNAL: string = path.join(LEARNING_DIR, 'journal.md');
 const RAW_LOG_FILE: string = path.join(LOGS_DIR, 'raw.jsonl');
 const LOG_FILE: string = RAW_LOG_FILE;
 const SYSTEM_LOG_FILE: string = RAW_LOG_FILE;
+// Notes log: agent-authored semantic stream parallel to raw.jsonl. The
+// scripts/note.ts CLI appends here. Compile reads it as the primary topic
+// source. The Stop hook (.claude/hooks/stop-journal-check.ts) checks this
+// file to enforce per-session note recording.
+const NOTES_LOG_FILE: string = path.join(LOGS_DIR, 'notes.jsonl');
 const HEALTH_SCORES_FILE: string = path.join(LOGS_DIR, 'health-scores.jsonl');
 const CATALOG: string = path.join(LEARNING_DIR, 'catalog.csv');
 const THEME_BASE: string = path.join(THEMES_DIR, '_base.md');
@@ -52,6 +57,7 @@ const paths = {
   LOG_FILE,
   SYSTEM_LOG_FILE,
   RAW_LOG_FILE,
+  NOTES_LOG_FILE,
   HEALTH_SCORES_FILE,
   CATALOG,
   THEME_BASE,
