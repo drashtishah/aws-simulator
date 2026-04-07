@@ -1167,13 +1167,20 @@ export function scoreLayer34(
   }
 
   // Ownership integrity: 2 per finding against skill bucket, capped at 10.
+  // The file key includes the disputed dir when available so two findings
+  // about different dirs claimed by the same skill set produce visually
+  // distinct lines in the top-10 ranker (issue #71).
   for (const o of ownership) {
     const applied = addCost('ownership_integrity', 'skill', 2);
     perBucketCost.skill = (perBucketCost.skill || 0) + applied;
+    const skillFile = o.skills[0]
+      ? `.claude/skills/${o.skills[0]}/ownership.json`
+      : '.claude/skills';
+    const fileKey = o.dir ? `${skillFile} (${o.dir})` : skillFile;
     findings.push({
       bucket: 'skill',
       metric: 'ownership_integrity',
-      file: o.skills[0] ? `.claude/skills/${o.skills[0]}/ownership.json` : '.claude/skills',
+      file: fileKey,
       line: 1,
       current_score: scoresBefore.skill?.score ?? 0,
       expected_gain_if_fixed: applied,
