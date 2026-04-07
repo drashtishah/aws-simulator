@@ -208,8 +208,6 @@ file,path,line_number
 .claude/skills/upgrade/SKILL.md,.claude/skills/upgrade/state/last-check.json,248
 .claude/skills/upgrade/SKILL.md,.claude/skills/git/references/commit-procedure.md,284
 .claude/skills/upgrade/SKILL.md,.claude/skills/git/references/task-to-issue.md,284
-.mypy_cache/3.8/extract_paths.data.json,scripts/extract_paths.py,1
-.mypy_cache/3.8/extract_paths.meta.json,scripts/extract_paths.py,1
 CLAUDE.md,.claude/skills/create-sim/references/exam-topics.md,18
 CLAUDE.md,references/registries/agent-index.md,21
 CLAUDE.md,references/registries/tool-registry.md,21
