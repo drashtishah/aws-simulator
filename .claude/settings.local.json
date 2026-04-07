@@ -44,6 +44,10 @@
           {
             "type": "command",
             "command": "npx tsx .claude/hooks/pre-commit-self-audit.ts"
+          },
+          {
+            "type": "command",
+            "command": "npx tsx .claude/hooks/pre-commit-ui-tests.ts"
           }
         ]
       }
