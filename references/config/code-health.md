@@ -87,9 +87,10 @@ here, they are excluded structurally by `classify()`.
 
 Per-bucket file count floors are stored in `scripts/metrics.config.json`
 under `floors`. They auto-rise when a bucket's count exceeds the current
-floor and NEVER auto-lower. Going below the floor zeros that bucket's score
-and records a violation. The only way to lower a floor is the explicit
-human flag `--rebase-floors`.
+floor and NEVER auto-lower. Going below the floor subtracts 10 points from
+that bucket's score (advisory penalty, capped at one per bucket per run)
+and records a `bucket_floor` violation. The only way to lower a floor is
+the explicit human flag `--rebase-floors`.
 
 Floor history (and per-run bucket counts, code/test LOC, completeness) is
 appended to `learning/logs/health-scores.jsonl`. The pre-commit hook
