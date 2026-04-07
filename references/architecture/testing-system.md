@@ -230,7 +230,7 @@ rubric:
 
 ## Internals: How `npm test` Runs
 
-Knowing the wiring matters when a single test fails inside the aggregate `unit: N/M passed` summary, since `sim-test run` only prints the count, not the failing test name.
+Knowing the wiring matters when a single test fails inside the aggregate `unit: N/M passed` summary. Since Issue #92, `sim-test run` also prints `FAIL <basename>: <N> failure(s)` to stderr per failing file plus a final `Failed test files (N):` summary block, so the failing file is named in the output and you no longer have to bisect by hand.
 
 ### Pipeline
 
@@ -257,14 +257,18 @@ Why per-file:
 - A single `tsx --test web/test/*.test.ts` invocation hangs when multiple files share one process (see inline comment at `scripts/sim-test.ts:270`).
 - `--test-force-exit` ensures each subprocess exits even if a test leaves an open handle.
 
-The runner parses `ℹ pass N` and `ℹ fail N` from each subprocess and aggregates into the `unit: N/M passed` summary line.
+The runner parses `ℹ pass N` and `ℹ fail N` from each subprocess and aggregates into the `unit: N/M passed` summary line. Pure parsing and aggregation helpers live in `scripts/sim-test-runner.ts` so they can be unit-tested without spawning the CLI recursively (`web/test/sim-test-run.test.ts`); `node:test` refuses to run itself recursively from inside `tsx --test`, so the integration assertion is the manual verification step in Issue #92.
+
+In JSON mode, the per-run result also exposes `unit.failedFiles: string[]` listing every failed file basename. Agents and CI can branch on that array directly without parsing stderr.
 
 ### Debugging a single failing test
 
-When `npm test` reports `unit: 625/626 passed   FAIL` but does not name the failing file, run individual files yourself:
+`npm run test:file -- web/test/path-registry.test.ts` runs a single test file under `tsx --test --test-force-exit` without the PATH boilerplate. Use this whenever you want to iterate on one suite at a time.
+
+Since the runner now names failing files in its output, the manual sweep below is rarely needed; keep it for cases where you want raw per-file output rather than the aggregate.
 
 ```
-PATH="./node_modules/.bin:$PATH" tsx --test --test-force-exit web/test/path-registry.test.ts
+npm run test:file -- web/test/path-registry.test.ts
 ```
 
 Or sweep all files to find the one with `fail > 0`:
