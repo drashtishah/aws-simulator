@@ -14,10 +14,10 @@ The issue number is referenced in every commit body (`Ref #N`) and the final com
 
 ## 2. Worktree
 
-Non-trivial work happens in an isolated git worktree under `.claude/worktrees/` so the main checkout stays clean and parallel agents cannot collide.
+Non-trivial work happens in an isolated git worktree under the `.claude/` directory so the main checkout stays clean and parallel agents cannot collide.
 
 ```bash
-git worktree add .claude/worktrees/<slug> -b feature/<slug>
+git worktree add .claude/worktrees/{slug} -b feature/{slug}
 ```
 
 Cleanup rules are in section 9.
@@ -66,8 +66,8 @@ History is append-only once pushed. Mistakes get reverted, not erased. Combined 
 After a PR merges, delete the worktree and its branch:
 
 ```bash
-git worktree remove .claude/worktrees/<slug>
-git branch -D feature/<slug>
+git worktree remove {worktree path}
+git branch -D feature/{slug}
 git worktree prune
 ```
 
