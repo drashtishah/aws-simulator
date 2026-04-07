@@ -1,3 +1,21 @@
 {
-  "hooks": {}
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "event": "Stop",
+            "command": "npx tsx .claude/hooks/stop-journal-check.ts",
+            "cwd": "/Users/drashti/experiments/aws-simulator",
+            "timeout": 5000,
+            "allowed_tools": [
+              "Read"
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

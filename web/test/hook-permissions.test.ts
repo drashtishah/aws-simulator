@@ -12,11 +12,13 @@ const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.json');
 // item; system-vault-compile on commit must become either a real git
 // post-commit hook or a PostToolUse hook filtered on git commit).
 //
-// Empty after Commit 1 of fluffy-hugging-wilkes plan: the dream-check
-// SessionStart hook was a dangling reference to a script that never
-// existed. Commit 8 of the same plan re-populates this array with the
-// new Stop:stop-journal-check hook entry.
-const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [];
+// Restored in Commit 8 of fluffy-hugging-wilkes plan: the new Stop hook
+// stop-journal-check enforces per-session note recording before allowing
+// session end. Commit 1 of the same plan emptied this array when the
+// broken dream-check SessionStart hook was removed.
+const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [
+  { event: 'Stop', commandMatch: 'stop-journal-check' },
+];
 
 function loadSettings(): any {
   assert.ok(fs.existsSync(SETTINGS_PATH), `${SETTINGS_PATH} must exist`);
@@ -43,7 +45,9 @@ describe('hook permissions (PR-Pre)', () => {
 
   it('every hook command entry has a non-empty allowed_tools array', () => {
     const s = loadSettings();
+    let count = 0;
     for (const { event, hook } of iterHookEntries(s)) {
+      count++;
       assert.ok(
         Array.isArray(hook.allowed_tools),
         `${event}: hook ${hook.command} must declare allowed_tools array`,
@@ -53,9 +57,7 @@ describe('hook permissions (PR-Pre)', () => {
         `${event}: hook ${hook.command} allowed_tools must be non-empty`,
       );
     }
-    // Commit 8 of fluffy-hugging-wilkes will re-add the count > 0 assertion
-    // once the new Stop hook is wired in. Until then, an empty hooks block
-    // is the intended state.
+    assert.ok(count > 0, 'expected at least one hook entry in settings.json');
   });
 
   it('no hook grants wildcard tool access', () => {
