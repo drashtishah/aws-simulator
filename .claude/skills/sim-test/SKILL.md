@@ -21,7 +21,7 @@ Extend the testing CLI with new browser specs, persona profiles, or commands.
 
 ## Phase 1: Understand what needs extending
 
-- Read `references/testing-system.md` for architecture overview
+- Read `references/architecture/testing-system.md` for architecture overview
 - Run `sim-test --help` to see current commands
 - List `web/test-specs/browser/` and `web/test-specs/personas/` for current coverage
 

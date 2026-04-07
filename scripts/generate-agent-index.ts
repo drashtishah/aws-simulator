@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates references/agent-index.md from workspace metadata.
+// Generates references/registries/agent-index.md from workspace metadata.
 // Sources: SKILL.md frontmatter, settings.local.json hooks, guard-write.js lists.
 
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SKILLS_DIR = path.join(ROOT, '.claude', 'skills');
 const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.local.json');
 const GUARD_PATH = path.join(ROOT, '.claude', 'hooks', 'guard-write.ts');
-const OUTPUT_PATH = path.join(ROOT, 'references', 'agent-index.md');
+const OUTPUT_PATH = path.join(ROOT, 'references', 'registries', 'agent-index.md');
 
 interface SkillEntry {
   name: string;
@@ -166,7 +166,7 @@ function generate(): void {
   const lines: string[] = [];
   lines.push('# Agent Index');
   lines.push('');
-  lines.push('Quick-reference for navigating this workspace. See `references/workspace-map.md` for full architecture.');
+  lines.push('Quick-reference for navigating this workspace. See `references/architecture/workspace-map.md` for full architecture.');
   lines.push('');
   lines.push('## Skills');
   lines.push('');
@@ -190,9 +190,9 @@ function generate(): void {
   lines.push('');
   lines.push('| Document | Purpose |');
   lines.push('|----------|---------|');
-  lines.push('| `references/workspace-map.md` | Workspace architecture |');
-  lines.push('| `references/progression.yaml` | Rank and scoring config |');
-  lines.push('| `references/testing-system.md` | Testing system reference |');
+  lines.push('| `references/architecture/workspace-map.md` | Workspace architecture |');
+  lines.push('| `references/config/progression.yaml` | Rank and scoring config |');
+  lines.push('| `references/architecture/testing-system.md` | Testing system reference |');
 
   lines.push('');
   lines.push('## Data Files');

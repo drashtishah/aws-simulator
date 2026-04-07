@@ -1,4 +1,4 @@
-# references/progression.yaml
+# references/config/progression.yaml
 # The progression system is fully defined here.
 # To add a question axis: add to axes, update rank gates, update category_map.
 # To add a rank: insert into ranks (order matters, first match wins).

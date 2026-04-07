@@ -223,7 +223,7 @@ export function buildPostSessionPrompt(simId: string): string {
   const profilePath = paths.PROFILE;
   const catalogPath = paths.CATALOG;
   const coachingPatternsPath = path.join(paths.ROOT, '.claude', 'skills', 'play', 'references', 'coaching-patterns.md');
-  const progressionPath = path.join(paths.ROOT, 'references', 'progression.yaml');
+  const progressionPath = path.join(paths.ROOT, 'references', 'config', 'progression.yaml');
 
   return `You are a post-session analysis agent for the AWS Incident Simulator.
 

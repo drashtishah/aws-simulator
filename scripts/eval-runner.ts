@@ -12,7 +12,7 @@ const SESSIONS_DIR: string = path.join(ROOT, 'learning', 'sessions');
 const RESULTS_DIR: string = path.join(ROOT, 'learning', 'logs', 'eval-results');
 const HISTORY_PATH: string = path.join(ROOT, 'learning', 'logs', 'eval-history.jsonl');
 const SIMS_DIR: string = path.join(ROOT, 'sims');
-const SPEC_PATH: string = path.join(ROOT, 'references', 'eval-scoring.yaml');
+const SPEC_PATH: string = path.join(ROOT, 'references', 'config', 'eval-scoring.yaml');
 
 interface ScoringSpec {
   categories: Record<string, Check[]>;

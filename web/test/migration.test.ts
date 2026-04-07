@@ -6,7 +6,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('default-profile.json has vault fields', () => {
-  const profile = JSON.parse(fs.readFileSync(path.join(ROOT, 'references', 'default-profile.json'), 'utf8'));
+  const profile = JSON.parse(fs.readFileSync(path.join(ROOT, 'references', 'config', 'default-profile.json'), 'utf8'));
 
   it('has vault_version field', () => {
     assert.equal(profile.vault_version, 1);

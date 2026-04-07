@@ -159,7 +159,7 @@ describe('guard-write contract', () => {
   it('NEVER_WRITABLE includes critical protected files', () => {
     const values = extractArrayValues(guardSource, 'NEVER_WRITABLE');
     const required = [
-      'references/path-registry.csv',
+      'references/registries/path-registry.csv',
       'learning/logs/activity.jsonl',
       'package-lock.json'
     ];

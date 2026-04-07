@@ -8,13 +8,13 @@
 
 Are skills modular with clean boundaries? Does `ownership.json` correctly partition access? Are logs and session data read/interpreted effectively by consuming skills?
 
-**Look at:** all `ownership.json` files, `references/workspace-map.md` shared data table, cross-skill data flow.
+**Look at:** all `ownership.json` files, `references/architecture/workspace-map.md` shared data table, cross-skill data flow.
 
 ## 2. Test coverage and expansion
 
 Are the unit tests sufficient? What code paths lack coverage? What creative deterministic tests can we add (property-based, round-trip, schema validation, idempotency, regression)? Can we generate fixtures from real session data?
 
-**Look at:** `web/test/`, `web/test-specs/`, `references/testing-system.md`, `scripts/code-health.ts` test_sync metric.
+**Look at:** `web/test/`, `web/test-specs/`, `references/architecture/testing-system.md`, `scripts/code-health.ts` test_sync metric.
 
 ## 3. Simplification opportunities
 
@@ -30,7 +30,7 @@ What are we not thinking about? What happens when things fail (corrupted session
 
 ## 5. Agent navigability
 
-Can a fresh agent find what it needs from `CLAUDE.md` and `references/workspace-map.md` alone? Is there too much reference material for context windows? Are SKILL.md files concise or bloated? Can agents trace data flow without reading every file?
+Can a fresh agent find what it needs from `CLAUDE.md` and `references/architecture/workspace-map.md` alone? Is there too much reference material for context windows? Are SKILL.md files concise or bloated? Can agents trace data flow without reading every file?
 
 **Look at:** all SKILL.md files, `references/` folder, `CLAUDE.md`.
 
@@ -74,10 +74,10 @@ Are hooks correctly enforcing constraints? Is guard-write coverage complete? Are
 
 Can data get corrupted as it flows between skills? Are there race conditions (e.g., two sessions writing `learning/profile.json`)? Is session cleanup reliable?
 
-**Look at:** `references/workspace-map.md` shared data table, session lifecycle in play skill.
+**Look at:** `references/architecture/workspace-map.md` shared data table, session lifecycle in play skill.
 
 ## 13. Documentation vs. reality
 
-Does `references/workspace-map.md` match the actual codebase? Are there undocumented components? Does `CLAUDE.md` accurately describe the workspace?
+Does `references/architecture/workspace-map.md` match the actual codebase? Are there undocumented components? Does `CLAUDE.md` accurately describe the workspace?
 
 **Look at:** compare documented components vs actual directory tree.

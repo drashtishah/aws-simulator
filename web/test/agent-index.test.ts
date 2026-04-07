@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const INDEX_PATH = path.join(ROOT, 'references', 'agent-index.md');
+const INDEX_PATH = path.join(ROOT, 'references', 'registries', 'agent-index.md');
 const SKILLS_DIR = path.join(ROOT, '.claude', 'skills');
 const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.local.json');
 
@@ -14,7 +14,7 @@ describe('agent-index generator', () => {
     execSync('npx tsx scripts/generate-agent-index.ts', { cwd: ROOT, timeout: 60000 });
   });
 
-  it('generates references/agent-index.md', () => {
+  it('generates references/registries/agent-index.md', () => {
     assert.ok(fs.existsSync(INDEX_PATH), 'agent-index.md should exist');
   });
 

@@ -392,7 +392,7 @@ function scoreModularity(libFiles: string[], allProdFiles: string[]): MetricResu
 
   // 2. Path registry density
   let registryDensity = 0;
-  const registryPath: string = path.join(ROOT, 'references', 'path-registry.csv');
+  const registryPath: string = path.join(ROOT, 'references', 'registries', 'path-registry.csv');
   if (fs.existsSync(registryPath)) {
     const csv: string[] = fs.readFileSync(registryPath, 'utf8').trim().split('\n').slice(1); // skip header
     const pathCounts = new Map<string, number>();

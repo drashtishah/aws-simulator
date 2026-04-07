@@ -17,7 +17,7 @@ const {
   evaluateQualityGate,
 } = require('../lib/progression');
 
-const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'progression.yaml');
+const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'config', 'progression.yaml');
 
 describe('loadConfig', () => {
   it('loads and parses the default config', () => {

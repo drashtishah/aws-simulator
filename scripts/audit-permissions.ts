@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT: string = path.resolve(__dirname, '..');
-const OUTPUT: string = path.join(ROOT, 'references', 'permission-bypass-registry.md');
+const OUTPUT: string = path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md');
 
 const SCAN_DIRS: string[] = ['web', 'scripts', '.claude'];
 const SKIP_DIRS: Set<string> = new Set(['node_modules', '.git']);

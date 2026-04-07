@@ -26,7 +26,7 @@ interface AccessResult {
 
 // Files NEVER writable regardless of context
 const NEVER_WRITABLE: string[] = [
-  'references/path-registry.csv',
+  'references/registries/path-registry.csv',
   'learning/logs/activity.jsonl',
   'package-lock.json'
 ];

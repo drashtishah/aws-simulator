@@ -39,7 +39,7 @@ describe('checkAccess', () => {
     });
 
     it('blocks path-registry.csv (auto-generated)', () => {
-      const r = checkAccess(path.join(ROOT, 'references/path-registry.csv'), null, ROOT);
+      const r = checkAccess(path.join(ROOT, 'references/registries/path-registry.csv'), null, ROOT);
       assert.equal(r.allowed, false);
     });
 
@@ -106,7 +106,7 @@ describe('checkAccess', () => {
     });
 
     it('blocks path-registry.csv (never writable)', () => {
-      const r = checkAccess(path.join(ROOT, 'references/path-registry.csv'), PLAY_OWNERSHIP, ROOT);
+      const r = checkAccess(path.join(ROOT, 'references/registries/path-registry.csv'), PLAY_OWNERSHIP, ROOT);
       assert.equal(r.allowed, false);
     });
   });

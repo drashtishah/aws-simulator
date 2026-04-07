@@ -12,7 +12,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 
 | Step | Action | Tool | Target |
 |------|--------|------|--------|
-| 0 | Load workspace map | Read | `references/workspace-map.md` |
+| 0 | Load workspace map | Read | `references/architecture/workspace-map.md` |
 | 1 | Load feedback | Read | `learning/feedback.md` |
 | 2 | Load activity logs | Read | `learning/logs/activity.jsonl` |
 | 2 | Load metrics config | Read | `scripts/metrics.config.json` |
@@ -34,7 +34,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 
 ### 0. Set skill context
 
-Before making changes, read `references/workspace-map.md` to understand component dependencies and impact.
+Before making changes, read `references/architecture/workspace-map.md` to understand component dependencies and impact.
 
 ### 1. Read feedback
 
@@ -49,7 +49,7 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 - **Tool failures**: Group PostToolUseFailure events by tool name and error message. Flag patterns where the same Bash command fails 3+ times (player stuck).
 - **System failures**: StopFailure events (rate_limit, billing, server_error, max_output_tokens). These are infrastructure issues, not sim bugs.
 - **Player engagement**: Count UserPromptSubmit events per session. Report average.
-- **Permission bypass audit**: Read `references/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
+- **Permission bypass audit**: Read `references/registries/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
 
 ### 2b. Analyze learning vault
 
@@ -138,7 +138,7 @@ For each group of actionable findings that will drive changes, follow `.claude/s
 - Web UI layout, visual design, navigation changes: edit `web/public/` files directly. After edits, use chrome-devtools MCP to take a screenshot and present it to the user for approval. The web app has live reload enabled in dev mode (`npm run dev`), so the browser updates automatically.
 - Player behavior patterns (approach, quality trends, engagement): update `learning/vault/patterns/` notes
 - Code bugs, infra errors, test failures: create GitHub Issues
-- Agent behavior expectations: update `references/eval-scoring.yaml`
+- Agent behavior expectations: update `references/config/eval-scoring.yaml`
 - Ambiguous items: present to user for classification
 
 ### 8. Apply changes with per-edit health tracking

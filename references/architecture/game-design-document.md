@@ -1,6 +1,6 @@
 # Game Design Document
 
-Single source of truth for all game mechanics. See `references/progression.yaml` for the machine-readable config.
+Single source of truth for all game mechanics. See `references/config/progression.yaml` for the machine-readable config.
 
 ---
 
@@ -56,7 +56,7 @@ multiplier = max(min_multiplier, 1 / (1 + floor(total_sessions / ramp_interval))
 points_per_axis = round(base_points * multiplier * quality_factor)
 ```
 
-Current parameters (from `references/progression.yaml`):
+Current parameters (from `references/config/progression.yaml`):
 - base_points: 1
 - ramp_interval: 3
 - min_multiplier: 0.05
@@ -199,6 +199,6 @@ When a player quits mid-sim:
 
 ## Related
 
-- `references/progression.yaml`: machine-readable progression config
+- `references/config/progression.yaml`: machine-readable progression config
 - `.claude/skills/play/references/coaching-patterns.md`: coaching feedback templates
 - `learning/vault/index.md`: learning vault entry point

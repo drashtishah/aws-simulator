@@ -187,7 +187,7 @@ problems, complexity, gaps, and risks. Be thorough and critical.
 
 WORKSPACE CONTEXT:
 - Read CLAUDE.md for project overview and conventions
-- Read references/workspace-map.md for component architecture and data flow
+- Read references/architecture/workspace-map.md for component architecture and data flow
 - List references/ folder for available documentation
 - Run gh issue list --state open to see current issues
 - Run npm run health to see code health scores
@@ -201,7 +201,7 @@ For each topic:
 3. Cite specific file paths and line numbers
 4. Rate severity: high (broken/dangerous), medium (suboptimal), low (nitpick)
 
-START by reading references/workspace-map.md and CLAUDE.md, then work through
+START by reading references/architecture/workspace-map.md and CLAUDE.md, then work through
 each checklist topic systematically. Explore deeply: read actual files, grep for
 patterns, check edge cases.
 
@@ -225,7 +225,7 @@ Be pragmatic and evidence-based.
 
 WORKSPACE CONTEXT:
 - Read CLAUDE.md for project overview and conventions
-- Read references/workspace-map.md for component architecture and data flow
+- Read references/architecture/workspace-map.md for component architecture and data flow
 - List references/ folder for available documentation
 - Run gh issue list --state open to see current issues
 - Run npm run health to see code health scores
@@ -239,7 +239,7 @@ For each topic:
 3. Where things look imperfect, argue why the current approach is pragmatic
 4. Cite specific file paths and line numbers
 
-START by reading references/workspace-map.md and CLAUDE.md, then work through
+START by reading references/architecture/workspace-map.md and CLAUDE.md, then work through
 each checklist topic systematically. Explore deeply: read actual files, grep for
 patterns, check how things actually work in practice.
 

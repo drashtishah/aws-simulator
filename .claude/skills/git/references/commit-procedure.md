@@ -46,7 +46,7 @@ This runs path extraction + all deterministic tests (~5-10 seconds).
 
 ### 6b. Run eval scorecard (if play-related files changed)
 
-If the commit touches files in `.claude/skills/play/`, `scripts/eval-runner.ts`, or `references/eval-scoring.yaml`:
+If the commit touches files in `.claude/skills/play/`, `scripts/eval-runner.ts`, or `references/config/eval-scoring.yaml`:
 
     tsx scripts/sim-test.ts evals --dry-run
 

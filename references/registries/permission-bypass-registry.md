@@ -35,7 +35,5 @@ is used, along with any detected guardrails that limit the scope of the bypass.
 | scripts/audit-permissions.ts | 16 | `dangerouslyDisableSandbox` | `'dangerouslyDisableSandbox',` | none detected |
 | scripts/audit-permissions.ts | 17 | `bypassPermissions` | `'bypassPermissions'` | none detected |
 | scripts/audit-permissions.ts | 126 | `dangerously-skip-permissions` | `'(`--dangerously-skip-permissions`, `dangerouslySkipPermissions`, `dangerouslyDisableSandbox`)',` | none detected |
-| .claude/plans/eval-system-v2.md | 38 | `dangerously-skip-permissions` | `\| `scripts/audit-permissions.ts` \| Create \| Scan for --dangerously-skip-permissions \|` | none detected |
-| .claude/plans/eval-system-v2.md | 1019 | `dangerously-skip-permissions` | `Scans `web/`, `scripts/`, `.claude/` directories for `dangerously-skip-permissions`. Writes Markdown table to `references/permission-bypass-registry.md` with file, line number, and context.` | none detected |
 
-_Last updated: 2026-04-07T01:45:46.811Z_
+_Last updated: 2026-04-07T02:34:35.649Z_

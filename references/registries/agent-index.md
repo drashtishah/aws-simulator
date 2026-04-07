@@ -1,6 +1,6 @@
 # Agent Index
 
-Quick-reference for navigating this workspace. See `references/workspace-map.md` for full architecture.
+Quick-reference for navigating this workspace. See `references/architecture/workspace-map.md` for full architecture.
 
 ## Skills
 
@@ -42,9 +42,9 @@ Quick-reference for navigating this workspace. See `references/workspace-map.md`
 
 | Document | Purpose |
 |----------|---------|
-| `references/workspace-map.md` | Workspace architecture |
-| `references/progression.yaml` | Rank and scoring config |
-| `references/testing-system.md` | Testing system reference |
+| `references/architecture/workspace-map.md` | Workspace architecture |
+| `references/config/progression.yaml` | Rank and scoring config |
+| `references/architecture/testing-system.md` | Testing system reference |
 
 ## Data Files
 

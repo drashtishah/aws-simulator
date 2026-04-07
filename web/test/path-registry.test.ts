@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CSV_PATH = path.join(ROOT, 'references', 'path-registry.csv');
+const CSV_PATH = path.join(ROOT, 'references', 'registries', 'path-registry.csv');
 
 function parseCSV() {
   const content = fs.readFileSync(CSV_PATH, 'utf8').trim().replace(/\r\n/g, '\n');
@@ -25,7 +25,7 @@ function parseCSV() {
 
 describe('path-registry', () => {
   it('CSV exists and is non-empty', () => {
-    assert.ok(fs.existsSync(CSV_PATH), 'references/path-registry.csv should exist');
+    assert.ok(fs.existsSync(CSV_PATH), 'references/registries/path-registry.csv should exist');
     const rows = parseCSV();
     assert.ok(rows.length > 0, 'CSV should have at least one data row');
   });
