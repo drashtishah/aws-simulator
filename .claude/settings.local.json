@@ -11,9 +11,14 @@
       "Bash",
       "Agent",
       "mcp__aws-knowledge-mcp-server",
-      "mcp__chrome-devtools"
+      "mcp__chrome-devtools",
+      "Skill(schedule)"
     ]
   },
+  "enabledMcpjsonServers": [
+    "aws-knowledge-mcp-server",
+    "chrome-devtools"
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -192,9 +197,5 @@
         ]
       }
     ]
-  },
-  "enabledMcpjsonServers": [
-    "aws-knowledge-mcp-server",
-    "chrome-devtools"
-  ]
+  }
 }

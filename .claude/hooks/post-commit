@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Git post-commit hook for aws-simulator.
+#
+# This runs after every commit (Claude-initiated or human-initiated) and
+# appends a pending marker to learning/logs/compile-pending.txt. A Claude
+# session consumer (SessionStart hook, or the daily-compile-and-rotate
+# remote cron) reads the marker list and runs system-vault-compile on the
+# unprocessed commits.
+#
+# Native-only: no LLM, no network, no dependencies. Safe in any environment.
+#
+# Install: scripts/install-git-hooks.ts (or run from setup/SKILL.md).
+
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+PENDING="$REPO_ROOT/learning/logs/compile-pending.txt"
+
+mkdir -p "$(dirname "$PENDING")"
+
+SHA="$(git rev-parse HEAD)"
+TS="$(date -u +%FT%TZ)"
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+echo "$TS $SHA $BRANCH" >> "$PENDING"
