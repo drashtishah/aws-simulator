@@ -17,7 +17,7 @@
     "health": "tsx scripts/code-health.ts",
     "feedback:personas": "tsx scripts/sim-test.ts personas --feedback",
     "audit:permissions": "tsx scripts/audit-permissions.ts",
-    "generate-index": "tsx scripts/generate-agent-index.ts"
+    "build-agent-index": "tsx scripts/build-agent-index.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.91",
