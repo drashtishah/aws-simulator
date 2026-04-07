@@ -42,7 +42,34 @@ export interface FreshnessFinding {
 export interface OwnershipFinding {
   kind: 'overlap' | 'orphan' | 'cycle' | 'missing';
   detail: string;
+  /**
+   * The dir or skill identifier the finding is about. Used as part of the
+   * dedup key by `dedupeOwnershipFindings` so two findings with the same
+   * (kind, dir, skill-set) tuple but different `detail` strings collapse
+   * into one. Optional for backwards compatibility with callers that did
+   * not previously set it.
+   */
+  dir?: string;
   skills: string[];
+}
+
+/**
+ * Collapse ownership findings that share the same (kind, dir, skill-set)
+ * triple. Skill order in `skills` is normalized so [a,b] and [b,a] dedup
+ * to the same entry. Preserves the first occurrence (insertion order is
+ * meaningful: the first finding for a duplicate carries the canonical
+ * detail string the upstream rendering uses).
+ */
+export function dedupeOwnershipFindings(
+  findings: OwnershipFinding[]
+): OwnershipFinding[] {
+  const seen = new Map<string, OwnershipFinding>();
+  for (const f of findings) {
+    const sortedSkills = [...f.skills].sort().join(',');
+    const key = `${f.kind}:${f.dir ?? ''}:${sortedSkills}`;
+    if (!seen.has(key)) seen.set(key, f);
+  }
+  return Array.from(seen.values());
 }
 
 // ---------------------------------------------------------------------------
@@ -306,11 +333,12 @@ export function skillOwnershipIntegrity(skillsDir: string): OwnershipFinding[] {
       out.push({
         kind: 'overlap',
         detail: `dir ${dir} claimed by ${owners.join(', ')}`,
+        dir,
         skills: owners,
       });
     }
   }
-  return out;
+  return dedupeOwnershipFindings(out);
 }
 
 /** Wrap a list of findings, preserving order, limited to N. */
@@ -324,4 +352,5 @@ module.exports = {
   danglingReferences,
   activityFreshness,
   skillOwnershipIntegrity,
+  dedupeOwnershipFindings,
 };
