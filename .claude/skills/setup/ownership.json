@@ -1,4 +1,4 @@
 {
   "files": ["learning/profile.json", "learning/catalog.csv", "learning/feedback.md"],
-  "dirs": ["learning/sessions", "learning/vault"]
+  "dirs": ["learning/sessions", "learning/vault", "learning/system-vault"]
 }

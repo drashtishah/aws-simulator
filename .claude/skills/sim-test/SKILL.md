@@ -11,6 +11,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/sim-test/ownership.json"
+references_system_vault: true
 ---
 
 # sim-test Skill

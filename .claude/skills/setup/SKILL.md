@@ -10,6 +10,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/setup/ownership.json"
+references_system_vault: true
 ---
 
 # setup Skill
@@ -89,6 +90,32 @@ If `learning/vault/` does not exist, create the vault directory structure:
    - `references/vault-templates/patterns/investigation-style.md` -> `learning/vault/patterns/investigation-style.md`
 
 If `learning/vault/` already exists, leave it. Do not overwrite.
+
+### 5c. System vault seed (PR-E)
+
+If `learning/system-vault/` does not exist, create it and seed it. This
+is a per-user, gitignored area; the seed action is committed but the
+seeded contents are not.
+
+1. Create the root: `learning/system-vault/`.
+2. Create subdirectories: `learning/system-vault/health/`,
+   `learning/system-vault/findings/`, `learning/system-vault/workarounds/`,
+   `learning/system-vault/decisions/`, `learning/system-vault/sessions/`,
+   `learning/system-vault/components/`, `learning/system-vault/dreams/`.
+3. Write a starter `learning/system-vault/index.md` with one section
+   per subdirectory and no entries yet. Keep under 200 lines.
+4. Write `learning/system-vault/.dream-state.json` with
+   `{"last_dream_ts": null, "sessions_since_last_dream": 0}` if not
+   already present at `.claude/state/dream-state.json`.
+5. Copy the obsidian config directory from `learning/vault/` to
+   `learning/system-vault/` if the player vault has one (the dotfile
+   subdirectory `learning/vault/` ships with for Obsidian compatibility).
+6. Write a starter `learning/system-vault/health/current.md` with a
+   single H1 `# System health` and an empty bullet list.
+7. Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
+
+If `learning/system-vault/` already exists, leave every file in place.
+Do not overwrite.
 
 ### 6. Verify sim packages
 

@@ -7,6 +7,7 @@ description: >
   Produces actionable findings with consensus recommendations.
   Use when user says "fight", "fight-team", "adversarial review",
   "debate review", or "workspace review".
+references_system_vault: true
 ---
 
 # fight-team Skill
