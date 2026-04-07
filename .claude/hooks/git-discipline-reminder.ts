@@ -32,7 +32,7 @@ process.stdin.on('end', () => {
    See: .claude/skills/git/references/task-to-issue.md
 
 2. After each logical change, follow the commit procedure.
-   See: .claude/skills/git/references/commit-procedure.md
+   See: references/architecture/core-workflow.md
    Stage specific files, contextual commit with issue ref, include intent action line.
 
 3. Run tests after every commit: npm test
