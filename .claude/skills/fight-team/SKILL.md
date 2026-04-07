@@ -12,14 +12,20 @@ references_system_vault: true
 
 # fight-team Skill
 
-Three-agent adversarial review of the entire workspace. A coordinator (this session) orchestrates two debaters who argue through a 13-topic checklist across 3 rounds, then synthesizes findings into actionable GitHub Issues.
+Three-agent adversarial review driven entirely by code-health findings.
+A coordinator (this session) orchestrates two debaters who argue over the
+top 10 findings from `learning/logs/health-scores.jsonl` across 4 rounds,
+then synthesizes survivors into actionable GitHub Issues using the
+canonical issue-template.md schema.
 
 **Roles:**
 - **Coordinator** (this session): manages rounds, synthesizes report, creates tasks and issues
 - **Challenger**: finds problems, complexity, gaps, risks. Critical lens.
 - **Defender**: justifies existing decisions, finds strengths, argues against unnecessary changes. Pragmatic lens.
 
-**Structure:** 3 rounds (independent analysis, rebuttal, convergence), then synthesis and issue pipeline.
+**Structure:** 4 rounds (independent positions, cross-examination, steelman swap, convergence), then synthesis and issue pipeline. The 4-round structure is mandatory; no skipping rounds.
+
+**Inputs:** before spawning debaters, the coordinator reads the latest entry of `learning/logs/health-scores.jsonl` and selects the top 10 findings by `expected_gain_if_fixed`. If the file is empty or older than 24h, run `npm run health` first to refresh. Each finding carries `bucket`, `metric`, `file`, `line`, `current_score`, `expected_gain_if_fixed`, `description`. The debate is over those findings, not over a hand-maintained checklist.
 
 ---
 
@@ -53,49 +59,73 @@ Both agents run in parallel for Round 1.
 
 ---
 
-## Phase 2: Round 1, Independent Analysis
+## Phase 2: Round 1, Independent positions
 
-Both agents independently explore the workspace and form positions on each checklist topic.
+Both debaters read the top 10 findings from `learning/logs/health-scores.jsonl`
+and every cited file. They write positions in isolation, knowing they will
+be cross-examined in round 2 and asked to steelman the opposing position
+in round 3.
 
-Wait for both agents to complete Round 1 (they will return their initial positions).
+Wait for both agents to complete Round 1.
 
 Record each agent's positions for relay in Round 2.
 
 ---
 
-## Phase 3: Round 2, Rebuttal
+## Phase 3: Round 2, Cross-examination
 
-Send each agent the other's Round 1 positions via SendMessage:
+Each debater reads the other's r1 positions and produces a numbered
+rebuttal for **every** finding. "I agree" is forbidden. Each rebuttal must
+do one of:
+
+1. Cite a counter-example with file:line.
+2. Propose a stricter test the finding would fail.
+3. Explicitly write `CONCEDED` and explain why the finding survived attack.
 
 ```
 SendMessage:
   to: "challenger"
-  content: "Round 2: Here are the Defender's positions. Argue against them, citing specific files and lines. [Defender's Round 1 output]"
+  content: "Round 2: Here are the Defender's r1 positions. Produce a numbered rebuttal for every finding. 'I agree' is forbidden. Each rebuttal must (a) cite a counter-example with file:line, (b) propose a stricter test, or (c) write CONCEDED with explanation. [Defender's r1 output]"
 
 SendMessage:
   to: "defender"
-  content: "Round 2: Here are the Challenger's positions. Argue against them, citing specific files and lines. [Challenger's Round 1 output]"
+  content: "Round 2: Here are the Challenger's r1 positions. Produce a numbered rebuttal for every finding. 'I agree' is forbidden. Each rebuttal must (a) cite a counter-example with file:line, (b) propose a stricter test, or (c) write CONCEDED with explanation. Use the Anti-gaming scenario table in references/findings-debate.md as your playbook. [Challenger's r1 output]"
 ```
 
 Wait for both agents to complete Round 2.
 
 ---
 
-## Phase 4: Round 3, Convergence
+## Phase 4: Round 3, Steelman swap
 
-Send each agent the other's Round 2 rebuttals and instruct them to find common ground:
+Each debater takes the other's strongest surviving position and writes
+the best possible version of it. Findings that cannot be steelmanned are
+demoted to `priority:investigate` in round 4.
 
 ```
 SendMessage:
   to: "challenger"
-  content: "Round 3: Here are the Defender's rebuttals. Find common ground where possible. For remaining disagreements, state your final position with evidence. [Defender's Round 2 output]"
+  content: "Round 3: Take the Defender's strongest surviving r2 position and write the best possible version of it. If you cannot steelman a finding, mark it priority:investigate. [Defender's r2 output]"
 
 SendMessage:
   to: "defender"
-  content: "Round 3: Here are the Challenger's rebuttals. Find common ground where possible. For remaining disagreements, state your final position with evidence. [Challenger's Round 2 output]"
+  content: "Round 3: Take the Challenger's strongest surviving r2 position and write the best possible version of it. If you cannot steelman a finding, mark it priority:investigate. [Challenger's r2 output]"
 ```
 
 Wait for both agents to complete Round 3.
+
+---
+
+## Phase 4b: Round 4, Convergence
+
+Coordinator resolves. A finding becomes an Issue only if it survived
+rounds 2+3 with at least one file:line citation that both debaters
+acknowledge exists. Findings that survived but could not be steelmanned
+are filed with label `priority:investigate` instead of `priority:high`.
+
+Read both debaters' r2 and r3 outputs. For each of the 10 starting
+findings, decide: file as priority:high, file as priority:investigate,
+or drop.
 
 ---
 
@@ -159,18 +189,41 @@ Show the full task list. Ask the user which tasks to promote to GitHub Issues. T
 
 ### 3. Promote to issues
 
-For each confirmed task:
+For each confirmed task, the coordinator first composes a candidate Issue
+body that follows `.claude/skills/fight-team/references/issue-template.md`
+exactly. Then it runs the body through the validator BEFORE calling
+`gh issue create`:
 
 ```bash
-gh issue create --title "<type>(<scope>): <subject>" \
-  --label "<bug|enhancement|chore>" \
-  --body "<finding details, file refs, recommendation>"
+npx tsx -e "
+import fs from 'fs';
+import { validateFightTeamIssue } from './scripts/lib/validate-fight-team-issue';
+const body = fs.readFileSync('/tmp/fight-team-issue-body.md','utf8');
+const r = validateFightTeamIssue(body);
+if (!r.valid) { console.error(JSON.stringify(r.errors,null,2)); process.exit(1); }
+"
 ```
 
-Labels:
-- `bug`: broken things, failures, incorrect behavior
-- `enhancement`: improvements, new capabilities
-- `chore`: cleanup, documentation fixes, consistency
+Retry policy:
+- If the validator returns errors, regenerate the body addressing the
+  specific errors and re-run the validator. Up to 2 retries.
+- On the third failure, surface the malformed body and the validator
+  errors to the user. Do NOT call `gh issue create` with a malformed
+  body.
+
+Only when the validator returns `{valid: true}` does the coordinator run:
+
+```bash
+gh issue create --title "<one-sentence finding>" \
+  --label "source:fight-team-weekly,priority:high,bucket:<bucket>,metric:<metric>" \
+  --body-file /tmp/fight-team-issue-body.md
+```
+
+Labels (set in the body's `## Labels` section AND on the gh issue create call):
+- `source:fight-team-weekly` always
+- `priority:high` if both debaters agreed by r3, else `priority:investigate`
+- `bucket:<bucket>` from the health-score finding
+- `metric:<metric>` from the health-score finding
 
 ### 4. Report issue numbers
 
@@ -183,77 +236,76 @@ List created issues with their numbers. These flow into `/fix` automatically (fi
 ### Challenger, Round 1
 
 ```
-You are the Challenger in an adversarial workspace review. Your job is to find
-problems, complexity, gaps, and risks. Be thorough and critical.
+You are the Challenger in a fierce adversarial code-health review.
 
-WORKSPACE CONTEXT:
-- Read CLAUDE.md for project overview and conventions
-- Read references/architecture/workspace-map.md for component architecture and data flow
-- List references/ folder for available documentation
-- Run gh issue list --state open to see current issues
-- Run npm run health to see code health scores
+You are paid to find real problems. Polite is worthless. Every finding
+must cite an exact file path and line number, name the failure mode,
+and propose a regression test. Vague findings are forbidden. If you
+cannot point to a line, do not raise the finding.
 
-YOUR CHECKLIST:
-Read .claude/skills/fight-team/references/default-checklist.md for the 13 topics.
+You will be cross-examined in round 2 and asked to steelman the opposing
+position in round 3. Write round 1 knowing this.
 
-For each topic:
-1. Read the files listed in "Look at"
-2. Form a position: what is wrong, missing, overly complex, or risky?
-3. Cite specific file paths and line numbers
-4. Rate severity: high (broken/dangerous), medium (suboptimal), low (nitpick)
+INPUTS (provided by coordinator):
+- The top 10 findings from learning/logs/health-scores.jsonl, each with
+  bucket, metric, file, line, current_score, expected_gain_if_fixed,
+  description.
+- Read .claude/skills/fight-team/references/findings-debate.md for the
+  4-round structure and worked example.
+- Read .claude/skills/fight-team/references/issue-template.md so your
+  round 1 positions are already shaped for the eventual Issue body.
 
-START by reading references/architecture/workspace-map.md and CLAUDE.md, then work through
-each checklist topic systematically. Explore deeply: read actual files, grep for
-patterns, check edge cases.
+For each of the 10 findings:
+1. Read the cited file at the cited line.
+2. Form a position: confirm the failure mode, name a stricter test it
+   would fail, propose the smallest fix.
+3. Cite an absolute file:line for every claim.
 
-OUTPUT FORMAT:
-For each of the 13 topics, provide:
+OUTPUT FORMAT (per finding):
 
-## Topic N: [name]
-Position: [your critical finding]
-Evidence: [file paths, line numbers, specific observations]
-Severity: high / medium / low
-
-If a topic has no issues, say so briefly and move on. Do not pad findings.
+## Finding <n>: <bucket>/<metric> at <file>:<line>
+Failure mode: <one sentence>
+Stricter test: <one sentence describing a test the finding would fail>
+Proposed fix: <one numbered step naming a path>
+Evidence: <absolute file:line, max 3 citations>
 ```
 
 ### Defender, Round 1
 
 ```
-You are the Defender in an adversarial workspace review. Your job is to justify
-existing decisions, find strengths, and argue against unnecessary changes.
-Be pragmatic and evidence-based.
+You are the Defender in a fierce adversarial code-health review.
 
-WORKSPACE CONTEXT:
-- Read CLAUDE.md for project overview and conventions
-- Read references/architecture/workspace-map.md for component architecture and data flow
-- List references/ folder for available documentation
-- Run gh issue list --state open to see current issues
-- Run npm run health to see code health scores
+Your job is to kill weak findings. For every Challenger finding, attempt
+one of: counter-example, stricter test, or proof the finding is gameable.
+"I agree" is forbidden in round 2. You are scored on weak findings killed
+and strong findings honestly conceded.
 
-YOUR CHECKLIST:
-Read .claude/skills/fight-team/references/default-checklist.md for the 13 topics.
+You will be cross-examined in round 2 and asked to steelman the opposing
+position in round 3. Write round 1 knowing this.
 
-For each topic:
-1. Read the files listed in "Look at"
-2. Form a position: what is working well? What design decisions are sound?
-3. Where things look imperfect, argue why the current approach is pragmatic
-4. Cite specific file paths and line numbers
+INPUTS (provided by coordinator):
+- The same top 10 findings from learning/logs/health-scores.jsonl that
+  Challenger received.
+- Read .claude/skills/fight-team/references/findings-debate.md for the
+  4-round structure, the worked example, and the Anti-gaming scenario
+  table you must use as a playbook.
+- Read .claude/skills/fight-team/references/issue-template.md.
 
-START by reading references/architecture/workspace-map.md and CLAUDE.md, then work through
-each checklist topic systematically. Explore deeply: read actual files, grep for
-patterns, check how things actually work in practice.
+For each of the 10 findings:
+1. Read the cited file at the cited line.
+2. Form a defense: is the current state a deliberate tradeoff? Is the
+   finding gameable (fixing it the obvious way will lower real quality)?
+   Is there a counter-example file showing the pattern is fine?
+3. If the finding is gameable, flag it for priority:investigate, not
+   action.
+4. Cite an absolute file:line for every claim.
 
-OUTPUT FORMAT:
-For each of the 13 topics, provide:
+OUTPUT FORMAT (per finding):
 
-## Topic N: [name]
-Position: [your defense or acknowledgment]
-Evidence: [file paths, line numbers, specific observations]
-Strength: strong (well-designed) / adequate (pragmatic tradeoff) / weak (valid concern)
-
-If a topic has genuine problems you cannot defend, acknowledge them honestly.
-Do not defend the indefensible.
+## Finding <n>: <bucket>/<metric> at <file>:<line>
+Defense or concession: <one sentence>
+Counter-example or gameability flag: <absolute file:line if any>
+Why current state is sound (or honestly conceded): <one sentence>
 ```
 
 ---
@@ -268,3 +320,7 @@ Do not defend the indefensible.
 6. The fight-team skill does not write workspace files. Output is tasks and GitHub Issues only.
 7. If either agent fails to spawn or crashes mid-round, report the failure and continue with the surviving agent's positions. Note the gap in the synthesis report.
 8. Present the full report to the user before creating any tasks. User controls what becomes an issue.
+9. The 4-round structure (independent positions, cross-examination, steelman swap, convergence) is mandatory. No skipping rounds.
+10. Every Issue body filed by fight-team must pass `scripts/lib/validate-fight-team-issue.ts` before `gh issue create`. Up to 2 retries on failure; on the third failure, surface the malformed body and validator errors to the user instead of filing.
+11. Evidence sections require at least one absolute file:line citation. Relative paths in Evidence are rejected by the validator.
+12. Never edit Issue bodies after `gh issue create`. If a follow-up correction is needed, file a new Issue that links back to the original.
