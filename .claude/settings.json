@@ -18,29 +18,6 @@
           }
         ]
       }
-    ],
-    "PostCommit": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "event": "PostCommit",
-            "command": "npx tsx .claude/hooks/system-vault-compile.ts",
-            "cwd": "/Users/drashti/experiments/aws-simulator",
-            "timeout": 120000,
-            "allowed_tools": [
-              "Read",
-              "Write",
-              "Edit",
-              "Glob",
-              "Grep",
-              "Skill(system-vault-compile)",
-              "Bash(npm run health)"
-            ]
-          }
-        ]
-      }
     ]
   }
 }

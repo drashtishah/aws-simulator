@@ -8,9 +8,11 @@ const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.json');
 
 // Hooks introduced by PR-Pre that MUST carry explicit allowed_tools.
 // Keyed by a substring match against the hook command string.
+// PostCommit is NOT a valid Claude Code hook event (tracked as a pending
+// item; system-vault-compile on commit must become either a real git
+// post-commit hook or a PostToolUse hook filtered on git commit).
 const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [
   { event: 'SessionStart', commandMatch: 'dream-check' },
-  { event: 'PostCommit', commandMatch: 'system-vault-compile' },
 ];
 
 function loadSettings(): any {
