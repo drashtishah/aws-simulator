@@ -1,6 +1,8 @@
 file,path,line_number
 .claude/commands/feedback.md,learning/feedback.md,3
 .claude/commands/feedback.md,learning/sessions/,11
+.claude/scheduled-jobs/daily-compile-and-rotate.json,learning/logs/raw.jsonl,20
+.claude/scheduled-jobs/daily-compile-and-rotate.json,.claude/state/vault-circuit.json,23
 .claude/skills/create-sim/SKILL.md,learning/catalog.csv,23
 .claude/skills/create-sim/SKILL.md,.claude/skills/create-sim/references/exam-topics.md,24
 .claude/skills/create-sim/SKILL.md,.claude/skills/create-sim/references/sim-template.md,27
