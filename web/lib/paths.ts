@@ -5,7 +5,9 @@ const ROOT: string = path.resolve(__dirname, '..', '..');
 const SIMS_DIR: string = path.join(ROOT, 'sims');
 const THEMES_DIR: string = path.join(ROOT, 'themes');
 const LEARNING_DIR: string = path.join(ROOT, 'learning');
-const SESSIONS_DIR: string = path.join(LEARNING_DIR, 'sessions');
+// PR-A.4.1: tests can stub the sessions dir via this env var so they no
+// longer leak `learning/sessions/<simId>/` directories back into the worktree.
+const SESSIONS_DIR: string = process.env.AWS_SIMULATOR_SESSIONS_DIR ?? path.join(LEARNING_DIR, 'sessions');
 const LOGS_DIR: string = path.join(LEARNING_DIR, 'logs');
 const VAULT_DIR: string = path.join(LEARNING_DIR, 'vault');
 const UI_THEMES_DIR: string = path.join(ROOT, 'web', 'public', 'ui-themes');

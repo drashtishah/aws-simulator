@@ -1,12 +1,31 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
+const { describe, it, beforeEach, afterEach, after } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
+// PR-A.4.1: route session writes to a tmp dir so tests no longer leak the
+// real `learning/sessions/001-ec2-unreachable/` directory back into the
+// worktree on every run. Must be set before requiring any module that
+// imports `web/lib/paths`.
+const TMP_SESSIONS_DIR = path.join(__dirname, '.tmp', `game-session-${process.pid}`);
+process.env.AWS_SIMULATOR_SESSIONS_DIR = TMP_SESSIONS_DIR;
+fs.mkdirSync(TMP_SESSIONS_DIR, { recursive: true });
+
+after(() => {
+  try { fs.rmSync(TMP_SESSIONS_DIR, { recursive: true, force: true }); } catch {}
+  // Regression assertion: the real sessions dir for `001-ec2-unreachable`
+  // must not have been created by any test in this file.
+  const realLeakPath = path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable');
+  assert.ok(
+    !fs.existsSync(realLeakPath),
+    `learning/sessions/001-ec2-unreachable/ leaked from a test run; tests must use AWS_SIMULATOR_SESSIONS_DIR override`
+  );
+});
+
 const testSimId = '__test-game-session__';
-const testDir = path.join(ROOT, 'learning', 'sessions', testSimId);
+const testDir = path.join(TMP_SESSIONS_DIR, testSimId);
 const sessionPath = path.join(testDir, 'session.json');
 
 // --- createGameSession ---
@@ -23,12 +42,12 @@ describe('createGameSession', () => {
     try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
   });
 
-  it('creates session.json at learning/sessions/{simId}/session.json', () => {
+  it('creates session.json at the configured sessions dir for the given simId', () => {
     createGameSession('001-ec2-unreachable');
-    const filePath = path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable', 'session.json');
+    const filePath = path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable', 'session.json');
     assert.ok(fs.existsSync(filePath), 'session.json should exist');
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('has all required fields', () => {
@@ -45,7 +64,7 @@ describe('createGameSession', () => {
       assert.ok(field in session, `session should have field: ${field}`);
     }
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('populates criteria_remaining from manifest fix_criteria', () => {
@@ -56,14 +75,14 @@ describe('createGameSession', () => {
     assert.ok(ids.includes('identify_security_group'), 'should include identify_security_group criterion');
     assert.ok(ids.includes('propose_fix'), 'should include propose_fix criterion');
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('sets status to in_progress', () => {
     const session = createGameSession('001-ec2-unreachable');
     assert.equal(session.status, 'in_progress');
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('has valid ISO datetimes for started_at and last_active', () => {
@@ -74,7 +93,7 @@ describe('createGameSession', () => {
     assert.ok(!isNaN(new Date(session.started_at).getTime()), 'started_at should be valid ISO datetime');
     assert.ok(!isNaN(new Date(session.last_active).getTime()), 'last_active should be valid ISO datetime');
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('question_profile has six axes each with count and effective', () => {
@@ -86,7 +105,7 @@ describe('createGameSession', () => {
       assert.equal(session.question_profile[axis].effective, 0);
     }
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('format compatible with eval-runner (status field) and GET /api/sessions (sim_id field)', () => {
@@ -95,7 +114,7 @@ describe('createGameSession', () => {
     assert.ok('sim_id' in session, 'must have sim_id for GET /api/sessions');
     assert.equal(session.sim_id, '001-ec2-unreachable');
     // Cleanup
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 });
 
@@ -105,7 +124,7 @@ describe('updateGameSession', () => {
   const { updateGameSession, createGameSession } = require('../lib/claude-session');
 
   afterEach(() => {
-    try { fs.rmSync(path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });
 
   it('updates last_active timestamp on every call', () => {
@@ -177,5 +196,4 @@ describe('buildPostSessionPrompt', () => {
 });
 
 // Force exit after all tests complete
-const { after } = require('node:test');
 after(() => setTimeout(() => process.exit(0), 500));

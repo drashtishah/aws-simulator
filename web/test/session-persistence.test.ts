@@ -1,12 +1,27 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
+const { describe, it, beforeEach, afterEach, after } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
 const fs = require('fs');
 
+const ROOT = path.resolve(__dirname, '..', '..');
+
+// PR-A.4.1: tmp sessions dir override; see web/test/game-session.test.ts for context.
+// Must be set before requiring web/lib/paths or any module that imports it.
+const TMP_SESSIONS_DIR = path.join(__dirname, '.tmp', `session-persistence-${process.pid}`);
+process.env.AWS_SIMULATOR_SESSIONS_DIR = TMP_SESSIONS_DIR;
+fs.mkdirSync(TMP_SESSIONS_DIR, { recursive: true });
+
 const paths = require('../lib/paths');
 const { persistSession, recoverSessions, sessions, SESSION_MAX_AGE_MS } = require('../lib/claude-session');
 
-const ROOT = path.resolve(__dirname, '..', '..');
+after(() => {
+  try { fs.rmSync(TMP_SESSIONS_DIR, { recursive: true, force: true }); } catch {}
+  const realLeakPath = path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable');
+  assert.ok(
+    !fs.existsSync(realLeakPath),
+    `learning/sessions/001-ec2-unreachable/ leaked from a test run; tests must use AWS_SIMULATOR_SESSIONS_DIR override`
+  );
+});
 
 describe('persistSession', () => {
   const testSimId = '__test-persist__';

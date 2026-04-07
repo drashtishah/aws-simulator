@@ -15,6 +15,9 @@ learning/logs/activity-archive-*.jsonl
 # Test artifacts (screenshots, traces from failed tests)
 web/test/e2e/test-results/
 
+# Per-test scratch dirs (PR-A.4.1: AWS_SIMULATOR_SESSIONS_DIR override target)
+web/test/.tmp/
+
 # sim-test output
 web/test-results/
 
