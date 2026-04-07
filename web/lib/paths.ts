@@ -16,8 +16,12 @@ const PUBLIC_DIR: string = path.join(ROOT, 'web', 'public');
 const REGISTRY: string = path.join(SIMS_DIR, 'registry.json');
 const PROFILE: string = path.join(LEARNING_DIR, 'profile.json');
 const JOURNAL: string = path.join(LEARNING_DIR, 'journal.md');
-const LOG_FILE: string = path.join(LOGS_DIR, 'activity.jsonl');
-const SYSTEM_LOG_FILE: string = path.join(LOGS_DIR, 'system.jsonl');
+// PR-B: activity.jsonl + system.jsonl unified into raw.jsonl. The legacy
+// constants alias to the new file so any consumer that still imports them
+// continues to work without code changes; new code should import RAW_LOG_FILE.
+const RAW_LOG_FILE: string = path.join(LOGS_DIR, 'raw.jsonl');
+const LOG_FILE: string = RAW_LOG_FILE;
+const SYSTEM_LOG_FILE: string = RAW_LOG_FILE;
 const HEALTH_SCORES_FILE: string = path.join(LOGS_DIR, 'health-scores.jsonl');
 const CATALOG: string = path.join(LEARNING_DIR, 'catalog.csv');
 const THEME_BASE: string = path.join(THEMES_DIR, '_base.md');
@@ -47,6 +51,7 @@ const paths = {
   JOURNAL,
   LOG_FILE,
   SYSTEM_LOG_FILE,
+  RAW_LOG_FILE,
   HEALTH_SCORES_FILE,
   CATALOG,
   THEME_BASE,

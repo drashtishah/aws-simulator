@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
-const { buildRecord, logDestination } = require('../../.claude/hooks/log-hook');
+const { buildRecord, logFileName } = require('../../.claude/hooks/log-hook');
 
 describe('buildRecord', () => {
   it('always includes base fields', () => {
@@ -9,6 +9,10 @@ describe('buildRecord', () => {
     assert.equal(rec.event, 'Stop');
     assert.equal(rec.session_id, 's1');
     assert.equal(rec.tool, null);
+    // PR-B: every record carries cwd and branch so the system vault can
+    // attribute work to the right worktree.
+    assert.equal(typeof rec.cwd, 'string');
+    assert.ok('branch' in rec, 'record should have a branch field (string or null)');
   });
 
   it('PostToolUse with Bash extracts command', () => {
@@ -83,7 +87,7 @@ describe('buildRecord', () => {
     assert.equal(rec.reason, 'prompt_input_exit');
   });
 
-  it('PostToolUseFailure includes error, is_interrupt, and optional target/command', () => {
+  it('PostToolUseFailure collapses into Failure event with kind=tool (PR-B)', () => {
     const rec = buildRecord({
       hook_event_name: 'PostToolUseFailure',
       session_id: 's1',
@@ -92,19 +96,23 @@ describe('buildRecord', () => {
       is_interrupt: false,
       tool_input: { command: 'curl http://example.com', file_path: '/tmp/out' }
     });
+    assert.equal(rec.event, 'Failure');
+    assert.equal(rec.kind, 'tool');
     assert.equal(rec.error, 'command timed out');
     assert.equal(rec.is_interrupt, false);
     assert.equal(rec.command, 'curl http://example.com');
     assert.equal(rec.target, '/tmp/out');
   });
 
-  it('StopFailure includes error_type and error_details', () => {
+  it('StopFailure collapses into Failure event with kind=stop (PR-B)', () => {
     const rec = buildRecord({
       hook_event_name: 'StopFailure',
       session_id: 's1',
       error: 'rate_limit',
       error_details: 'Too many requests'
     });
+    assert.equal(rec.event, 'Failure');
+    assert.equal(rec.kind, 'stop');
     assert.equal(rec.error_type, 'rate_limit');
     assert.equal(rec.error_details, 'Too many requests');
   });
@@ -149,56 +157,20 @@ describe('buildRecord', () => {
   });
 });
 
-describe('logDestination', () => {
-  it('routes PostToolUse to system.jsonl', () => {
-    assert.equal(logDestination('PostToolUse'), 'system.jsonl');
-  });
-
-  it('routes PostToolUseFailure to system.jsonl', () => {
-    assert.equal(logDestination('PostToolUseFailure'), 'system.jsonl');
-  });
-
-  it('routes StopFailure to system.jsonl', () => {
-    assert.equal(logDestination('StopFailure'), 'system.jsonl');
-  });
-
-  it('routes PreCompact to system.jsonl', () => {
-    assert.equal(logDestination('PreCompact'), 'system.jsonl');
-  });
-
-  it('routes PostCompact to system.jsonl', () => {
-    assert.equal(logDestination('PostCompact'), 'system.jsonl');
-  });
-
-  it('routes PermissionDenied to system.jsonl', () => {
-    assert.equal(logDestination('PermissionDenied'), 'system.jsonl');
-  });
-
-  it('routes CwdChanged to system.jsonl', () => {
-    assert.equal(logDestination('CwdChanged'), 'system.jsonl');
-  });
-
-  it('routes FileChanged to system.jsonl', () => {
-    assert.equal(logDestination('FileChanged'), 'system.jsonl');
-  });
-
-  it('routes SessionStart to activity.jsonl', () => {
-    assert.equal(logDestination('SessionStart'), 'activity.jsonl');
-  });
-
-  it('routes SessionEnd to activity.jsonl', () => {
-    assert.equal(logDestination('SessionEnd'), 'activity.jsonl');
-  });
-
-  it('routes UserPromptSubmit to activity.jsonl', () => {
-    assert.equal(logDestination('UserPromptSubmit'), 'activity.jsonl');
-  });
-
-  it('routes TaskCreated to activity.jsonl', () => {
-    assert.equal(logDestination('TaskCreated'), 'activity.jsonl');
-  });
-
-  it('routes unknown events to activity.jsonl', () => {
-    assert.equal(logDestination('SomeNewEvent'), 'activity.jsonl');
-  });
+describe('logFileName (PR-B unification)', () => {
+  // Every event now writes to a single raw.jsonl file. The legacy split
+  // between activity.jsonl and system.jsonl is gone; the system vault
+  // compile pipeline ingests one canonical stream.
+  const events = [
+    'PostToolUse', 'PostToolUseFailure', 'StopFailure',
+    'PreCompact', 'PostCompact', 'PermissionDenied',
+    'CwdChanged', 'FileChanged',
+    'SessionStart', 'SessionEnd', 'UserPromptSubmit',
+    'TaskCreated', 'SomeNewEvent'
+  ];
+  for (const e of events) {
+    it(`routes ${e} to raw.jsonl`, () => {
+      assert.equal(logFileName(e), 'raw.jsonl');
+    });
+  }
 });

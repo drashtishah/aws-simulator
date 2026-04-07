@@ -14,7 +14,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 |------|--------|------|--------|
 | 0 | Load workspace map | Read | `references/architecture/workspace-map.md` |
 | 1 | Load feedback | Read | `learning/feedback.md` |
-| 2 | Load activity logs | Read | `learning/logs/activity.jsonl` |
+| 2 | Load activity logs | Read | `learning/logs/raw.jsonl` |
 | 2 | Load metrics config | Read | `scripts/metrics.config.json` |
 | 3 | Load test results | Read | `web/test-results/summary.json` |
 | 3b | List open issues | Bash | gh issue list |
@@ -43,7 +43,7 @@ Read `learning/feedback.md`. Note whether there are entries beyond the header (t
 
 ### 2. Analyze activity logs
 
-Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metrics.config.json`. If not null, filter to entries with `ts` after that timestamp. If null, process all entries. Analyze for:
+Read `learning/logs/raw.jsonl` (PR-B unified log; activity.jsonl + system.jsonl are gone). Check `last_fix_analyzed` in `scripts/metrics.config.json`. If not null, filter to entries with `ts` after that timestamp. If null, process all entries. Analyze for:
 
 - **Session abandonment**: SessionStart events without a matching SessionEnd with `reason: "prompt_input_exit"` in the same session_id. Count abandoned sessions.
 - **Context pressure**: PreCompact events with `trigger: "auto"`. Group by session_id. Flag sessions with 2+ auto-compactions.
@@ -174,13 +174,15 @@ j. Repeat for each remaining group.
 After all changes applied:
 - Clear processed entries from `learning/feedback.md` (keep lines 1-9: frontmatter header intact)
 - Update `last_fix_analyzed` in `scripts/metrics.config.json` to current ISO timestamp
-- Rotate both log files:
-  1. Read all lines from `learning/logs/activity.jsonl`
+- Rotate the unified log file (PR-B: there is only `raw.jsonl` now; the legacy
+  activity.jsonl + system.jsonl split is gone):
+  1. Read all lines from `learning/logs/raw.jsonl`
   2. Filter out entries where `session_id === "test-threshold"` (synthetic test data)
-  3. Write filtered entries to `learning/logs/archive/activity-{YYYY-MM-DD}.jsonl`
-  4. Truncate `activity.jsonl` to empty
-  5. Repeat for `learning/logs/system.jsonl` -> `learning/logs/archive/system-{YYYY-MM-DD}.jsonl`
-  Note: archive files are gitignored and persist for manual review
+  3. Write filtered entries to `learning/logs/archive/raw-{YYYY-MM-DD}.jsonl`
+  4. Truncate `raw.jsonl` to empty
+  Note: archive files are gitignored and persist for manual review. PR-E's
+  system-vault-compile skill will eventually own log rotation; until then
+  /fix continues to rotate manually here.
 
 ### 10. Final health comparison
 
@@ -232,7 +234,7 @@ All changes were already committed per-change in step 8h. Verify with `git log -
 
 1. No emojis.
 2. Always run health checks after each edit group. Never skip the comparison.
-3. Never edit `learning/logs/activity.jsonl` directly. It is append-only by hooks.
+3. Never edit `learning/logs/raw.jsonl` directly. It is append-only by hooks.
 4. The fix skill reads logs and feedback but only writes to skill files, `learning/feedback.md`, `learning/logs/health-scores.jsonl`, and `scripts/metrics.config.json`.
 5. Do not push automatically. Let the user decide.
 6. Verification separation: any step that verifies work (health checks, test runs, visual regression) must be performed by a different subagent than the one that wrote the code or text being verified.

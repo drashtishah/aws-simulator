@@ -26,7 +26,7 @@ Run `npm run health` before and after refactors. See `references/config/code-hea
 
 ## Logging
 
-All events (tool calls, session lifecycle, warnings, errors) go to one file: `learning/logs/activity.jsonl`. Both the shared hooks (terminal /play) and the web server logger write here. The `/fix` skill reads this file to diagnose issues.
+All events (tool calls, session lifecycle, warnings, errors) go to one file: `learning/logs/raw.jsonl`. Both the shared hooks (terminal /play) and the web server logger write here. The `/fix` skill reads this file to diagnose issues. (PR-B unified the previous `activity.jsonl` + `system.jsonl` split into a single stream; the legacy filenames now alias to `raw.jsonl` via `web/lib/paths.ts`.)
 
 ## Git Discipline
 
