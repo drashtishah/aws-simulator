@@ -338,8 +338,8 @@ describe('scoreTestSync (controlled)', () => {
       .map(f => path.join(ROOT, 'web', 'lib', f));
 
     const result = scoreTestSync(libFiles);
-    // All 12 lib files have dedicated test files
-    assert.equal(result.sub.covered, '12/12');
+    // All 13 lib files have dedicated test files
+    assert.equal(result.sub.covered, '13/13');
     assert.ok(result.score >= 80, `score ${result.score} should be >= 80`);
   });
 });
