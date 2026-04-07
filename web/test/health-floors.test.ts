@@ -44,15 +44,55 @@ describe('floor monotonicity', () => {
     assert.ok(report.scores.code.score > 0);
   });
 
-  it('dropping below floor zeros the bucket and records a violation', () => {
+  it('dropping below floor subtracts a 10-point advisory penalty and records a violation', () => {
     const d = makeDiscovery({ code: ['web/lib/a.ts'] });
     const cfg = makeCfg({ code: 5 });
+    // Baseline: same discovery but with floor at 1 (no violation), to capture
+    // the natural pre-violation score.
+    const baseline = scoreAllBuckets(d, makeCfg({ code: 1 }));
+    const preScore = baseline.report.scores.code.score;
+
     const { report, violations, floors } = scoreAllBuckets(d, cfg);
     const v = violations.find((x: any) => x.invariant === 'bucket_floor' && x.bucket === 'code');
     assert.ok(v, 'expected floor violation for code bucket');
-    assert.equal(report.scores.code.score, 0);
+    // Advisory penalty: pre - 10 (clamped to >= 0), NOT hard-zero.
+    const expected = Math.max(0, Math.round((preScore - 10) * 1000) / 1000);
+    assert.equal(report.scores.code.score, expected);
+    // The reason field carries the violation detail so the operator sees it.
+    assert.ok(
+      report.scores.code.reason && report.scores.code.reason.includes('bucket code dropped from floor'),
+      `expected violation detail in reason, got: ${report.scores.code.reason}`,
+    );
     // Floor must NOT lower.
     assert.equal(floors.code, 5);
+  });
+
+  it('caps bucket_floor penalty at -10 even on consecutive floor drops in one run', () => {
+    // Two buckets dropping below floor in the same scoring pass: each bucket
+    // is penalized at most once. The cap is per-bucket-per-run, not global.
+    const d = makeDiscovery({
+      code: ['web/lib/a.ts'],
+      test: ['web/test/a.test.ts'],
+    });
+    const cfg = makeCfg({ code: 5, test: 50 });
+    const baseline = scoreAllBuckets(d, makeCfg({ code: 1, test: 1 }));
+    const preCode = baseline.report.scores.code.score;
+    const preTest = baseline.report.scores.test.score;
+
+    const { report, violations } = scoreAllBuckets(d, cfg);
+    const codeViolations = violations.filter(
+      (x: any) => x.invariant === 'bucket_floor' && x.bucket === 'code',
+    );
+    const testViolations = violations.filter(
+      (x: any) => x.invariant === 'bucket_floor' && x.bucket === 'test',
+    );
+    assert.equal(codeViolations.length, 1, 'one violation per bucket');
+    assert.equal(testViolations.length, 1);
+    // Each bucket: penalty of exactly 10, not 20.
+    const expectedCode = Math.max(0, Math.round((preCode - 10) * 1000) / 1000);
+    const expectedTest = Math.max(0, Math.round((preTest - 10) * 1000) / 1000);
+    assert.equal(report.scores.code.score, expectedCode);
+    assert.equal(report.scores.test.score, expectedTest);
   });
 
   it('floor rises automatically when count exceeds it', () => {

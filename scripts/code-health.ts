@@ -900,8 +900,10 @@ function checkTestDensityInvariant(
 
 /**
  * Invariant 4: Per-bucket file count floor is monotonic. Going below floor
- * zeros the bucket. Floors only ever rise, except when --rebase-floors is
- * passed, in which case they snap to the current count.
+ * subtracts 10 points from the bucket score (advisory penalty, capped at one
+ * per bucket per run) and records a `bucket_floor` violation. Floors only
+ * ever rise, except when --rebase-floors is passed, in which case they snap
+ * to the current count.
  */
 function applyFloors(
   byBucket: Record<Bucket, string[]>,
@@ -1230,9 +1232,20 @@ export function scoreAllBuckets(
     BUCKETS.map(b => [b, scoreBucket(b, discovery.byBucket[b], { allCode, allTest, priorEntry })])
   ) as Record<Bucket, BucketScore>;
 
-  // Apply violations: zero affected buckets.
+  // Apply violations. bucket_floor is advisory (-10, capped one per bucket
+  // per run) so a single file deletion below floor no longer drags the whole
+  // bucket score to zero. Other invariants retain hard-zero behavior.
+  const floorPenalized = new Set<Bucket>();
   for (const v of violations) {
-    if (v.bucket && scores[v.bucket]) {
+    if (!v.bucket || !scores[v.bucket]) continue;
+    if (v.invariant === 'bucket_floor') {
+      if (floorPenalized.has(v.bucket)) continue;
+      floorPenalized.add(v.bucket);
+      const prev = scores[v.bucket];
+      const newScore = Math.max(0, round(prev.score - 10));
+      const newReason = prev.reason ? `${prev.reason}; ${v.detail}` : v.detail;
+      scores[v.bucket] = { ...prev, score: newScore, reason: newReason };
+    } else {
       scores[v.bucket] = { ...scores[v.bucket], score: 0, reason: v.detail };
     }
   }
@@ -1288,7 +1301,10 @@ function printBucketReport(r: BucketScoreReport, violations: InvariantViolation[
   console.log('--- buckets ---');
   for (const b of BUCKETS) {
     const s = r.scores[b];
-    const tag = s.reason ? ` ZERO: ${s.reason}` : '';
+    // Pre-advisory: any reason meant the bucket was hard-zeroed. Post-advisory:
+    // bucket_floor sets a reason but leaves a positive score, so the label
+    // tracks the actual score state instead of assuming ZERO.
+    const tag = s.reason ? ` ${s.score === 0 ? 'ZERO' : 'WARN'}: ${s.reason}` : '';
     console.log(`${b}: ${s.score.toFixed(1)} (${s.files} files)${tag}`);
   }
   console.log(`weighted_avg: ${r.weighted_avg.toFixed(1)}`);

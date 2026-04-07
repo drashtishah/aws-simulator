@@ -484,11 +484,22 @@ describe('composite formula: min(weighted_avg, completeness*100)', () => {
 });
 
 describe('anti-gaming scenarios (12 rows from PR-C plan)', () => {
-  it('A1 (delete low-scoring file): floor zeros the bucket', () => {
+  it('A1 (delete low-scoring file): floor records advisory penalty + violation', () => {
+    // Advisory after fluffy-hugging-wilkes plan: bucket_floor subtracts 10
+    // points (capped one per bucket per run) instead of hard-zeroing the
+    // bucket. The composite still drops, the violation is still recorded,
+    // but a single deletion no longer destroys the whole bucket score.
     const d = makeDiscovery({ code: ['web/lib/a.ts'] });
     const cfg = defaultCfg({ floors: { code: 5 } });
-    const { report } = scoreAllBuckets(d, cfg);
-    assert.equal(report.scores.code.score, 0);
+    const { report, violations } = scoreAllBuckets(d, cfg);
+    const v = violations.find((x: any) => x.invariant === 'bucket_floor' && x.bucket === 'code');
+    assert.ok(v, 'expected bucket_floor violation for code bucket');
+    assert.ok(
+      report.scores.code.reason && report.scores.code.reason.includes('bucket code dropped from floor'),
+      `expected violation detail in reason, got: ${report.scores.code.reason}`,
+    );
+    // Score is positive (penalty applied to a non-zero baseline) but reduced.
+    assert.ok(report.scores.code.score >= 0);
   });
 
   it('A2 (delete tests): empty test set scores 0 via density check', () => {
