@@ -40,7 +40,7 @@ describe('path-registry', () => {
 
       // Skip runtime-generated paths (created by /setup, hooks, or CLI, not present on fresh clone)
       if (row.path.startsWith('learning/logs/')) continue;
-      if (row.path.startsWith('learning/vault')) continue;
+      if (row.path.startsWith('learning/player-vault')) continue;
       if (row.path.startsWith('learning/system-vault')) continue;
       // Plans dir is gitignored scratch space (feedback_no_plan_scoring).
       if (row.path === '.claude/plans/' || row.path === '.claude/plans') continue;
@@ -79,7 +79,7 @@ describe('path-registry', () => {
       // Skip runtime-generated directory prefixes
       if (row.path.startsWith('web/test-results/')) continue;
       if (row.path.startsWith('dist/')) continue;
-      if (row.path.startsWith('learning/vault')) continue;
+      if (row.path.startsWith('learning/player-vault')) continue;
 
       // Extract prefix before the first template variable ($ or {)
       const dollarIdx = row.path.indexOf('$');

@@ -39,7 +39,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  feedback.md     |       |                   |       |                  |
 |  sessions/*.json |       | Reads:            |       | Reads:           |
 +------------------+       |  catalog.csv      |       |  feedback.md     |
-                           |  sims/registry    |       |  activity.jsonl  |
+                           |  sims/registry    |       |  raw.jsonl       |
                            |  sims/{id}/*      |       |  health scores   |
                            |  profile.json     |       |  skill files     |
                            |  sessions/*.json  |       |  workspace-map   |
@@ -69,6 +69,31 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  git commits     |       | Writes:          |
 |  GitHub Issues   |       |  GitHub Issues   |
 +------------------+       +------------------+
+
++----------------------+   +------------------+
+|   system-vault       |   |  notes.jsonl     |
+|  (long-term agent    |   |  (semantic       |
+|   memory, per user,  |   |   stream)        |
+|   gitignored)        |   |                  |
+|                      |   | Written by:      |
+| Compiled by:         |   |  scripts/note.ts |
+|  daily cron from     |   |  (CLI any agent  |
+|  raw.jsonl + notes   |   |   can call)      |
+|                      |   |                  |
+| Subdirs:             |   | Read by:         |
+|  findings/           |   |  system-vault-   |
+|  decisions/          |   |  compile (daily) |
+|  workarounds/        |   |  /fix            |
+|  components/         |   |                  |
+|  sessions/           |   | Stop hook        |
+|  health/             |   | enforces >=1     |
+|  dreams/             |   | note per session |
+|                      |   |                  |
+| Read by:             |   |                  |
+|  system-vault-query  |   |                  |
+|  /fight-team         |   |                  |
+|  /fix                |   |                  |
++----------------------+   +------------------+
 ```
 
 ## Data Flow
@@ -92,7 +117,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /feedback ----> writes feedback.md + sessions/{id}.json (during play)
                 |
                 v
-/fix ---------> reads feedback.md + learning/logs/activity.jsonl + system.jsonl + health scores
+/fix ---------> reads feedback.md + learning/logs/raw.jsonl + learning/logs/notes.jsonl + health scores
             --> reads web/test-results/summary.json (if exists) for recent test failures
             --> runs tsx scripts/code-health.ts (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
@@ -129,7 +154,7 @@ sim-test ----> run: executes node --test (unit tests)
 |------|-----------|---------|--------|
 | `learning/catalog.csv` | setup, create-sim, play | create-sim, play | CSV: service, full_name, category, cert_relevance, knowledge_score, sims_completed, last_practiced, notes |
 | `learning/profile.json` | setup, play | play | JSON: level, completed sims, patterns, strengths, weaknesses |
-| `learning/vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
+| `learning/player-vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/raw.jsonl` | hooks, web logger | fix, system-vault-compile | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
