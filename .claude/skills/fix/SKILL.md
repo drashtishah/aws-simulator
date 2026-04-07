@@ -160,7 +160,7 @@ g. Log the post-edit scores to `learning/logs/health-scores.jsonl`:
    ```json
    {"ts":"2026-03-31T...","source":"fix","group":"{group name}","modularity":0,"encapsulation":0,"size_balance":0,"dep_depth":0,"complexity":0,"test_sync":0,"composite":0}
    ```
-h. **Commit after each small, self-contained feature change.** Each visual change, behavioral change, or config change gets its own commit. Never batch multiple features into one commit. Each commit must be independently revertable via `git revert` without breaking other changes. Follow the procedure in `.claude/skills/git/references/commit-procedure.md`. Reference the GitHub Issue (`Closes #N` for last commit, `Ref #N` otherwise). Include `intent` and `decision` action lines.
+h. **Commit after each small, self-contained feature change.** Each visual change, behavioral change, or config change gets its own commit. Never batch multiple features into one commit. Each commit must be independently revertable via `git revert` without breaking other changes. Follow the procedure in `references/architecture/core-workflow.md`. Reference the GitHub Issue (`Closes #N` for last commit, `Ref #N` otherwise). Include `intent` and `decision` action lines.
 h-verify. **Verification must be done by a separate subagent.** The agent that wrote code or text for this group must NOT be the same agent that verifies it. Spawn a new subagent to run the verification (health check, tests, visual regression). This applies to all verification steps: health checks (8f), test runs, and visual regression.
 i. Mark this group's task completed.
 j. Repeat for each remaining group.

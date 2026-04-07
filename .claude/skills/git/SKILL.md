@@ -18,7 +18,7 @@ hooks:
 
 # git Skill
 
-Standalone git workflow orchestrator. For the shared commit procedure used by all skills, see `.claude/skills/git/references/commit-procedure.md`.
+Standalone git workflow orchestrator. For the shared commit procedure used by all skills, see `references/architecture/core-workflow.md`.
 
 ---
 
@@ -28,7 +28,7 @@ Determine which mode to use from the user's input or arguments.
 
 ### Default: /git (commit)
 
-Follow `.claude/skills/git/references/commit-procedure.md` end-to-end.
+Follow `references/architecture/core-workflow.md` end-to-end.
 
 ### /git rollback
 
