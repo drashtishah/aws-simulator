@@ -7,6 +7,18 @@
   "properties": {
     "name": { "type": "string" },
     "description": { "type": "string" },
+    "consoleAllowlist": {
+      "type": "array",
+      "description": "Substrings of console error messages that should be ignored by console_clean checks. Defaults to an empty list.",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "network_allowed_origins": {
+      "type": "array",
+      "description": "Origins that network_ok checks treat as allowed. The literal string 'self' resolves to the test page's own origin. Defaults to ['self'].",
+      "items": { "type": "string" },
+      "default": ["self"]
+    },
     "setup": {
       "type": "object",
       "required": ["navigate"],
@@ -22,7 +34,21 @@
         "properties": {
           "id": { "type": "string" },
           "action": { "enum": ["click", "type", "keyboard", "emulate", "wait"] },
-          "target": { "type": "string" },
+          "target": {
+            "description": "Step target. A string selector for action steps, or an object carrying landmarks for landmarks_present checks.",
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "landmarks": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            ]
+          },
           "text": { "type": "string" },
           "key": { "type": "string" },
           "viewport": { "type": "string" },
@@ -31,8 +57,15 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["selector"],
               "properties": {
+                "type": {
+                  "enum": [
+                    "console_clean",
+                    "network_ok",
+                    "landmarks_present"
+                  ],
+                  "description": "Optional discriminator for non-selector checks. When omitted the check is a selector-based DOM assertion."
+                },
                 "selector": { "type": "string" },
                 "has_class": { "type": "string" },
                 "not_has_class": { "type": "string" },
@@ -47,7 +80,11 @@
                     "compare_to": { "type": "string" }
                   }
                 }
-              }
+              },
+              "anyOf": [
+                { "required": ["selector"] },
+                { "required": ["type"] }
+              ]
             }
           }
         }

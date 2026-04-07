@@ -274,7 +274,7 @@ A question is "effective" if it led to discovering new information (the response
 
 ### Rank Derivation
 
-After updating the skill polygon in profile.json, derive the player's rank from `references/progression.yaml`. The rank system uses 10 tiers with both polygon gates and quality gates:
+After updating the skill polygon in profile.json, derive the player's rank from `references/config/progression.yaml`. The rank system uses 10 tiers with both polygon gates and quality gates:
 
 | Rank | Polygon Gate | Quality Gate |
 |---|---|---|

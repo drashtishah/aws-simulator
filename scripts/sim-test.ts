@@ -76,21 +76,28 @@ interface PersonasResults {
 interface BrowserSpec {
   name: string;
   description: string;
+  consoleAllowlist?: string[];
+  network_allowed_origins?: string[];
   setup?: { navigate?: string };
   steps?: SpecStep[];
+}
+
+interface SpecTargetObject {
+  landmarks?: string[];
 }
 
 interface SpecStep {
   id: string;
   action?: string;
-  target?: string;
+  target?: string | SpecTargetObject;
   key?: string;
   text?: string;
   check?: SpecCheck[];
 }
 
 interface SpecCheck {
-  selector: string;
+  type?: 'console_clean' | 'network_ok' | 'landmarks_present';
+  selector?: string;
   [key: string]: unknown;
 }
 
@@ -378,17 +385,37 @@ program
         if (spec.setup?.navigate) {
           console.log('Setup: navigate to ' + spec.setup.navigate);
         }
+        if (spec.consoleAllowlist && spec.consoleAllowlist.length > 0) {
+          console.log('ConsoleAllowlist: ' + JSON.stringify(spec.consoleAllowlist));
+        }
+        if (spec.network_allowed_origins && spec.network_allowed_origins.length > 0) {
+          console.log('NetworkAllowedOrigins: ' + JSON.stringify(spec.network_allowed_origins));
+        }
         console.log('Steps:');
         for (const step of spec.steps ?? []) {
           console.log('  [' + step.id + ']');
-          if (step.action) console.log('    action: ' + step.action + ' ' + (step.target ?? step.key ?? ''));
+          if (step.action) {
+            const targetStr = typeof step.target === 'string'
+              ? step.target
+              : (step.target ? JSON.stringify(step.target) : (step.key ?? ''));
+            console.log('    action: ' + step.action + ' ' + targetStr);
+          }
           if (step.text) console.log('    text: "' + step.text + '"');
           if (step.check) {
             for (const c of step.check) {
-              const checks = Object.entries(c)
-                .filter(([k]: [string, unknown]) => k !== 'selector')
-                .map(([k, v]: [string, unknown]) => k + '=' + JSON.stringify(v));
-              console.log('    check: ' + c.selector + ' ' + checks.join(', '));
+              if (c.type === 'console_clean') {
+                console.log('    check: console_clean (call list_console_messages, fail on level==error not in consoleAllowlist)');
+              } else if (c.type === 'network_ok') {
+                console.log('    check: network_ok (call list_network_requests, fail on status>=400 or origin not in network_allowed_origins)');
+              } else if (c.type === 'landmarks_present') {
+                const landmarks = (typeof step.target === 'object' && step.target?.landmarks) || [];
+                console.log('    check: landmarks_present ' + JSON.stringify(landmarks) + ' (call take_snapshot, fail if any landmark missing)');
+              } else {
+                const checks = Object.entries(c)
+                  .filter(([k]: [string, unknown]) => k !== 'selector' && k !== 'type')
+                  .map(([k, v]: [string, unknown]) => k + '=' + JSON.stringify(v));
+                console.log('    check: ' + (c.selector ?? '') + ' ' + checks.join(', '));
+              }
             }
           }
         }

@@ -19,6 +19,7 @@ interface Weights {
   dep_depth: number;
   complexity: number;
   test_sync: number;
+  references_health: number;
 }
 
 interface MetricsConfig {
@@ -39,6 +40,7 @@ interface HealthScores {
   dep_depth: MetricResult;
   complexity: MetricResult;
   test_sync: MetricResult;
+  references_health: MetricResult;
 }
 
 interface ParsedFile {
@@ -78,9 +80,16 @@ type VisitorCallback = (node: ASTNode) => void;
 // Load weights from config, fall back to defaults
 // ---------------------------------------------------------------------------
 
+// Equal weight across all 7 metrics (1/7 each).
+const EQUAL_WEIGHT: number = 1 / 7;
 const DEFAULT_WEIGHTS: Weights = {
-  modularity: 0.30, encapsulation: 0.20, size_balance: 0.15,
-  dep_depth: 0.10, complexity: 0.15, test_sync: 0.10
+  modularity: EQUAL_WEIGHT,
+  encapsulation: EQUAL_WEIGHT,
+  size_balance: EQUAL_WEIGHT,
+  dep_depth: EQUAL_WEIGHT,
+  complexity: EQUAL_WEIGHT,
+  test_sync: EQUAL_WEIGHT,
+  references_health: EQUAL_WEIGHT
 };
 
 function loadWeights(): Weights {
@@ -392,7 +401,7 @@ function scoreModularity(libFiles: string[], allProdFiles: string[]): MetricResu
 
   // 2. Path registry density
   let registryDensity = 0;
-  const registryPath: string = path.join(ROOT, 'references', 'path-registry.csv');
+  const registryPath: string = path.join(ROOT, 'references', 'registries', 'path-registry.csv');
   if (fs.existsSync(registryPath)) {
     const csv: string[] = fs.readFileSync(registryPath, 'utf8').trim().split('\n').slice(1); // skip header
     const pathCounts = new Map<string, number>();
@@ -633,6 +642,80 @@ function scoreTestSync(libFiles: string[]): MetricResult {
 }
 
 // ---------------------------------------------------------------------------
+// Score: References Health
+// ---------------------------------------------------------------------------
+
+const STALE_DAYS: number = 180;
+const STALE_MS: number = STALE_DAYS * 24 * 3600 * 1000;
+
+function scoreReferencesHealth(rootDir: string): MetricResult {
+  const refsDir: string = path.join(rootDir, 'references');
+  const indexPath: string = path.join(refsDir, 'registries', 'agent-index.md');
+
+  if (!fs.existsSync(refsDir) || !fs.existsSync(indexPath)) {
+    return {
+      score: 0,
+      sub: { unlisted_files: 0, missing_targets: 0, stale_files: 0, error: 'references/ or agent-index.md missing' }
+    };
+  }
+
+  // Walk references/** for all files.
+  function walkAll(dir: string, out: string[]): void {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full: string = path.join(dir, entry.name);
+      if (entry.isDirectory()) walkAll(full, out);
+      else if (entry.isFile()) out.push(full);
+    }
+  }
+  const allFiles: string[] = [];
+  walkAll(refsDir, allFiles);
+
+  const indexContent: string = fs.readFileSync(indexPath, 'utf8');
+
+  // Count unlisted files. The agent-index file itself is exempt.
+  let unlistedFiles = 0;
+  let staleFiles = 0;
+  const now: number = Date.now();
+  for (const abs of allFiles) {
+    const rel: string = path.relative(rootDir, abs);
+    if (rel === path.relative(rootDir, indexPath)) continue;
+    if (!indexContent.includes(rel)) unlistedFiles++;
+    try {
+      const stat: fs.Stats = fs.statSync(abs);
+      if (now - stat.mtimeMs > STALE_MS) staleFiles++;
+    } catch {
+      // ignore
+    }
+  }
+
+  // Find every backtick-quoted path in the index that starts with references/
+  // and check if it exists on disk.
+  let missingTargets = 0;
+  const matches: RegExpMatchArray | null = indexContent.match(/`(references\/[^`]+)`/g);
+  if (matches) {
+    for (const raw of matches) {
+      const p: string = raw.replace(/`/g, '');
+      // Skip glob/template patterns
+      if (p.includes('*') || p.includes('{')) continue;
+      const abs: string = path.join(rootDir, p);
+      if (!fs.existsSync(abs)) missingTargets++;
+    }
+  }
+
+  const penalty: number = (unlistedFiles * 10) + (missingTargets * 10) + (staleFiles * 5);
+  const score: number = Math.max(0, 100 - penalty);
+
+  return {
+    score: round(score),
+    sub: {
+      unlisted_files: unlistedFiles,
+      missing_targets: missingTargets,
+      stale_files: staleFiles
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Output
 // ---------------------------------------------------------------------------
 
@@ -642,7 +725,7 @@ function round(n: number): number {
 
 function printReport(scores: HealthScores, composite: number): void {
   console.log('--- code-health ---');
-  const order: (keyof HealthScores)[] = ['modularity', 'encapsulation', 'size_balance', 'dep_depth', 'complexity', 'test_sync'];
+  const order: (keyof HealthScores)[] = ['modularity', 'encapsulation', 'size_balance', 'dep_depth', 'complexity', 'test_sync', 'references_health'];
   for (const key of order) {
     const s: MetricResult = scores[key];
     console.log(`${key}: ${s.score.toFixed(1)}`);
@@ -679,7 +762,8 @@ function main(): HealthReport {
     size_balance: scoreSizeBalance(filteredProd),
     dep_depth: scoreDepDepth(libFiles),
     complexity: scoreComplexity(filteredProd),
-    test_sync: scoreTestSync(libFiles)
+    test_sync: scoreTestSync(libFiles),
+    references_health: scoreReferencesHealth(ROOT)
   };
 
   const composite: number = Object.entries(weights)
@@ -698,5 +782,6 @@ if (require.main === module) {
 export {
   parseFile, walk, extractRequires, extractExportCount, computeComplexity,
   discoverFiles, scoreModularity, scoreEncapsulation, scoreSizeBalance,
-  scoreDepDepth, scoreComplexity, scoreTestSync, loadWeights, main, round
+  scoreDepDepth, scoreComplexity, scoreTestSync, scoreReferencesHealth,
+  loadWeights, main, round
 };

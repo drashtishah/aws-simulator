@@ -1,12 +1,13 @@
 {
   "health_scores": {
     "weights": {
-      "modularity": 0.30,
-      "encapsulation": 0.20,
-      "size_balance": 0.15,
-      "dep_depth": 0.10,
-      "complexity": 0.15,
-      "test_sync": 0.10
+      "modularity": 0.143,
+      "encapsulation": 0.143,
+      "size_balance": 0.143,
+      "dep_depth": 0.143,
+      "complexity": 0.143,
+      "test_sync": 0.143,
+      "references_health": 0.142
     }
   },
   "budgets": {

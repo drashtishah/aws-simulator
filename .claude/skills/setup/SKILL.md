@@ -20,7 +20,7 @@ Prepares the workspace for a new player. Run once after cloning.
 
 | Step | Action | Tool | Target |
 |------|--------|------|--------|
-| 2 | Load default profile | Read | `references/default-profile.json` |
+| 2 | Load default profile | Read | `references/config/default-profile.json` |
 | 2 | Create profile | Write | `learning/profile.json` |
 | 3 | Create vault | Write | `learning/vault/` |
 | 4 | Create feedback log | Write | `learning/feedback.md` |
@@ -41,7 +41,7 @@ If `learning/` does not exist, create it. If `learning/sessions/` does not exist
 
 If `learning/profile.json` does not exist, create it.
 
-Read `references/default-profile.json` for the default structure. Replace `{today}` with the current date in YYYY-MM-DD format.
+Read `references/config/default-profile.json` for the default structure. Replace `{today}` with the current date in YYYY-MM-DD format.
 
 If it already exists, leave it. Do not overwrite.
 

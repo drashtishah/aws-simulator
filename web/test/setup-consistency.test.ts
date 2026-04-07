@@ -6,8 +6,8 @@ const path = require('path');
 const { loadConfig, axisNames, currentRank } = require('../lib/progression');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CONFIG_PATH = path.join(ROOT, 'references', 'progression.yaml');
-const DEFAULT_PROFILE_PATH = path.join(ROOT, 'references', 'default-profile.json');
+const CONFIG_PATH = path.join(ROOT, 'references', 'config', 'progression.yaml');
+const DEFAULT_PROFILE_PATH = path.join(ROOT, 'references', 'config', 'default-profile.json');
 const SETUP_SKILL_PATH = path.join(ROOT, '.claude', 'skills', 'setup', 'SKILL.md');
 const PLAY_SKILL_PATH = path.join(ROOT, '.claude', 'skills', 'play', 'SKILL.md');
 
@@ -21,8 +21,8 @@ function loadDefaultProfile() {
 // Verify the skill references the shared profile
 function verifySkillReferencesProfile(skillPath, label) {
   const content = fs.readFileSync(skillPath, 'utf8');
-  assert.ok(content.includes('references/default-profile.json'),
-    label + ' SKILL.md must reference references/default-profile.json');
+  assert.ok(content.includes('references/config/default-profile.json'),
+    label + ' SKILL.md must reference references/config/default-profile.json');
 }
 
 describe('setup skill profile template consistency', () => {

@@ -25,10 +25,21 @@ Run with `npm run health`.
 | dep_depth | Cascade risk | longest require() chain |
 | complexity | Branching complexity | avg cyclomatic complexity |
 | test_sync | Test coverage gaps | % of modules with tests |
+| references_health | Index hygiene for `references/` | unlisted files, missing targets, stale files |
+
+### references_health
+
+Starts at 100 and subtracts:
+
+- 10 per file in `references/**` not mentioned in `references/registries/agent-index.md`
+- 10 per backtick-quoted `references/...` path in the agent-index whose target does not exist on disk
+- 5 per file in `references/**` whose mtime is older than 180 days
+
+The score floors at 0. The metric ensures the agent-index keeps pace with the actual contents of `references/`, so navigating agents never hit dead links and authors never silently orphan a doc.
 
 ## Composite
 
-Weighted average of all six scores. Weights are configurable in `scripts/metrics.config.json`.
+Equal-weight average of all seven scores (each contributes 1/7). Weights are configurable in `scripts/metrics.config.json`.
 
 ## Interpreting changes
 

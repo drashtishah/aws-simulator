@@ -16,7 +16,7 @@ Reference for the four-layer testing system. Agents interact only through the `s
   sim-test run ----------------->  unit tests
   sim-test agent --------------->  web/test-specs/browser/*.yaml
   sim-test personas ------------>  web/test-specs/personas/*.json
-  sim-test evals --------------->  references/eval-scoring.yaml
+  sim-test evals --------------->  references/config/eval-scoring.yaml
   sim-test validate ------------>  all layers in sequence
                                 |
   stdout (text or JSON) <--------  web/test-results/
@@ -164,7 +164,7 @@ Each persona run writes findings to `web/test-results/personas/{persona-id}-{tim
 1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests. No browser needed.
 2. **Layer 2 (Agent Browser):** `sim-test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
 3. **Layer 3 (Persona):** `sim-test personas` loads profiles and prints prompts. The agent explores freely via Chrome DevTools MCP.
-4. **Layer 4 (Evals):** `sim-test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
+4. **Layer 4 (Evals):** `sim-test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
    - **Deterministic checks:** Run against session.json and transcript.jsonl data. Instant, no LLM needed.
    - **LLM judgment checks:** Optional, evaluate narrator quality with an LLM judge. Triggered with `--llm` flag.
 
@@ -237,7 +237,7 @@ Knowing the wiring matters when a single test fails inside the aggregate `unit: 
 `npm test` (defined in `package.json`) chains four steps:
 
 ```
-python3 scripts/extract_paths.py        # regenerate references/path-registry.csv
+python3 scripts/extract_paths.py        # regenerate references/registries/path-registry.csv
 mypy --strict scripts/extract_paths.py  # typecheck the path extractor
 npm run typecheck                       # tsc --noEmit on tsconfig.json + tsconfig.frontend.json
 tsx scripts/sim-test.ts run             # run unit tests via the sim-test CLI boundary
@@ -288,8 +288,8 @@ Two files in `references/` are produced by scripts and must never be edited by h
 
 | File | Generator | What it tracks |
 |---|---|---|
-| `references/path-registry.csv` | `python3 scripts/extract_paths.py` | Every file path mentioned across markdown, YAML, JSON, and source. The `path-registry.test.ts` suite asserts every concrete entry resolves to a real file. |
-| `references/permission-bypass-registry.md` | `tsx scripts/audit-permissions.ts` | Every occurrence of `bypassPermissions`, `dangerouslySkipPermissions`, or `dangerouslyDisableSandbox` in `web/`, `scripts/`, and `.claude/`. |
+| `references/registries/path-registry.csv` | `python3 scripts/extract_paths.py` | Every file path mentioned across markdown, YAML, JSON, and source. The `path-registry.test.ts` suite asserts every concrete entry resolves to a real file. |
+| `references/registries/permission-bypass-registry.md` | `tsx scripts/audit-permissions.ts` | Every occurrence of `bypassPermissions`, `dangerouslySkipPermissions`, or `dangerouslyDisableSandbox` in `web/`, `scripts/`, and `.claude/`. |
 
 `extract_paths.py` runs automatically as the first step of `npm test`, so `path-registry.csv` is regenerated on every test run. `audit-permissions.ts` does NOT run from `npm test`; if you rename a file referenced in the permission registry, regenerate it manually:
 

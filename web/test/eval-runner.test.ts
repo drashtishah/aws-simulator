@@ -7,7 +7,7 @@ const yaml = require('js-yaml');
 const ROOT = path.resolve(__dirname, '..', '..');
 
 describe('eval scoring spec', () => {
-  const specPath = path.join(ROOT, 'references', 'eval-scoring.yaml');
+  const specPath = path.join(ROOT, 'references', 'config', 'eval-scoring.yaml');
 
   it('eval-scoring.yaml exists and parses', () => {
     assert.ok(fs.existsSync(specPath), 'eval-scoring.yaml should exist');

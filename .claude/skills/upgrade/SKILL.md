@@ -18,9 +18,9 @@ Before checking sources, read these files to build a context summary describing 
 | `.claude/settings.local.json` | Plugins (superpowers, playground, cli-anything), agent teams flag |
 | `.claude/hooks/guard-write.ts` | Hook type (PreToolUse Write), protection model (skill ownership, protected paths) |
 | `.claude/hooks/log-hook.ts` | Hook types (PostToolUse, SessionStart/End, PreCompact, PostCompact, UserPromptSubmit, PostToolUseFailure), JSONL logging pattern |
-| `references/workspace-map.md` | Component diagram, data flow, shared data files, test layers |
+| `references/architecture/workspace-map.md` | Component diagram, data flow, shared data files, test layers |
 | `package.json` | Scripts (test, health, extract-paths, feedback:personas), dependencies (express, js-yaml, acorn, commander) |
-| `references/testing-system.md` | 3-layer test architecture: deterministic (node --test), agent browser (YAML specs + Chrome DevTools MCP), agent persona (JSON profiles) |
+| `references/architecture/testing-system.md` | 3-layer test architecture: deterministic (node --test), agent browser (YAML specs + Chrome DevTools MCP), agent persona (JSON profiles) |
 | `.claude/skills/*/SKILL.md` | Frontmatter only: name + description of each skill (play, create-sim, setup, fix, sim-test) |
 
 If `.claude/skills/upgrade/references/workspace-context.md` exists and is recent, use it directly instead of re-reading all files. Only rebuild context from source files if the workspace has changed significantly.

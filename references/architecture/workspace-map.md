@@ -154,7 +154,7 @@ The tier system uses `learning/.current-model` to select prompt overlays:
 
 ## Tests
 
-All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `references/testing-system.md` for full architecture.
+All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `references/architecture/testing-system.md` for full architecture.
 
 ### Layer 1: Deterministic (`sim-test run`)
 

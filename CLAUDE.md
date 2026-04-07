@@ -17,12 +17,12 @@ Interactive AWS incident-response game played through Claude Code skills.
 - No `--` as punctuation (use commas, periods, or colons instead)
 - All file paths in markdown and JSON must be root-relative (e.g., `.claude/skills/create-sim/references/exam-topics.md`, not references/exam-topics.md). Run `npm run extract-paths` then `npm test` to validate.
 - Backticks in markdown are for file paths and code only. Do not backtick-wrap YAML tags, labels, or other slash-separated values that are not filesystem paths.
-- Workspace architecture in references/workspace-map.md
-- Agent navigation index in `references/agent-index.md`, tool registry in `references/tool-registry.md`
+- Workspace architecture in references/architecture/workspace-map.md
+- Agent navigation index in `references/registries/agent-index.md`, tool registry in `references/registries/tool-registry.md`
 
 ## Code Health
 
-Run `npm run health` before and after refactors. See `references/code-health.md` for details.
+Run `npm run health` before and after refactors. See `references/config/code-health.md` for details.
 
 ## Logging
 

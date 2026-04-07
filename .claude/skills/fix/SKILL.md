@@ -12,7 +12,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 
 | Step | Action | Tool | Target |
 |------|--------|------|--------|
-| 0 | Load workspace map | Read | `references/workspace-map.md` |
+| 0 | Load workspace map | Read | `references/architecture/workspace-map.md` |
 | 1 | Load feedback | Read | `learning/feedback.md` |
 | 2 | Load activity logs | Read | `learning/logs/activity.jsonl` |
 | 2 | Load metrics config | Read | `scripts/metrics.config.json` |
@@ -27,6 +27,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 | 8h-verify | Verification | Agent | Separate subagent |
 | 9 | Clear feedback | Write | `learning/feedback.md` |
 | 9 | Update metrics config | Write | `scripts/metrics.config.json` |
+| 11b | Run browser tests | Bash | sim-test agent |
 
 ---
 
@@ -34,7 +35,7 @@ Analyzes feedback, activity logs, and code health scores, then applies targeted 
 
 ### 0. Set skill context
 
-Before making changes, read `references/workspace-map.md` to understand component dependencies and impact.
+Before making changes, read `references/architecture/workspace-map.md` to understand component dependencies and impact.
 
 ### 1. Read feedback
 
@@ -49,7 +50,7 @@ Read `learning/logs/activity.jsonl`. Check `last_fix_analyzed` in `scripts/metri
 - **Tool failures**: Group PostToolUseFailure events by tool name and error message. Flag patterns where the same Bash command fails 3+ times (player stuck).
 - **System failures**: StopFailure events (rate_limit, billing, server_error, max_output_tokens). These are infrastructure issues, not sim bugs.
 - **Player engagement**: Count UserPromptSubmit events per session. Report average.
-- **Permission bypass audit**: Read `references/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
+- **Permission bypass audit**: Read `references/registries/permission-bypass-registry.md`. Verify all entries have guardrails noted. If the registry is stale (check file modification date vs last code change), run `npm run audit:permissions` to refresh.
 
 ### 2b. Analyze learning vault
 
@@ -135,10 +136,10 @@ For each group of actionable findings that will drive changes, follow `.claude/s
 - Sim content, narrative, artifacts, difficulty: target `create-sim` skill (`.claude/skills/create-sim/SKILL.md`) and `.claude/skills/create-sim/references/sim-template.md`
 - Play flow, coaching, hints, console behavior: target `play` skill (`.claude/skills/play/SKILL.md`) and its references (`.claude/skills/play/references/agent-prompts.md`, `.claude/skills/play/references/coaching-patterns.md`)
 - Code structure, modularity, complexity regressions: target the specific files flagged by health scores
-- Web UI layout, visual design, navigation changes: edit `web/public/` files directly. After edits, use chrome-devtools MCP to take a screenshot and present it to the user for approval. The web app has live reload enabled in dev mode (`npm run dev`), so the browser updates automatically.
+- Web UI layout, visual design, navigation changes: edit `web/public/` files directly. After edits, use chrome-devtools MCP to take a screenshot and present it to the user for approval. The web app has live reload enabled in dev mode (`npm run dev`), so the browser updates automatically. After every UI edit group, before committing that group, run `sim-test agent` via chrome-devtools MCP. The pre-commit-ui-tests hook will block the commit otherwise.
 - Player behavior patterns (approach, quality trends, engagement): update `learning/vault/patterns/` notes
 - Code bugs, infra errors, test failures: create GitHub Issues
-- Agent behavior expectations: update `references/eval-scoring.yaml`
+- Agent behavior expectations: update `references/config/eval-scoring.yaml`
 - Ambiguous items: present to user for classification
 
 ### 8. Apply changes with per-edit health tracking
@@ -198,15 +199,28 @@ Ask: "Want to run eval scorecard? (scores completed play sessions, instant for d
   - No: skip
 - No: skip
 
-Then ask: "Want to run agent browser tests? (starts web server, runs specs via Chrome DevTools)"
-- Yes:
-  1. Start the web server: `npm start &`
-  2. Wait for it to be ready (check `curl -s http://localhost:3200`)
-  3. Run `sim-test agent` to get specs, then execute each spec's steps via Chrome DevTools MCP tools (navigate, click, take_snapshot, evaluate_script)
-  4. Record findings: which steps passed, which had selector mismatches or unexpected state
-  5. Stop the web server when done
-  6. Report findings. If selectors are stale, note them for the next fix cycle.
-- No: skip
+### 11b. Browser tests (mandatory if any UI file was edited this cycle)
+
+Detect whether any commit in this fix cycle touched UI files. Use the cycle start timestamp (from when this /fix run began) and run:
+
+```
+git log --since=<cycle-start> --name-only --pretty=format:
+```
+
+If any changed path matches `web/public/**`, `web/server.ts`, `web/lib/**/*.css`, or `web/test-specs/browser/**`, browser tests are mandatory.
+
+When mandatory, spawn this work as a FRESH subagent via the Agent tool (general-purpose). The verifying subagent must NOT be the same one that wrote the UI changes. The subagent must:
+
+1. Start the web server: `npm start &`
+2. Wait for it to be ready (check `curl -s http://localhost:3200`)
+3. Run `sim-test agent` to get specs, then execute each spec's steps via Chrome DevTools MCP tools (navigate, click, take_snapshot, evaluate_script, list_console_messages, list_network_requests)
+4. Record per-spec pass/fail and any failed spec names
+5. Run `npm run agent-browser-summary -- --status pass` (or `--status fail --failed-specs name1,name2`) to write `web/test-results/agent-browser-latest.json`
+6. Stop the web server when done
+
+If any spec fails, halt the cycle and report the failures. Do not finalize until they pass. The pre-commit-ui-tests hook will block any subsequent commit until the artifact reflects a passing run.
+
+If no UI files were touched this cycle, skip this step.
 
 ### 12. Clean up
 
@@ -223,3 +237,4 @@ All changes were already committed per-change in step 8h. Verify with `git log -
 5. Do not push automatically. Let the user decide.
 6. Verification separation: any step that verifies work (health checks, test runs, visual regression) must be performed by a different subagent than the one that wrote the code or text being verified.
 7. Every feature change gets its own commit. If a group contains multiple independent changes (e.g., remove a button AND fix a border color), commit each separately. Structure changes so reverting one commit does not break others.
+8. Any /fix cycle that edits files under `web/public/**`, `web/server.ts`, or `web/test-specs/browser/**` must run `sim-test agent` and pass before finalizing. The pre-commit-ui-tests hook enforces this on commit.

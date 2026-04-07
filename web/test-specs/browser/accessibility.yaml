@@ -94,3 +94,17 @@ steps:
       - selector: ":focus-visible"
         css_property: { outline-style: "solid" }
         visible: true
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok
+
+  - id: landmarks-present
+    target:
+      landmarks: ["main", "navigation", "complementary"]
+    check:
+      - type: landmarks_present

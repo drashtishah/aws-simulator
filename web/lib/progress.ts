@@ -2,7 +2,7 @@ import path from 'node:path';
 import * as progression from './progression.js';
 import type { ProgressionConfig, Polygon } from './progression.js';
 
-const CONFIG_PATH: string = path.join(__dirname, '..', '..', 'references', 'progression.yaml');
+const CONFIG_PATH: string = path.join(__dirname, '..', '..', 'references', 'config', 'progression.yaml');
 let _config: ProgressionConfig | undefined;
 
 function getConfig(): ProgressionConfig {

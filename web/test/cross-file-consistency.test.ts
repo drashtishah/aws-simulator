@@ -7,7 +7,7 @@ const yaml = require('js-yaml');
 const { loadConfig, axisNames } = require('../lib/progression');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CONFIG_PATH = path.join(ROOT, 'references', 'progression.yaml');
+const CONFIG_PATH = path.join(ROOT, 'references', 'config', 'progression.yaml');
 
 function readFile(relPath) {
   return fs.readFileSync(path.join(ROOT, relPath), 'utf8');
@@ -103,7 +103,7 @@ describe('no stale theme references', () => {
     'web/public/app.ts',
     'web/server.ts',
     '.claude/skills/play/SKILL.md',
-    'references/web-app-checklist.md',
+    'references/operations/web-app-checklist.md',
   ];
 
   for (const filePath of files) {

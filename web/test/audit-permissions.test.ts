@@ -13,19 +13,19 @@ describe('permission bypass audit', () => {
   it('permission-bypass-registry.md exists after running audit', () => {
     const { execSync } = require('child_process');
     execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT, timeout: 60000 });
-    assert.ok(fs.existsSync(path.join(ROOT, 'references', 'permission-bypass-registry.md')));
+    assert.ok(fs.existsSync(path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md')));
   });
 
   it('registry contains known usage in claude-process', () => {
     const registry = fs.readFileSync(
-      path.join(ROOT, 'references', 'permission-bypass-registry.md'), 'utf8'
+      path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md'), 'utf8'
     );
     assert.ok(registry.includes('claude-process'), 'should find usage in claude-process');
   });
 
   it('registry has table format', () => {
     const registry = fs.readFileSync(
-      path.join(ROOT, 'references', 'permission-bypass-registry.md'), 'utf8'
+      path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md'), 'utf8'
     );
     assert.ok(registry.includes('| File |'), 'should have table header');
   });
