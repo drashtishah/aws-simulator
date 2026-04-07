@@ -38,7 +38,6 @@ export const VAULT_SUBDIRS: readonly string[] = [
 export interface VaultLayout {
   root: string;
   index: string;
-  dreamState: string;
   obsidian: string;
 }
 
@@ -47,7 +46,6 @@ export function layout(learningDir: string): VaultLayout {
   return {
     root,
     index: path.join(root, 'index.md'),
-    dreamState: path.join(root, '.dream-state.json'),
     obsidian: path.join(root, '.obsidian'),
   };
 }
