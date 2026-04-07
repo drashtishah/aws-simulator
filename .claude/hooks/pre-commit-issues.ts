@@ -27,6 +27,25 @@ process.stdin.on('end', () => {
       );
       process.exit(2);
     }
+
+    // PR-C invariant 6: refuse commits that delete learning/logs/health-scores.jsonl.
+    // The file holds monotonic per-bucket floor history; deleting it would
+    // wipe the anti-gaming floor invariant. learning/ is currently gitignored,
+    // so this is a forward-looking guard for any future un-ignoring.
+    // Match a real `git rm` invocation (not a string inside a -m commit body).
+    // We split on shell separators and look for a token-led command.
+    const segments: string[] = cmd.split(/&&|\|\||;|\|/);
+    const hasDeleteCmd: boolean = segments.some(s =>
+      /^\s*git\s+rm\b/.test(s) && /learning\/logs\/health-scores\.jsonl/.test(s)
+    );
+    if (hasDeleteCmd) {
+      process.stderr.write(
+        'BLOCKED: refuse to delete learning/logs/health-scores.jsonl\n' +
+        '(holds monotonic per-bucket floor history; PR-C invariant 6).\n' +
+        'To reset floors, run: npm run health -- --rebase-floors\n'
+      );
+      process.exit(2);
+    }
     process.exit(0);
   } catch {
     process.exit(0);

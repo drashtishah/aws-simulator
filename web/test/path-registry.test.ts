@@ -41,8 +41,17 @@ describe('path-registry', () => {
       // Skip runtime-generated paths (created by /setup, hooks, or CLI, not present on fresh clone)
       if (row.path.startsWith('learning/logs/')) continue;
       if (row.path.startsWith('learning/vault')) continue;
+      if (row.path.startsWith('learning/system-vault')) continue;
+      // Plans dir is gitignored scratch space (feedback_no_plan_scoring).
+      if (row.path === '.claude/plans/' || row.path === '.claude/plans') continue;
       if (row.path === 'learning/catalog.csv') continue;
       if (row.path === 'learning/feedback.md') continue;
+      // Vault-internal subdirectory references in system-vault skill docs.
+      // These are paths inside learning/system-vault/, never standalone.
+      if (
+        ['findings/', 'decisions/', 'sessions/', 'workarounds/', 'components/', 'health/', 'dreams/'].includes(row.path) &&
+        row.file.includes('system-vault')
+      ) continue;
       if (row.path.startsWith('web/test-results/')) continue;
       if (row.path.startsWith('dist/')) continue;
 
@@ -79,7 +88,7 @@ describe('path-registry', () => {
       const prefix = row.path.slice(0, templateIdx);
 
       // The prefix should exist as a directory (e.g., "sims/" from "sims/{id}/manifest.json")
-      // or as a file prefix (e.g., "prompt-overlay-" matching "prompt-overlay-medium.md")
+      // or as a file prefix (e.g., "agent-prompts-" matching a file in the same dir).
       if (prefix) {
         const prefixPath = path.join(ROOT, prefix);
         if (!fs.existsSync(prefixPath)) {
@@ -99,6 +108,19 @@ describe('path-registry', () => {
       assert.fail(
         `${failures.length} template path(s) with missing prefix:\n` +
         failures.map(f => '  - ' + f).join('\n')
+      );
+    }
+  });
+
+  it('no source file lives inside a worktrees directory', () => {
+    const rows = parseCSV();
+    const offenders = rows
+      .map(r => r.file)
+      .filter(f => f.startsWith('.worktrees/') || f.includes('/.worktrees/') || f.startsWith('worktrees/') || f.includes('/worktrees/'));
+    if (offenders.length > 0) {
+      assert.fail(
+        `extract_paths.py walked into a worktree directory (regression of PR-A.4.3):\n` +
+        [...new Set(offenders)].slice(0, 10).map(f => '  - ' + f).join('\n')
       );
     }
   });

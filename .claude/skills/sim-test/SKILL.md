@@ -11,6 +11,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/sim-test/ownership.json"
+references_system_vault: true
 ---
 
 # sim-test Skill
@@ -69,7 +70,7 @@ This command uses Sonnet to validate that sim metadata accurately describes the 
 
 ## Phase 4: Commit
 
-Follow `.claude/skills/git/references/commit-procedure.md`. If a GitHub Issue exists for this work, reference it in the commit message.
+Follow `references/architecture/core-workflow.md`. If a GitHub Issue exists for this work, reference it in the commit message.
 
 ---
 

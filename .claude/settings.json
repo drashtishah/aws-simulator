@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "event": "SessionStart",
+            "command": "npx tsx .claude/hooks/dream-check.ts",
+            "cwd": "/Users/drashti/experiments/aws-simulator",
+            "timeout": 30000,
+            "allowed_tools": [
+              "Read",
+              "Bash(test:*)",
+              "Skill(system-vault-dream)"
+            ]
+          }
+        ]
+      }
+    ],
+    "PostCommit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "event": "PostCommit",
+            "command": "npx tsx .claude/hooks/system-vault-compile.ts",
+            "cwd": "/Users/drashti/experiments/aws-simulator",
+            "timeout": 120000,
+            "allowed_tools": [
+              "Read",
+              "Write",
+              "Edit",
+              "Glob",
+              "Grep",
+              "Skill(system-vault-compile)",
+              "Bash(npm run health)"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

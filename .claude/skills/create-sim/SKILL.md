@@ -10,6 +10,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/create-sim/ownership.json"
+references_system_vault: true
 ---
 
 # create-sim Skill
@@ -371,7 +372,7 @@ This uses an LLM agent to validate that the summary, title, difficulty, services
 
 ### Phase 6: Commit
 
-22. Follow the commit procedure in `.claude/skills/git/references/commit-procedure.md`. Stage the sim directory and registry files. Use `Closes #N` referencing the issue from step 0. Include action lines:
+22. Follow the commit procedure in `references/architecture/core-workflow.md`. Stage the sim directory and registry files. Use `Closes #N` referencing the issue from step 0. Include action lines:
 
     feat(sim): add sim {id} -- {short title}
 

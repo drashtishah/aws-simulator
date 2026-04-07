@@ -1,6 +1,7 @@
 ---
 name: upgrade
 description: Scan Claude Code ecosystem sources for updates and surface improvements relevant to this workspace. USE WHEN upgrade, check updates, what's new, ecosystem changes, claude code updates, new features, source check.
+references_system_vault: true
 ---
 
 # Upgrade
@@ -281,4 +282,4 @@ Anti-patterns to reject:
 
 ## Git Discipline
 
-When implementing recommendations from the upgrade report, create a task per recommendation and promote to GitHub Issues per `.claude/skills/git/references/task-to-issue.md`. Follow `.claude/skills/git/references/commit-procedure.md` after each change.
+When implementing recommendations from the upgrade report, create a task per recommendation and promote to GitHub Issues per `.claude/skills/git/references/task-to-issue.md`. Follow `references/architecture/core-workflow.md` after each change.

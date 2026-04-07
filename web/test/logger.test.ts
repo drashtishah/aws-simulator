@@ -6,50 +6,44 @@ const os = require('os');
 
 const paths = require('../lib/paths');
 
-// Save original paths
-const origLogFile = paths.LOG_FILE;
-const origLogsDir = paths.LOGS_DIR;
-
-// Redirect to temp directory so tests don't pollute production logs
+// PR-B unification: there is now a single raw.jsonl. The legacy LOG_FILE
+// and SYSTEM_LOG_FILE constants alias to RAW_LOG_FILE; tests that used to
+// distinguish between them now filter by `level` / `event` fields instead.
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'logger-test-'));
-const tmpLogFile = path.join(tmpDir, 'activity.jsonl');
-const tmpSystemLogFile = path.join(tmpDir, 'system.jsonl');
+const tmpRawLogFile = path.join(tmpDir, 'raw.jsonl');
 paths.LOGS_DIR = tmpDir;
-paths.LOG_FILE = tmpLogFile;
-paths.SYSTEM_LOG_FILE = tmpSystemLogFile;
+paths.RAW_LOG_FILE = tmpRawLogFile;
+paths.LOG_FILE = tmpRawLogFile;
+paths.SYSTEM_LOG_FILE = tmpRawLogFile;
 
 const { logEvent, generateFixManifest, sessionTraces } = require('../lib/logger');
 
-const LOG_FILE = tmpLogFile;
-const SYSTEM_LOG_FILE = tmpSystemLogFile;
+const RAW_LOG_FILE = tmpRawLogFile;
 
-function lastLogLine(file) {
-  const f = file || LOG_FILE;
-  const content = fs.readFileSync(f, 'utf8').trim();
+function lastLogLine() {
+  const content = fs.readFileSync(RAW_LOG_FILE, 'utf8').trim();
   const lines = content.split('\n');
   return JSON.parse(lines[lines.length - 1]);
 }
 
-function lastNLogLines(n, file) {
-  const f = file || LOG_FILE;
-  const content = fs.readFileSync(f, 'utf8').trim();
+function lastNLogLines(n) {
+  const content = fs.readFileSync(RAW_LOG_FILE, 'utf8').trim();
   const lines = content.split('\n');
   return lines.slice(-n).map(l => JSON.parse(l));
 }
 
-function allLogLines(file) {
-  const f = file || LOG_FILE;
-  if (!fs.existsSync(f)) return [];
-  const content = fs.readFileSync(f, 'utf8').trim();
+function allLogLines() {
+  if (!fs.existsSync(RAW_LOG_FILE)) return [];
+  const content = fs.readFileSync(RAW_LOG_FILE, 'utf8').trim();
   if (!content) return [];
   return content.split('\n').map(l => JSON.parse(l));
 }
 
 describe('logEvent', () => {
-  it('writes a JSON line to activity.jsonl', () => {
-    const sizeBefore = fs.existsSync(LOG_FILE) ? fs.statSync(LOG_FILE).size : 0;
+  it('writes a JSON line to raw.jsonl', () => {
+    const sizeBefore = fs.existsSync(RAW_LOG_FILE) ? fs.statSync(RAW_LOG_FILE).size : 0;
     logEvent('test-session-1', { level: 'info', event: 'unit_test' });
-    const sizeAfter = fs.statSync(LOG_FILE).size;
+    const sizeAfter = fs.statSync(RAW_LOG_FILE).size;
     assert.ok(sizeAfter > sizeBefore, 'log file should grow');
   });
 
@@ -63,28 +57,27 @@ describe('logEvent', () => {
 
   it('includes custom event fields', () => {
     logEvent('test-session-3', { level: 'warn', event: 'custom_event', extra: 'data' });
-    // warn-level events go to system.jsonl
-    const line = lastLogLine(SYSTEM_LOG_FILE);
+    const line = lastLogLine();
     assert.equal(line.level, 'warn');
     assert.equal(line.event, 'custom_event');
     assert.equal(line.extra, 'data');
   });
 
   it('does nothing when sessionId is falsy', () => {
-    const sizeBefore = fs.statSync(LOG_FILE).size;
+    const sizeBefore = fs.statSync(RAW_LOG_FILE).size;
     logEvent(null, { level: 'info', event: 'should_not_log' });
     logEvent('', { level: 'info', event: 'should_not_log' });
     logEvent(undefined, { level: 'info', event: 'should_not_log' });
-    const sizeAfter = fs.statSync(LOG_FILE).size;
+    const sizeAfter = fs.statSync(RAW_LOG_FILE).size;
     assert.equal(sizeBefore, sizeAfter, 'log file should not grow for null session');
   });
 });
 
 describe('generateFixManifest', () => {
   it('does not log when outcome is success', () => {
-    const sizeBefore = fs.statSync(LOG_FILE).size;
+    const sizeBefore = fs.statSync(RAW_LOG_FILE).size;
     generateFixManifest('test-session-fix', 'success', 'none', [], []);
-    const sizeAfter = fs.statSync(LOG_FILE).size;
+    const sizeAfter = fs.statSync(RAW_LOG_FILE).size;
     assert.equal(sizeBefore, sizeAfter, 'should not log for success outcome');
   });
 
@@ -106,10 +99,9 @@ describe('checkThresholds', () => {
       event: 'turn',
       usage: { input_tokens: 850000 }
     });
-    // Warning goes to system.jsonl
-    const sysLines = allLogLines(SYSTEM_LOG_FILE);
-    const warning = sysLines.find(l => l.session_id === 'test-threshold-ctx' && l.event === 'CONTEXT_HIGH');
-    assert.ok(warning, 'should log CONTEXT_HIGH warning in system.jsonl');
+    const lines = allLogLines();
+    const warning = lines.find(l => l.session_id === 'test-threshold-ctx' && l.event === 'CONTEXT_HIGH');
+    assert.ok(warning, 'should log CONTEXT_HIGH warning in raw.jsonl');
     assert.equal(warning.level, 'warn');
     assert.ok(warning.context_pct, 'should include context_pct');
   });
@@ -120,12 +112,9 @@ describe('checkThresholds', () => {
       event: 'turn',
       usage: { input_tokens: 500000 }
     });
-    const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
-    const lines = content.split('\n');
-    const warnings = lines.filter(l => {
-      const parsed = JSON.parse(l);
-      return parsed.session_id === 'test-threshold-ctx-ok' && parsed.event === 'CONTEXT_HIGH';
-    });
+    const warnings = allLogLines().filter(l =>
+      l.session_id === 'test-threshold-ctx-ok' && l.event === 'CONTEXT_HIGH'
+    );
     assert.equal(warnings.length, 0, 'should not log CONTEXT_HIGH below 80%');
   });
 
@@ -135,10 +124,10 @@ describe('checkThresholds', () => {
       event: 'turn',
       usage: { duration_ms: 35000 }
     });
-    // Warning goes to system.jsonl
-    const sysLines = allLogLines(SYSTEM_LOG_FILE);
-    const warning = sysLines.find(l => l.session_id === 'test-threshold-lat' && l.event === 'HIGH_LATENCY');
-    assert.ok(warning, 'should log HIGH_LATENCY warning in system.jsonl');
+    const warning = allLogLines().find(l =>
+      l.session_id === 'test-threshold-lat' && l.event === 'HIGH_LATENCY'
+    );
+    assert.ok(warning, 'should log HIGH_LATENCY warning in raw.jsonl');
     assert.equal(warning.level, 'warn');
     assert.equal(warning.duration_ms, 35000);
   });
@@ -153,17 +142,15 @@ describe('checkThresholds', () => {
         target: '/some/file.js'
       });
     }
-    // TOOL_LOOP warnings go to system.jsonl
-    const sysLines = allLogLines(SYSTEM_LOG_FILE);
-    const warnings = sysLines.filter(l => l.session_id === sessionId && l.event === 'TOOL_LOOP');
-    assert.ok(warnings.length > 0, 'should log TOOL_LOOP warning in system.jsonl after > 5 calls');
+    const warnings = allLogLines().filter(l => l.session_id === sessionId && l.event === 'TOOL_LOOP');
+    assert.ok(warnings.length > 0, 'should log TOOL_LOOP warning in raw.jsonl after > 5 calls');
     assert.equal(warnings[0].tool, 'Read');
     assert.equal(warnings[0].target, '/some/file.js');
   });
 
   it('writes valid JSONL (each line parseable as JSON)', () => {
     logEvent('test-jsonl-valid', { level: 'info', event: 'test_jsonl' });
-    const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
+    const content = fs.readFileSync(RAW_LOG_FILE, 'utf8').trim();
     const lines = content.split('\n');
     for (const line of lines) {
       assert.doesNotThrow(() => JSON.parse(line), 'every line must be valid JSON');
@@ -194,58 +181,40 @@ describe('trace ID correlation', () => {
   });
 });
 
-describe('log destination routing', () => {
-  it('system warnings (CONTEXT_HIGH) go to system.jsonl', () => {
+describe('unified log destination (PR-B)', () => {
+  it('all events, including warnings, land in raw.jsonl', () => {
     logEvent('test-route-sys', {
       level: 'info',
       event: 'turn',
       usage: { input_tokens: 850000 }
     });
-    // The CONTEXT_HIGH warning should go to system.jsonl
-    assert.ok(fs.existsSync(SYSTEM_LOG_FILE), 'system.jsonl should be created');
-    const content = fs.readFileSync(SYSTEM_LOG_FILE, 'utf8').trim();
-    const lines = content.split('\n');
-    const warning = lines.find(l => JSON.parse(l).event === 'CONTEXT_HIGH');
-    assert.ok(warning, 'CONTEXT_HIGH should be in system.jsonl');
-
-    // And CONTEXT_HIGH should NOT be in activity.jsonl
-    const actContent = fs.readFileSync(LOG_FILE, 'utf8').trim();
-    const actLines = actContent.split('\n');
-    const actWarning = actLines.filter(l => {
-      const parsed = JSON.parse(l);
-      return parsed.session_id === 'test-route-sys' && parsed.event === 'CONTEXT_HIGH';
-    });
-    assert.equal(actWarning.length, 0, 'CONTEXT_HIGH should NOT be in activity.jsonl');
+    assert.ok(fs.existsSync(RAW_LOG_FILE), 'raw.jsonl should be created');
+    const lines = allLogLines();
+    const warning = lines.find(l => l.event === 'CONTEXT_HIGH' && l.session_id === 'test-route-sys');
+    assert.ok(warning, 'CONTEXT_HIGH warning should be in raw.jsonl');
+    const turn = lines.find(l => l.event === 'turn' && l.session_id === 'test-route-sys');
+    assert.ok(turn, 'turn event should also be in raw.jsonl');
   });
 
-  it('regular learning events stay in activity.jsonl', () => {
-    const actSizeBefore = fs.existsSync(LOG_FILE) ? fs.statSync(LOG_FILE).size : 0;
+  it('regular learning events grow raw.jsonl', () => {
+    const sizeBefore = fs.existsSync(RAW_LOG_FILE) ? fs.statSync(RAW_LOG_FILE).size : 0;
     logEvent('test-route-learn', { level: 'info', event: 'unit_test_route' });
-    const actSizeAfter = fs.statSync(LOG_FILE).size;
-    assert.ok(actSizeAfter > actSizeBefore, 'activity.jsonl should grow with learning events');
+    const sizeAfter = fs.statSync(RAW_LOG_FILE).size;
+    assert.ok(sizeAfter > sizeBefore, 'raw.jsonl should grow with learning events');
   });
 });
 
 describe('session cleanup on session_end', () => {
   it('toolCallTracker is cleared on session_end', () => {
     const sid = 'test-cleanup-tool-' + Date.now();
-    // Fire 4 tool_use events (below threshold of 5)
     for (let i = 0; i < 4; i++) {
       logEvent(sid, { level: 'info', event: 'tool_use', tool: 'Read', target: '/cleanup/file.js' });
     }
-    // End the session, which should clear the tracker
     logEvent(sid, { level: 'info', event: 'session_end' });
-    // Fire 4 more tool_use events with same tool+target (should restart from 0)
     for (let i = 0; i < 4; i++) {
       logEvent(sid, { level: 'info', event: 'tool_use', tool: 'Read', target: '/cleanup/file.js' });
     }
-    // Total would be 8 without cleanup, triggering TOOL_LOOP. With cleanup, max is 4, no warning.
-    const content = fs.readFileSync(LOG_FILE, 'utf8').trim();
-    const lines = content.split('\n');
-    const warnings = lines.filter(l => {
-      const parsed = JSON.parse(l);
-      return parsed.session_id === sid && parsed.event === 'TOOL_LOOP';
-    });
+    const warnings = allLogLines().filter(l => l.session_id === sid && l.event === 'TOOL_LOOP');
     assert.equal(warnings.length, 0, 'should not trigger TOOL_LOOP after session_end reset');
   });
 
@@ -256,11 +225,9 @@ describe('session cleanup on session_end', () => {
     const firstTraceId = firstLine.trace_id;
     assert.ok(firstTraceId, 'should have a trace_id');
 
-    // End the session
     logEvent(sid, { level: 'info', event: 'session_end' });
     assert.equal(sessionTraces.has(sid), false, 'sessionTraces should not contain the session after session_end');
 
-    // Start new activity with the same sessionId
     logEvent(sid, { level: 'info', event: 'second_batch' });
     const secondLine = lastLogLine();
     const secondTraceId = secondLine.trace_id;

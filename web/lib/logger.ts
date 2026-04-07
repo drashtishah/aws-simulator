@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { LOGS_DIR, SYSTEM_LOG_FILE, LOG_FILE } from './paths.js';
+import { LOGS_DIR, RAW_LOG_FILE } from './paths.js';
 
 const CONTEXT_WARN_PCT = 0.80;
 const LATENCY_WARN_MS = 30000;
@@ -48,14 +48,13 @@ function logEvent(sessionId: string | null, event: EventData): void {
   };
   const line = JSON.stringify(record) + '\n';
 
-  const isSystemEvent = event.level === 'warn' ||
-    ['CONTEXT_HIGH', 'HIGH_LATENCY', 'TOOL_LOOP'].includes(event.event ?? '');
-  const logFile = isSystemEvent ? SYSTEM_LOG_FILE : LOG_FILE;
+  // PR-B: unified destination. The previous system/activity split is gone;
+  // downstream consumers filter on `level` and `event` fields instead.
   try {
-    fs.appendFileSync(logFile, line);
+    fs.appendFileSync(RAW_LOG_FILE, line);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`Failed to write log to ${logFile}: ${message}`);
+    console.error(`Failed to write log to ${RAW_LOG_FILE}: ${message}`);
   }
 
   checkThresholds(sessionId, event);

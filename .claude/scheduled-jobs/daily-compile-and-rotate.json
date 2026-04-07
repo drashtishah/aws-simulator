@@ -1,0 +1,26 @@
+{
+  "name": "daily-compile-and-rotate",
+  "cron": "0 3 * * *",
+  "timezone": "local",
+  "working_dir": "/Users/drashti/experiments/aws-simulator",
+  "allowed_tools": [
+    "Read",
+    "Write",
+    "Edit",
+    "Glob",
+    "Grep",
+    "Bash(gzip:*)",
+    "Bash(mv:*)",
+    "Bash(npm run health)",
+    "Skill(system-vault-compile)",
+    "Skill(system-vault-prune)"
+  ],
+  "allowed_write_paths": [
+    "learning/system-vault/**",
+    "learning/logs/raw.jsonl",
+    "learning/logs/raw.jsonl.*.gz",
+    "learning/logs/archive/**",
+    ".claude/state/vault-circuit.json"
+  ],
+  "prompt": "Run the system-vault-compile skill to compile today's raw.jsonl into the system vault, then rotate raw.jsonl by gzipping yesterday's segment into learning/logs/archive/. On success, reset compile_failures in .claude/state/vault-circuit.json. On failure, increment compile_failures and do not proceed to rotation."
+}

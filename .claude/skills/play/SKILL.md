@@ -2,6 +2,7 @@
 name: play
 description: Run an AWS incident simulation via the web app. Starts the server, opens the browser, and hands off to the web-based game loop. Use when user says "play", "start sim", "run simulation", "practice AWS", or "let's play".
 effort: low
+references_system_vault: true
 ---
 
 # play Skill

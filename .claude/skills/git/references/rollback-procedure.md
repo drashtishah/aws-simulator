@@ -36,7 +36,7 @@ Read the reverted diff (`git show HEAD~1`) and the test failure output. Identify
 
 ### 5. Fix forward
 
-Make a new edit that addresses both the original goal AND the test failure. Then restart from step 1 of `.claude/skills/git/references/commit-procedure.md`.
+Make a new edit that addresses both the original goal AND the test failure. Then restart from step 1 of `references/architecture/core-workflow.md`.
 
 ## Principles
 

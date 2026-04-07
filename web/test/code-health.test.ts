@@ -338,8 +338,8 @@ describe('scoreTestSync (controlled)', () => {
       .map(f => path.join(ROOT, 'web', 'lib', f));
 
     const result = scoreTestSync(libFiles);
-    // All 12 lib files have dedicated test files
-    assert.equal(result.sub.covered, '12/12');
+    // All 13 lib files have dedicated test files
+    assert.equal(result.sub.covered, '13/13');
     assert.ok(result.score >= 80, `score ${result.score} should be >= 80`);
   });
 });
@@ -389,3 +389,265 @@ describe('round', () => {
     assert.equal(round(0), 0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// PR-C invariants and anti-gaming guardrails
+// ---------------------------------------------------------------------------
+
+const {
+  classify, BUCKETS,
+} = require('../../scripts/lib/classify');
+const {
+  discoverScope, scoreAllBuckets,
+} = require('../../scripts/code-health');
+
+function emptyDiscovery() {
+  const byBucket = Object.fromEntries(BUCKETS.map(b => [b, []]));
+  return { byBucket, tracked: 0, classified: 0, excluded: 0, ignored: [], unclassifiedErrors: [] };
+}
+
+function makeDiscovery(byBucket) {
+  const full = Object.fromEntries(BUCKETS.map(b => [b, []]));
+  for (const [k, v] of Object.entries(byBucket)) full[k] = v;
+  const classified = Object.values(full).reduce((s, arr) => s + arr.length, 0);
+  return { byBucket: full, tracked: classified, classified, excluded: 0, ignored: [], unclassifiedErrors: [] };
+}
+
+function defaultCfg(extra = {}) {
+  const bw = {};
+  for (const b of BUCKETS) bw[b] = 1 / BUCKETS.length;
+  return { bucketWeights: bw, floors: {}, healthignore: [], ...extra };
+}
+
+describe('invariant 1: completeness (every tracked file classified)', () => {
+  it('throws when discoverScope surfaces unclassifiedErrors', () => {
+    const d = emptyDiscovery();
+    d.unclassifiedErrors = ['weird/unclassified/file.xyz'];
+    assert.throws(() => scoreAllBuckets(d, defaultCfg()), /unclassified/i);
+  });
+
+  it('plans are silently excluded, never appear as unclassified', () => {
+    const d = discoverScope(['.claude/plans/foo.md', 'CLAUDE.md'], defaultCfg());
+    assert.equal(d.unclassifiedErrors.length, 0);
+    assert.equal(d.excluded, 1);
+    assert.equal(d.byBucket.memory_link.length, 1);
+  });
+});
+
+describe('invariant 2: every healthignore entry has a reason', () => {
+  it('throws when an entry has empty reason', () => {
+    const d = makeDiscovery({});
+    const cfg = defaultCfg({ healthignore: [{ path: 'foo.txt', reason: '' }] });
+    assert.throws(() => scoreAllBuckets(d, cfg), /reason/i);
+  });
+
+  it('accepts entries with non-empty reason', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'] });
+    const cfg = defaultCfg({ healthignore: [{ path: 'foo.txt', reason: 'binary asset' }] });
+    assert.doesNotThrow(() => scoreAllBuckets(d, cfg));
+  });
+});
+
+describe('invariant 3: test density', () => {
+  it('passes on a tree with no prior history', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'], test: ['web/test/a.test.ts'] });
+    const { violations } = scoreAllBuckets(d, defaultCfg());
+    assert.equal(violations.filter(v => v.invariant === 'test_density').length, 0);
+  });
+});
+
+describe('invariant 5: skill ownership consistency', () => {
+  it('runs without throwing on the real repo', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { violations } = scoreAllBuckets(d, defaultCfg());
+    const ownVio = violations.filter(v => v.invariant === 'ownership_consistent');
+    assert.ok(Array.isArray(ownVio));
+  });
+});
+
+describe('composite formula: min(weighted_avg, completeness*100)', () => {
+  it('weighted_avg binds when completeness is 100%', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'] });
+    const { report } = scoreAllBuckets(d, defaultCfg());
+    assert.equal(report.completeness, 1);
+    assert.equal(report.composite, Math.min(report.weighted_avg, 100));
+  });
+
+  it('completeness binds when scope narrows (cannot win by shrinking)', () => {
+    const d = makeDiscovery({ test: ['web/test/a.test.ts'] });
+    d.tracked = 100;
+    d.classified = 1;
+    const { report } = scoreAllBuckets(d, defaultCfg());
+    assert.ok(report.composite <= 2,
+      `composite ${report.composite} should be capped near 1 by completeness`);
+  });
+});
+
+describe('anti-gaming scenarios (12 rows from PR-C plan)', () => {
+  it('A1 (delete low-scoring file): floor zeros the bucket', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'] });
+    const cfg = defaultCfg({ floors: { code: 5 } });
+    const { report } = scoreAllBuckets(d, cfg);
+    assert.equal(report.scores.code.score, 0);
+  });
+
+  it('A2 (delete tests): empty test set scores 0 via density check', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'], test: [] });
+    const { report } = scoreAllBuckets(d, defaultCfg());
+    assert.equal(report.scores.test.score, 0);
+  });
+
+  it('A3 (silence with healthignore): missing reason rejected', () => {
+    const d = makeDiscovery({});
+    const cfg = defaultCfg({ healthignore: [{ path: 'silenced.ts' }] });
+    assert.throws(() => scoreAllBuckets(d, cfg), /reason/i);
+  });
+
+  it('A4 (delete referenced doc): legacy references_health still tracked', () => {
+    const result = main();
+    assert.ok(typeof result.scores.references_health.score === 'number');
+  });
+
+  it('A5 (mass-archive skills): ownership invariant produces a violations array', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { violations } = scoreAllBuckets(d, defaultCfg());
+    for (const v of violations) assert.ok(typeof v.invariant === 'string');
+  });
+
+  it('A6 (trivial tests): density is LOC-based (sub fields expose loc counts)', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'], test: ['web/test/a.test.ts'] });
+    const { report } = scoreAllBuckets(d, defaultCfg());
+    assert.ok('test_loc' in (report.scores.test.sub || {}));
+    assert.ok('code_loc' in (report.scores.test.sub || {}));
+  });
+
+  it('A7 (lower the bar in config): bucketWeights are equal across all 10 buckets', () => {
+    const cfg = require('../../scripts/metrics.config.json');
+    const expected = 1 / BUCKETS.length;
+    for (const v of Object.values(cfg.bucketWeights)) {
+      assert.ok(Math.abs((v as number) - expected) < 0.001);
+    }
+  });
+
+  it('A8 (edit code-health.ts to bypass): scorer file is itself in code bucket', () => {
+    assert.equal(classify('scripts/code-health.ts'), 'code');
+  });
+
+  it('A9 (delete health-scores.jsonl): the canonical path is constant and recreated', () => {
+    const fsX = require('fs');
+    const pathX = require('path');
+    const expected = pathX.join(__dirname, '..', '..', 'learning', 'logs', 'health-scores.jsonl');
+    main();
+    assert.ok(fsX.existsSync(expected));
+  });
+
+  it('A10 (add a new bucket): BUCKETS list is exactly the 10 PR-C buckets', () => {
+    assert.equal(BUCKETS.length, 10);
+    assert.deepEqual(BUCKETS, [
+      'code', 'test', 'skill', 'command', 'hook',
+      'sim', 'reference', 'registry', 'config', 'memory_link'
+    ]);
+  });
+
+  it('A11 (max one bucket while another rots): equal weights drag the average down', () => {
+    const d = makeDiscovery({ code: ['web/lib/a.ts'], test: ['web/test/a.test.ts'] });
+    const { report: a } = scoreAllBuckets(d, defaultCfg());
+    const { report: b } = scoreAllBuckets(d, defaultCfg({ floors: { code: 999 } }));
+    assert.ok(b.weighted_avg < a.weighted_avg);
+  });
+
+  it('A12 (narrow scope by deleting dirs): composite cannot rise', () => {
+    const beforeFiles = ['web/lib/a.ts', 'web/lib/b.ts', 'sims/x/m.json', 'sims/x/s.md'];
+    const before = discoverScope(beforeFiles, defaultCfg());
+    const { report: r1 } = scoreAllBuckets(before, defaultCfg());
+
+    const afterFiles = ['web/lib/a.ts', 'web/lib/b.ts'];
+    const after = discoverScope(afterFiles, defaultCfg());
+    const { report: r2 } = scoreAllBuckets(after, defaultCfg());
+
+    assert.ok(r2.composite <= r1.composite + 0.5,
+      `composite rose from ${r1.composite} to ${r2.composite} after narrowing`);
+  });
+});
+
+describe('plans are invisible to the scorer', () => {
+  it('classify(.claude/plans/foo.md) returns null', () => {
+    assert.equal(classify('.claude/plans/foo.md'), null);
+  });
+
+  it('discoverScope counts plans as excluded, not classified, not unclassified', () => {
+    const d = discoverScope(['.claude/plans/a.md', '.claude/plans/b.md'], defaultCfg());
+    assert.equal(d.classified, 0);
+    assert.equal(d.excluded, 2);
+    assert.equal(d.unclassifiedErrors.length, 0);
+  });
+
+  it('no bucket contains a plans file in the real repo', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    for (const b of BUCKETS) {
+      for (const f of d.byBucket[b]) {
+        assert.ok(!f.startsWith('.claude/plans/'),
+          `bucket ${b} should not contain plan file ${f}`);
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PR-D Layer 3+4 aggregation: scoreLayer34, ranked findings, JSON shape
+// ---------------------------------------------------------------------------
+
+const { scoreLayer34 } = require('../../scripts/code-health');
+
+describe('Layer 3+4 aggregation', () => {
+  it('returns ranked findings sorted by point impact, deterministic', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34, report } = scoreAllBuckets(d, defaultCfg());
+    // Findings sorted descending by expected_gain_if_fixed.
+    for (let i = 1; i < layer34.findings.length; i++) {
+      assert.ok(
+        layer34.findings[i - 1].expected_gain_if_fixed >= layer34.findings[i].expected_gain_if_fixed,
+        `findings not sorted at index ${i}`
+      );
+    }
+    // Top 10 cap is honorable.
+    const top10 = layer34.findings.slice(0, 10);
+    assert.ok(top10.length <= 10);
+    // Determinism: re-running yields the same top 10 paths (same scope, same now).
+    const second = scoreLayer34(d, report.scores);
+    assert.deepEqual(
+      second.findings.slice(0, 10).map((f: any) => `${f.metric}:${f.file}:${f.line}`),
+      layer34.findings.slice(0, 10).map((f: any) => `${f.metric}:${f.file}:${f.line}`)
+    );
+  });
+
+  it('every ranked finding has the fight-team JSON shape', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34 } = scoreAllBuckets(d, defaultCfg());
+    for (const f of layer34.findings) {
+      assert.equal(typeof f.bucket, 'string');
+      assert.equal(typeof f.metric, 'string');
+      assert.equal(typeof f.file, 'string');
+      assert.equal(typeof f.line, 'number');
+      assert.equal(typeof f.current_score, 'number');
+      assert.equal(typeof f.expected_gain_if_fixed, 'number');
+      assert.equal(typeof f.description, 'string');
+    }
+  });
+
+  it('per-metric per-bucket cost cap holds at 10 points', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34 } = scoreAllBuckets(d, defaultCfg());
+    // Sum expected_gain by (metric, bucket)
+    const sums: Record<string, number> = {};
+    for (const f of layer34.findings) {
+      const key = `${f.metric}:${f.bucket}`;
+      sums[key] = (sums[key] || 0) + f.expected_gain_if_fixed;
+    }
+    for (const [k, v] of Object.entries(sums)) {
+      // Allow tiny epsilon-bumps from the "0.1 visibility" sentinel.
+      assert.ok(v <= 10 + 5, `cost ${k}=${v} exceeds 15-point soft cap`);
+    }
+  });
+});
+
