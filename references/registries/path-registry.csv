@@ -260,9 +260,11 @@ CLAUDE.md,references/registries/tool-registry.md,21
 CLAUDE.md,references/config/code-health.md,25
 CLAUDE.md,learning/logs/raw.jsonl,29
 CLAUDE.md,web/lib/paths.ts,29
-CLAUDE.md,learning/system-vault/,33
-CLAUDE.md,web/lib/system-vault.ts,33
-CLAUDE.md,references/architecture/core-workflow.md,37
+CLAUDE.md,learning/logs/notes.jsonl,31
+CLAUDE.md,scripts/note.ts,31
+CLAUDE.md,learning/system-vault/,35
+CLAUDE.md,web/lib/system-vault.ts,35
+CLAUDE.md,references/architecture/core-workflow.md,39
 references/architecture/core-workflow.md,.claude/,17
 references/architecture/core-workflow.md,references/architecture/testing-system.md,78
 references/architecture/game-design-document.md,references/config/progression.yaml,3

@@ -20,6 +20,10 @@ describe('paths', () => {
     it('PROFILE points to learning/profile.json', () => {
       assert.ok(paths.PROFILE.endsWith(path.join('learning', 'profile.json')));
     });
+
+    it('NOTES_LOG_FILE points to learning/logs/notes.jsonl', () => {
+      assert.ok(paths.NOTES_LOG_FILE.endsWith(path.join('learning', 'logs', 'notes.jsonl')));
+    });
   });
 
   describe('dynamic helpers', () => {

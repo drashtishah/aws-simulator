@@ -28,6 +28,8 @@ Run `npm run health` before and after refactors. See `references/config/code-hea
 
 All events (tool calls, session lifecycle, warnings, errors) go to one file: `learning/logs/raw.jsonl`. Both the shared hooks (terminal /play) and the web server logger write here. The `/fix` skill reads this file to diagnose issues. (PR-B unified the previous `activity.jsonl` + `system.jsonl` split into a single stream; the legacy filenames now alias to `raw.jsonl` via `web/lib/paths.ts`.)
 
+Agents record findings, negative results, workarounds, and decisions to a parallel stream `learning/logs/notes.jsonl` via the `scripts/note.ts` CLI. Schema: `{ts, kind, topic, body}`. Kinds: `finding`, `negative_result`, `workaround`, `decision`, `none`. The `none` kind is the explicit "nothing worth recording" escape hatch and requires `--reason`. A Stop hook enforces that every session records at least one note before exiting.
+
 ## System vault
 
 Long-term system memory lives in `learning/system-vault/` (per-user, gitignored). Query it via `system-vault-query` when you need prior findings, decisions, or workarounds; the daily-compile-and-rotate cron compiles `raw.jsonl` into topic notes and the dream-check hook periodically consolidates them. Budgets are enforced by `web/lib/system-vault.ts`.
