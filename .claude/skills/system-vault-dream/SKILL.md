@@ -4,14 +4,12 @@ description: >
   AutoDream pass over the system vault: orient, gather signal,
   consolidate, prune and reindex. 4 phases, atomic, cannot delete
   findings linked from any other vault file. Triggered by the
-  dream-check SessionStart hook when sessions_since_last_dream
-  crosses the threshold. Use when user says "dream", "vault dream",
-  or "consolidate vault".
+  weekly-dream remote cron (Sunday 03:30 local) or manual invocation.
+  Use when user says "dream", "vault dream", or "consolidate vault".
 effort: medium
 references_system_vault: true
 paths:
   - learning/system-vault/**
-  - .claude/state/dream-state.json
   - .claude/state/vault-circuit.json
 ---
 
@@ -32,10 +30,8 @@ link) cannot be deleted by the dream skill. The validator
 | Step | Action | Tool | Target |
 |------|--------|------|--------|
 | 1 | Load dream phases | Read | `.claude/skills/system-vault-dream/references/dream-phases.md` |
-| 2 | Read dream state | Read | `.claude/state/dream-state.json` |
-| 3 | Walk vault | Glob, Read | `learning/system-vault/**` |
-| 4 | Write consolidations | Write, Edit | `learning/system-vault/<subdir>/<slug>.md` |
-| 5 | Update dream state | Edit | `.claude/state/dream-state.json` |
+| 2 | Walk vault | Glob, Read | `learning/system-vault/**` |
+| 3 | Write consolidations | Write, Edit | `learning/system-vault/<subdir>/<slug>.md` |
 
 ---
 
@@ -43,10 +39,11 @@ link) cannot be deleted by the dream skill. The validator
 
 ### 1. Phase 1: orient
 
-Read `.claude/state/dream-state.json`. Note `last_dream_ts` and
-`sessions_since_last_dream`. Walk the vault tree. Compute the set of
+Walk the vault tree under `learning/system-vault/`. Compute the set of
 all topic files and the link graph. Record this as the dream baseline.
-This phase is read-only.
+If the vault contains fewer than 5 topic files (excluding `index.md`
+and dotfiles), exit cleanly without writes. This is the empty-vault
+guard. This phase is read-only.
 
 ### 2. Phase 2: gather_signal
 
@@ -82,11 +79,6 @@ Pass it to `validateDreamPlan`. If the validator returns `ok: false`,
 abort and increment `dream_failures`. Otherwise delete the listed
 files and rebuild `index.md`.
 
-### 5. Update dream state
-
-Write `last_dream_ts = <iso now>` and reset
-`sessions_since_last_dream = 0` in `.claude/state/dream-state.json`.
-
 ---
 
 ## Rules
@@ -94,5 +86,8 @@ Write `last_dream_ts = <iso now>` and reset
 1. Atomic. The four phases happen together or not at all.
 2. Linked findings are immutable from this skill.
 3. No emojis.
-4. Never write outside `learning/system-vault/**` and the two state
-   files.
+4. Never write outside `learning/system-vault/**` and
+   `.claude/state/vault-circuit.json`.
+5. Empty-vault guard: if the vault contains fewer than 5 topic files,
+   exit cleanly without writes. Applies to both cron invocation and
+   manual invocation.

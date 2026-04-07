@@ -18,6 +18,10 @@ const BOUNDARY: Record<string, string[]> = {
     'learning/logs/archive/**',
     '.claude/state/vault-circuit.json',
   ],
+  'weekly-dream': [
+    'learning/system-vault/**',
+    '.claude/state/vault-circuit.json',
+  ],
   'weekly-fight-team': [
     'learning/system-vault/findings/**',
     'learning/system-vault/sessions/**',

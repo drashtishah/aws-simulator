@@ -44,7 +44,7 @@ deletes are applied and `index.md` is rebuilt.
 ## Atomicity
 
 If any phase fails, no changes survive. The skill must reset
-`learning/system-vault/` to the orient baseline before exiting. The
-state files (`.claude/state/dream-state.json`,
-`.claude/state/vault-circuit.json`) are updated last so a partial
-failure does not look like a successful dream.
+`learning/system-vault/` to the orient baseline before exiting.
+`.claude/state/vault-circuit.json` is updated last (incrementing
+`dream_failures`) so a partial failure does not look like a
+successful dream.
