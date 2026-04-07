@@ -14,6 +14,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/git/ownership.json"
+references_system_vault: true
 ---
 
 # git Skill

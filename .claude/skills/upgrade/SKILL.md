@@ -1,6 +1,7 @@
 ---
 name: upgrade
 description: Scan Claude Code ecosystem sources for updates and surface improvements relevant to this workspace. USE WHEN upgrade, check updates, what's new, ecosystem changes, claude code updates, new features, source check.
+references_system_vault: true
 ---
 
 # Upgrade

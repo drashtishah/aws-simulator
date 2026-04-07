@@ -28,6 +28,10 @@ Run `npm run health` before and after refactors. See `references/config/code-hea
 
 All events (tool calls, session lifecycle, warnings, errors) go to one file: `learning/logs/raw.jsonl`. Both the shared hooks (terminal /play) and the web server logger write here. The `/fix` skill reads this file to diagnose issues. (PR-B unified the previous `activity.jsonl` + `system.jsonl` split into a single stream; the legacy filenames now alias to `raw.jsonl` via `web/lib/paths.ts`.)
 
+## System vault
+
+Long-term system memory lives in `learning/system-vault/` (per-user, gitignored). Query it via `system-vault-query` when you need prior findings, decisions, or workarounds; the daily-compile-and-rotate cron compiles `raw.jsonl` into topic notes and the dream-check hook periodically consolidates them. Budgets are enforced by `web/lib/system-vault.ts`.
+
 ## Git Discipline
 
 All code changes (except during /play sessions) follow the commit procedure in `.claude/skills/git/references/commit-procedure.md`. This means:

@@ -138,6 +138,7 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/logs/activity.jsonl` | hooks, web logger | fix | JSONL: learning events (session lifecycle, user prompts, tasks) |
 | `learning/logs/system.jsonl` | hooks, web logger | fix | JSONL: system events (tool calls, failures, compaction, warnings) |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
+| `learning/system-vault/` | setup (seed), system-vault-compile, system-vault-dream, system-vault-prune | system-vault-query, fight-team | Per-user, gitignored long-term system memory: findings, decisions, workarounds, components, sessions, health, dreams. Compiled daily from `learning/logs/raw.jsonl`. Index capped at 200 lines, topic files capped at 4KB. |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |

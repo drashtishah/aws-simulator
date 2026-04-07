@@ -10,6 +10,7 @@ hooks:
       hooks:
         - type: command
           command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/create-sim/ownership.json"
+references_system_vault: true
 ---
 
 # create-sim Skill

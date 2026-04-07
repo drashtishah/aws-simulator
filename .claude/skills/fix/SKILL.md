@@ -2,6 +2,7 @@
 name: fix
 description: Apply accumulated feedback to improve the simulation skills. Analyzes three sources: player feedback notes, activity log patterns, and code health scores. Runs health checks after each change to track improvement. Use when user says "fix", "apply feedback", or "improve skills".
 effort: medium
+references_system_vault: true
 ---
 
 # fix Skill
