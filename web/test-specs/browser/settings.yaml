@@ -83,3 +83,11 @@ steps:
         visible: false
       - selector: "#select-ui-theme .custom-select-trigger"
         text_contains: " "
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok

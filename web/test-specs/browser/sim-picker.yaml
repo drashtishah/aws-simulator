@@ -90,3 +90,11 @@ steps:
       - selector: ".sim-card .difficulty-dots .difficulty-dot:not(.empty)"
         visible: true
         min_count: 1
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok

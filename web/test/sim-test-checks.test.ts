@@ -75,6 +75,34 @@ describe('browser-spec schema: new check types', () => {
   });
 });
 
+describe('all 7 browser specs: contain the new check types', () => {
+  const required = ['accessibility', 'chat', 'dashboard', 'layout', 'navigation', 'settings', 'sim-picker'];
+
+  for (const name of required) {
+    it(name + '.yaml has both console_clean and network_ok', () => {
+      const file = path.join(SPECS_DIR, name + '.yaml');
+      const content = fs.readFileSync(file, 'utf8');
+      assert.ok(content.includes('console_clean'), name + ' should declare a console_clean check');
+      assert.ok(content.includes('network_ok'), name + ' should declare a network_ok check');
+    });
+  }
+
+  it('accessibility.yaml asserts main, navigation, complementary landmarks', () => {
+    const content = fs.readFileSync(path.join(SPECS_DIR, 'accessibility.yaml'), 'utf8');
+    assert.ok(content.includes('landmarks_present'), 'should use landmarks_present check');
+    assert.ok(content.includes('main'), 'should require main landmark');
+    assert.ok(content.includes('navigation'), 'should require navigation landmark');
+    assert.ok(content.includes('complementary'), 'should require complementary landmark');
+  });
+
+  it('dashboard.yaml asserts main, navigation landmarks', () => {
+    const content = fs.readFileSync(path.join(SPECS_DIR, 'dashboard.yaml'), 'utf8');
+    assert.ok(content.includes('landmarks_present'), 'should use landmarks_present check');
+    assert.ok(content.includes('main'), 'should require main landmark');
+    assert.ok(content.includes('navigation'), 'should require navigation landmark');
+  });
+});
+
 describe('sim-test runner: prints new check types', () => {
   // Write a temporary spec file in web/test-specs/browser, run dry-run + non-dry-run agent
   // print, capture output, then delete the temp file. We isolate by using a unique name.
@@ -177,6 +205,14 @@ describe('sim-test runner: prints new check types', () => {
       assert.ok(output.includes('"complementary"'), 'should list complementary landmark');
       assert.ok(output.includes('take_snapshot'), 'should reference take_snapshot tool');
     });
+  });
+
+  it('all 7 specs validate via agent --dry-run after the new checks land', () => {
+    const { output, exitCode } = runWithExit('agent --dry-run');
+    assert.equal(exitCode, 0, 'all specs should parse:\n' + output);
+    for (const name of ['accessibility', 'chat', 'dashboard', 'layout', 'navigation', 'settings', 'sim-picker']) {
+      assert.ok(output.includes(name), 'dry-run output should mention ' + name);
+    }
   });
 
   it('still renders existing selector-based checks unchanged', () => {

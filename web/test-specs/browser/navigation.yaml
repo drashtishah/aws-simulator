@@ -76,3 +76,11 @@ steps:
         visible: true
       - selector: ".topbar #btn-settings"
         visible: true
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok

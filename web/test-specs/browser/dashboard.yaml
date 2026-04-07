@@ -42,3 +42,17 @@ steps:
         visible: false
       - selector: "#old-level-display"
         visible: false
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok
+
+  - id: landmarks-present
+    target:
+      landmarks: ["main", "navigation"]
+    check:
+      - type: landmarks_present
