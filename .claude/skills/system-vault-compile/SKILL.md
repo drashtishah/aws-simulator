@@ -22,6 +22,17 @@ the size budgets defined in `web/lib/system-vault.ts`:
 - `index.md` must be at most 200 lines.
 - Every topic markdown file must be at most 4KB.
 
+## Pending markers (cron contract)
+
+When invoked by the daily-compile-and-rotate cron, the caller may pass
+a list of SHAs read from `learning/logs/compile-pending.txt` as explicit
+scope hints. Treat each SHA as a hint that recent commits touched a
+topic worth compiling, read the diff via `git show <sha>` if needed
+to identify affected topics. The caller is responsible for truncating
+`compile-pending.txt` after this skill returns successfully; this skill
+never writes to that file. Manual invocations (no SHA list) fall back
+to the default 24h scan over `learning/logs/raw.jsonl` unchanged.
+
 ## Tool Reference
 
 | Step | Action | Tool | Target |

@@ -12,15 +12,20 @@
     "Bash(gzip:*)",
     "Bash(mv:*)",
     "Bash(npm run health)",
+    "Bash(rm:*)",
+    "Bash(test:*)",
+    "Bash(truncate:*)",
+    "Bash(wc:*)",
     "Skill(system-vault-compile)",
     "Skill(system-vault-prune)"
   ],
   "allowed_write_paths": [
     "learning/system-vault/**",
+    "learning/logs/compile-pending.txt",
     "learning/logs/raw.jsonl",
     "learning/logs/raw.jsonl.*.gz",
     "learning/logs/archive/**",
     ".claude/state/vault-circuit.json"
   ],
-  "prompt": "Run the system-vault-compile skill to compile today's raw.jsonl into the system vault, then rotate raw.jsonl by gzipping yesterday's segment into learning/logs/archive/. On success, reset compile_failures in .claude/state/vault-circuit.json. On failure, increment compile_failures and do not proceed to rotation."
+  "prompt": "If learning/logs/compile-pending.txt exists and is non-empty, read it and collect the unique SHAs as scope hints. Run the system-vault-compile skill to compile today's raw.jsonl into the system vault, passing the collected SHAs as explicit scope context (compile topics touching these commits plus the last 24h of raw.jsonl). After the skill returns successfully, truncate compile-pending.txt to empty (do not delete the file, the post-commit hook appends to it). Then rotate raw.jsonl by gzipping yesterday's segment into learning/logs/archive/. On success, reset compile_failures in .claude/state/vault-circuit.json. On any failure (skill or rotation), increment compile_failures, do not truncate compile-pending.txt, and do not proceed to subsequent steps."
 }
