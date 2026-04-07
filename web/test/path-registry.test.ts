@@ -41,8 +41,15 @@ describe('path-registry', () => {
       // Skip runtime-generated paths (created by /setup, hooks, or CLI, not present on fresh clone)
       if (row.path.startsWith('learning/logs/')) continue;
       if (row.path.startsWith('learning/vault')) continue;
+      if (row.path.startsWith('learning/system-vault')) continue;
       if (row.path === 'learning/catalog.csv') continue;
       if (row.path === 'learning/feedback.md') continue;
+      // Vault-internal subdirectory references in system-vault skill docs.
+      // These are paths inside learning/system-vault/, never standalone.
+      if (
+        ['findings/', 'decisions/', 'sessions/', 'workarounds/', 'components/', 'health/', 'dreams/'].includes(row.path) &&
+        row.file.includes('system-vault')
+      ) continue;
       if (row.path.startsWith('web/test-results/')) continue;
       if (row.path.startsWith('dist/')) continue;
 
