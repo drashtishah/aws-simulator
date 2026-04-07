@@ -42,6 +42,8 @@ describe('path-registry', () => {
       if (row.path.startsWith('learning/logs/')) continue;
       if (row.path.startsWith('learning/vault')) continue;
       if (row.path.startsWith('learning/system-vault')) continue;
+      // Plans dir is gitignored scratch space (feedback_no_plan_scoring).
+      if (row.path === '.claude/plans/' || row.path === '.claude/plans') continue;
       if (row.path === 'learning/catalog.csv') continue;
       if (row.path === 'learning/feedback.md') continue;
       // Vault-internal subdirectory references in system-vault skill docs.
