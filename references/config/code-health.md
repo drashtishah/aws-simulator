@@ -68,8 +68,8 @@ denominator, and unclassified leftovers fail outright.
 by `git ls-files` must satisfy ONE of:
 
 1. `classify(path)` returns a non-null bucket (the normal path)
-2. `classify(path)` returns null because the path lives under the plans
-   directory (`.claude/plans`, intentionally excluded as private scratch)
+2. `classify(path)` returns null because the path lives under the dot-claude
+   plans directory (intentionally excluded as private scratch, gitignored)
 3. The path appears in the `healthignore` array of `scripts/metrics.config.json`,
    together with a non-empty `reason`
 
