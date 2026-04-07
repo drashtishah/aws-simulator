@@ -103,6 +103,19 @@ describe('path-registry', () => {
     }
   });
 
+  it('no source file lives inside a worktrees directory', () => {
+    const rows = parseCSV();
+    const offenders = rows
+      .map(r => r.file)
+      .filter(f => f.startsWith('.worktrees/') || f.includes('/.worktrees/') || f.startsWith('worktrees/') || f.includes('/worktrees/'));
+    if (offenders.length > 0) {
+      assert.fail(
+        `extract_paths.py walked into a worktree directory (regression of PR-A.4.3):\n` +
+        [...new Set(offenders)].slice(0, 10).map(f => '  - ' + f).join('\n')
+      );
+    }
+  });
+
   it('all source files in the CSV still exist', () => {
     const rows = parseCSV();
     const sourceFiles = [...new Set(rows.map(r => r.file))];
