@@ -43,8 +43,11 @@ file,path,line_number
 .claude/skills/create-sim/ownership.json,sims/registry.json,2
 .claude/skills/create-sim/ownership.json,sims/,3
 .claude/skills/create-sim/references/sim-template.md,learning/catalog.csv,261
-.claude/skills/fight-team/SKILL.md,.claude/skills/git/references/task-to-issue.md,142
-.claude/skills/fight-team/SKILL.md,.claude/skills/fight-team/references/issue-template.md,163
+.claude/skills/fight-team/SKILL.md,learning/logs/health-scores.jsonl,17
+.claude/skills/fight-team/SKILL.md,learning/logs/health-scores.jsonl,28
+.claude/skills/fight-team/SKILL.md,learning/logs/health-scores.jsonl,64
+.claude/skills/fight-team/SKILL.md,.claude/skills/git/references/task-to-issue.md,172
+.claude/skills/fight-team/SKILL.md,.claude/skills/fight-team/references/issue-template.md,193
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,11
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/testing-system.md,17
 .claude/skills/fight-team/references/default-checklist.md,scripts/code-health.ts,17
@@ -66,6 +69,12 @@ file,path,line_number
 .claude/skills/fight-team/references/default-checklist.md,learning/profile.json,75
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,77
 .claude/skills/fight-team/references/default-checklist.md,references/architecture/workspace-map.md,81
+.claude/skills/fight-team/references/findings-debate.md,learning/logs/health-scores.jsonl,11
+.claude/skills/fight-team/references/findings-debate.md,references/config/code-health.md,15
+.claude/skills/fight-team/references/findings-debate.md,.claude/skills/fight-team/references/issue-template.md,19
+.claude/skills/fight-team/references/findings-debate.md,learning/logs/health-scores.jsonl,21
+.claude/skills/fight-team/references/findings-debate.md,references/config/code-health.md,44
+.claude/skills/fight-team/references/findings-debate.md,web/test/fixtures/fight-team-issue-good.md,137
 .claude/skills/fight-team/references/issue-template.md,scripts/lib/validate-fight-team-issue.ts,4
 .claude/skills/fix/SKILL.md,references/architecture/workspace-map.md,16
 .claude/skills/fix/SKILL.md,learning/feedback.md,17
