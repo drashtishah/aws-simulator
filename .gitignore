@@ -8,7 +8,7 @@ node_modules/
 learning/logs/
 
 # Vault raw notes (temporary, compiled by play skill)
-learning/vault/raw/
+learning/player-vault/raw/
 learning/logs/activity-archive-*.jsonl
 .web-active.lock
 
