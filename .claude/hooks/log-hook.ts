@@ -113,10 +113,6 @@ function buildRecord(data: HookInput): LogRecord {
     case 'SessionStart':
       base.source = data.source || null;
       base.model = data.model || null;
-      if (data.model) {
-        const modelPath: string = path.join(process.cwd(), 'learning', '.current-model');
-        try { fs.writeFileSync(modelPath, data.model, 'utf8'); } catch {}
-      }
       break;
 
     case 'SessionEnd':

@@ -88,7 +88,7 @@ describe('path-registry', () => {
       const prefix = row.path.slice(0, templateIdx);
 
       // The prefix should exist as a directory (e.g., "sims/" from "sims/{id}/manifest.json")
-      // or as a file prefix (e.g., "prompt-overlay-" matching "prompt-overlay-medium.md")
+      // or as a file prefix (e.g., "agent-prompts-" matching a file in the same dir).
       if (prefix) {
         const prefixPath = path.join(ROOT, prefix);
         if (!fs.existsSync(prefixPath)) {

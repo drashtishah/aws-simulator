@@ -24,9 +24,9 @@
   },
   "healthignore": [],
   "floors": {
-    "code": 38,
-    "test": 66,
-    "skill": 45,
+    "code": 39,
+    "test": 72,
+    "skill": 48,
     "command": 1,
     "hook": 7,
     "sim": 278,
