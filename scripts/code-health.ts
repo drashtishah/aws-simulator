@@ -9,6 +9,19 @@ import * as ts from 'typescript';
 
 import { classify, BUCKETS, defaultBucketWeights } from './lib/classify';
 import type { Bucket } from './lib/classify';
+import {
+  proseDuplication,
+  danglingReferences,
+  activityFreshness,
+  skillOwnershipIntegrity,
+} from './lib/graph-metrics';
+import type {
+  ScopedFile,
+  ProseCluster,
+  DanglingFinding,
+  FreshnessFinding,
+  OwnershipFinding,
+} from './lib/graph-metrics';
 
 const ROOT: string = path.resolve(__dirname, '..');
 const HEALTH_LOG_PATH: string = path.join(ROOT, 'learning', 'logs', 'health-scores.jsonl');
@@ -951,6 +964,7 @@ interface HistoryEntry {
   code_loc?: number;
   test_loc?: number;
   completeness?: number;
+  findings?: unknown[];
 }
 
 function readHistory(): HistoryEntry[] {
@@ -1021,11 +1035,167 @@ export function scoreBucket(
   return { bucket, files: files.length, score: files.length > 0 ? 100 : 100 };
 }
 
+// ---------------------------------------------------------------------------
+// Layer 3+4: graph metrics + ranked findings (PR-D)
+// ---------------------------------------------------------------------------
+
+/** Unified ranked finding shape. Fight-team (PR-H) consumes this from --json. */
+export interface RankedFinding {
+  bucket: Bucket;
+  metric: 'prose_duplication' | 'dangling_reference' | 'activity_freshness' | 'ownership_integrity';
+  file: string;
+  line: number;
+  current_score: number;
+  expected_gain_if_fixed: number;
+  description: string;
+}
+
+/** Per-bucket point cost from Layer 3+4 metrics. */
+export interface Layer34Result {
+  perBucketCost: Record<string, number>;
+  findings: RankedFinding[];
+  prose: ProseCluster[];
+  dangling: DanglingFinding[];
+  freshness: FreshnessFinding[];
+  ownership: OwnershipFinding[];
+}
+
+/**
+ * Run all four Layer 3+4 metrics over the classified scope and return
+ * a unified ranked findings list plus per-bucket point costs to apply
+ * to bucket scores. Pure-ish: only reads file content via the metric
+ * libraries; no global state.
+ */
+export function scoreLayer34(
+  discovery: DiscoveryResult,
+  scoresBefore: Record<Bucket, BucketScore>,
+  rootDir: string = ROOT,
+  now: number = Date.now()
+): Layer34Result {
+  // Build the ScopedFile list across every bucket.
+  const scoped: ScopedFile[] = [];
+  for (const b of BUCKETS) {
+    for (const p of discovery.byBucket[b]) {
+      scoped.push({ path: p, bucket: b, abs: path.join(rootDir, p) });
+    }
+  }
+  const tracked = new Set<string>();
+  for (const b of BUCKETS) for (const p of discovery.byBucket[b]) tracked.add(p);
+
+  const prose = proseDuplication(scoped);
+  const dangling = danglingReferences(scoped, tracked, rootDir);
+  const freshness = activityFreshness(
+    scoped,
+    path.join(rootDir, 'learning', 'logs', 'raw.jsonl'),
+    now,
+    rootDir
+  );
+  const ownership = skillOwnershipIntegrity(path.join(rootDir, '.claude', 'skills'));
+
+  // Per-metric per-bucket caps so a single noisy metric cannot tank a bucket.
+  const PER_METRIC_CAP = 10;
+  const metricCost: Record<string, Record<string, number>> = {
+    prose_duplication: {},
+    dangling_reference: {},
+    activity_freshness: {},
+    ownership_integrity: {},
+  };
+  const addCost = (metric: string, b: string, c: number): number => {
+    const used = metricCost[metric]![b] || 0;
+    const remaining = PER_METRIC_CAP - used;
+    const applied = Math.max(0, Math.min(remaining, c));
+    metricCost[metric]![b] = used + applied;
+    return applied;
+  };
+  const perBucketCost: Record<string, number> = {};
+  const findings: RankedFinding[] = [];
+
+  function bucketOf(file: string): Bucket {
+    const b = classify(file);
+    return (b ?? 'reference') as Bucket;
+  }
+
+  // Prose duplication: cost belongs to the cluster's owning bucket.
+  for (const c of prose) {
+    const owner = bucketOf(c.cluster[0]!);
+    const applied = addCost('prose_duplication', owner, c.score);
+    perBucketCost[owner] = (perBucketCost[owner] || 0) + applied;
+    for (const f of c.cluster) {
+      findings.push({
+        bucket: bucketOf(f),
+        metric: 'prose_duplication',
+        file: f,
+        line: 1,
+        current_score: scoresBefore[bucketOf(f)]?.score ?? 0,
+        expected_gain_if_fixed: applied / c.cluster.length,
+        description: `prose duplication cluster of ${c.cluster.length} files (Jaccard >= 0.4)`,
+      });
+    }
+  }
+
+  // Dangling references: cost = 1 per finding to source bucket, capped per bucket.
+  for (const d of dangling) {
+    const b = bucketOf(d.source);
+    const applied = addCost('dangling_reference', b, 1);
+    perBucketCost[b] = (perBucketCost[b] || 0) + applied;
+    findings.push({
+      bucket: b,
+      metric: 'dangling_reference',
+      file: d.source,
+      line: d.line,
+      current_score: scoresBefore[b]?.score ?? 0,
+      expected_gain_if_fixed: applied,
+      description: `unresolved link to ${d.target}`,
+    });
+  }
+
+  // Activity freshness: per-bucket capped at 10 in the lib already.
+  for (const f of freshness) {
+    const applied = addCost('activity_freshness', f.bucket, -f.cost);
+    perBucketCost[f.bucket] = (perBucketCost[f.bucket] || 0) + applied;
+    findings.push({
+      bucket: f.bucket as Bucket,
+      metric: 'activity_freshness',
+      file: f.path,
+      line: 1,
+      current_score: scoresBefore[f.bucket as Bucket]?.score ?? 0,
+      expected_gain_if_fixed: applied,
+      description: f.reason,
+    });
+  }
+
+  // Ownership integrity: 2 per finding against skill bucket, capped at 10.
+  for (const o of ownership) {
+    const applied = addCost('ownership_integrity', 'skill', 2);
+    perBucketCost.skill = (perBucketCost.skill || 0) + applied;
+    findings.push({
+      bucket: 'skill',
+      metric: 'ownership_integrity',
+      file: o.skills[0] ? `.claude/skills/${o.skills[0]}/ownership.json` : '.claude/skills',
+      line: 1,
+      current_score: scoresBefore.skill?.score ?? 0,
+      expected_gain_if_fixed: applied,
+      description: `${o.kind}: ${o.detail}`,
+    });
+  }
+
+  // Sort findings by point impact descending, then file/line stable.
+  findings.sort((a, b) => {
+    if (b.expected_gain_if_fixed !== a.expected_gain_if_fixed) {
+      return b.expected_gain_if_fixed - a.expected_gain_if_fixed;
+    }
+    if (a.file !== b.file) return a.file.localeCompare(b.file);
+    return a.line - b.line;
+  });
+
+  return { perBucketCost, findings, prose, dangling, freshness, ownership };
+}
+
 export function scoreAllBuckets(
   discovery: DiscoveryResult,
   cfg: MetricsConfigFull,
   options: { rebaseFloors?: boolean } = {}
-): { report: BucketScoreReport; floors: Record<string, number>; violations: InvariantViolation[] } {
+): { report: BucketScoreReport; floors: Record<string, number>; violations: InvariantViolation[]; layer34: Layer34Result } {
   const violations: InvariantViolation[] = [];
 
   // Invariant 1: every tracked file is classified or in healthignore.
@@ -1067,6 +1237,17 @@ export function scoreAllBuckets(
     }
   }
 
+  // Layer 3+4: graph metrics + freshness. Subtract per-bucket costs from
+  // bucket scores (clamped to >= 0). Findings list is returned for the
+  // top-10 aggregation block.
+  const layer34 = scoreLayer34(discovery, scores);
+  for (const b of BUCKETS) {
+    const cost = layer34.perBucketCost[b] || 0;
+    if (cost > 0 && scores[b].score > 0) {
+      scores[b] = { ...scores[b], score: Math.max(0, round(scores[b].score - cost)) };
+    }
+  }
+
   const weights = cfg.bucketWeights || defaultBucketWeights();
   const weighted_avg = BUCKETS.reduce((sum, b) => sum + scores[b].score * (weights[b] ?? 1 / BUCKETS.length), 0);
   // Completeness = (classified + excluded) / tracked. Plans (excluded) are
@@ -1088,6 +1269,7 @@ export function scoreAllBuckets(
     },
     floors: floorResult.newFloors,
     violations,
+    layer34,
   };
 }
 
@@ -1118,6 +1300,37 @@ function printBucketReport(r: BucketScoreReport, violations: InvariantViolation[
   }
 }
 
+/** Render the PR-D aggregation block: composite delta, bucket deltas, top 10. */
+export function printAggregation(
+  current: BucketScoreReport,
+  prior: HistoryEntry | null,
+  findings: RankedFinding[]
+): void {
+  const priorComposite = prior ? prior.composite : current.composite;
+  const delta = current.composite - priorComposite;
+  const sign = delta >= 0 ? '+' : '';
+  console.log('');
+  console.log(`composite: ${current.composite.toFixed(1)} (was ${priorComposite.toFixed(1)}, ${sign}${delta.toFixed(1)})`);
+  console.log(`completeness: ${(current.completeness * 100).toFixed(1)}% (${current.classified}/${current.tracked} files)`);
+  console.log('');
+  console.log('bucket          score   delta   top finding');
+  for (const b of BUCKETS) {
+    const s = current.scores[b];
+    const priorScore = prior && prior.buckets ? (prior.buckets[b] ?? s.score) : s.score;
+    const d = s.score - priorScore;
+    const dSign = d >= 0 ? '+' : '';
+    const top = findings.find(f => f.bucket === b);
+    const topStr = top ? `${top.metric} ${top.file}:${top.line}` : '';
+    console.log(`${b.padEnd(15)} ${s.score.toFixed(1).padStart(5)}   ${(dSign + d.toFixed(1)).padStart(5)}   ${topStr}`);
+  }
+  console.log('');
+  console.log('top 10 findings by point impact:');
+  for (const f of findings.slice(0, 10)) {
+    const cost = `-${f.expected_gain_if_fixed.toFixed(1)}`.padStart(6);
+    console.log(`  ${cost}  ${f.metric}  ${f.file}:${f.line}`);
+  }
+}
+
 function main(args: string[] = process.argv.slice(2)): HealthReport {
   const rebaseFloors = args.includes('--rebase-floors');
   const wantJson = args.includes('--json');
@@ -1144,9 +1357,15 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
   const legacyComposite: number = Object.entries(weights)
     .reduce((sum, [k, w]) => sum + (scores[k as keyof HealthScores] ? scores[k as keyof HealthScores].score : 0) * w, 0);
 
-  // New: Layer 1+2 bucket scoring with completeness + invariants.
+  // New: Layer 1+2 bucket scoring with completeness + invariants. Layer 3+4
+  // (graph metrics + freshness + ownership) is computed inside scoreAllBuckets
+  // and returned via layer34.
   const discovery = discoverScope(undefined, cfg);
-  const { report: bucketReport, floors: newFloors, violations } = scoreAllBuckets(discovery, cfg, { rebaseFloors });
+  const { report: bucketReport, floors: newFloors, violations, layer34 } = scoreAllBuckets(discovery, cfg, { rebaseFloors });
+  const priorHistoryEntry: HistoryEntry | null = (() => {
+    const h = readHistory();
+    return h.length > 0 ? h[h.length - 1]! : null;
+  })();
 
   // Persist floors back into config if they moved up (or rebase requested).
   const floorsChanged = JSON.stringify(newFloors) !== JSON.stringify(cfg.floors || {});
@@ -1159,6 +1378,7 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
   }
 
   // Append a history entry for the test_density invariant + future trends.
+  // Includes the top-10 ranked findings for fight-team (PR-H) consumption.
   appendHistory({
     ts: new Date().toISOString(),
     composite: bucketReport.composite,
@@ -1167,6 +1387,7 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
     code_loc: countLoc(discovery.byBucket.code),
     test_loc: countLoc(discovery.byBucket.test),
     completeness: bucketReport.completeness,
+    findings: layer34.findings.slice(0, 10),
   });
 
   if (wantJson) {
@@ -1174,10 +1395,12 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
       legacy: { scores, composite: round(legacyComposite) },
       buckets: bucketReport,
       violations,
+      findings: layer34.findings,
     }, null, 2));
   } else {
     printReport(scores, round(legacyComposite));
     printBucketReport(bucketReport, violations);
+    printAggregation(bucketReport, priorHistoryEntry, layer34.findings);
   }
 
   return { scores, composite: bucketReport.composite, buckets: bucketReport, violations };
