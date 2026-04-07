@@ -16,7 +16,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { spawnSync } from 'node:child_process';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,8 +32,10 @@ export interface CheckContext {
 }
 
 export interface RunAllOptions extends CheckContext {
-  // Integration checks (web server boot, sim-test smoke ping) actually
-  // shell out and take seconds. Tests pass false; the CLI passes true.
+  // Integration checks (web server boot, sim-test smoke ping, dangling-ref
+  // scanner, path-registry hash freshness) are tracked as a follow-up to
+  // Issue #96; until then this flag is reserved for a future expansion and
+  // ignored by runAll. The CLI and the test pass the same arguments.
   runIntegration?: boolean;
 }
 
@@ -264,10 +265,6 @@ export function runAll(opts: RunAllOptions): RunAllSummary {
   const results: CheckResult[] = [];
   for (const fn of REQUIRED_CHECKS) {
     results.push(fn(ctx));
-  }
-  if (opts.runIntegration) {
-    // Integration checks live in the CLI binary block below; tests inject
-    // runIntegration: false to skip them.
   }
   const exitCode = results.every((r) => r.ok) ? 0 : 1;
   return { results, exitCode };
