@@ -24,8 +24,8 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  profile.json    |       |  themes/_base.md  |       |  agent-prompts   |
 |  catalog.csv     |       |  game-design.md   |       |  coaching-patt.  |
 |  journal.md      |       |  manifest-schema  |       |  themes/*.md     |
-|  feedback.md     |       |  catalog.csv      |       |  .current-model  |
-|  sessions/ (dir) |       |                   |       |  prompt-overlay* |
+|  feedback.md     |       |  catalog.csv      |       |                  |
+|  sessions/ (dir) |       |                   |       |                  |
 +------------------+       | Writes:           |       | Writes:          |
                            |  sims/{id}/*      |       |  sessions/*.json |
 +------------------+       |  sims/registry    |       |  profile.json    |
@@ -84,8 +84,6 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                 |
                 v
 /play --------> reads sims/{id}/* + catalog.csv + profile.json
-            --> reads learning/.current-model (tier selection: opus/sonnet/haiku)
-            --> reads prompt-overlay-{size}.md (tier-specific prompt adjustments)
             --> writes sessions/{id}.json (auto-save every interaction)
             --> on resolution: writes profile.json, catalog.csv, journal.md
             --> deletes sessions/{id}.json
@@ -133,7 +131,6 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/profile.json` | setup, play | play | JSON: level, completed sims, patterns, strengths, weaknesses |
 | `learning/vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
-| `learning/.current-model` | log-hook | play | Plain text: model ID for tier selection (opus/sonnet/haiku) |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/raw.jsonl` | hooks, web logger | fix, system-vault-compile | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
@@ -229,5 +226,3 @@ When changing a component, check what else reads/writes the same data:
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `.claude/skills/git/references/*` | /fix (commits per change), /create-sim (commit phase), /upgrade (git discipline section), /sim-test (commit phase), CLAUDE.md (git discipline section) |
 | GitHub Issues | /git (creates), /fix (reads in step 3b, creates in step 6b), /fight-team (creates from debate findings) |
-| `learning/.current-model` | log-hook (writes on SessionStart), play (reads for tier selection) |
-| Prompt overlays | play (reads based on tier), prompt-overlay-medium.md and prompt-overlay-small.md in play/references/ |
