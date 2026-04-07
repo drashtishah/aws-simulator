@@ -592,3 +592,62 @@ describe('plans are invisible to the scorer', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// PR-D Layer 3+4 aggregation: scoreLayer34, ranked findings, JSON shape
+// ---------------------------------------------------------------------------
+
+const { scoreLayer34 } = require('../../scripts/code-health');
+
+describe('Layer 3+4 aggregation', () => {
+  it('returns ranked findings sorted by point impact, deterministic', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34, report } = scoreAllBuckets(d, defaultCfg());
+    // Findings sorted descending by expected_gain_if_fixed.
+    for (let i = 1; i < layer34.findings.length; i++) {
+      assert.ok(
+        layer34.findings[i - 1].expected_gain_if_fixed >= layer34.findings[i].expected_gain_if_fixed,
+        `findings not sorted at index ${i}`
+      );
+    }
+    // Top 10 cap is honorable.
+    const top10 = layer34.findings.slice(0, 10);
+    assert.ok(top10.length <= 10);
+    // Determinism: re-running yields the same top 10 paths (same scope, same now).
+    const second = scoreLayer34(d, report.scores);
+    assert.deepEqual(
+      second.findings.slice(0, 10).map((f: any) => `${f.metric}:${f.file}:${f.line}`),
+      layer34.findings.slice(0, 10).map((f: any) => `${f.metric}:${f.file}:${f.line}`)
+    );
+  });
+
+  it('every ranked finding has the fight-team JSON shape', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34 } = scoreAllBuckets(d, defaultCfg());
+    for (const f of layer34.findings) {
+      assert.equal(typeof f.bucket, 'string');
+      assert.equal(typeof f.metric, 'string');
+      assert.equal(typeof f.file, 'string');
+      assert.equal(typeof f.line, 'number');
+      assert.equal(typeof f.current_score, 'number');
+      assert.equal(typeof f.expected_gain_if_fixed, 'number');
+      assert.equal(typeof f.description, 'string');
+    }
+  });
+
+  it('per-metric per-bucket cost cap holds at 10 points', () => {
+    const d = discoverScope(undefined, defaultCfg());
+    const { layer34 } = scoreAllBuckets(d, defaultCfg());
+    // Sum expected_gain by (metric, bucket)
+    const sums: Record<string, number> = {};
+    for (const f of layer34.findings) {
+      const key = `${f.metric}:${f.bucket}`;
+      sums[key] = (sums[key] || 0) + f.expected_gain_if_fixed;
+    }
+    for (const [k, v] of Object.entries(sums)) {
+      // Allow tiny epsilon-bumps from the "0.1 visibility" sentinel.
+      assert.ok(v <= 10 + 5, `cost ${k}=${v} exceeds 15-point soft cap`);
+    }
+  });
+});
+

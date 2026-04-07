@@ -75,7 +75,7 @@ function jaccard(a: Set<string>, b: Set<string>): number {
 }
 
 export function proseDuplication(files: ScopedFile[]): ProseCluster[] {
-  const eligible = files.filter(f => PROSE_BUCKETS.has(f.bucket));
+  const eligible = files.filter(f => PROSE_BUCKETS.has(f.bucket) && f.path.endsWith('.md'));
   if (eligible.length < 2) return [];
   const sigs: { path: string; sh: Set<string> }[] = [];
   for (const f of eligible) {
@@ -302,7 +302,6 @@ export function skillOwnershipIntegrity(skillsDir: string): OwnershipFinding[] {
   for (const [dir, owners] of claims) {
     if (owners.length > 1) {
       // System-vault is intentionally claimed by multiple system-vault-* skills + setup.
-      // Skip overlaps where the dir is explicitly the shared system vault root.
       if (dir === 'learning/system-vault') continue;
       out.push({
         kind: 'overlap',
@@ -312,6 +311,11 @@ export function skillOwnershipIntegrity(skillsDir: string): OwnershipFinding[] {
     }
   }
   return out;
+}
+
+/** Wrap a list of findings, preserving order, limited to N. */
+export function capFindings<T>(arr: T[], n: number): T[] {
+  return arr.slice(0, n);
 }
 
 // CommonJS interop for require()-based test files.
