@@ -18,6 +18,13 @@ This plan follows the canonical workflow in
   be the agent that verifies it.
 - Reference the Issue in every commit body (Closes #N on the last
   commit of a group, Ref #N on the rest).
+- After every commit, log one `learning/logs/notes.jsonl` entry via
+  `scripts/note.ts` (kind: `finding`, `negative_result`, `workaround`,
+  `decision`, or `none --reason ...`). This is enforced per session by
+  the Stop hook and required per commit by
+  `references/architecture/core-workflow.md` section 6b. The notes
+  stream compiles into the system vault, so every commit grows
+  long-term agent memory.
 
 ## Testing
 
