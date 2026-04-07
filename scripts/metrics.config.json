@@ -10,6 +10,20 @@
       "references_health": 0.142
     }
   },
+  "bucketWeights": {
+    "code": 0.1,
+    "test": 0.1,
+    "skill": 0.1,
+    "command": 0.1,
+    "hook": 0.1,
+    "sim": 0.1,
+    "reference": 0.1,
+    "registry": 0.1,
+    "config": 0.1,
+    "memory_link": 0.1
+  },
+  "healthignore": [],
+  "floors": {},
   "budgets": {
     "game_session_usd": 2.00,
     "post_session_usd": 5.00
