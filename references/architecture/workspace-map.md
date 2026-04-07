@@ -147,12 +147,12 @@ Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons wit
 |---|---|---|---|---|
 | daily-compile-and-rotate | cron | 03:00 local daily | Compile `learning/logs/raw.jsonl` into `learning/system-vault/` topic notes, rotate old log shards, append health score | `.claude/scheduled-jobs/daily-compile-and-rotate.json` |
 | weekly-fight-team | cron | Sunday 04:00 local | Run 4-round fight-team debate over top 10 findings in `learning/logs/health-scores.jsonl`, file copy-paste-ready GitHub Issues via `scripts/lib/validate-fight-team-issue.ts` | `.claude/scheduled-jobs/weekly-fight-team.json` |
-| dream-check | hook (SessionStart) | every session start | Inspect `.claude/state/dream-state.json` and dispatch `system-vault-dream` if consolidation is due | `.claude/settings.json` |
+| weekly-dream | cron | Sunday 03:30 local | Run system-vault-dream skill to consolidate `learning/system-vault/`. Empty-vault guard: skip if vault has fewer than 5 topic files. | `.claude/scheduled-jobs/weekly-dream.json` |
 | system-vault-compile chain | hook (PostCommit) | after every commit | Re-run `system-vault-compile` and append to `learning/logs/health-scores.jsonl` | `.claude/settings.json` |
 | pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `sim-test agent` browser test pass | `.claude/settings.json` |
 | pre-commit-issues | hook (pre-commit) | before every commit | Require Closes/Ref/Fixes/Part of issue reference; block deletion of `learning/logs/health-scores.jsonl` (PR-C invariant 6) | `.claude/hooks/pre-commit-issues.ts` |
 
-State files backing these automations: `.claude/state/dream-state.json` (dream cadence) and `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Both are tracked and seeded by PR-Pre.
+State file backing these automations: `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Tracked and seeded by PR-Pre.
 
 ## Tests
 

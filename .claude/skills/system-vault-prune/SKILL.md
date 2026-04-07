@@ -9,7 +9,6 @@ effort: low
 references_system_vault: true
 paths:
   - learning/system-vault/**
-  - .claude/state/dream-state.json
 ---
 
 # system-vault-prune Skill
@@ -38,8 +37,9 @@ Invoked as `system-vault-prune --revert <ts>` where `<ts>` is an ISO
 timestamp matching a dream snapshot under
 `learning/system-vault/dreams/<ts>/`. The dream skill writes a tarball
 or directory snapshot of the pre-dream vault before phase 4. This
-skill restores from that snapshot, then writes a new entry to
-`.claude/state/dream-state.json` recording the revert.
+skill restores from that snapshot. The revert action is recorded in
+git history (the restored files become a normal commit), no separate
+state file is written.
 
 If `<ts>` does not match any snapshot, exit non-zero and print the
 available snapshot timestamps.
@@ -51,7 +51,6 @@ available snapshot timestamps.
 | 1 | Walk vault | Glob, Read | `learning/system-vault/**` |
 | 2 | Read dream snapshots | Read | `learning/system-vault/dreams/<ts>/**` |
 | 3 | Restore on revert | Write | `learning/system-vault/<subdir>/<slug>.md` |
-| 4 | Update dream state | Edit | `.claude/state/dream-state.json` |
 
 ---
 

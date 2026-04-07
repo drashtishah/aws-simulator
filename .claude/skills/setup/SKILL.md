@@ -104,15 +104,12 @@ seeded contents are not.
    `learning/system-vault/components/`, `learning/system-vault/dreams/`.
 3. Write a starter `learning/system-vault/index.md` with one section
    per subdirectory and no entries yet. Keep under 200 lines.
-4. Write `learning/system-vault/.dream-state.json` with
-   `{"last_dream_ts": null, "sessions_since_last_dream": 0}` if not
-   already present at `.claude/state/dream-state.json`.
-5. Copy the obsidian config directory from `learning/vault/` to
+4. Copy the obsidian config directory from `learning/vault/` to
    `learning/system-vault/` if the player vault has one (the dotfile
    subdirectory `learning/vault/` ships with for Obsidian compatibility).
-6. Write a starter `learning/system-vault/health/current.md` with a
+5. Write a starter `learning/system-vault/health/current.md` with a
    single H1 `# System health` and an empty bullet list.
-7. Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
+6. Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
 
 If `learning/system-vault/` already exists, leave every file in place.
 Do not overwrite.

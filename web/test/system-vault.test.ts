@@ -30,12 +30,11 @@ function makeVault(): { root: string; learning: string } {
 }
 
 describe('system vault: layout', () => {
-  it('layout exposes root, index, dreamState, obsidian', () => {
+  it('layout exposes root, index, obsidian', () => {
     const { learning } = makeVault();
     const L = layout(learning);
     assert.equal(L.root, path.join(learning, 'system-vault'));
     assert.equal(L.index, path.join(learning, 'system-vault', 'index.md'));
-    assert.equal(L.dreamState, path.join(learning, 'system-vault', '.dream-state.json'));
     assert.equal(L.obsidian, path.join(learning, 'system-vault', '.obsidian'));
   });
 
@@ -106,7 +105,7 @@ describe('system vault: topic file 4KB limit', () => {
   it('ignores index.md and dotfiles', () => {
     const { root } = makeVault();
     fs.writeFileSync(path.join(root, 'index.md'), 'x'.repeat(TOPIC_FILE_MAX_BYTES + 10));
-    fs.writeFileSync(path.join(root, '.dream-state.json'), '{}');
+    fs.writeFileSync(path.join(root, '.obsidian-config.json'), '{}');
     const res = checkTopicSizes(root);
     assert.ok(res.ok, JSON.stringify(res));
   });
