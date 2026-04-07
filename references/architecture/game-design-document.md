@@ -129,7 +129,7 @@ Observable behaviors tracked across sessions (not fixed types):
 - **Debrief engagement**: questions asked, zones explored
 - **HEXAD signals**: inferred from behavior (Achiever, Free Spirit, Player, Socializer)
 
-Tracked in `learning/vault/patterns/behavioral-profile.md`, updated after each sim.
+Tracked in `learning/player-vault/patterns/behavioral-profile.md`, updated after each sim.
 
 ---
 
@@ -201,4 +201,4 @@ When a player quits mid-sim:
 
 - `references/config/progression.yaml`: machine-readable progression config
 - `.claude/skills/play/references/coaching-patterns.md`: coaching feedback templates
-- `learning/vault/index.md`: learning vault entry point
+- `learning/player-vault/index.md`: learning vault entry point

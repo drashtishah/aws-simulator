@@ -18,13 +18,13 @@ describe('core-workflow.md', () => {
     assert.ok(lines.length <= 200, `expected <= 200 lines, got ${lines.length}`);
   });
 
-  it('contains exactly 10 top-level H2 sections', () => {
+  it('contains exactly 11 top-level H2 sections', () => {
     const content = fs.readFileSync(DOC, 'utf8');
     const h2 = content.split('\n').filter((l: string) => /^## /.test(l));
-    assert.equal(h2.length, 10, `expected 10 '## ' sections, got ${h2.length}`);
+    assert.equal(h2.length, 11, `expected 11 '## ' sections, got ${h2.length}`);
   });
 
-  it('mentions all 10 required workflow topics', () => {
+  it('mentions all 11 required workflow topics', () => {
     const content = fs.readFileSync(DOC, 'utf8').toLowerCase();
     const needles = [
       'issue first',
@@ -33,6 +33,7 @@ describe('core-workflow.md', () => {
       'tdd',
       'revertable',
       'sim-test --changed',
+      'notes.jsonl',
       'verifier',
       'revert',
       'cleanup',

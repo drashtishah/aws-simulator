@@ -50,7 +50,7 @@ describe('setup creates vault structure', () => {
   it('setup SKILL.md references vault creation step', () => {
     const skillPath = path.join(ROOT, '.claude', 'skills', 'setup', 'SKILL.md');
     const content = fs.readFileSync(skillPath, 'utf8');
-    assert.ok(content.includes('learning/vault/'), 'setup should reference vault directory');
+    assert.ok(content.includes('learning/player-vault/'), 'setup should reference player-vault directory');
     assert.ok(content.includes('vault-templates'), 'setup should reference vault templates');
   });
 });

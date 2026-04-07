@@ -10,13 +10,90 @@ const VAULT_DIR = paths.VAULT_DIR;
 describe('vault structure', () => {
   it('vault directory exists or can be created by setup', () => {
     // The vault dir may not exist until /setup runs. This test validates the
-    // path is correct and the parent (learning/) is known.
-    assert.ok(VAULT_DIR.includes('learning/vault'), 'VAULT_DIR should point to learning/vault');
+    // path is correct and the parent (learning/) is known. Per Issue #94 the
+    // player vault is renamed from learning/vault/ to learning/player-vault/
+    // so it stops colliding with learning/system-vault/.
+    assert.ok(
+      VAULT_DIR.includes('learning/player-vault'),
+      'VAULT_DIR should point to learning/player-vault',
+    );
   });
 
   it('VAULT_DIR is exported from paths.js', () => {
     assert.ok(paths.VAULT_DIR, 'VAULT_DIR should be exported');
-    assert.equal(path.basename(paths.VAULT_DIR), 'vault');
+    assert.equal(path.basename(paths.VAULT_DIR), 'player-vault');
+  });
+});
+
+describe('setup SKILL.md vault wiring (Issue #94)', () => {
+  // Reads the setup skill markdown directly so any drift between the
+  // documented "create directories + copy templates" steps and what actually
+  // exists on disk is caught here. This is the test the user asked for in
+  // their follow-up: "is there a way to test setup and the right folder
+  // structure and folders exist for new players?".
+  const SKILL_PATH = path.join(ROOT, '.claude', 'skills', 'setup', 'SKILL.md');
+  const skill = fs.readFileSync(SKILL_PATH, 'utf8');
+
+  it('SKILL.md uses the new player-vault path everywhere', () => {
+    // No bare learning/vault references should remain. (The system-vault and
+    // vault-templates references are unrelated and explicitly allowed.)
+    const offending = skill
+      .split('\n')
+      .map((line: string, i: number) => ({ line, n: i + 1 }))
+      .filter(({ line }: { line: string }) =>
+        /learning\/vault(?!-)/.test(line),
+      );
+    assert.deepEqual(
+      offending,
+      [],
+      'SKILL.md should not reference learning/vault any more. Hits:\n' +
+        offending.map(({ line, n }: { line: string; n: number }) => `  ${n}: ${line}`).join('\n'),
+    );
+  });
+
+  it('every vault template SKILL.md tells setup to copy actually exists on disk', () => {
+    // Parse the "Copy vault templates from references/vault-templates/" block
+    // (step 5b). Each bullet has the shape:
+    //   - `references/vault-templates/<rel>` -> `learning/player-vault/<rel>`
+    // Pull every src and verify it resolves under references/vault-templates/.
+    // Glob entries from the tool-reference table (e.g. `references/vault-templates/*`)
+    // are filtered out: they document the high-level move, not concrete files.
+    const re = /`(references\/vault-templates\/[^`]+)`\s*->/g;
+    const sources: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(skill)) !== null) {
+      const src = m[1]!;
+      if (src.includes('*')) continue;
+      sources.push(src);
+    }
+    assert.ok(
+      sources.length >= 4,
+      'expected at least 4 concrete template-copy bullets in SKILL.md, found ' + sources.length,
+    );
+    for (const rel of sources) {
+      const abs = path.join(ROOT, rel);
+      assert.ok(
+        fs.existsSync(abs),
+        'SKILL.md tells setup to copy ' + rel + ' but it does not exist at ' + abs,
+      );
+    }
+  });
+
+  it('every vault directory SKILL.md tells setup to create lives under player-vault', () => {
+    // Parse step 5b's "Create directories: ..." line. Every directory
+    // entry must start with learning/player-vault/ and not learning/vault/.
+    const createMatch = skill.match(/Create directories?: (.+)/);
+    assert.ok(createMatch, 'SKILL.md must contain a "Create directories" line');
+    const dirs = createMatch[1]!
+      .split(',')
+      .map((s: string) => s.trim().replace(/^`|`$/g, ''));
+    assert.ok(dirs.length > 0, 'expected at least one directory to be created');
+    for (const d of dirs) {
+      assert.ok(
+        d.startsWith('learning/player-vault/'),
+        'directory ' + d + ' should be under learning/player-vault/',
+      );
+    }
   });
 });
 

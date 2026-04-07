@@ -23,11 +23,11 @@ Prepares the workspace for a new player. Run once after cloning.
 |------|--------|------|--------|
 | 2 | Load default profile | Read | `references/config/default-profile.json` |
 | 2 | Create profile | Write | `learning/profile.json` |
-| 3 | Create vault | Write | `learning/vault/` |
+| 3 | Create vault | Write | `learning/player-vault/` |
 | 4 | Create feedback log | Write | `learning/feedback.md` |
 | 5 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
 | 5 | Create catalog | Write | `learning/catalog.csv` |
-| 5b | Copy vault templates | Read, Write | `references/vault-templates/*` -> `learning/vault/*` |
+| 5b | Copy vault templates | Read, Write | `references/vault-templates/*` -> `learning/player-vault/*` |
 | 6 | Load registry | Read | `sims/registry.json` |
 
 ---
@@ -48,7 +48,7 @@ If it already exists, leave it. Do not overwrite.
 
 ### 3. Create vault
 
-If `learning/vault/` does not exist, create the vault directory structure. Copy templates from `references/vault-templates/` into `learning/vault/`.
+If `learning/player-vault/` does not exist, create the vault directory structure. Copy templates from `references/vault-templates/` into `learning/player-vault/`.
 
 ### 4. Create feedback log
 
@@ -80,16 +80,16 @@ If `learning/catalog.csv` already exists, leave it. Do not overwrite.
 
 ### 5b. Create learning vault
 
-If `learning/vault/` does not exist, create the vault directory structure:
+If `learning/player-vault/` does not exist, create the vault directory structure:
 
-1. Create directories: `learning/vault/sessions/`, `learning/vault/concepts/`, `learning/vault/patterns/`, `learning/vault/services/`, `learning/vault/raw/`
-2. Copy vault templates from `references/vault-templates/` to `learning/vault/`:
-   - `references/vault-templates/index.md` -> `learning/vault/index.md`
-   - `references/vault-templates/patterns/behavioral-profile.md` -> `learning/vault/patterns/behavioral-profile.md`
-   - `references/vault-templates/patterns/question-quality.md` -> `learning/vault/patterns/question-quality.md`
-   - `references/vault-templates/patterns/investigation-style.md` -> `learning/vault/patterns/investigation-style.md`
+1. Create directories: `learning/player-vault/sessions/`, `learning/player-vault/concepts/`, `learning/player-vault/patterns/`, `learning/player-vault/services/`, `learning/player-vault/raw/`
+2. Copy vault templates from `references/vault-templates/` to `learning/player-vault/`:
+   - `references/vault-templates/index.md` -> `learning/player-vault/index.md`
+   - `references/vault-templates/patterns/behavioral-profile.md` -> `learning/player-vault/patterns/behavioral-profile.md`
+   - `references/vault-templates/patterns/question-quality.md` -> `learning/player-vault/patterns/question-quality.md`
+   - `references/vault-templates/patterns/investigation-style.md` -> `learning/player-vault/patterns/investigation-style.md`
 
-If `learning/vault/` already exists, leave it. Do not overwrite.
+If `learning/player-vault/` already exists, leave it. Do not overwrite.
 
 ### 5c. System vault seed (PR-E)
 
@@ -104,9 +104,9 @@ seeded contents are not.
    `learning/system-vault/components/`, `learning/system-vault/dreams/`.
 3. Write a starter `learning/system-vault/index.md` with one section
    per subdirectory and no entries yet. Keep under 200 lines.
-4. Copy the obsidian config directory from `learning/vault/` to
+4. Copy the obsidian config directory from `learning/player-vault/` to
    `learning/system-vault/` if the player vault has one (the dotfile
-   subdirectory `learning/vault/` ships with for Obsidian compatibility).
+   subdirectory `learning/player-vault/` ships with for Obsidian compatibility).
 5. Write a starter `learning/system-vault/health/current.md` with a
    single H1 `# System health` and an empty bullet list.
 6. Ensure `learning/logs/raw.jsonl` exists (touch it if missing).

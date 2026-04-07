@@ -10,6 +10,12 @@ import yaml from 'js-yaml';
 
 import * as evalRunner from './eval-runner';
 import { filterByGlob, mapChangedToTests } from './sim-test-select';
+import {
+  parseTestOutput,
+  aggregateRuns,
+  formatFailedFilesSummary,
+  type FileRunResult,
+} from './sim-test-runner';
 
 // ---------------------------------------------------------------------------
 // Path constants
@@ -28,6 +34,7 @@ interface UnitResult {
   total: number;
   passed: number;
   failed: number;
+  failedFiles?: string[];
   error?: string;
 }
 
@@ -344,10 +351,7 @@ program
       }
 
       const testsToRun = selected;
-
-      let totalPassed = 0;
-      let totalFailed = 0;
-      let hasError = false;
+      const fileResults: FileRunResult[] = [];
 
       for (const testFile of testsToRun) {
         const result = spawnSync('tsx', ['--test', '--test-force-exit', testFile], {
@@ -358,32 +362,37 @@ program
         });
 
         const out = (result.stdout ?? '') + (result.stderr ?? '');
-        const passMatch = out.match(/(?:# pass|ℹ pass) (\d+)/);
-        const failMatch = out.match(/(?:# fail|ℹ fail) (\d+)/);
-        const passed = passMatch ? parseInt(passMatch[1]!, 10) : 0;
-        const failed = failMatch ? parseInt(failMatch[1]!, 10) : 0;
+        const { passed, failed } = parseTestOutput(out);
+        const fileError = passed === 0 && failed === 0 && !result.signal;
 
-        if (passed === 0 && failed === 0 && !result.signal) {
-          hasError = true;
-          if (!opts.json) {
-            console.error('  ' + path.basename(testFile) + ': ERROR');
-            console.error(out.slice(0, 200));
-          }
+        if (fileError && !opts.json) {
+          console.error('  ' + path.basename(testFile) + ': ERROR');
+          console.error(out.slice(0, 200));
+        }
+        if (failed > 0 && !opts.json) {
+          console.error(
+            '  FAIL ' + path.basename(testFile) + ': ' + failed + ' failure(s)',
+          );
         }
 
-        totalPassed += passed;
-        totalFailed += failed;
+        fileResults.push({ file: testFile, passed, failed, error: fileError });
       }
 
-      const total = totalPassed + totalFailed;
-      results.unit = { total, passed: totalPassed, failed: totalFailed };
-      if (hasError && total === 0) {
+      const agg = aggregateRuns(fileResults);
+      results.unit = { total: agg.total, passed: agg.passed, failed: agg.failed };
+      if (agg.failedFiles.length > 0) {
+        results.unit.failedFiles = agg.failedFiles;
+      }
+      if (agg.hasError && agg.total === 0) {
         results.unit.error = 'Infrastructure error';
         exitCode = 2;
       }
-      if (totalFailed > 0) exitCode = 1;
+      if (agg.failed > 0) exitCode = 1;
       if (!opts.json) {
-        console.log('  unit: ' + totalPassed + '/' + total + ' passed');
+        console.log('  unit: ' + agg.passed + '/' + agg.total + ' passed');
+        if (agg.failedFiles.length > 0) {
+          process.stderr.write(formatFailedFilesSummary(agg.failedFiles));
+        }
       }
     }
 
