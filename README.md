@@ -1,44 +1,101 @@
 # AWS Incident Simulator
 
-AWS breaks in quiet ways. A security group drops a rule. A function deploys to the wrong region. A database fills its storage while everyone is asleep.
+A game about asking better questions when AWS breaks.
 
-This is a game about those moments.
+## How to play
 
-You investigate simulated AWS incidents inside Claude Code. You read logs, query service consoles, trace the architecture, and propose a fix. You can choose a narration style that fits the way you like to learn. There is no timer. There is no score. There is only the problem, and what you find.
+Clone the repo. Run `/setup` in Claude Code once. Then run `/play`.
 
-Powered by the [AWS MCP server](https://docs.aws.amazon.com/aws-mcp/latest/userguide/what-is-mcp-server.html). The best practices you learn here are the real ones.
+## What it scores
 
-## Requirements
+The simulator grades the path, not the answer. Every question you ask is classified into one of six dimensions. Your rank is the shape of the hexagon they form, not a single score.
 
-- [Node.js](https://nodejs.org/) (v18 or later)
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (installed and authenticated)
-
-## Getting Started
-
-Clone the repository and start the web app:
-
-```
-git clone --depth 1 https://github.com/drashtishah/aws-simulator.git
-cd aws-simulator
-npm install && npm start
-```
-
-Open `http://localhost:3200` in your browser. Pick a simulation. Investigate.
-
-Alternatively, play directly in Claude Code:
-
-```
-claude
-/setup
-/play
+```mermaid
+flowchart LR
+  Q[Your question] --> Gather
+  Q --> Diagnose
+  Q --> Correlate
+  Q --> Impact
+  Q --> Trace
+  Q --> Fix
+  Gather --> H[Hexagon shape]
+  Diagnose --> H
+  Correlate --> H
+  Impact --> H
+  Trace --> H
+  Fix --> H
+  H --> R[Rank]
 ```
 
-The terminal experience is identical. Both entry points read and write the same files. You can switch between them freely.
+## How it fits together
 
-## Example Simulation
+```mermaid
+flowchart TB
+  Player([Player])
 
-### Four Million Records, One by One
+  subgraph Skills[Claude Code skills]
+    Setup[/setup]
+    Play[/play]
+    Fix[/fix]
+    Git[/git]
+    FightTeam[/fight-team]
+    SimTest[sim-test CLI]
+  end
 
-An e-commerce startup's product search goes live. Within minutes, the order pipeline stalls. The new Lambda function scans four million DynamoDB items on every request, consuming all provisioned read capacity. The orders table starves. You trace the symptoms from Lambda timeouts back to a full-table Scan hiding behind a FilterExpression that filters nothing until after all the data is already read.
+  subgraph Memory[Per-user memory, gitignored]
+    PlayerVault[(player-vault<br/>Obsidian knowledge graph)]
+    SystemVault[(system-vault<br/>long-term agent memory)]
+    Logs[(logs<br/>raw.jsonl + notes.jsonl)]
+  end
 
-[![asciicast](https://asciinema.org/a/d7CMYd0AFgnlsMqZ.svg)](https://asciinema.org/a/d7CMYd0AFgnlsMqZ)
+  subgraph Web[Web app]
+    Express[Express server]
+    Subprocess[Claude subprocess<br/>Agent SDK]
+  end
+
+  subgraph External[External]
+    AwsMcp[AWS Knowledge MCP]
+    DevtoolsMcp[Chrome DevTools MCP]
+  end
+
+  Player --> Setup
+  Player --> Play
+  Player --> Express
+  Express --> Subprocess
+  Subprocess --> Play
+  Setup --> PlayerVault
+  Play --> PlayerVault
+  Play --> Logs
+  Logs --> SystemVault
+  SystemVault --> Fix
+  SystemVault --> FightTeam
+  Fix --> Logs
+  Play --> AwsMcp
+  SimTest --> DevtoolsMcp
+```
+
+## The pieces
+
+**Player vault.** The player's own Obsidian knowledge graph: session journals, concept notes, service pages, behavioral patterns. One per player.
+
+**System vault.** Long-term agent memory: findings, decisions, workarounds, components, dreams. Compiled daily from the logs.
+
+**Logs.** One unified event stream (`raw.jsonl`) for every tool call and session event. A parallel semantic stream (`notes.jsonl`) for findings agents want to remember.
+
+**Three test layers.** Deterministic unit tests, agent-driven browser tests via Chrome DevTools, and persona-based exploration tests. The browser layer is agent-in-the-loop on purpose.
+
+**Hooks.** Every tool call, session event, warning, and error lands in the logs automatically. Both terminal `/play` and the web app write to the same file.
+
+**Health score.** A composite across ten buckets. Floors are monotonic, so a regression below the post-refactor baseline trips an invariant. `/fix` reads the latest findings to drive plan grouping.
+
+**Fight-team.** Three agents (coordinator, Challenger, Defender) debate the top health findings weekly. Subagents agree too easily; adversarial pressure surfaces weak claims.
+
+**Git as memory.** Every change is its own small commit, independently revertable. No squash merges, ever. Worktrees keep parallel branches isolated.
+
+**Verification by separate agents.** Whoever wrote a change does not verify it. A fresh subagent reads the diff and runs the tests.
+
+**Built with the Agent SDK.** The web app spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Sessions use Sonnet. The same prompt-builder feeds both terminal `/play` and the web UI, so a player can switch entry points mid-session.
+
+## Read more
+
+The C4-style component diagram and impact-analysis guide is in `references/architecture/workspace-map.md`. The canonical commit and test workflow is in `references/architecture/core-workflow.md`. Run `npm run doctor` for a one-shot health check across every moving part.

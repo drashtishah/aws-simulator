@@ -278,6 +278,8 @@ CLAUDE.md,scripts/note.ts,31
 CLAUDE.md,learning/system-vault/,35
 CLAUDE.md,web/lib/system-vault.ts,35
 CLAUDE.md,references/architecture/core-workflow.md,39
+README.md,references/architecture/core-workflow.md,101
+README.md,references/architecture/workspace-map.md,101
 references/architecture/core-workflow.md,.claude/,17
 references/architecture/core-workflow.md,references/architecture/testing-system.md,78
 references/architecture/game-design-document.md,references/config/progression.yaml,3
