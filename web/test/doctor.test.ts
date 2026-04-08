@@ -135,12 +135,13 @@ describe('checkSystemVaultPresent', () => {
     }
   });
 
-  it('fail with hint to run system-vault-compile when index.md missing', () => {
+  it('advisory (ok with warn detail) when index.md missing, since learning/ is gitignored and per-user', () => {
     const root = buildHealthyFixture();
     fs.unlinkSync(path.join(root, 'learning', 'system-vault', 'index.md'));
     try {
       const r = checkSystemVaultPresent({ rootDir: root });
-      assert.equal(r.ok, false);
+      assert.equal(r.ok, true);
+      assert.match(r.detail, /warn:/);
       assert.match(r.detail, /learning\/system-vault\/index\.md/);
       assert.match(r.detail, /system-vault-compile/);
     } finally {

@@ -97,12 +97,17 @@ const SYSTEM_VAULT_INDEX_REL = 'learning/system-vault/index.md';
 export function checkSystemVaultPresent(ctx: CheckContext): CheckResult {
   const p = path.join(ctx.rootDir, SYSTEM_VAULT_INDEX_REL);
   if (!fs.existsSync(p)) {
+    // learning/ is gitignored and per-user: on a fresh clone or inside a
+    // worktree there is legitimately no system vault until /setup (or the
+    // system-vault-compile skill) seeds one. Surface this as an advisory
+    // rather than a hard failure, so `npm run doctor` stays green on
+    // worktrees that never ran a play session.
     return {
-      ok: false,
+      ok: true,
       name: 'system_vault',
       detail:
-        'missing ' + SYSTEM_VAULT_INDEX_REL +
-        ' (run /setup, or invoke the system-vault-compile skill to seed it)',
+        'warn: missing ' + SYSTEM_VAULT_INDEX_REL +
+        ' (per-user/gitignored; run /setup or system-vault-compile to seed)',
     };
   }
   return { ok: true, name: 'system_vault', detail: SYSTEM_VAULT_INDEX_REL + ' present' };
