@@ -319,9 +319,9 @@ export function checkWebServerBoot(
   );
   const out = (r.stdout || '') + (r.stderr || '');
   // web/server.ts emits "AWS Incident Simulator running at http://127.0.0.1:3200".
-  // Match on the port number plus a boot-indicator keyword so the probe
-  // survives minor message wording changes.
-  if (/3200/.test(out) && /(listening|running|http:\/\/)/i.test(out)) {
+  // Match precisely on that shape so the probe catches a real boot and not
+  // incidental occurrences of the port number in other log lines.
+  if (/running at http:\/\/[^\s]*3200/i.test(out)) {
     return { ok: true, name: 'web_server_boot', detail: 'web server booted on port 3200' };
   }
   return {
@@ -372,12 +372,6 @@ export function checkSkillDanglingRefs(ctx: CheckContext): CheckResult {
       // Skip slash commands like `/fix`, `/play`, `/setup` — these look
       // like absolute paths but are Claude Code command names.
       if (clean.startsWith('/')) continue;
-      // Only treat tokens whose final segment has a file extension as
-      // literal filesystem references. Bare directory placeholders like
-      // `findings/` or section shorthand like `decisions/` are
-      // documentation structure, not paths to resolve.
-      const lastSeg = clean.replace(/\/+$/, '').split('/').pop() || '';
-      if (!/\.[a-zA-Z0-9]+$/.test(lastSeg)) continue;
       // Skip gitignored runtime-generated trees. These paths are created
       // by /setup, npm install, or sim runs, and legitimately do not
       // exist on a fresh checkout (e.g. `learning/catalog.csv`,

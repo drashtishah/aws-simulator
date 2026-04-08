@@ -388,7 +388,7 @@ describe('runAll', () => {
 describe('doctor integration checks (runIntegration)', () => {
   const okRunner = (_cmd: string, _args: string[], _opts: any) => ({
     status: 0,
-    stdout: 'listening on 3200\n',
+    stdout: 'AWS Incident Simulator running at http://127.0.0.1:3200\n',
     stderr: '',
   });
   const failRunner = (_cmd: string, _args: string[], _opts: any) => ({
@@ -424,7 +424,7 @@ describe('doctor integration checks (runIntegration)', () => {
     }
   });
 
-  it('checkWebServerBoot returns OK when output contains listening on 3200', () => {
+  it('checkWebServerBoot returns OK when output contains "running at http://*:3200"', () => {
     const root = buildHealthyFixture();
     try {
       const r = checkWebServerBoot({ rootDir: root }, okRunner);
@@ -514,7 +514,7 @@ describe('doctor integration checks (runIntegration)', () => {
     const root = buildHealthyFixture();
     fs.mkdirSync(path.join(root, '.claude', 'skills'), { recursive: true });
     const stub = (_cmd: string, _args: string[], _opts: any) => ({
-      status: 0, stdout: 'listening on 3200\n', stderr: '',
+      status: 0, stdout: 'AWS Incident Simulator running at http://127.0.0.1:3200\n', stderr: '',
     });
     try {
       const summary = runAll({ rootDir: root, runIntegration: true, runner: stub });
