@@ -16,6 +16,28 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
+import * as crypto from 'node:crypto';
+import { spawnSync as realSpawnSync } from 'node:child_process';
+
+// Injectable runner signature for integration checks so tests can stub
+// subprocess execution without spawning real processes.
+export type SpawnSyncLike = (
+  cmd: string,
+  args: string[],
+  opts: any,
+) => { status: number | null; stdout: string; stderr: string };
+
+function defaultRunner(cmd: string, args: string[], opts: any): {
+  status: number | null; stdout: string; stderr: string;
+} {
+  const r = realSpawnSync(cmd, args, { ...opts, encoding: 'utf8' });
+  return {
+    status: r.status,
+    stdout: (r.stdout as unknown as string) || '',
+    stderr: (r.stderr as unknown as string) || '',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,11 +54,12 @@ export interface CheckContext {
 }
 
 export interface RunAllOptions extends CheckContext {
-  // Integration checks (web server boot, sim-test smoke ping, dangling-ref
-  // scanner, path-registry hash freshness) are tracked as a follow-up to
-  // Issue #96; until then this flag is reserved for a future expansion and
-  // ignored by runAll. The CLI and the test pass the same arguments.
+  // When true, runAll appends the 4 integration checks (sim-test smoke,
+  // web-server boot, skill dangling refs, path-registry hash freshness)
+  // after the required checks. Issue #105.
   runIntegration?: boolean;
+  // Optional injected runner, used by tests to stub subprocess execution.
+  runner?: SpawnSyncLike;
 }
 
 export interface RunAllSummary {
@@ -142,7 +165,25 @@ export function checkMcpConfig(ctx: CheckContext): CheckResult {
 
 export function checkPostCommitHook(ctx: CheckContext): CheckResult {
   const src = path.join(ctx.rootDir, '.claude', 'hooks', 'post-commit');
-  const dst = path.join(ctx.rootDir, '.git', 'hooks', 'post-commit');
+  // In a git worktree, .git is a file pointing to the worktree metadata; the
+  // real hooks directory lives under the common git dir shared by all
+  // worktrees. Resolve it via `git rev-parse --git-common-dir` so the check
+  // works from both the main checkout and any worktree.
+  let hooksDir = path.join(ctx.rootDir, '.git', 'hooks');
+  try {
+    const r = realSpawnSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd: ctx.rootDir,
+      encoding: 'utf8',
+    });
+    const out = ((r.stdout as unknown as string) || '').trim();
+    if (r.status === 0 && out) {
+      const resolved = path.isAbsolute(out) ? out : path.join(ctx.rootDir, out);
+      hooksDir = path.join(resolved, 'hooks');
+    }
+  } catch {
+    // fall back to .git/hooks
+  }
+  const dst = path.join(hooksDir, 'post-commit');
   if (!fs.existsSync(src)) {
     return {
       ok: true,
@@ -239,6 +280,188 @@ export function checkPathRegistryFresh(ctx: CheckContext): CheckResult {
 }
 
 // ---------------------------------------------------------------------------
+// Integration checks (Issue #105) - gated behind runIntegration flag
+// ---------------------------------------------------------------------------
+
+export function checkSimTestSmoke(
+  ctx: CheckContext,
+  runner: SpawnSyncLike = defaultRunner,
+): CheckResult {
+  const r = runner(
+    'npx',
+    ['tsx', 'scripts/sim-test.ts', 'run', '--files', 'web/test/path-registry.test.ts'],
+    { cwd: ctx.rootDir, encoding: 'utf8', timeout: 30000 },
+  );
+  if (r.status === 0) {
+    return { ok: true, name: 'sim_test_smoke', detail: 'sim-test smoke passed' };
+  }
+  return {
+    ok: false,
+    name: 'sim_test_smoke',
+    detail: 'sim-test smoke failed; run `npm run test:file -- web/test/path-registry.test.ts` to diagnose',
+  };
+}
+
+export function checkWebServerBoot(
+  ctx: CheckContext,
+  runner: SpawnSyncLike = defaultRunner,
+): CheckResult {
+  // macOS does not ship GNU `timeout`, so use a portable sh idiom: spawn
+  // the server in the background, sleep, then SIGTERM and wait. Captures
+  // both stdout and stderr so the port-3200 boot probe still works.
+  const r = runner(
+    'sh',
+    [
+      '-c',
+      '( npx tsx web/server.ts & SRV=$!; sleep 12; kill $SRV 2>/dev/null; wait $SRV 2>/dev/null ) 2>&1',
+    ],
+    { cwd: ctx.rootDir, encoding: 'utf8', timeout: 20000 },
+  );
+  const out = (r.stdout || '') + (r.stderr || '');
+  // web/server.ts emits "AWS Incident Simulator running at http://127.0.0.1:3200".
+  // Match precisely on that shape so the probe catches a real boot and not
+  // incidental occurrences of the port number in other log lines.
+  if (/running at http:\/\/[^\s]*3200/i.test(out)) {
+    return { ok: true, name: 'web_server_boot', detail: 'web server booted on port 3200' };
+  }
+  return {
+    ok: false,
+    name: 'web_server_boot',
+    detail:
+      'web server did not emit a port-3200 boot line within 12s; check for port conflict on 3200 or run `npm run dev` manually to diagnose',
+  };
+}
+
+// Fast smoke scan of every .claude/skills/**/SKILL.md for backtick-wrapped
+// repo-path-like tokens and asserts each one resolves. This is intentionally
+// lighter than scripts/code-health.ts's fuller dangling-reference scan; the
+// two may diverge on edge cases (e.g. code-health resolves relative paths,
+// this check is rootDir-anchored only). Keep simple here.
+export function checkSkillDanglingRefs(ctx: CheckContext): CheckResult {
+  const skillsDir = path.join(ctx.rootDir, '.claude', 'skills');
+  if (!fs.existsSync(skillsDir)) {
+    return { ok: true, name: 'skill_dangling_refs', detail: 'no .claude/skills directory' };
+  }
+  const skillFiles: string[] = [];
+  function walk(dir: string) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name === 'SKILL.md') skillFiles.push(full);
+    }
+  }
+  walk(skillsDir);
+
+  const dangling: string[] = [];
+  const tokenRe = /`([^`\n]+)`/g;
+  for (const f of skillFiles) {
+    const content = fs.readFileSync(f, 'utf8');
+    let m: RegExpExecArray | null;
+    while ((m = tokenRe.exec(content)) !== null) {
+      const tok = m[1]!.trim();
+      if (!tok.includes('/')) continue;
+      if (/^https?:\/\//.test(tok)) continue;
+      // Strip any ":line" suffix or trailing punctuation.
+      const clean = tok.replace(/[),.;:]+$/, '').split(':')[0]!;
+      if (!clean.includes('/')) continue;
+      // Skip obvious non-paths (spaces, shell pipes, etc.)
+      if (/[\s|<>]/.test(clean)) continue;
+      // Skip template placeholders and glob patterns; these aren't literal
+      // filesystem paths (e.g. `sims/{id}/manifest.json`, `logs/*.txt`).
+      if (/[{}*?]/.test(clean)) continue;
+      // Skip slash commands like `/fix`, `/play`, `/setup` — these look
+      // like absolute paths but are Claude Code command names.
+      if (clean.startsWith('/')) continue;
+      // Skip gitignored runtime-generated trees. These paths are created
+      // by /setup, npm install, or sim runs, and legitimately do not
+      // exist on a fresh checkout (e.g. `learning/catalog.csv`,
+      // `node_modules/.bin`, `dist/index.js`). Mirrors the skip list in
+      // web/test/path-registry.test.ts.
+      if (
+        clean.startsWith('learning/') ||
+        clean.startsWith('node_modules/') ||
+        clean.startsWith('dist/') ||
+        clean.startsWith('web/test-results/') ||
+        clean.startsWith('.claude/plans/') ||
+        clean.startsWith('.claude/state/') ||
+        clean.startsWith('.claude/worktrees/')
+      ) continue;
+      const abs = path.join(ctx.rootDir, clean);
+      if (!fs.existsSync(abs)) {
+        dangling.push(path.relative(ctx.rootDir, f) + ' -> `' + clean + '`');
+      }
+    }
+  }
+  if (dangling.length > 0) {
+    return {
+      ok: false,
+      name: 'skill_dangling_refs',
+      detail: 'dangling skill refs: ' + dangling.slice(0, 5).join('; ') +
+        (dangling.length > 5 ? ' (+' + (dangling.length - 5) + ' more)' : ''),
+    };
+  }
+  return {
+    ok: true,
+    name: 'skill_dangling_refs',
+    detail: skillFiles.length + ' SKILL.md file(s) scanned, no dangling refs',
+  };
+}
+
+export function checkPathRegistryHashFresh(
+  ctx: CheckContext,
+  runner: SpawnSyncLike = defaultRunner,
+): CheckResult {
+  const csvPath = path.join(ctx.rootDir, PATH_REGISTRY_REL);
+  if (!fs.existsSync(csvPath)) {
+    return {
+      ok: false,
+      name: 'path_registry_hash',
+      detail: 'missing ' + PATH_REGISTRY_REL + '; run npm run extract-paths',
+    };
+  }
+  const before = fs.readFileSync(csvPath);
+  const beforeHash = crypto.createHash('sha256').update(before).digest('hex');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'doctor-path-registry-'));
+  const backupPath = path.join(tmpDir, 'path-registry.csv.bak');
+  fs.writeFileSync(backupPath, before);
+
+  try {
+    runner('python3', ['scripts/extract_paths.py'], {
+      cwd: ctx.rootDir,
+      encoding: 'utf8',
+      timeout: 30000,
+    });
+    const after = fs.readFileSync(csvPath);
+    const afterHash = crypto.createHash('sha256').update(after).digest('hex');
+    if (beforeHash !== afterHash) {
+      return {
+        ok: false,
+        name: 'path_registry_hash',
+        detail: 'path-registry.csv is stale; run npm run extract-paths',
+      };
+    }
+    return {
+      ok: true,
+      name: 'path_registry_hash',
+      detail: 'path-registry.csv hash stable after extractor run',
+    };
+  } finally {
+    // Always restore from backup, even if the runner threw.
+    try {
+      fs.writeFileSync(csvPath, fs.readFileSync(backupPath));
+    } catch {
+      // best effort
+    }
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      // best effort
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Output formatting + run-all
 // ---------------------------------------------------------------------------
 
@@ -265,6 +488,13 @@ export function runAll(opts: RunAllOptions): RunAllSummary {
   const results: CheckResult[] = [];
   for (const fn of REQUIRED_CHECKS) {
     results.push(fn(ctx));
+  }
+  if (opts.runIntegration) {
+    const runner: SpawnSyncLike = opts.runner || defaultRunner;
+    results.push(checkSimTestSmoke(ctx, runner));
+    results.push(checkWebServerBoot(ctx, runner));
+    results.push(checkSkillDanglingRefs(ctx));
+    results.push(checkPathRegistryHashFresh(ctx, runner));
   }
   const exitCode = results.every((r) => r.ok) ? 0 : 1;
   return { results, exitCode };
@@ -316,6 +546,10 @@ module.exports = {
   checkPostCommitHook,
   checkHealthScoreRecent,
   checkPathRegistryFresh,
+  checkSimTestSmoke,
+  checkWebServerBoot,
+  checkSkillDanglingRefs,
+  checkPathRegistryHashFresh,
   formatCheckLine,
   runAll,
 };

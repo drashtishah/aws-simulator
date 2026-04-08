@@ -164,6 +164,10 @@ sim-test ----> run: executes node --test (unit tests)
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
 
+### Model split
+
+The Sonnet/Opus split is hardcoded via two named constants in `web/lib/claude-process.ts`: `PLAY_SESSION_MODEL` (claude-sonnet-4-6) drives interactive play, and `POST_SESSION_MODEL` (claude-opus-4-6) drives post-session scoring. Sonnet is fast and cheap enough for narrator plus investigation reasoning; Opus runs cross-file analysis (session.json, manifest, coaching-patterns, progression) where deeper reasoning matters. Do not flip these without an A/B test on quality. See Issue #107.
+
 ## Scheduled Jobs and Hooks
 
 Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons with explicit `allowed_tools` so unattended runs never prompt. Hook entries in `.claude/settings.json` follow the same no-wildcard rule. Both are enforced by `web/test/scheduled-jobs-boundary.test.ts` and `web/test/hook-permissions.test.ts`.

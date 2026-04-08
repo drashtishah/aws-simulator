@@ -79,8 +79,8 @@ changes.
 Follow the prompt in
 `.claude/skills/system-vault-compile/references/compile-prompt.md`.
 Group entries by topic, write or extend topic notes under the matching
-subdirectory: `findings/`, `workarounds/`, `decisions/`, `sessions/`,
-`components/`, `health/`. Each topic file stays under 4KB. If a topic
+subdirectory: findings, workarounds, decisions, sessions, components, or
+health. Each topic file stays under 4KB. If a topic
 note would exceed 4KB, split it by date suffix.
 
 ### 5. Update the index

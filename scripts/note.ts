@@ -13,6 +13,15 @@
  * Topic: slug ^[a-z0-9][a-z0-9-]{0,63}$ (or "none" for kind=none).
  * Body: freeform text, no length cap (Issue #119).
  *
+ * Integrity signal: agents MUST record a note whenever they feel tempted
+ * to cheat, take a shortcut, weaken a test, relax an assertion, downgrade
+ * a FAIL to a WARN, skip a test, broaden a regex past precision, or add
+ * to a skip list to dodge a real signal. Even if the shortcut is
+ * ultimately justified, the note creates the paper trail. Use
+ * kind=workaround or kind=decision. Body: what was tempting, why you
+ * resisted or gave in, what you did instead. This matters MORE for test
+ * code than any other category — tests are the safety net.
+ *
  * Usage:
  *   tsx scripts/note.ts --kind finding --topic <slug> --body "<one to three sentences>"
  *   tsx scripts/note.ts --kind negative_result --topic <slug> --body "tried X, did not work because Y"

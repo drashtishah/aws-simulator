@@ -22,6 +22,10 @@ const {
   checkPostCommitHook,
   checkHealthScoreRecent,
   checkPathRegistryFresh,
+  checkSimTestSmoke,
+  checkWebServerBoot,
+  checkSkillDanglingRefs,
+  checkPathRegistryHashFresh,
   formatCheckLine,
   runAll,
 } = require('../../scripts/doctor');
@@ -371,6 +375,160 @@ describe('runAll', () => {
         failed.some((r: { detail: string }) => /learning\/logs\/raw\.jsonl/.test(r.detail)),
         'failed checks should mention raw.jsonl',
       );
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Integration checks (runIntegration flag) - Issue #105
+// ---------------------------------------------------------------------------
+
+describe('doctor integration checks (runIntegration)', () => {
+  const okRunner = (_cmd: string, _args: string[], _opts: any) => ({
+    status: 0,
+    stdout: 'AWS Incident Simulator running at http://127.0.0.1:3200\n',
+    stderr: '',
+  });
+  const failRunner = (_cmd: string, _args: string[], _opts: any) => ({
+    status: 1,
+    stdout: '',
+    stderr: 'boom',
+  });
+  const silentRunner = (_cmd: string, _args: string[], _opts: any) => ({
+    status: 0,
+    stdout: 'nothing here',
+    stderr: '',
+  });
+
+  it('checkSimTestSmoke returns OK when runner exits 0', () => {
+    const root = buildHealthyFixture();
+    try {
+      const r = checkSimTestSmoke({ rootDir: root }, okRunner);
+      assert.equal(r.ok, true);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkSimTestSmoke returns FAIL with test:file hint when non-zero', () => {
+    const root = buildHealthyFixture();
+    try {
+      const r = checkSimTestSmoke({ rootDir: root }, failRunner);
+      assert.equal(r.ok, false);
+      assert.match(r.detail, /npm run test:file/);
+      assert.match(r.detail, /path-registry\.test\.ts/);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkWebServerBoot returns OK when output contains "running at http://*:3200"', () => {
+    const root = buildHealthyFixture();
+    try {
+      const r = checkWebServerBoot({ rootDir: root }, okRunner);
+      assert.equal(r.ok, true);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkWebServerBoot returns FAIL when output lacks listening line', () => {
+    const root = buildHealthyFixture();
+    try {
+      const r = checkWebServerBoot({ rootDir: root }, silentRunner);
+      assert.equal(r.ok, false);
+      assert.match(r.detail, /3200|port|npm run dev/i);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkSkillDanglingRefs returns OK on fixture with valid paths only', () => {
+    const root = buildHealthyFixture();
+    fs.mkdirSync(path.join(root, '.claude', 'skills', 'foo'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'real-file.md'), 'hi');
+    fs.writeFileSync(
+      path.join(root, '.claude', 'skills', 'foo', 'SKILL.md'),
+      'See `real-file.md` and `https://example.com/x` for details.\n',
+    );
+    try {
+      const r = checkSkillDanglingRefs({ rootDir: root });
+      assert.equal(r.ok, true, r.detail);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkSkillDanglingRefs returns FAIL when SKILL.md references non-existent path', () => {
+    const root = buildHealthyFixture();
+    fs.mkdirSync(path.join(root, '.claude', 'skills', 'foo'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '.claude', 'skills', 'foo', 'SKILL.md'),
+      'See `references/does/not/exist.md` for details.\n',
+    );
+    try {
+      const r = checkSkillDanglingRefs({ rootDir: root });
+      assert.equal(r.ok, false);
+      assert.match(r.detail, /does\/not\/exist\.md/);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkPathRegistryHashFresh returns OK when extractor produces identical hash', () => {
+    const root = buildHealthyFixture();
+    // no-op runner: doesn't mutate the csv, so hashes match
+    const noopRunner = (_cmd: string, _args: string[], _opts: any) => ({
+      status: 0, stdout: '', stderr: '',
+    });
+    try {
+      const r = checkPathRegistryHashFresh({ rootDir: root }, noopRunner);
+      assert.equal(r.ok, true, r.detail);
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('checkPathRegistryHashFresh returns FAIL when extractor changes the file', () => {
+    const root = buildHealthyFixture();
+    const csvPath = path.join(root, 'references', 'registries', 'path-registry.csv');
+    const mutatingRunner = (_cmd: string, _args: string[], _opts: any) => {
+      fs.writeFileSync(csvPath, 'file,path,line_number\nextra,extra,1\n');
+      return { status: 0, stdout: '', stderr: '' };
+    };
+    try {
+      const r = checkPathRegistryHashFresh({ rootDir: root }, mutatingRunner);
+      assert.equal(r.ok, false);
+      assert.match(r.detail, /stale|extract-paths/);
+      // backup must have been restored
+      const restored = fs.readFileSync(csvPath, 'utf8');
+      assert.equal(restored, 'file,path,line_number\n');
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('runAll with runIntegration:true returns 11 results using stub runner', () => {
+    const root = buildHealthyFixture();
+    fs.mkdirSync(path.join(root, '.claude', 'skills'), { recursive: true });
+    const stub = (_cmd: string, _args: string[], _opts: any) => ({
+      status: 0, stdout: 'AWS Incident Simulator running at http://127.0.0.1:3200\n', stderr: '',
+    });
+    try {
+      const summary = runAll({ rootDir: root, runIntegration: true, runner: stub });
+      assert.equal(summary.results.length, 11, JSON.stringify(summary.results, null, 2));
+    } finally {
+      rmTmpDir(root);
+    }
+  });
+
+  it('runAll with runIntegration:false returns 7 results', () => {
+    const root = buildHealthyFixture();
+    try {
+      const summary = runAll({ rootDir: root, runIntegration: false });
+      assert.equal(summary.results.length, 7);
     } finally {
       rmTmpDir(root);
     }
