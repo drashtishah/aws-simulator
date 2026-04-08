@@ -76,6 +76,7 @@ for plan in "${PLANS[@]}"; do
     claude -p "Execute the plan at .claude/plans/${slug}.md using the superpowers:executing-plans skill. Open a PR when done." \
       --permission-mode acceptEdits \
       --output-format stream-json \
+      --verbose \
       > "${REPO_ROOT}/${log}" 2>&1
   ) &
 done

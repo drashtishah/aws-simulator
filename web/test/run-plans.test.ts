@@ -50,6 +50,15 @@ describe('scripts/run-plans.sh', () => {
     assert.match(body, /--permission-mode acceptEdits/);
   });
 
+  it('passes --verbose alongside --output-format stream-json (Issue #144)', () => {
+    // `claude -p --output-format stream-json` errors out immediately
+    // without --verbose: "Error: When using --print, --output-format=
+    // stream-json requires --verbose". The headless run dies on the
+    // first turn and the JSON log contains only the error line.
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    assert.match(body, /--verbose/, 'must pass --verbose to claude -p');
+  });
+
   it('expands sibling plans via part-* glob', () => {
     const body = fs.readFileSync(SCRIPT, 'utf8');
     assert.match(body, /\.claude\/plans\/\$\{PARENT_SLUG\}-part-\*\.md/);
