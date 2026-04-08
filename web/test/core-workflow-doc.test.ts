@@ -56,4 +56,15 @@ describe('core-workflow.md', () => {
     assert.ok(/rebase -i/i.test(content), 'must warn against git rebase -i');
     assert.ok(/push --force|force.?push/i.test(content), 'must warn against force push');
   });
+
+  it('section 5 frames revertability at the PR merge-commit boundary', () => {
+    const content = fs.readFileSync(DOC, 'utf8');
+    const sect5Start = content.indexOf('## 5.');
+    assert.notEqual(sect5Start, -1, 'section 5 should exist');
+    const sect6Start = content.indexOf('## 6.', sect5Start);
+    const sect5Body = content.slice(sect5Start, sect6Start);
+    assert.match(sect5Body, /merge commit|no-ff/i, 'section 5 must describe the PR merge commit');
+    assert.match(sect5Body, /PR.*boundary|revert.*whole PR|revert.*merge commit/i,
+      'section 5 must frame revertability at the PR boundary');
+  });
 });
