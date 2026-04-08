@@ -64,6 +64,13 @@ for plan in "${PLANS[@]}"; do
   echo "spawning ${slug} -> ${log}"
   git worktree add "$worktree" -b "$branch"
 
+  # .claude/plans/ is gitignored, so a fresh worktree has no plan files.
+  # Seed the worktree's plan directory with the parent's plan file before
+  # launching claude -p, otherwise the headless agent cannot read its plan.
+  # Issue #141.
+  mkdir -p "$worktree/.claude/plans"
+  cp ".claude/plans/${slug}.md" "$worktree/.claude/plans/${slug}.md"
+
   (
     cd "$worktree"
     claude -p "Execute the plan at .claude/plans/${slug}.md using the superpowers:executing-plans skill. Open a PR when done." \

@@ -60,6 +60,25 @@ describe('scripts/run-plans.sh', () => {
     assert.match(body, /^wait\b/m);
   });
 
+  it('copies the plan file into the worktree before launching claude (Issue #141)', () => {
+    // .claude/plans/ is gitignored, so a fresh `git worktree add` checkout
+    // contains no plan files. Without this copy step, `claude -p` would
+    // be told to read .claude/plans/<slug>.md but the file would not exist
+    // in the worktree. The script must seed the worktree's plan directory
+    // from the parent before launching the headless agent.
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    assert.match(
+      body,
+      /mkdir -p "\$worktree\/\.claude\/plans"/,
+      'must create the .claude/plans directory inside the worktree',
+    );
+    assert.match(
+      body,
+      /cp "\.claude\/plans\/\$\{slug\}\.md" "\$worktree\/\.claude\/plans\/\$\{slug\}\.md"/,
+      'must copy the plan file from the parent into the worktree',
+    );
+  });
+
   it('documents token-spend and acceptEdits trade-offs in the header', () => {
     const body = fs.readFileSync(SCRIPT, 'utf8');
     const header = body.split('\n').slice(0, 40).join('\n');
