@@ -30,15 +30,7 @@ executing agent will run. TDD red-green is mandatory.
 
 ## Cleanup
 
-This plan follows the worktree-cleanup rules in
-`references/architecture/core-workflow.md` section 9. The final group of
-this plan runs the section 9 commands adapted to the plan's own
-worktree path and branch slug. If this plan is part of a sibling-plan
-split, each sibling owns its own worktree cleanup; never remove a
-sibling's worktree from this plan. Cleanup runs only after the PR has
-merged to master.
-
-**Explicit Issue-closure step**: section 9 requires verifying that every Issue referenced by this plan is closed after the PR merges. Auto-close via the `Closes #N` commit trailer usually works, but can fail silently (typo, trailer on the wrong commit, rebase re-author, branch protection). The executing agent MUST run the section 9 verification query, `gh issue list --state open --search "<space-separated issue numbers referenced by this plan>"`, as the final cleanup action. Any still-open Issue must be manually closed with `gh issue close <N> --comment "Closed by PR #<pr>, see <merge-sha>"` before the cleanup group is complete.
+The final group of this plan runs the cleanup commands from `references/architecture/core-workflow.md` section 9, adapted to the plan's own worktree path and branch slug. If this plan is part of a sibling-plan split, each sibling owns its own worktree cleanup; never remove a sibling's worktree from this plan. Cleanup runs only after the PR has merged to master.
 
 ## File path convention
 
