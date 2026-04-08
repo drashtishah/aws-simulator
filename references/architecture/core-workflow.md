@@ -46,6 +46,8 @@ Commit message format: short imperative subject, body with `intent:` and `decisi
 
 After every commit, run the targeted subset of tests affected by the change via `sim-test --changed` (delivered by PR-I). This runs in 1 to 3 seconds so it stays frictionless per commit. At the end of the PR, run the full suite with `npm test` once before opening the PR. If targeted tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
 
+After every commit, also pause to consider the code-health impact: did this change touch any file that has an open finding in the latest `learning/logs/health-scores.jsonl`? Could the same diff have resolved or improved a bucket score in passing? Prefer changes that hold or improve the score over changes that ship test-green but quietly degrade a bucket (dangling refs, complexity, dead code). This is a habit, not a hard gate; the gate runs at PR-time via `npm run health` in §9.
+
 ## 6b. Notes after every commit
 
 After every commit, write one entry to `learning/logs/notes.jsonl` via `scripts/note.ts`. This is the semantic stream the daily compile cron rolls into the system vault, and it is the project's only durable agent-to-agent memory. Writing one note per commit gives the vault a guaranteed cadence so it grows in lockstep with the work.
