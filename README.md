@@ -1,6 +1,6 @@
 # AWS Incident Simulator
 
-A game about asking better questions when AWS breaks.
+A game about learning to ask good questions.
 
 ## How to play
 
@@ -107,7 +107,7 @@ flowchart TB
 
 **Verification by separate agents.** Whoever wrote a change does not verify it. A fresh subagent reads the diff and runs the tests.
 
-**Built with the Agent SDK.** The web app spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Sessions use Sonnet. The same prompt-builder feeds both terminal `/play` and the web UI, so a player can switch entry points mid-session.
+**Built with the Agent SDK.** The web app is the only entry point for play sessions. It spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Play sessions use Sonnet for fast interactive narration. Post-session learning analysis (knowledge scoring, profile updates, vault note compilation) runs as a separate Opus subprocess for the deeper cross-file reasoning. Both models are set in `web/lib/claude-process.ts`.
 
 **Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `sim-test evals`.
 
