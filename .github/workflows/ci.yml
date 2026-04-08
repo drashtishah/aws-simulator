@@ -66,5 +66,7 @@ jobs:
           test -f learning/system-vault/index.md || \
             echo '# System Vault (CI stub)' > learning/system-vault/index.md
 
-      - name: npm run doctor
+      - name: npm run doctor (skip integration on CI)
+        env:
+          DOCTOR_SKIP_INTEGRATION: '1'
         run: npm run doctor

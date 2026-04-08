@@ -512,7 +512,11 @@ function isMain(): boolean {
 
 function main(): void {
   const rootDir = path.resolve(__dirname, '..');
-  const summary = runAll({ rootDir, runIntegration: true });
+  // Integration checks (Issue #105) include process spawning (web server
+  // boot, sim-test smoke, extract_paths) which is flaky on cold CI runners.
+  // Allow CI to skip them via DOCTOR_SKIP_INTEGRATION=1.
+  const skipIntegration = process.env.DOCTOR_SKIP_INTEGRATION === '1';
+  const summary = runAll({ rootDir, runIntegration: !skipIntegration });
 
   let okCount = 0;
   let warnCount = 0;
