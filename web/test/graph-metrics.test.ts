@@ -99,28 +99,28 @@ describe('danglingReferences', () => {
   it('finds a markdown link to a missing path (positive)', () => {
     const root = mkTmp('dr-pos');
     try {
-      writeFile(root, 'docs/a.md', 'see [target](docs/missing.md) for more.\nalso `references/nope.md`.\n');
-      writeFile(root, 'docs/exists.md', '# heading\n');
+      writeFile(root, 'references/a.md', 'see [target](references/missing.md) for more.\nalso `web/nope.md`.\n');
+      writeFile(root, 'references/exists.md', '# heading\n');
       const files = [
-        { path: 'docs/a.md', bucket: 'memory_link', abs: path.join(root, 'docs/a.md') },
+        { path: 'references/a.md', bucket: 'reference', abs: path.join(root, 'references/a.md') },
       ];
-      const tracked = new Set(['docs/a.md', 'docs/exists.md']);
+      const tracked = new Set(['references/a.md', 'references/exists.md']);
       const findings = danglingReferences(files, tracked, root);
       const targets = findings.map((f: any) => f.target).sort();
-      assert.deepEqual(targets, ['docs/missing.md', 'references/nope.md']);
-      assert.ok(findings.every((f: any) => f.source === 'docs/a.md' && typeof f.line === 'number'));
+      assert.deepEqual(targets, ['references/missing.md', 'web/nope.md']);
+      assert.ok(findings.every((f: any) => f.source === 'references/a.md' && typeof f.line === 'number'));
     } finally { rmTmp(root); }
   });
 
   it('accepts http(s) URLs and resolved paths (negative)', () => {
     const root = mkTmp('dr-neg');
     try {
-      writeFile(root, 'docs/a.md', 'see [ok](docs/exists.md) and [web](https://example.com)\nbacktick `docs/exists.md`\n');
-      writeFile(root, 'docs/exists.md', '# heading\n');
+      writeFile(root, 'references/a.md', 'see [ok](references/exists.md) and [web](https://example.com)\nbacktick `references/exists.md`\n');
+      writeFile(root, 'references/exists.md', '# heading\n');
       const files = [
-        { path: 'docs/a.md', bucket: 'memory_link', abs: path.join(root, 'docs/a.md') },
+        { path: 'references/a.md', bucket: 'reference', abs: path.join(root, 'references/a.md') },
       ];
-      const tracked = new Set(['docs/a.md', 'docs/exists.md']);
+      const tracked = new Set(['references/a.md', 'references/exists.md']);
       assert.deepEqual(danglingReferences(files, tracked, root), []);
     } finally { rmTmp(root); }
   });
