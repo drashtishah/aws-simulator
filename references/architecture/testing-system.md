@@ -52,6 +52,8 @@ sim-test personas --id hostile   # run a specific persona
 sim-test personas --feedback     # push findings to learning/feedback.md
 ```
 
+Layer 3 smoke-run procedure (Issue #106): to walk one persona end-to-end through the live web app, (1) confirm Chrome DevTools MCP is reachable via `mcp__chrome-devtools__list_pages`, (2) boot the server with `npm start`, wait for `listening on 3200`, (3) dispatch an agent subsession with the persona prompt from `sim-test personas --id hostile-user` pointed at `http://localhost:3200`, (4) save findings to `web/test-results/personas/hostile-user-<timestamp>.json` matching `web/lib/schemas/persona-finding.schema.json`, (5) run `sim-test personas --feedback` to merge findings into `learning/feedback.md`, (6) kill the server. Findings files under `web/test-results/personas/` are gitignored; the smoke run is verified when the findings file exists and merge succeeds. If the MCP is not reachable, the runbook bails and Issue #106 stays open until it is configured.
+
 ### Evals (Layer 4)
 
 ```
@@ -100,6 +102,10 @@ references/
 ```
 
 ## File Format Schemas
+
+### Schema contracts
+
+JSON schemas for sim-test CLI output and the persona-finding file format live at `web/lib/schemas/`. Validation runs in `web/test/sim-test-schemas.test.ts` and smoke self-tests live at `web/test/sim-test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/sim-test-schemas.md` (Issue #31).
 
 ### YAML Browser Spec
 

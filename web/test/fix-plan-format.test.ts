@@ -23,6 +23,8 @@ import path from 'node:path';
 const ROOT = path.resolve(__dirname, '..', '..');
 const GOOD = path.join(ROOT, 'web/test/fixtures/fix-plan-good.md');
 const BAD = path.join(ROOT, 'web/test/fixtures/fix-plan-bad.md');
+const SIBLING_GOOD = path.join(ROOT, 'web/test/fixtures/fix-plan-sibling-good.md');
+const SIBLING_BAD = path.join(ROOT, 'web/test/fixtures/fix-plan-sibling-bad.md');
 
 interface Group {
   name: string;
@@ -51,10 +53,25 @@ interface PlanValidation {
   errors: string[];
 }
 
-function validateFixPlan(plan: string): PlanValidation {
+interface ValidateOptions {
+  sibling?: boolean;
+}
+
+function validateFixPlan(plan: string, opts: ValidateOptions = {}): PlanValidation {
   const errors: string[] = [];
   if (!/^## Workflow\b/m.test(plan)) errors.push('missing Workflow section');
   if (!/^## Testing\b/m.test(plan)) errors.push('missing Testing section');
+
+  if (opts.sibling) {
+    const workflowStart = plan.search(/^## Workflow\b/m);
+    const workflowEnd = workflowStart === -1 ? -1 : plan.indexOf('\n## ', workflowStart + 1);
+    const workflowBody = workflowStart === -1
+      ? ''
+      : plan.slice(workflowStart, workflowEnd === -1 ? undefined : workflowEnd);
+    if (!/^### Sibling plans\b/m.test(workflowBody)) {
+      errors.push('missing ### Sibling plans subsection in Workflow');
+    }
+  }
 
   const groups = parseGroups(plan);
   if (groups.length === 0) errors.push('plan has no Groups');
@@ -94,5 +111,18 @@ describe('fix plan format', () => {
     const joined = result.errors.join(' | ');
     assert.match(joined, /Closes\/Ref\/Feedback citation/);
     assert.match(joined, /absolute path/);
+  });
+
+  it('sibling good fixture passes with sibling=true', () => {
+    const body = fs.readFileSync(SIBLING_GOOD, 'utf8');
+    const result = validateFixPlan(body, { sibling: true });
+    assert.equal(result.valid, true, `errors: ${result.errors.join(' | ')}`);
+  });
+
+  it('sibling bad fixture fails with Sibling plans error when sibling=true', () => {
+    const body = fs.readFileSync(SIBLING_BAD, 'utf8');
+    const result = validateFixPlan(body, { sibling: true });
+    assert.equal(result.valid, false);
+    assert.match(result.errors.join(' | '), /Sibling plans/);
   });
 });

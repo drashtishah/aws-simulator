@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aws-simulator.local/schemas/personas-output.schema.json",
+  "title": "sim-test personas --json output",
+  "description": "Shape of the JSON document printed by `sim-test personas --json` and `sim-test personas --dry-run --json`. Derived from observed CLI output on 2026-04-08.",
+  "type": "object",
+  "required": ["command", "ts", "personas", "verdict"],
+  "properties": {
+    "command": {
+      "type": "string",
+      "const": "personas"
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "behaviors", "questions", "valid"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "behaviors": { "type": "integer", "minimum": 0 },
+          "questions": { "type": "integer", "minimum": 0 },
+          "valid": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["VALID", "INVALID", "PASS", "FAIL"]
+    }
+  },
+  "additionalProperties": true
+}

@@ -26,6 +26,13 @@ This plan follows the canonical workflow in
   stream compiles into the system vault, so every commit grows
   long-term agent memory.
 
+If this plan is part of a sibling-plan split, the sibling paths and
+the parent decision article are listed at the top of the plan under a
+`### Sibling plans` subsection. Each sibling owns its own worktree,
+branch, and PR; never edit a sibling's files from this plan. Plans
+never run `gh issue create` (Issue #113); /fix creates every Issue a
+plan references.
+
 ## Testing
 
 This plan tests through the layers documented in
@@ -42,6 +49,16 @@ group:
 
 Each plan group must declare which layer applies and which commands the
 executing agent will run. TDD red-green is mandatory.
+
+## Cleanup
+
+This plan follows the worktree-cleanup rules in
+`references/architecture/core-workflow.md` section 9. The final group of
+this plan runs the section 9 commands adapted to the plan's own
+worktree path and branch slug. If this plan is part of a sibling-plan
+split, each sibling owns its own worktree cleanup; never remove a
+sibling's worktree from this plan. Cleanup runs only after the PR has
+merged to master.
 
 ## File path convention
 

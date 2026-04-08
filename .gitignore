@@ -31,8 +31,11 @@ docs/
 # TypeScript build output
 dist/
 
-# mypy cache
+# mypy cache (legacy; redirected to .tmp/mypy-cache in npm test)
 .mypy_cache/
+
+# Scratch scoped to tooling (mypy cache redirect target, etc.)
+.tmp/
 
 # Git worktrees
 .worktrees/
