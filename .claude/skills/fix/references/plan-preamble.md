@@ -5,7 +5,9 @@ the two sections below verbatim. These sections are non-negotiable.
 
 ## Workflow
 
-This plan follows `references/architecture/core-workflow.md` end to end (section 1 issue-first, section 3 plan if non-trivial, section 4 TDD red-green, section 5 small revertable commits and merge strategy, section 6 targeted tests, section 6b note per commit, section 7 verifier subagent separation, section 8 revert not history rewrite, section 9 cleanup). The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
+**This plan MUST follow `references/architecture/core-workflow.md` end to end. Every section is non-negotiable.** Section 1 (issue-first), section 3 (plan if non-trivial), section 4 (TDD red-green), section 5 (small revertable commits and merge strategy), section 6 (targeted tests), section 6b (note per commit), section 7 (verifier subagent separation), section 8 (revert not history rewrite), section 9 (cleanup including Issue-closure verification). The executing agent does not get to skip, reorder, or reinterpret any section. If a section seems to conflict with the plan, stop and surface the conflict to the human; do not work around core-workflow.md.
+
+The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
 
 If this plan is part of a sibling-plan split, the sibling paths and the parent decision article are listed at the top under a `### Sibling plans` subsection. Each sibling owns its own worktree, branch, and PR; never edit a sibling's files from this plan.
 
@@ -35,6 +37,8 @@ worktree path and branch slug. If this plan is part of a sibling-plan
 split, each sibling owns its own worktree cleanup; never remove a
 sibling's worktree from this plan. Cleanup runs only after the PR has
 merged to master.
+
+**Explicit Issue-closure step**: section 9 requires verifying that every Issue referenced by this plan is closed after the PR merges. Auto-close via the `Closes #N` commit trailer usually works, but can fail silently (typo, trailer on the wrong commit, rebase re-author, branch protection). The executing agent MUST run the section 9 verification query, `gh issue list --state open --search "<space-separated issue numbers referenced by this plan>"`, as the final cleanup action. Any still-open Issue must be manually closed with `gh issue close <N> --comment "Closed by PR #<pr>, see <merge-sha>"` before the cleanup group is complete.
 
 ## File path convention
 
