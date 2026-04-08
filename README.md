@@ -34,12 +34,12 @@ flowchart TB
   Player([Player])
 
   subgraph Skills[Claude Code skills]
-    Setup[/setup]
-    Play[/play]
-    Fix[/fix]
-    Git[/git]
-    FightTeam[/fight-team]
-    CreateSim[/create-sim]
+    Setup["/setup"]
+    Play["/play"]
+    Fix["/fix"]
+    Git["/git"]
+    FightTeam["/fight-team"]
+    CreateSim["/create-sim"]
     SimTest[sim-test CLI]
   end
 
