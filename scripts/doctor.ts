@@ -311,20 +311,29 @@ export function checkWebServerBoot(
   ctx: CheckContext,
   runner: SpawnSyncLike = defaultRunner,
 ): CheckResult {
+  // macOS does not ship GNU `timeout`, so use a portable sh idiom: spawn
+  // the server in the background, sleep, then SIGTERM and wait. Captures
+  // both stdout and stderr so the port-3200 boot probe still works.
   const r = runner(
-    'bash',
-    ['-c', 'timeout 12 npx tsx web/server.ts 2>&1'],
-    { cwd: ctx.rootDir, encoding: 'utf8', timeout: 15000 },
+    'sh',
+    [
+      '-c',
+      '( npx tsx web/server.ts & SRV=$!; sleep 12; kill $SRV 2>/dev/null; wait $SRV 2>/dev/null ) 2>&1',
+    ],
+    { cwd: ctx.rootDir, encoding: 'utf8', timeout: 20000 },
   );
   const out = (r.stdout || '') + (r.stderr || '');
-  if (/listening on 3200/.test(out)) {
+  // web/server.ts emits "AWS Incident Simulator running at http://127.0.0.1:3200".
+  // Match on the port number plus a boot-indicator keyword so the probe
+  // survives minor message wording changes.
+  if (/3200/.test(out) && /(listening|running|http:\/\/)/i.test(out)) {
     return { ok: true, name: 'web_server_boot', detail: 'web server booted on port 3200' };
   }
   return {
     ok: false,
     name: 'web_server_boot',
     detail:
-      'web server did not emit "listening on 3200" within 12s; check for port conflict on 3200 or run `npm run dev` manually to diagnose',
+      'web server did not emit a port-3200 boot line within 12s; check for port conflict on 3200 or run `npm run dev` manually to diagnose',
   };
 }
 
