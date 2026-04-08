@@ -365,6 +365,29 @@ export function checkSkillDanglingRefs(ctx: CheckContext): CheckResult {
       // Skip template placeholders and glob patterns; these aren't literal
       // filesystem paths (e.g. `sims/{id}/manifest.json`, `logs/*.txt`).
       if (/[{}*?]/.test(clean)) continue;
+      // Skip slash commands like `/fix`, `/play`, `/setup` — these look
+      // like absolute paths but are Claude Code command names.
+      if (clean.startsWith('/')) continue;
+      // Only treat tokens whose final segment has a file extension as
+      // literal filesystem references. Bare directory placeholders like
+      // `findings/` or section shorthand like `decisions/` are
+      // documentation structure, not paths to resolve.
+      const lastSeg = clean.replace(/\/+$/, '').split('/').pop() || '';
+      if (!/\.[a-zA-Z0-9]+$/.test(lastSeg)) continue;
+      // Skip gitignored runtime-generated trees. These paths are created
+      // by /setup, npm install, or sim runs, and legitimately do not
+      // exist on a fresh checkout (e.g. `learning/catalog.csv`,
+      // `node_modules/.bin`, `dist/index.js`). Mirrors the skip list in
+      // web/test/path-registry.test.ts.
+      if (
+        clean.startsWith('learning/') ||
+        clean.startsWith('node_modules/') ||
+        clean.startsWith('dist/') ||
+        clean.startsWith('web/test-results/') ||
+        clean.startsWith('.claude/plans/') ||
+        clean.startsWith('.claude/state/') ||
+        clean.startsWith('.claude/worktrees/')
+      ) continue;
       const abs = path.join(ctx.rootDir, clean);
       if (!fs.existsSync(abs)) {
         dangling.push(path.relative(ctx.rootDir, f) + ' -> `' + clean + '`');
