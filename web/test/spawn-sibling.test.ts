@@ -54,6 +54,28 @@ describe('scripts/spawn-sibling.sh', () => {
     assert.match(body, /-d\s+"\$WORKTREE"|\[\[ -d/, 'must check for existing worktree');
   });
 
+  it('skips cleanly when the feature branch is already merged to master (Issue #128)', () => {
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    // Must check branch ancestry against master before dispatching.
+    assert.match(
+      body,
+      /merge-base\s+--is-ancestor[\s\S]{0,200}master/,
+      'must use git merge-base --is-ancestor to detect merged branch',
+    );
+    // Must print a clear "already merged" skip message.
+    assert.match(
+      body,
+      /already merged|branch.*merged/i,
+      'must print a skip message mentioning "merged"',
+    );
+    // Must exit 0 (clean skip) on merged branch detection, not 1/2/3.
+    assert.match(
+      body,
+      /merge-base[\s\S]{0,400}exit 0/,
+      'merged-branch path must exit 0 for a clean batch skip',
+    );
+  });
+
   it('copies the plan file into the worktree (Issue #141)', () => {
     const body = fs.readFileSync(SCRIPT, 'utf8');
     assert.match(body, /mkdir -p "\$\{?WORKTREE\}?\/\.claude\/plans"/);

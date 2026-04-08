@@ -63,6 +63,15 @@ if ! scripts/check-budget.sh; then
   exit 3
 fi
 
+# Resume-safe merged-branch skip (Issue #128). If the feature branch is
+# already merged to master, there is nothing to do. Exit 0 so batch-mode
+# orchestrators treat this as a clean skip rather than an error.
+if git show-ref --verify --quiet "refs/heads/${BRANCH}" \
+   && git merge-base --is-ancestor "refs/heads/${BRANCH}" master 2>/dev/null; then
+  echo "spawn-sibling: ${SLUG} branch already merged to master, skipping" >&2
+  exit 0
+fi
+
 # Resume-safe worktree + branch creation (Issue #128). Reuse if present.
 if [[ ! -d "$WORKTREE" ]]; then
   if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
