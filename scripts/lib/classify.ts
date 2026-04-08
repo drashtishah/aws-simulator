@@ -95,7 +95,7 @@ export function classify(rawPath: string): Bucket | null {
   if (p === 'web/server.ts') return 'code';
   if (
     p.startsWith('scripts/') &&
-    (p.endsWith('.ts') || p.endsWith('.js') || p.endsWith('.py'))
+    (p.endsWith('.ts') || p.endsWith('.js') || p.endsWith('.py') || p.endsWith('.sh'))
   ) {
     return 'code';
   }
