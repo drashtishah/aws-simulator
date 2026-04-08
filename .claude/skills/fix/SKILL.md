@@ -143,7 +143,7 @@ full filesystem access) and the permission wall is there for a reason.
 The fix is either a targeted manual edit or a targeted permission
 allowlist, never a blanket bypass.
 
-## Flow (9 steps)
+## Flow
 
 1. List open Issues: `gh issue list --state open --json number,title,labels,body --limit 200`. Group by label.
 2. Read `learning/feedback.md` and any `learning/system-vault/feedback/` articles since the last /fix run. Feedback that matches an existing Issue attaches with "user reinforced this." Orphan feedback is tagged for Issue creation in step 5b.
@@ -151,7 +151,9 @@ allowlist, never a blanket bypass.
 4. Read the latest entry of `learning/logs/health-scores.jsonl`. Pull `findings[]` (top 10 ranked by `expected_gain_if_fixed`).
 5. Group by label, root cause, and shared file references using the heuristics in `.claude/skills/fix/references/issue-grouping.md`. Then run the two scanners below and append their results to the input bundle.
 5b. For every orphan-feedback theme surfaced in step 2 and every cut item from the splitting heuristic, create a GitHub Issue NOW via `gh issue create`. Use the depth template in memory `feedback_detailed_issues.md` (Context, Current state verified, Scope with file:line refs, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). Capture every Issue number into the input bundle so the plan only ever references numbers, never runs `gh issue create`. This is the ONLY write operation /fix performs against external state (Issue #113).
+5c. Validate every Issue created in step 5b against the Issue checklist in `.claude/skills/fix/references/plan-validator.md` (Context present, Current state verified with grep/gh/sed commands, Scope with exact file:line refs and literal edit content, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). If ANY section is missing from ANY Issue, /fix refuses to proceed to step 6 and reports the gap to the user. Fix the gap via `gh issue edit <N> --body-file ...` then re-run step 5c (Issue #118).
 6. Invoke `superpowers:writing-plans` with the input bundle, the canonical preamble at `.claude/skills/fix/references/plan-preamble.md`, and a target plan path under the gitignored .claude/plans directory. `superpowers:writing-plans` runs its own exploration and writes the plan; /fix does not write plan steps itself.
+6b. Validate the produced plan file against the plan checklist in `.claude/skills/fix/references/plan-validator.md`: (1) every Group section cites at least one Issue number, (2) every Group has a Test section naming a test layer, (3) every Group declares a per-group test cadence (per commit / group exit / pre-PR), (4) every file path is root-relative or absolute (never bare), (5) no `gh issue create` appears anywhere in the plan body. If ANY check fails, /fix refuses to hand back and reports the gap to the user. Fix the plan file in place then re-run step 6b (Issue #118).
 7. Write a `learning/system-vault/decisions/<plan-slug>.md` article recording why this group is being tackled together and which Issues + feedback notes drove it.
 8. Hand back to the user with the plan path. Done.
 
@@ -196,3 +198,4 @@ Mechanics:
 4. Every plan (or each sibling plan when the bundle is split per the Splitting a big plan section) begins with the Workflow section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/core-workflow.md`.
 5. Every plan includes a Testing section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/testing-system.md` and names the right test layer (unit, integration, sim-test, browser via sim-test agent, health).
 6. /fix writes salience-triggered notes during its input gathering and plan authoring. Any moment that feels surprising, exciting, frustrating, or like a self-correction gets a `scripts/note.ts` entry in the moment, not at the end of the session. Any emotion, positive or negative, is a valid signal. Rule: memory `feedback_note_on_salience.md`.
+7. /fix must not hand back a plan until the plan-validator checklist in `.claude/skills/fix/references/plan-validator.md` passes for every Issue it created (step 5c) and for the plan file (step 6b). Failing checks are surfaced to the user with the gap named explicitly (Issue #118).
