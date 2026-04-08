@@ -9,6 +9,17 @@ const JOBS_DIR = path.join(ROOT, '.claude', 'scheduled-jobs');
 // Fixture mirroring the PR-Pre permissions table. Each entry is the
 // authoritative allowed_write_paths superset for that cron; manifests
 // must declare only paths that are a subset of this list.
+//
+// SCOPE CONTRACT, NOT RUNTIME ENFORCEMENT (Issue #75): the narrow tool
+// permissions declared in `.claude/scheduled-jobs/*.json` (e.g.
+// `Bash(gzip:*)`, `Skill(system-vault-compile)`) are a human-review
+// scope contract. The RemoteTrigger API only accepts broad tool names
+// (Bash, Read, Write, Edit, Glob, Grep, Task), so the actual runtime
+// permission surface of a registered cron is wider than its manifest.
+// This test enforces the manifest stays narrow; it does not enforce
+// what the remote session is allowed to do at runtime. Treat the
+// manifest as documentation of intent and review it when touching any
+// cron prompt.
 const BOUNDARY: Record<string, string[]> = {
   'daily-compile-and-rotate': [
     'learning/system-vault/**',
