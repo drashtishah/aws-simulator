@@ -36,6 +36,8 @@ split, each sibling owns its own worktree cleanup; never remove a
 sibling's worktree from this plan. Cleanup runs only after the PR has
 merged to master.
 
+**Explicit Issue-closure step**: section 9 requires verifying that every Issue referenced by this plan is closed after the PR merges. Auto-close via the `Closes #N` commit trailer usually works, but can fail silently (typo, trailer on the wrong commit, rebase re-author, branch protection). The executing agent MUST run the section 9 verification query, `gh issue list --state open --search "<space-separated issue numbers referenced by this plan>"`, as the final cleanup action. Any still-open Issue must be manually closed with `gh issue close <N> --comment "Closed by PR #<pr>, see <merge-sha>"` before the cleanup group is complete.
+
 ## File path convention
 
 Every file path in this plan is absolute or repo-root-relative. No bare
