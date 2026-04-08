@@ -79,9 +79,11 @@ When a commit on a shared branch turns out to be wrong, the remediation is `git 
 
 History is append-only once pushed. Mistakes get reverted, not erased. Combined with section 5's no-squash rule, this guarantees every change on master is recoverable by SHA forever.
 
-## 9. Worktree cleanup
+## 9. Cleanup: worktree, branch, Issues, ephemeral artifacts, doctor
 
-After a PR merges, delete the worktree and its branch:
+After a PR merges, five things must be cleaned up: the worktree, the feature branch, any referenced Issues that did not auto-close, any ephemeral build/test artifacts that may have leaked into the repo root, and a final `npm run doctor` confirmation that the workspace is healthy.
+
+Worktree and branch:
 
 ```bash
 git worktree remove {worktree path}
@@ -90,6 +92,37 @@ git worktree prune
 ```
 
 Never leave stale worktrees. Stale worktrees confuse agent navigation, inflate health scores, and pollute `git ls-files` across the monorepo.
+
+Issue closure verification:
+
+```bash
+gh issue list --state open --search "<space-separated issue numbers referenced by the merged PR>"
+```
+
+The `Closes #N` trailer in a commit body is supposed to auto-close the Issue when the PR merges, but auto-close can fail silently: a typo (`Close #N` instead of `Closes #N`), a trailer attached only to a `Ref #N` commit and not the final commit, GitHub branch-protection settings, or a rebase that re-authored the commit body. Verify after every merge. If any referenced Issue is still open:
+
+```bash
+gh issue close <N> --comment "Closed by PR #<pr-number>, see <merge-sha>"
+```
+
+Verifying Issue closure is part of cleanup, not a follow-up task. An Issue that stays open after its PR merges silently re-enters the next /fix input bundle and triggers duplicate work.
+
+Ephemeral artifact sweep:
+
+```bash
+rm -rf .mypy_cache .pytest_cache .ruff_cache .tmp
+git status --porcelain
+```
+
+`.mypy_cache` (Issue #76), `.pytest_cache`, `.ruff_cache`, and ad-hoc `.tmp/` directories sometimes regenerate from test runs even though they are gitignored. Sweep them after every PR merge. Prevention via per-tool cache-dir env vars (Issue #76's `MYPY_CACHE_DIR` redirect) is the primary line of defense; this sweep is a backstop. If `git status --porcelain` shows untracked entries you do not recognize, investigate before deleting.
+
+Doctor confirmation:
+
+```bash
+npm run doctor
+```
+
+Must return exit 0 with zero FAIL lines. `npm run doctor` is the live workspace smoke test (read-only, scripts/doctor.ts) that confirms hooks are installed, the system vault is seeded, scheduled-jobs manifests parse, the path registry is fresh, and the integration checks (Issue #105) all pass. If any check fails, fix it before declaring the merge complete. `npm run doctor` adds value over `npm test` because it checks LIVE workspace state (installed git hooks, .mcp.json, learning/system-vault/index.md) that unit tests in tmpdirs cannot reach. See Issue #110 for the doctor coverage and sync guarantees.
 
 ## 10. Testing system pointer
 
