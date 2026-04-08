@@ -20,8 +20,8 @@ plan, run atomically: if any phase fails, the whole plan is rolled
 back and `dream_failures` is incremented in
 `.claude/state/vault-circuit.json`.
 
-Linked findings are protected: any markdown file under `findings/`
-that is referenced by another vault file (via wiki-link or markdown
+Linked findings are protected: any markdown file under the findings
+subdirectory that is referenced by another vault file (via wiki-link or markdown
 link) cannot be deleted by the dream skill. The validator
 `validateDreamPlan` in `web/lib/system-vault.ts` enforces this.
 
