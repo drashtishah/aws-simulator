@@ -43,6 +43,16 @@ group:
 Each plan group must declare which layer applies and which commands the
 executing agent will run. TDD red-green is mandatory.
 
+## Cleanup
+
+This plan follows the worktree-cleanup rules in
+`references/architecture/core-workflow.md` section 9. The final group of
+this plan runs the section 9 commands adapted to the plan's own
+worktree path and branch slug. If this plan is part of a sibling-plan
+split, each sibling owns its own worktree cleanup; never remove a
+sibling's worktree from this plan. Cleanup runs only after the PR has
+merged to master.
+
 ## File path convention
 
 Every file path in this plan is absolute or repo-root-relative. No bare
