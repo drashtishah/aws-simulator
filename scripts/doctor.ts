@@ -339,6 +339,9 @@ export function checkSkillDanglingRefs(ctx: CheckContext): CheckResult {
       if (!clean.includes('/')) continue;
       // Skip obvious non-paths (spaces, shell pipes, etc.)
       if (/[\s|<>]/.test(clean)) continue;
+      // Skip template placeholders and glob patterns; these aren't literal
+      // filesystem paths (e.g. `sims/{id}/manifest.json`, `logs/*.txt`).
+      if (/[{}*?]/.test(clean)) continue;
       const abs = path.join(ctx.rootDir, clean);
       if (!fs.existsSync(abs)) {
         dangling.push(path.relative(ctx.rootDir, f) + ' -> `' + clean + '`');
