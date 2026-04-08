@@ -35,3 +35,4 @@ routing table, never dispatches verifiers. Those jobs live elsewhere now.
 3. Every file path in the plan is absolute or repo-root-relative, never bare.
 4. Every plan begins with the Workflow section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/core-workflow.md`.
 5. Every plan includes a Testing section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/testing-system.md` and names the right test layer (unit, integration, sim-test, browser via sim-test agent, health).
+6. /fix writes salience-triggered notes during its input gathering and plan authoring. Any moment that feels surprising, exciting, frustrating, or like a self-correction gets a `scripts/note.ts` entry in the moment, not at the end of the session. Any emotion, positive or negative, is a valid signal. Rule: memory `feedback_note_on_salience.md`.

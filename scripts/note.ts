@@ -11,7 +11,7 @@
  * Schema: {ts, kind, topic, body}.
  * Kinds: finding, negative_result, workaround, decision, none.
  * Topic: slug ^[a-z0-9][a-z0-9-]{0,63}$ (or "none" for kind=none).
- * Body: freeform text, max 500 chars.
+ * Body: freeform text, no length cap (Issue #119).
  *
  * Usage:
  *   tsx scripts/note.ts --kind finding --topic <slug> --body "<one to three sentences>"
@@ -26,7 +26,6 @@ import path from 'node:path';
 
 const KINDS = new Set(['finding', 'negative_result', 'workaround', 'decision', 'none']);
 const TOPIC_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
-const MAX_BODY = 500;
 
 interface ParsedArgs {
   kind?: string;
@@ -80,9 +79,6 @@ function validate(args: ParsedArgs): NoteEntry {
   if (!args.body) {
     throw new Error('--body is required');
   }
-  if (args.body.length > MAX_BODY) {
-    throw new Error(`--body must be at most ${MAX_BODY} characters (got ${args.body.length})`);
-  }
   return {
     ts,
     kind: args.kind,
@@ -111,4 +107,4 @@ function main(): void {
 
 main();
 
-export { parseArgs, validate, appendEntry, KINDS, TOPIC_RE, MAX_BODY };
+export { parseArgs, validate, appendEntry, KINDS, TOPIC_RE };

@@ -105,11 +105,14 @@ describe('note CLI', () => {
     assert.match(r.stderr, /topic/i);
   });
 
-  it('rejects body longer than 500 characters', () => {
-    const longBody = 'x'.repeat(501);
-    const r = runNote(tmp, ['--kind', 'finding', '--topic', 'foo', '--body', longBody]);
-    assert.notEqual(r.status, 0);
-    assert.match(r.stderr, /500|body/i);
+  it('accepts long bodies without truncation (Issue #119)', () => {
+    const longBody = 'x'.repeat(2000);
+    const r = runNote(tmp, ['--kind', 'finding', '--topic', 'long-body', '--body', longBody]);
+    assert.equal(r.status, 0, `expected success, stderr: ${r.stderr}`);
+    const entries = readNotes(tmp);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].body, longBody);
+    assert.equal(entries[0].body.length, 2000);
   });
 
   it('accepts kind=none with --reason', () => {
