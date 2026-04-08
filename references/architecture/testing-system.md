@@ -101,6 +101,10 @@ references/
 
 ## File Format Schemas
 
+### Schema contracts
+
+JSON schemas for sim-test CLI output and the persona-finding file format live at `web/lib/schemas/`. Validation runs in `web/test/sim-test-schemas.test.ts` and smoke self-tests live at `web/test/sim-test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/sim-test-schemas.md` (Issue #31).
+
 ### YAML Browser Spec
 
 ```yaml
