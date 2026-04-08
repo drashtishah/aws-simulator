@@ -3,7 +3,7 @@
 //
 // PostToolUse hook that prompts Claude to write a salience-triggered note
 // after long or exciting turns. The rule this reinforces lives in memory
-// feedback_note_on_salience.md. Fires at most once every 5 minutes per
+// feedback_note_on_salience.md. Fires at most once every 15 minutes per
 // session so it does not spam.
 //
 // Registered in .claude/settings.json under PostToolUse for Bash and Task
@@ -28,11 +28,11 @@ process.stdin.on('end', () => {
     const sessionId: string | undefined = data.session_id;
     if (!sessionId) process.exit(0);
 
-    // Fire at most once per 5-minute window per session to avoid spam.
+    // Fire at most once per 15-minute window per session to avoid spam.
     const marker: string = path.join(os.tmpdir(), `claude-salience-check-${sessionId}`);
     if (fs.existsSync(marker)) {
       const mtime = fs.statSync(marker).mtimeMs;
-      if (Date.now() - mtime < 5 * 60 * 1000) process.exit(0);
+      if (Date.now() - mtime < 15 * 60 * 1000) process.exit(0);
     }
     fs.writeFileSync(marker, '');
 
