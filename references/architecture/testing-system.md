@@ -34,7 +34,10 @@ All commands support `--json` for structured output.
 ```
 sim-test run                  # run unit tests
 sim-test run --json           # structured JSON output
+sim-test run --changed --json # run ONLY tests affected by staged/last-commit changes
 ```
+
+**Cadence (per `references/architecture/core-workflow.md` §6):** plans run `sim-test run --changed` after every commit (~1 second), `npm test` at group boundaries (every 3-6 commits), and the full pre-PR gate (`npm test + npm run health + npm run doctor`) once before opening the PR. Plans never run `npm test` per commit.
 
 ### Agent browser tests (Layer 2)
 

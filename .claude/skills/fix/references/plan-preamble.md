@@ -30,6 +30,26 @@ group:
 Each plan group must declare which layer applies and which commands the
 executing agent will run. TDD red-green is mandatory.
 
+### Test cadence
+
+Every plan follows the three-tier cadence in `references/architecture/core-workflow.md` §6 and memory `feedback_test_cadence.md`:
+
+1. **Inside a TDD red-green cycle**: run ONLY the specific test file you just wrote via `tsx --test --test-force-exit web/test/<name>.test.ts`. Use `superpowers:test-driven-development`.
+2. **After every commit**: run `npx tsx scripts/sim-test.ts run --changed --json`. Maps the files in `git diff HEAD~1 HEAD` to their affected tests and runs only that subset (~1 second typical). This is the §6 per-commit rule. Plans NEVER run `npm test` per commit.
+3. **At group boundaries** (every 3 to 6 commits): run `npm test` once as a cross-file regression checkpoint.
+4. **Before opening the PR**: run `npm test` + `npm run health` + `npm run doctor`. Full verification per §6, §5, §9.
+
+Every `### Group` section in this plan MUST include a `**Test cadence:**` block declaring the three tiers explicitly:
+
+```
+**Test cadence:**
+- Per commit: `npx tsx scripts/sim-test.ts run --changed --json`
+- Group exit: `npm test`
+- Pre-PR (last group only): `npm test` + `npm run health` + `npm run doctor`
+```
+
+Plans that say `Run: npm test` after a task step are wrong. `npm test` belongs only in Group exit or Pre-PR gate contexts.
+
 ## Cleanup
 
 The final group of this plan runs the cleanup commands from `references/architecture/core-workflow.md` section 9, adapted to the plan's own worktree path and branch slug. If this plan is part of a sibling-plan split, each sibling owns its own worktree cleanup; never remove a sibling's worktree from this plan. Cleanup runs only after the PR has merged to master.
