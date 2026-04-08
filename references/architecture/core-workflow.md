@@ -43,9 +43,17 @@ Merge strategy, non-negotiable:
 
 Commit message format: short imperative subject, body with `intent:` and `decision:` action lines, and `Ref #N` or `Closes #N` trailer.
 
-## 6. Per-commit targeted tests, full suite at end
+## 6. Tests: CI is the authoritative gate; local runs are optional fast feedback
 
-After every commit, run the targeted subset of tests affected by the change via `sim-test --changed` (delivered by PR-I). This runs in 1 to 3 seconds so it stays frictionless per commit. At the end of the PR, run the full suite with `npm test` once before opening the PR. If targeted tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
+The deterministic test gate runs in `.github/workflows/ci.yml` on every push and pull_request (Issue #137). CI is the authoritative gate; nothing merges to master without a green CI run. Local test runs are no longer mandatory for safety, only for fast feedback.
+
+Recommended local cadence:
+
+- **Per commit:** `sim-test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
+- **Pre-push:** optional. Run the full local gate (`npm test` + `npm run health` + `npm run doctor`) only if you want to avoid a known-broken first CI run on the branch. Otherwise, push and let CI tell you.
+- **Per PR:** nothing required locally. CI is mandatory.
+
+If targeted local tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
 
 After every commit, also pause to consider the code-health impact: did this change touch any file that has an open finding in the latest `learning/logs/health-scores.jsonl`? Could the same diff have resolved or improved a bucket score in passing? Prefer changes that hold or improve the score over changes that ship test-green but quietly degrade a bucket (dangling refs, complexity, dead code). This is a habit, not a hard gate; the gate runs at PR-time via `npm run health` in §9.
 
