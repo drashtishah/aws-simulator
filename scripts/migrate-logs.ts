@@ -17,6 +17,13 @@
 //     run never re-imports them.
 //   - All operations are local; learning/logs/ is gitignored.
 //
+// RETENTION POLICY (Issue #77): option 1, keep all archive shards
+// forever. learning/logs/archive/ grows unbounded by design; storage
+// is cheap and the shards are gzipped. A shard-consumed ledger in
+// system-vault-compile is the prerequisite for any TTL policy; until
+// that ledger exists (deferred), no shards are deleted. Revisit when
+// daily-compile-and-rotate records which shards it has consumed.
+//
 // Usage:
 //   npx tsx scripts/migrate-logs.ts                # migrate the real repo
 //   AWS_SIMULATOR_LOGS_DIR=/tmp/foo npx tsx ...    # tests stub the dir
