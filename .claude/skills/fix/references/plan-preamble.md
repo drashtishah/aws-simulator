@@ -5,33 +5,9 @@ the two sections below verbatim. These sections are non-negotiable.
 
 ## Workflow
 
-This plan follows the canonical workflow in
-`references/architecture/core-workflow.md`. Specifically:
+This plan follows `references/architecture/core-workflow.md` end to end (section 1 issue-first, section 3 plan if non-trivial, section 4 TDD red-green, section 5 small revertable commits and merge strategy, section 6 targeted tests, section 6b note per commit, section 7 verifier subagent separation, section 8 revert not history rewrite, section 9 cleanup). The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
 
-- Issue-first: every plan group references at least one open GitHub
-  Issue OR at least one dated feedback note. Orphan-feedback groups
-  must propose creating an Issue as their first numbered step.
-- Small revertable commits: each group becomes one or more commits,
-  each independently revertable via `git revert <sha>`.
-- TDD strict: tests first, watch them fail, then implement.
-- Verifier subagent separation: the agent that wrote a change must not
-  be the agent that verifies it.
-- Reference the Issue in every commit body (Closes #N on the last
-  commit of a group, Ref #N on the rest).
-- After every commit, log one `learning/logs/notes.jsonl` entry via
-  `scripts/note.ts` (kind: `finding`, `negative_result`, `workaround`,
-  `decision`, or `none --reason ...`). This is enforced per session by
-  the Stop hook and required per commit by
-  `references/architecture/core-workflow.md` section 6b. The notes
-  stream compiles into the system vault, so every commit grows
-  long-term agent memory.
-
-If this plan is part of a sibling-plan split, the sibling paths and
-the parent decision article are listed at the top of the plan under a
-`### Sibling plans` subsection. Each sibling owns its own worktree,
-branch, and PR; never edit a sibling's files from this plan. Plans
-never run `gh issue create` (Issue #113); /fix creates every Issue a
-plan references.
+If this plan is part of a sibling-plan split, the sibling paths and the parent decision article are listed at the top under a `### Sibling plans` subsection. Each sibling owns its own worktree, branch, and PR; never edit a sibling's files from this plan.
 
 ## Testing
 
