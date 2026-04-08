@@ -81,10 +81,14 @@ for wt in "${WORKTREES[@]}"; do
     state="dead"
   fi
 
-  # Reset time from most recent rate_limit_event in the log
+  # Reset time from most recent rejected rate_limit_event in the log.
+  # Only status:rejected blocks dispatch; allowed_warning and allowed
+  # just surface utilization and a future window boundary and do NOT
+  # mean the sibling is blocked. Same bug the check-budget.sh script
+  # had before the fix in commit eaa44db.
   reset_info=""
   if [[ -f "$log" ]]; then
-    last_reset=$(grep '"rate_limit_event"' "$log" 2>/dev/null | tail -1 | sed -n 's/.*"resetsAt":\([0-9]*\).*/\1/p')
+    last_reset=$( { grep '"rate_limit_event"' "$log" 2>/dev/null || true; } | { grep '"status":"rejected"' || true; } | tail -1 | sed -n 's/.*"resetsAt":\([0-9]*\).*/\1/p')
     if [[ -n "$last_reset" ]]; then
       now_epoch=$(date +%s)
       if (( last_reset > now_epoch )); then
