@@ -17,11 +17,19 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const SCRIPT = path.join(ROOT, 'scripts/check-budget.sh');
 
 function runScript(logDir: string): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync('bash', [SCRIPT], {
-    encoding: 'utf8',
-    env: { ...process.env, BUDGET_LOG_DIR: logDir },
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+  // Always sandbox notes.jsonl writes to a temp dir so refusal-path tests
+  // do not pollute the real learning/logs/notes.jsonl. Individual tests
+  // that care about the note contents override NOTES_LOG_DIR themselves.
+  const notesSandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'check-budget-notes-sb-'));
+  try {
+    const r = spawnSync('bash', [SCRIPT], {
+      encoding: 'utf8',
+      env: { ...process.env, BUDGET_LOG_DIR: logDir, NOTES_LOG_DIR: notesSandbox },
+    });
+    return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+  } finally {
+    fs.rmSync(notesSandbox, { recursive: true, force: true });
+  }
 }
 
 function setupLogDir(): { dir: string; cleanup: () => void; write: (name: string, content: string) => void } {
