@@ -9,6 +9,14 @@ import { parseEvents, parseAgentMessages, logTurn, collectMessages, withRetry, C
 import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 
+// Model split rationale: Sonnet handles interactive play (faster, cheaper,
+// already strong enough for narrator + investigation reasoning). Opus handles
+// post-session scoring because it does cross-file analysis (session.json +
+// manifest + coaching-patterns + progression) and benefits from the deeper
+// reasoning. Do not flip these without an A/B test on quality. See Issue #107.
+export const PLAY_SESSION_MODEL = 'claude-sonnet-4-6';
+export const POST_SESSION_MODEL = 'claude-opus-4-6';
+
 interface StartSessionOptions {
   resume?: boolean;
   resumeMessage?: string;
@@ -42,7 +50,7 @@ export async function startSession(simId: string, themeId: string, options: Star
   }
 
   const modelKey = 'sonnet';
-  const modelId = 'claude-sonnet-4-6';
+  const modelId = PLAY_SESSION_MODEL;
 
   const sessionId = crypto.randomUUID();
 
@@ -258,7 +266,7 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
     allowedTools: ['Read', 'Write'],
-    model: 'claude-opus-4-6',
+    model: POST_SESSION_MODEL,
     permissionMode: 'bypassPermissions',
     maxTurns: 30
   };
