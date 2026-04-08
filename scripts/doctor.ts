@@ -31,11 +31,11 @@ export type SpawnSyncLike = (
 function defaultRunner(cmd: string, args: string[], opts: any): {
   status: number | null; stdout: string; stderr: string;
 } {
-  const r = realSpawnSync(cmd, args, opts);
+  const r = realSpawnSync(cmd, args, { ...opts, encoding: 'utf8' });
   return {
     status: r.status,
-    stdout: typeof r.stdout === 'string' ? r.stdout : (r.stdout ? r.stdout.toString() : ''),
-    stderr: typeof r.stderr === 'string' ? r.stderr : (r.stderr ? r.stderr.toString() : ''),
+    stdout: (r.stdout as unknown as string) || '',
+    stderr: (r.stderr as unknown as string) || '',
   };
 }
 
