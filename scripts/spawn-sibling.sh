@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+#
+# scripts/spawn-sibling.sh: per-sibling headless dispatcher.
+#
+# Runs exactly ONE sibling plan to completion, synchronously. No fork,
+# no wait, no backgrounded subshells. The orchestrating Claude Code
+# session is responsible for running this script 1..N times (one per
+# sibling) via Bash(run_in_background=true) calls, one harness task
+# per sibling. Replaces the old scripts/run-plans.sh fork-and-wait
+# model whose one-task-blob notification shape prevented per-sibling
+# intervention. Issue #148.
+#
+# Pairs with:
+#   - scripts/check-budget.sh  (pre-flight rate-limit check)
+#   - scripts/sibling-status.sh  (mid-flight and at-checkpoint status)
+#
+# Usage:
+#   scripts/spawn-sibling.sh <parent-slug> <part-slug>
+#
+# Example:
+#   scripts/spawn-sibling.sh open-issues-sweep-2026-04-08 part-1
+#
+# Idempotent on resume: if the worktree and branch already exist, they
+# are reused (matches the resume-safe goal of Issue #128). The headless
+# agent's first actions MUST be to cat the per-worktree progress.txt
+# and `git log master..HEAD` to pick up from any prior state.
+#
+# Exit codes:
+#   0 = claude -p returned cleanly
+#   1 = claude -p returned non-zero
+#   2 = usage error
+#   3 = budget pre-flight refused dispatch
+
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "usage: scripts/spawn-sibling.sh <parent-slug> <part-slug>" >&2
+  echo "example: scripts/spawn-sibling.sh open-issues-sweep-2026-04-08 part-1" >&2
+  exit 2
+fi
+
+PARENT="$1"
+PART="$2"
+SLUG="${PARENT}-${PART}"
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+PLAN=".claude/plans/${SLUG}.md"
+WORKTREE=".claude/worktrees/${SLUG}"
+BRANCH="feature/${SLUG}"
+LOG="learning/logs/run-${SLUG}.jsonl"
+
+if [[ ! -f "$PLAN" ]]; then
+  echo "spawn-sibling: plan file not found: $PLAN" >&2
+  exit 2
+fi
+
+# Pre-flight budget check. Refuses to dispatch if any recent run log
+# contains a rate_limit_event with resetsAt in the future.
+if ! scripts/check-budget.sh; then
+  echo "spawn-sibling: budget pre-flight failed for ${SLUG}; not dispatching" >&2
+  exit 3
+fi
+
+# Resume-safe worktree + branch creation (Issue #128). Reuse if present.
+if [[ ! -d "$WORKTREE" ]]; then
+  if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
+    git worktree add "$WORKTREE" "$BRANCH"
+  else
+    git worktree add "$WORKTREE" -b "$BRANCH"
+  fi
+else
+  echo "spawn-sibling: reusing existing worktree at $WORKTREE" >&2
+fi
+
+# Seed the plan file into the worktree. .claude/plans/ is gitignored, so
+# a fresh `git worktree add` checkout has no plan file. Issue #141.
+mkdir -p "${WORKTREE}/.claude/plans"
+cp "$PLAN" "${WORKTREE}/.claude/plans/$(basename "$PLAN")"
+
+mkdir -p learning/logs
+
+PROMPT="Execute the plan at ${PLAN} using the superpowers:executing-plans skill. "
+PROMPT+="Your first two actions: (1) cat .claude/worktrees/${SLUG}/progress.txt if it exists, "
+PROMPT+="(2) run git log master..HEAD to confirm landed state. Then continue from wherever the "
+PROMPT+="plan left off. After every commit, append a line to progress.txt summarizing the work. "
+PROMPT+="Open a PR when the full plan is complete."
+
+cd "$WORKTREE"
+exec claude -p "$PROMPT" \
+  --permission-mode acceptEdits \
+  --output-format stream-json \
+  --verbose \
+  > "${REPO_ROOT}/${LOG}" 2>&1

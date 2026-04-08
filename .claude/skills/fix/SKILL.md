@@ -12,39 +12,85 @@ It never edits code, never runs tests, never rotates logs, never creates
 GitHub Issues, never commits, never runs browser tests, never touches a
 routing table, never dispatches verifiers. Those jobs live elsewhere now.
 
-## Plan execution: always use scripts/run-plans.sh
+## Plan execution: per-sibling dispatch via spawn-sibling.sh
 
-When the time comes to EXECUTE the plan(s) /fix just wrote, the canonical
-dispatcher is `scripts/run-plans.sh <parent-slug>`. It spawns one real
-`claude -p` subprocess per sibling plan with proper process isolation,
-per-worktree branches, and streaming JSON logs at
-`learning/logs/run-<slug>.jsonl`. Do NOT fall back to the `Agent` tool,
-do NOT hand-roll `claude -p` invocations, do NOT spawn subagents from the
-main conversation to execute plans. Those paths look equivalent but skip
-the process-level isolation and the log stream. If `run-plans.sh` cannot
-handle a case (for example, one sibling is already merged), patch the
-script or move the finished sibling aside before running it, rather than
-bypassing it.
+When the time comes to EXECUTE the sibling plans /fix just wrote, the
+canonical model is **one harness background task per sibling**, using
+`scripts/spawn-sibling.sh <parent-slug> <part-slug>`. The orchestrating
+Claude Code session (this one) dispatches each sibling as a separate
+`Bash(run_in_background=true)` call, gets a separate task ID per
+sibling, and intervenes between and after each via the harness
+notifications. See Issue #148 for the rationale: the old parent
+`run-plans.sh` fork-and-wait model batched N siblings into one harness
+task and prevented per-sibling intervention.
+
+Dispatch pattern (for a 2-sibling sweep):
+
+```
+# Pre-flight (cheap, one call)
+Bash: scripts/check-budget.sh
+
+# Dispatch both siblings in parallel as two separate harness tasks
+Bash(run_in_background=true): scripts/spawn-sibling.sh <parent> part-1
+Bash(run_in_background=true): scripts/spawn-sibling.sh <parent> part-2
+```
+
+`spawn-sibling.sh` is resume-safe (Issue #128): re-dispatching a
+sibling whose worktree already exists reuses the worktree and branch.
+The headless agent's prompt instructs it to cat the per-worktree
+`progress.txt` and run `git log master..HEAD` before doing anything,
+so a re-dispatch after a rate-limit death picks up where it left off.
+
+Do NOT fall back to the `Agent` tool (shared context, no process
+isolation). Do NOT hand-roll a bash loop that spawns multiple `claude
+-p` calls in one harness task (defeats the per-sibling notification
+goal). Do NOT spawn subagents from the main conversation to execute
+plans. Those paths look equivalent but lose one of: process isolation,
+per-sibling granularity, or log streaming.
+
+If `spawn-sibling.sh` cannot handle a case, patch the script rather
+than bypassing it. The "parent orchestrator" is this Claude Code
+session; there is no bash parent script.
+
+### Spot-check at each completion checkpoint
+
+When a sibling's background task notifies completion, run the
+spot-check sequence BEFORE dispatching the next sibling or merging:
+
+1. **Cheap status snapshot**: `scripts/sibling-status.sh <parent-slug>`
+   gives one line per sibling with commit count, HEAD SHA, log size,
+   alive/dead state, and any pending rate-limit reset. Read this first.
+2. **Commits match scope**: `git -C .claude/worktrees/<slug> log --stat
+   master..HEAD` shows every file touched. Verify the files are ALL
+   within the plan group's declared scope. Any surprise files (new
+   directories, unrelated skills, sensitive paths) are a red flag.
+3. **Commit messages cite the right Issues**: `git -C .claude/worktrees/<slug>
+   log master..HEAD | grep -E 'Closes|Ref #'`. Every commit should
+   reference at least one of the Issues the plan group was supposed
+   to close.
+4. **CI is green** (if the sibling opened a PR): `gh pr checks <num>`
+   or `gh run view <id>`. Red CI on the sibling's PR means the agent
+   shipped broken code; decide whether to fix-forward or revert.
+5. **Agent's last real turn** (only if steps 1-4 surface something
+   weird): `tail -c 5000 learning/logs/run-<slug>.jsonl | tr ',' '\n'
+   | grep -Ei '"result"|"is_error"|sensitive|rate_limit|error'`. Do
+   NOT read the full JSON log on every checkpoint — it is expensive
+   in context. Only dip into it when sibling-status.sh or the commit
+   review flagged something.
+
+The goal is: 60 seconds of targeted checks per completion, not a full
+log review. Spot-checks at checkpoints are different from polling
+mid-flight: treat the harness notification as the only signal and
+never poll while a sibling is alive.
 
 ### Checking in with in-flight siblings
 
-While sibling plans run headless, the way to monitor and unblock them is
-file-based, not interactive:
-
-1. **Status at a glance**: `git -C .claude/worktrees/<slug> log --oneline
-   master..HEAD && git -C .claude/worktrees/<slug> status --porcelain`.
-   Commit count + working tree delta tells you how far each sibling got.
-2. **What the agent was doing**: `tail -c 5000
-   learning/logs/run-<slug>.jsonl | tr ',' '\n' | grep -Ei
-   '"result"|"is_error"|sensitive|rate_limit|error'` surfaces the last
-   real turn and any exit reason. For full trace, `jq -c . <
-   learning/logs/run-<slug>.jsonl | tail -40`.
-3. **Process check**: `pgrep -af "claude -p"` confirms whether a sibling
-   is still alive. An exited `claude -p` with a non-zero exit code
-   almost always means either a permission wall or a rate limit.
-4. **Notify yourself**: treat each sibling's background task completion
-   as the checkpoint. Do not poll; wait for the harness notification
-   and then read the tail of the JSON log to decide next action.
+While a sibling is running (before the harness notifies), the rule is
+**do not poll**. If you need to know whether it is still alive (e.g.
+before deciding to dispatch the next one), `scripts/sibling-status.sh
+<parent-slug>` is the only sanctioned tool. Do not tail the JSON log,
+do not pgrep repeatedly, do not read the worktree log every few
+minutes. The harness notification is the checkpoint.
 
 ### When a headless run stops on a rate limit
 
@@ -108,10 +154,10 @@ allowlist, never a blanket bypass.
 
 ## Splitting a big plan
 
-Split the input bundle into 2 or 3 sibling plans (cap at 3) when ANY of these is true:
+Split the input bundle into 2 sibling plans (cap at 2) when ANY of these is true:
 
 - The bundle spans 3 or more distinct skills or top-level directories (for example `web/`, `.claude/skills/`, `references/architecture/`).
-- There are 2 or more independent PR-worthy groups, each already mapping to a distinct Issue per the issue-first rule, that could land on master in either order without breaking the build.
+- There are 2 independent PR-worthy groups, each already mapping to a distinct Issue per the issue-first rule, that could land on master in either order without breaking the build.
 - The estimated commit count is 15 or more.
 - The estimated file-touch count is 20 or more.
 - The groups share NO file edits across the split. Shared edits would force rebasing and cancel the parallelism win.
@@ -122,14 +168,16 @@ Do NOT split when:
 - Any group depends on another (for example, group B is blocked until group A's refactor lands).
 - Groups share file edits.
 
-If the split would produce more than 3 siblings, /fix picks the top 3 by `expected_gain_if_fixed` from the health-scores findings and lists the rest in a `## Pending items` section of the last sibling, as informational references to Issue numbers /fix already created. The plan never runs `gh issue create` itself (Issue #113); /fix is the sole Issue creator.
+The cap is 2, not 3, for two hard reasons: (1) parallel Opus sessions draw from the same 5-hour rolling token budget, so 3 in flight can co-exhaust and lose all committed work to rate limits, proven empirically on 2026-04-08; (2) the orchestrating session can only hold so much spot-check context before the judgment suffers. Two is the sweet spot for both budget and orchestrator-context limits.
+
+If the split would produce more than 2 groups, /fix picks the top 2 by `expected_gain_if_fixed` from the health-scores findings (tie-broken by compound value: infrastructure improvements beat per-feature work) and lists the rest in a `## Pending items` section of the decision article as informational references to Issue numbers. The pending items wait for a future /fix run to pick up. The plan never runs `gh issue create` itself (Issue #113); /fix is the sole Issue creator.
 
 Mechanics:
 
-- Each sibling plan file lives at `.claude/plans/<parent-slug>-part-N.md` for N in 1..3.
-- Each sibling's Workflow section includes a `### Sibling plans` subsection listing the other siblings by absolute path and the parent decision article path.
-- /fix writes all N siblings atomically in one run and records one decision article at `learning/system-vault/decisions/<parent-slug>.md` that links all of them.
-- /fix hands back all N plan paths to the user at the end.
+- Each sibling plan file lives at `.claude/plans/<parent-slug>-part-N.md` for N in 1..2.
+- Each sibling's Workflow section includes a `### Sibling plans` subsection listing the other sibling by absolute path and the parent decision article path.
+- /fix writes both siblings atomically in one run and records one decision article at `learning/system-vault/decisions/<parent-slug>.md` that links both of them plus the pending items.
+- /fix hands back both plan paths to the user at the end.
 - Each sibling owns its own worktree at `.claude/worktrees/<parent-slug>-part-N`, its own feature branch `feature/<parent-slug>-part-N`, and its own PR.
 
 ## Scanners (run in step 5)
