@@ -98,6 +98,29 @@ describe('scripts/check-budget.sh', () => {
     }
   });
 
+  it('does NOT block on status:allowed_warning events (7-day utilization warnings)', () => {
+    const logs = setupLogDir();
+    try {
+      const futureEpoch = Math.floor(Date.now() / 1000) + 7 * 86400;
+      logs.write(
+        'run-warning.jsonl',
+        JSON.stringify({
+          type: 'rate_limit_event',
+          rate_limit_info: {
+            status: 'allowed_warning',
+            resetsAt: futureEpoch,
+            rateLimitType: 'seven_day',
+            utilization: 0.52,
+          },
+        }) + '\n',
+      );
+      const r = runScript(logs.dir);
+      assert.strictEqual(r.status, 0, 'allowed_warning should not block dispatch');
+    } finally {
+      logs.cleanup();
+    }
+  });
+
   it('checks all run-*.jsonl files in the log dir', () => {
     const logs = setupLogDir();
     try {

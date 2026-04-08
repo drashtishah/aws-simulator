@@ -41,12 +41,15 @@ NOW_EPOCH=$(date +%s)
 MAX_RESET=0
 
 for log in "${LOGS[@]}"; do
-  # Extract every resetsAt value that appears inside a rate_limit_event.
-  # The JSON records are one per line (streaming JSON), so grep is fine.
-  # Match pattern: "rate_limit_event"..."resetsAt":<digits>
+  # Only block on rate_limit_event records with status=rejected.
+  # allowed_warning events (e.g. 7-day utilization warnings) do NOT
+  # prevent dispatch; they just surface usage stats. The resetsAt on
+  # an allowed_warning can be days in the future (weekly window) and
+  # is not a hard gate.
   while IFS= read -r line; do
     if [[ -z "$line" ]]; then continue; fi
     if ! echo "$line" | grep -q '"rate_limit_event"'; then continue; fi
+    if ! echo "$line" | grep -q '"status":"rejected"'; then continue; fi
     reset=$(echo "$line" | sed -n 's/.*"resetsAt":\([0-9]*\).*/\1/p')
     if [[ -z "$reset" ]]; then continue; fi
     if (( reset > MAX_RESET )); then
