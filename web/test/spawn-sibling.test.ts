@@ -79,6 +79,53 @@ describe('scripts/spawn-sibling.sh', () => {
     assert.match(body, /git log master\.\.HEAD/);
   });
 
+  it('tells the agent to cat progress.txt by its worker-cwd-relative path, not a doubly-nested worktree path (Issue #138)', () => {
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    // The worker cd's into the worktree before exec claude -p, so the
+    // path to the progress file from its cwd is just "progress.txt".
+    // The old prompt said ".claude/worktrees/${SLUG}/progress.txt"
+    // which resolved to a doubly-nested path from inside the worktree.
+    assert.doesNotMatch(
+      body,
+      /\.claude\/worktrees\/\$\{?SLUG\}?\/progress\.txt/,
+      'prompt must not reference the doubly-nested worktree path',
+    );
+    assert.match(body, /cat progress\.txt/, 'prompt must instruct cat progress.txt from worktree cwd');
+  });
+
+  it('defines an initialize_worktree step that seeds progress.txt on fresh dispatch (Issue #138)', () => {
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    // Function-or-block labelled initialize_worktree.
+    assert.match(body, /initialize_worktree/, 'must have an initialize_worktree function or block');
+    // Must write progress.txt with an init marker line.
+    assert.match(
+      body,
+      /progress\.txt[\s\S]{0,400}init/,
+      'initializer must write an init marker to progress.txt',
+    );
+  });
+
+  it('initialize_worktree is idempotent: only seeds progress.txt if it does not already exist (Issue #138)', () => {
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    // Must guard progress.txt creation on a file-exists check.
+    assert.match(
+      body,
+      /\[\[\s*!\s*-f[^\]]*progress\.txt[^\]]*\]\]|if\s+!\s*\[\s*-f[^\]]*progress\.txt/,
+      'progress.txt write must be guarded by a file-exists check for idempotency',
+    );
+  });
+
+  it('initialize_worktree seeds learning/system-vault/index.md stub (Issue #138)', () => {
+    const body = fs.readFileSync(SCRIPT, 'utf8');
+    // Either inline stub write or install-git-hooks invocation, both
+    // acceptable. Assert one of the two is present.
+    assert.match(
+      body,
+      /learning\/system-vault\/index\.md|install-git-hooks/,
+      'initializer must seed the system-vault stub (inline or via install-git-hooks)',
+    );
+  });
+
   it('documents the per-sibling dispatcher model and references Issue #148', () => {
     const body = fs.readFileSync(SCRIPT, 'utf8');
     const header = body.split('\n').slice(0, 50).join('\n');
