@@ -9,6 +9,8 @@ the two sections below verbatim. These sections are non-negotiable.
 
 The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
 
+**Integrity signal**: any time the executing agent feels tempted to weaken a test, relax an assertion, downgrade a FAIL to a WARN or advisory, skip a test, broaden a regex past precision, or extend a skip list to dodge a real signal, it MUST record a `workaround` or `decision` note via `scripts/note.ts` in the moment. Body: what was tempting, why the shortcut was resisted or taken, what was done instead. This matters more for test code than any other category. A committed paper trail is the contract.
+
 If this plan is part of a sibling-plan split, the sibling paths and the parent decision article are listed at the top under a `### Sibling plans` subsection. Each sibling owns its own worktree, branch, and PR; never edit a sibling's files from this plan.
 
 ## Testing
