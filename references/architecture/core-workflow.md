@@ -32,13 +32,13 @@ Tests come first, always. Write the failing test, run it, confirm it fails for t
 
 ## 5. Small revertable commits and merge strategy
 
-Every feature is split into the smallest logical commits possible. Each commit on `master` must be **independently revertable** via `git revert <sha>` without breaking the build or cascading into other commits. This is a hard rule, not a suggestion: the user treats git as a memory and safety layer, and losing per-change granularity destroys that.
+Every feature is split into the smallest logical commits possible so history reads as a diffable, inspectable sequence. The safety guarantee lives at the **PR boundary**, not at every intermediate commit: each PR lands as a `--no-ff` **merge commit** on master, and reverting that merge commit cleanly rolls back the whole PR as one atomic unit. That merge commit is the unit that is **independently revertable** via `git revert <sha>`. Stack commits inside a PR so that reverting the whole PR is clean; individual mid-stack commits may touch the same files as later commits in the same stack and are not guaranteed to revert in isolation.
 
 Merge strategy, non-negotiable:
 
-- PRs land via **merge commit** or **rebase**, never squash. **No squash** merges on any branch, ever.
-- Each commit on master preserves its original SHA and message so `git revert <sha>` targets exactly the change that introduced a regression.
-- If a PR has ten commits, master gets ten commits. Squashing collapses ten revertable units into one and is forbidden.
+- PRs land via `--no-ff` **merge commit**, never squash. **No squash** merges on any branch, ever.
+- Each commit on master preserves its original SHA and message so history stays diffable and `git revert <merge-sha>` targets exactly the PR that introduced a regression.
+- If a PR has ten commits, master gets ten commits plus one merge commit. Squashing collapses the revertable PR unit and is forbidden.
 
 Commit message format: short imperative subject, body with `intent:` and `decision:` action lines, and `Ref #N` or `Closes #N` trailer.
 
