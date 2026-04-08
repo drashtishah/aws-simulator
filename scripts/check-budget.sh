@@ -59,7 +59,10 @@ for log in "${LOGS[@]}"; do
 done
 
 if (( MAX_RESET > NOW_EPOCH )); then
-  reset_human=$(date -r "$MAX_RESET" '+%Y-%m-%d %H:%M:%S %Z')
+  # date -r is BSD/macOS only; date -d @epoch is GNU/Linux only. Use python
+  # for cross-platform epoch-to-human formatting. Falls back to bare epoch
+  # if python is unavailable so the script never dies on the format step.
+  reset_human=$(python3 -c "import datetime, sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1])).strftime('%Y-%m-%d %H:%M:%S'))" "$MAX_RESET" 2>/dev/null || echo "$MAX_RESET")
   remaining=$(( MAX_RESET - NOW_EPOCH ))
   echo "check-budget: rate limit resets at epoch $MAX_RESET ($reset_human), ${remaining}s from now" >&2
   echo "check-budget: refusing to dispatch; wait for reset" >&2
