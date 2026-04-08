@@ -26,6 +26,13 @@ This plan follows the canonical workflow in
   stream compiles into the system vault, so every commit grows
   long-term agent memory.
 
+If this plan is part of a sibling-plan split, the sibling paths and
+the parent decision article are listed at the top of the plan under a
+`### Sibling plans` subsection. Each sibling owns its own worktree,
+branch, and PR; never edit a sibling's files from this plan. Plans
+never run `gh issue create` (Issue #113); /fix creates every Issue a
+plan references.
+
 ## Testing
 
 This plan tests through the layers documented in

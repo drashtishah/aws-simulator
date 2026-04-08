@@ -57,10 +57,21 @@ interface ValidateOptions {
   sibling?: boolean;
 }
 
-function validateFixPlan(plan: string, _opts: ValidateOptions = {}): PlanValidation {
+function validateFixPlan(plan: string, opts: ValidateOptions = {}): PlanValidation {
   const errors: string[] = [];
   if (!/^## Workflow\b/m.test(plan)) errors.push('missing Workflow section');
   if (!/^## Testing\b/m.test(plan)) errors.push('missing Testing section');
+
+  if (opts.sibling) {
+    const workflowStart = plan.search(/^## Workflow\b/m);
+    const workflowEnd = workflowStart === -1 ? -1 : plan.indexOf('\n## ', workflowStart + 1);
+    const workflowBody = workflowStart === -1
+      ? ''
+      : plan.slice(workflowStart, workflowEnd === -1 ? undefined : workflowEnd);
+    if (!/^### Sibling plans\b/m.test(workflowBody)) {
+      errors.push('missing ### Sibling plans subsection in Workflow');
+    }
+  }
 
   const groups = parseGroups(plan);
   if (groups.length === 0) errors.push('plan has no Groups');
