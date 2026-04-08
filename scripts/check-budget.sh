@@ -63,6 +63,18 @@ if (( MAX_RESET > NOW_EPOCH )); then
   remaining=$(( MAX_RESET - NOW_EPOCH ))
   echo "check-budget: rate limit resets at epoch $MAX_RESET ($reset_human), ${remaining}s from now" >&2
   echo "check-budget: refusing to dispatch; wait for reset" >&2
+
+  # Record a decision note so the refusal is discoverable in
+  # learning/logs/notes.jsonl and surfaces via the Stop hook. Issue #131.
+  # Best-effort only: note.ts failure must not mask the original refusal,
+  # and the note is redundant to stderr anyway. NOTES_LOG_DIR override is
+  # honored for tests.
+  note_body="check-budget refused dispatch; rate limit resets at epoch ${MAX_RESET} (${reset_human}), ${remaining}s from now"
+  npx tsx "$(dirname "$0")/note.ts" \
+    --kind decision \
+    --topic ratelimit-refusal \
+    --body "$note_body" >/dev/null 2>&1 || true
+
   exit 1
 fi
 

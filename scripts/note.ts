@@ -28,6 +28,9 @@
  *   tsx scripts/note.ts --kind workaround --topic <slug> --body "<what you did>"
  *   tsx scripts/note.ts --kind decision --topic <slug> --body "<what was decided and why>"
  *   tsx scripts/note.ts --kind none --reason "<one-line reason>"
+ *
+ * Env override:
+ *   NOTES_LOG_DIR=/tmp/x tsx scripts/note.ts ... # redirects writes to /tmp/x/notes.jsonl
  */
 
 import { appendFileSync, mkdirSync } from 'node:fs';
@@ -101,11 +104,23 @@ function appendEntry(entry: NoteEntry, notesPath: string): void {
   appendFileSync(notesPath, JSON.stringify(entry) + '\n');
 }
 
+function resolveNotesPath(): string {
+  // NOTES_LOG_DIR env override lets callers outside the repo cwd (e.g.
+  // bash scripts running in a fixed cwd) redirect writes to a temp dir
+  // without having to change cwd. Mirrors BUDGET_LOG_DIR in
+  // scripts/check-budget.sh. Issue #131.
+  const override = process.env.NOTES_LOG_DIR;
+  if (override && override.length > 0) {
+    return path.resolve(override, 'notes.jsonl');
+  }
+  return path.resolve(process.cwd(), 'learning', 'logs', 'notes.jsonl');
+}
+
 function main(): void {
   try {
     const args = parseArgs(process.argv.slice(2));
     const entry = validate(args);
-    const notesPath = path.resolve(process.cwd(), 'learning', 'logs', 'notes.jsonl');
+    const notesPath = resolveNotesPath();
     appendEntry(entry, notesPath);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -116,4 +131,4 @@ function main(): void {
 
 main();
 
-export { parseArgs, validate, appendEntry, KINDS, TOPIC_RE };
+export { parseArgs, validate, appendEntry, resolveNotesPath, KINDS, TOPIC_RE };
