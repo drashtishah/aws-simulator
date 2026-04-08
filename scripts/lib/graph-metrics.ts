@@ -161,14 +161,45 @@ function looksLikePath(s: string): boolean {
   if (/\s/.test(s)) return false;
   if (s.startsWith('http://') || s.startsWith('https://')) return false;
   if (s.startsWith('#')) return false;
-  // Strip anchor
-  const noAnchor = s.split('#')[0]!;
+  if (s.startsWith('~')) return false; // home-relative shell paths
+  if (/[="]/.test(s)) return false; // shell snippets, not paths
+  // Reject template placeholders (`{id}`, `<slug>`) and glob patterns (`*`, `**`).
+  // These are documentation shapes, not concrete paths on disk; the scanner
+  // has no way to resolve them and flagging them creates noise that drowns out
+  // real dangling references.
+  if (/[{<*]/.test(s)) return false;
+  // Strip anchor and line-range suffix (foo.ts:270-318 or foo.ts:270).
+  const noAnchor = s.split('#')[0]!.split(':')[0]!;
   return /\.[a-zA-Z0-9]{1,6}$/.test(noAnchor) || /^(references|web|scripts|sims|learning|docs|themes|\.claude)\//.test(noAnchor);
 }
 
 function stripAnchor(s: string): string {
-  const i = s.indexOf('#');
-  return i >= 0 ? s.slice(0, i) : s;
+  let out = s;
+  const hashIdx = out.indexOf('#');
+  if (hashIdx >= 0) out = out.slice(0, hashIdx);
+  // Strip `:line` or `:line-range` suffix (e.g. foo.ts:270-318).
+  const colonIdx = out.indexOf(':');
+  if (colonIdx >= 0 && /^\d/.test(out.slice(colonIdx + 1))) out = out.slice(0, colonIdx);
+  return out;
+}
+
+// Path prefixes known to be gitignored runtime/per-user state. References to
+// these are legitimate documentation of runtime layout, not dangling links;
+// the files materialize when the relevant skill or hook runs. Keep this list
+// in sync with `.gitignore` (learning/, web/test-results/, docs/, .claude/plans/).
+const RUNTIME_IGNORED_PREFIXES = [
+  'learning/',
+  'web/test-results/',
+  'docs/',
+  '.claude/plans/',
+  '.claude/state/',
+];
+
+function isRuntimeIgnored(target: string): boolean {
+  for (const p of RUNTIME_IGNORED_PREFIXES) {
+    if (target === p.replace(/\/$/, '') || target.startsWith(p)) return true;
+  }
+  return false;
 }
 
 export function danglingReferences(
@@ -179,6 +210,12 @@ export function danglingReferences(
   const out: DanglingFinding[] = [];
   for (const f of files) {
     if (!f.path.endsWith('.md')) continue;
+    // Skip per-user plan archives and test fixtures. Plan archives under
+    // docs/superpowers/ are gitignored scratch space; fixtures under
+    // web/test/fixtures/ deliberately contain invalid paths to exercise
+    // the validator.
+    if (f.path.startsWith('docs/')) continue;
+    if (f.path.startsWith('web/test/fixtures/')) continue;
     let body = '';
     try { body = fs.readFileSync(f.abs, 'utf8'); } catch { continue; }
     const lines = body.split('\n');
@@ -197,6 +234,7 @@ export function danglingReferences(
         if (raw.startsWith('#')) continue; // in-page anchor
         if (!looksLikePath(raw)) continue;
         const target = stripAnchor(raw);
+        if (isRuntimeIgnored(target)) continue;
         // Resolve relative to repo root (root-relative convention) or to source dir.
         const candidatesResolved = [target, path.posix.normalize(path.posix.join(path.posix.dirname(f.path), target))];
         let resolved = false;
