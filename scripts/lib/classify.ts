@@ -112,7 +112,8 @@ export function classify(rawPath: string): Bucket | null {
     p === 'package-lock.json' ||
     p === 'tsconfig.json' ||
     p === 'tsconfig.frontend.json' ||
-    (p.startsWith('scripts/') && p.endsWith('.json'))
+    (p.startsWith('scripts/') && p.endsWith('.json')) ||
+    (p.startsWith('.github/workflows/') && (p.endsWith('.yml') || p.endsWith('.yaml')))
   ) {
     return 'config';
   }

@@ -33,6 +33,21 @@
             ]
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "event": "PostToolUse",
+            "command": "npx tsx .claude/hooks/post-commit-note-check.ts",
+            "cwd": "/Users/drashti/experiments/aws-simulator",
+            "timeout": 5000,
+            "allowed_tools": [
+              "Read"
+            ]
+          }
+        ]
       }
     ]
   }
