@@ -1,5 +1,7 @@
 # AWS Incident Simulator
 
+[![ci](https://github.com/drashtishah/aws-simulator/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/drashtishah/aws-simulator/actions/workflows/ci.yml)
+
 A game about learning to ask good questions.
 
 ## How to play

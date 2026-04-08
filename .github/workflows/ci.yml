@@ -1,0 +1,70 @@
+# .github/workflows/ci.yml
+#
+# Deterministic test gate. Runs on every pull_request and on every push to
+# master. Mirrors the local pre-PR gate so the human is no longer the only
+# verifier and so master is auditable per commit. Issue #137.
+#
+# A health-score regression guard step is intentionally omitted from this
+# initial workflow because `learning/logs/health-scores.jsonl` is gitignored
+# and cannot be `git show`-ed from origin/master. The baseline strategy
+# (gha cache, dual-run, or selectively tracking the snapshot file) is
+# tracked as a follow-up to Issue #143; the regression-check script itself
+# already ships at scripts/health-regression-check.ts and is unit-tested.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: setup-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: install python deps
+        run: pip install mypy
+
+      - name: install node deps
+        run: npm ci
+
+      - name: npm test
+        run: npm test
+
+      - name: npm run health
+        run: npm run health
+
+      - name: seed per-user state for doctor
+        run: |
+          # learning/system-vault/ is gitignored (per-user state). The doctor
+          # check refuses to advisory-downgrade missing index.md (per a prior
+          # explicit decision in the project history), so CI seeds the stub
+          # before invoking doctor. This mirrors the per-worktree initializer
+          # tracked by Issue #138.
+          mkdir -p learning/system-vault
+          test -f learning/system-vault/index.md || \
+            echo '# System Vault (CI stub)' > learning/system-vault/index.md
+
+      - name: npm run doctor
+        run: npm run doctor

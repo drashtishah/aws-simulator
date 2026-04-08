@@ -39,6 +39,7 @@ Merge strategy, non-negotiable:
 - PRs land via `--no-ff` **merge commit**, never squash. **No squash** merges on any branch, ever.
 - Each commit on master preserves its original SHA and message so history stays diffable and `git revert <merge-sha>` targets exactly the PR that introduced a regression.
 - If a PR has ten commits, master gets ten commits plus one merge commit. Squashing collapses the revertable PR unit and is forbidden.
+- The deterministic test gate runs in `.github/workflows/ci.yml` on every `pull_request` and every push to `master` (Issue #137). Local pre-PR runs of `npm test`, `npm run health`, and `npm run doctor` remain expected, but CI is now the authoritative gate.
 
 Commit message format: short imperative subject, body with `intent:` and `decision:` action lines, and `Ref #N` or `Closes #N` trailer.
 
