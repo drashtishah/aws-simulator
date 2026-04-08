@@ -5,7 +5,9 @@ the two sections below verbatim. These sections are non-negotiable.
 
 ## Workflow
 
-This plan follows `references/architecture/core-workflow.md` end to end (section 1 issue-first, section 3 plan if non-trivial, section 4 TDD red-green, section 5 small revertable commits and merge strategy, section 6 targeted tests, section 6b note per commit, section 7 verifier subagent separation, section 8 revert not history rewrite, section 9 cleanup). The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
+**This plan MUST follow `references/architecture/core-workflow.md` end to end. Every section is non-negotiable.** Section 1 (issue-first), section 3 (plan if non-trivial), section 4 (TDD red-green), section 5 (small revertable commits and merge strategy), section 6 (targeted tests), section 6b (note per commit), section 7 (verifier subagent separation), section 8 (revert not history rewrite), section 9 (cleanup including Issue-closure verification). The executing agent does not get to skip, reorder, or reinterpret any section. If a section seems to conflict with the plan, stop and surface the conflict to the human; do not work around core-workflow.md.
+
+The /fix-specific addition: every plan group below cites at least one open Issue created by /fix in step 5b of `.claude/skills/fix/SKILL.md`. Plans never run `gh issue create` (Issue #113).
 
 If this plan is part of a sibling-plan split, the sibling paths and the parent decision article are listed at the top under a `### Sibling plans` subsection. Each sibling owns its own worktree, branch, and PR; never edit a sibling's files from this plan.
 
