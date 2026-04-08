@@ -165,7 +165,25 @@ export function checkMcpConfig(ctx: CheckContext): CheckResult {
 
 export function checkPostCommitHook(ctx: CheckContext): CheckResult {
   const src = path.join(ctx.rootDir, '.claude', 'hooks', 'post-commit');
-  const dst = path.join(ctx.rootDir, '.git', 'hooks', 'post-commit');
+  // In a git worktree, .git is a file pointing to the worktree metadata; the
+  // real hooks directory lives under the common git dir shared by all
+  // worktrees. Resolve it via `git rev-parse --git-common-dir` so the check
+  // works from both the main checkout and any worktree.
+  let hooksDir = path.join(ctx.rootDir, '.git', 'hooks');
+  try {
+    const r = realSpawnSync('git', ['rev-parse', '--git-common-dir'], {
+      cwd: ctx.rootDir,
+      encoding: 'utf8',
+    });
+    const out = ((r.stdout as unknown as string) || '').trim();
+    if (r.status === 0 && out) {
+      const resolved = path.isAbsolute(out) ? out : path.join(ctx.rootDir, out);
+      hooksDir = path.join(resolved, 'hooks');
+    }
+  } catch {
+    // fall back to .git/hooks
+  }
+  const dst = path.join(hooksDir, 'post-commit');
   if (!fs.existsSync(src)) {
     return {
       ok: true,
