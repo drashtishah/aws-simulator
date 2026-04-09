@@ -179,7 +179,7 @@ These notes compile into the system vault via the daily-compile-and-rotate cron 
 
 ## Phase 6: Issue Pipeline
 
-Follow `.claude/skills/git/references/task-to-issue.md` for the task-to-issue workflow.
+Follow `references/architecture/core-workflow.md` §1 for Issue creation before work starts.
 
 ### 1. Create tasks
 

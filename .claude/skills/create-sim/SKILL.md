@@ -57,7 +57,7 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 
 ### 0. Create task and issue
 
-Create a task and promote to GitHub Issue per `.claude/skills/git/references/task-to-issue.md`. Subject: "Create sim for <topic or service>". Use the `enhancement` label. Record the issue number for commit references.
+Create a GitHub Issue per `references/architecture/core-workflow.md` §1. Subject: "Create sim for <topic or service>". Use the `enhancement` label. Record the issue number for commit references.
 
 ---
 

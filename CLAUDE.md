@@ -9,7 +9,6 @@ Interactive AWS incident-response game played through Claude Code skills.
 - `/create-sim`: generate new sim packages (for authors, not players)
 - `/feedback`: log a note during play about the sim system
 - `/fix`: analyze feedback, activity logs, and code health, then apply improvements to skills
-- `/git`: contextual commits, rollback, GitHub Issues, and git history recall
 
 ## Where things are
 

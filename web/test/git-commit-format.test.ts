@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 
 /**
  * Validates commit message format against the contextual commits spec.
- * Spec: .claude/skills/git/references/contextual-commits-spec.md
+ * Spec: references/architecture/core-workflow.md §5 (commit format: subject + intent/decision action lines + Ref/Closes trailer).
  */
 
 const VALID_TYPES = ['feat', 'fix', 'improve', 'refactor', 'test', 'chore', 'docs'];
