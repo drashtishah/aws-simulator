@@ -63,6 +63,15 @@ if ! scripts/check-budget.sh; then
   exit 3
 fi
 
+# Resume-safe merged-branch skip (Issue #128). If the feature branch is
+# already merged to master, there is nothing to do. Exit 0 so batch-mode
+# orchestrators treat this as a clean skip rather than an error.
+if git show-ref --verify --quiet "refs/heads/${BRANCH}" \
+   && git merge-base --is-ancestor "refs/heads/${BRANCH}" master 2>/dev/null; then
+  echo "spawn-sibling: ${SLUG} branch already merged to master, skipping" >&2
+  exit 0
+fi
+
 # Resume-safe worktree + branch creation (Issue #128). Reuse if present.
 if [[ ! -d "$WORKTREE" ]]; then
   if git show-ref --verify --quiet "refs/heads/${BRANCH}"; then
@@ -79,13 +88,41 @@ fi
 mkdir -p "${WORKTREE}/.claude/plans"
 cp "$PLAN" "${WORKTREE}/.claude/plans/$(basename "$PLAN")"
 
+# Per-worktree initializer (Issue #138). Idempotent: only seeds missing
+# artifacts. Runs after worktree creation/reuse, before cd and exec.
+# Mirrors the two-phase initializer/coder pattern from Anthropic's
+# "Effective harnesses for long-running agents": a fresh sibling must
+# start with the same environment state that `npm run doctor` expects.
+initialize_worktree() {
+  local worktree="$1"
+
+  # 1. Per-worktree progress log. Not tracked by git (see .gitignore).
+  #    Guarded so a resume dispatch does NOT overwrite prior lines.
+  if [[ ! -f "${worktree}/progress.txt" ]]; then
+    echo "$(date -u +%FT%TZ) | init | worktree initialized by scripts/spawn-sibling.sh" \
+      > "${worktree}/progress.txt"
+  fi
+
+  # 2. learning/system-vault/ stub so doctor's strict check starts
+  #    green on a fresh worktree. Inline write is simpler than shelling
+  #    out to install-git-hooks (which also installs post-commit hooks
+  #    that we do not need per sibling dispatch).
+  if [[ ! -f "${worktree}/learning/system-vault/index.md" ]]; then
+    mkdir -p "${worktree}/learning/system-vault"
+    printf '# System Vault\n\nSeeded by scripts/spawn-sibling.sh initialize_worktree (Issue #138).\n' \
+      > "${worktree}/learning/system-vault/index.md"
+  fi
+}
+
+initialize_worktree "$WORKTREE"
+
 mkdir -p learning/logs
 
 PROMPT="Execute the plan at ${PLAN} using the superpowers:executing-plans skill. "
-PROMPT+="Your first two actions: (1) cat .claude/worktrees/${SLUG}/progress.txt if it exists, "
-PROMPT+="(2) run git log master..HEAD to confirm landed state. Then continue from wherever the "
-PROMPT+="plan left off. After every commit, append a line to progress.txt summarizing the work. "
-PROMPT+="Open a PR when the full plan is complete."
+PROMPT+="Your first two actions: (1) cat progress.txt if it exists (it lives at the worktree root, "
+PROMPT+="which is your cwd), (2) run git log master..HEAD to confirm landed state. Then continue "
+PROMPT+="from wherever the plan left off. After every commit, append a line to progress.txt "
+PROMPT+="summarizing the work. Open a PR when the full plan is complete."
 
 cd "$WORKTREE"
 exec claude -p "$PROMPT" \

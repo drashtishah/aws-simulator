@@ -22,6 +22,8 @@ git worktree add .claude/worktrees/{slug} -b feature/{slug}
 
 Cleanup rules are in section 9.
 
+Headless `claude -p --permission-mode acceptEdits` dispatches can be blocked on a small set of sensitive paths (notably `.claude/hooks/**`, `.claude/settings.json`, `.mcp.json`, `.claude/skills/**`). The canonical unblock is to extend `.claude/settings.json` `permissions.allow` after auditing the target file against the rule in `references/registries/headless-edit-allowlist.md`: pure `process.stdout.write` reminder hooks qualify, anything that execs, spawns, fetches, or writes outside stdout does not. Enforcement hooks (pre-commit, Stop, SessionStart) are never allowlisted. Drift between the allow list and the registry is enforced by `web/test/headless-allowlist.test.ts`. See Issue #127.
+
 ## 3. Plan if non-trivial
 
 If the change touches more than one file or more than one skill, write a plan first in `.claude/plans/<slug>.md` with exhaustive file lists, exact line references, and a commit sequence. Implementation happens in a separate session reading the plan file. Plans are private scratch space and are never scored by health metrics.
