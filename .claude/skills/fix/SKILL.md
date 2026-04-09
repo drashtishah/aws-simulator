@@ -145,11 +145,9 @@ allowlist, never a blanket bypass.
 
 ## Flow
 
-1. List open Issues: `gh issue list --state open --json number,title,labels,body --limit 200`. Group by label.
-2. Read `learning/feedback.md` and any `learning/system-vault/feedback/` articles since the last /fix run. Feedback that matches an existing Issue attaches with "user reinforced this." Orphan feedback is tagged for Issue creation in step 5b.
-3. Run `system-vault-query` on the themes surfaced by steps 1 and 2 to pull prior decisions and workarounds.
-4. Read the latest entry of `learning/logs/health-scores.jsonl`. Pull `findings[]` (top 10 ranked by `expected_gain_if_fixed`).
-5. Group by label, root cause, and shared file references using the heuristics in `.claude/skills/fix/references/issue-grouping.md`. Then run the two scanners below and append their results to the input bundle.
+1. Dispatch SIX fetching subagents in parallel via `superpowers:dispatching-parallel-agents`, one per task in `.claude/skills/fix/references/fetching-tasks.md`. The six tasks are: (1) open Issues list, (2) feedback deltas, (3) vault prior art, (4) top health findings, (5) contradictory-instructions scanner, (6) old-plan staleness scanner. Use the exact prompts verbatim from that file. Each subagent returns ~300 words; /fix concatenates the six summaries into the input bundle. No raw Issue bodies, vault articles, or health JSON land in main context. This single dispatch replaces the old serial steps 1 through 4 plus the two scanners that previously ran inline in step 5 (Issue #124).
+2. Verify the returned bundle has all six summaries, each well-formed per the Output schema in `fetching-tasks.md`. If any is missing or malformed, re-dispatch just that one task. Do not proceed until the bundle is complete.
+5. Group by label, root cause, and shared file references using the heuristics in `.claude/skills/fix/references/issue-grouping.md`. Grouping stays in main context: synthesis is judgment, not fetching, and must not be delegated to a subagent (Issue #124 non-goal). Step numbers 3 and 4 are intentionally absent; their former content is now inside the parallel dispatch in step 1, and the external Issue bodies referencing 5b, 5c, 6b keep working unchanged.
 5b. For every orphan-feedback theme surfaced in step 2 and every cut item from the splitting heuristic, create a GitHub Issue NOW via `gh issue create`. Use the depth template in memory `feedback_detailed_issues.md` (Context, Current state verified, Scope with file:line refs, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). Capture every Issue number into the input bundle so the plan only ever references numbers, never runs `gh issue create`. This is the ONLY write operation /fix performs against external state (Issue #113).
 5c. Validate every Issue created in step 5b against the Issue checklist in `.claude/skills/fix/references/plan-validator.md` (Context present, Current state verified with grep/gh/sed commands, Scope with exact file:line refs and literal edit content, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). If ANY section is missing from ANY Issue, /fix refuses to proceed to step 6 and reports the gap to the user. Fix the gap via `gh issue edit <N> --body-file ...` then re-run step 5c (Issue #118).
 6. Invoke `superpowers:writing-plans` with the input bundle, the canonical preamble at `.claude/skills/fix/references/plan-preamble.md`, and a target plan path under the gitignored .claude/plans directory. `superpowers:writing-plans` runs its own exploration and writes the plan; /fix does not write plan steps itself.
@@ -185,7 +183,9 @@ Mechanics:
 - /fix hands back both plan paths to the user at the end.
 - Each sibling owns its own worktree at `.claude/worktrees/<parent-slug>-part-N`, its own feature branch `feature/<parent-slug>-part-N`, and its own PR.
 
-## Scanners (run in step 5)
+## Scanners (dispatched via parallel fetching tasks 5 and 6)
+
+Both scanners below are no longer run inline in step 5. They are dispatched as Tasks 5 and 6 of the parallel fetching batch in step 1, per `.claude/skills/fix/references/fetching-tasks.md` (Issue #124). Their output lands in the input bundle via the same summary-per-task schema as the other four fetchers.
 
 - **Contradictory-instructions scanner**: sweep `CLAUDE.md`, every skill `SKILL.md` `## Rules` section, and the per-user memory files for conflicting rules on the same topic. Surface conflicts as findings in the input bundle so `superpowers:writing-plans` can include a "rule reconciliation" group.
 - **Old-plan staleness scanner**: list every file under the gitignored .claude/plans directory and flag any that reference paths no longer present on disk. Surface as cleanup proposals.
