@@ -177,6 +177,8 @@ Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons wit
 
 State file backing these automations: `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Tracked and seeded by PR-Pre.
 
+GitHub secret-scanning exclusions live in `.github/secret_scanning.yml`. `sims/**` is path-ignored so fictional incident fixtures (fake CloudTrail snapshots, resolution writeups, fake config JSON) never trip the scanner. See Issue #126.
+
 ## Tests
 
 All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `references/architecture/testing-system.md` for full architecture.

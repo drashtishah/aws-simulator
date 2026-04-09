@@ -146,4 +146,30 @@ describe('note CLI', () => {
     assert.equal(r.status, 0, `expected success, stderr: ${r.stderr}`);
     assert.ok(fs.existsSync(path.join(tmp, 'learning', 'logs', 'notes.jsonl')));
   });
+
+  it('honors NOTES_LOG_DIR env override for callers outside the repo cwd (Issue #131)', () => {
+    // Simulates check-budget.sh calling note.ts: bash script's cwd is the
+    // repo root, but the test must redirect writes to a temp dir without
+    // changing cwd. Env-var override is the surgical path.
+    const override = fs.mkdtempSync(path.join(os.tmpdir(), 'note-override-'));
+    try {
+      const result = spawnSync(
+        'npx',
+        ['tsx', NOTE_SCRIPT, '--kind', 'decision', '--topic', 'env-override', '--body', 'test'],
+        {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+          timeout: 10000,
+          env: { ...process.env, NOTES_LOG_DIR: override },
+        },
+      );
+      assert.equal(result.status, 0, `expected success, stderr: ${result.stderr}`);
+      const overridePath = path.join(override, 'notes.jsonl');
+      assert.ok(fs.existsSync(overridePath), 'override path must receive the note');
+      const entry = JSON.parse(fs.readFileSync(overridePath, 'utf8').trim());
+      assert.equal(entry.topic, 'env-override');
+    } finally {
+      fs.rmSync(override, { recursive: true, force: true });
+    }
+  });
 });

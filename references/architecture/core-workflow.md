@@ -22,6 +22,8 @@ git worktree add .claude/worktrees/{slug} -b feature/{slug}
 
 Cleanup rules are in section 9.
 
+Headless `claude -p --permission-mode acceptEdits` dispatches can be blocked on a small set of sensitive paths (notably `.claude/hooks/**`, `.claude/settings.json`, `.mcp.json`, `.claude/skills/**`). The canonical unblock is to extend `.claude/settings.json` `permissions.allow` after auditing the target file against the rule in `references/registries/headless-edit-allowlist.md`: pure `process.stdout.write` reminder hooks qualify, anything that execs, spawns, fetches, or writes outside stdout does not. Enforcement hooks (pre-commit, Stop, SessionStart) are never allowlisted. Drift between the allow list and the registry is enforced by `web/test/headless-allowlist.test.ts`. See Issue #127.
+
 ## 3. Plan if non-trivial
 
 If the change touches more than one file or more than one skill, write a plan first in `.claude/plans/<slug>.md` with exhaustive file lists, exact line references, and a commit sequence. Implementation happens in a separate session reading the plan file. Plans are private scratch space and are never scored by health metrics.
@@ -43,9 +45,17 @@ Merge strategy, non-negotiable:
 
 Commit message format: short imperative subject, body with `intent:` and `decision:` action lines, and `Ref #N` or `Closes #N` trailer.
 
-## 6. Per-commit targeted tests, full suite at end
+## 6. Tests: CI is the authoritative gate; local runs are optional fast feedback
 
-After every commit, run the targeted subset of tests affected by the change via `sim-test --changed` (delivered by PR-I). This runs in 1 to 3 seconds so it stays frictionless per commit. At the end of the PR, run the full suite with `npm test` once before opening the PR. If targeted tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
+The deterministic test gate runs in `.github/workflows/ci.yml` on every push and pull_request (Issue #137). CI is the authoritative gate; nothing merges to master without a green CI run. Local test runs are no longer mandatory for safety, only for fast feedback.
+
+Recommended local cadence:
+
+- **Per commit:** `sim-test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
+- **Pre-push:** optional. Run the full local gate (`npm test` + `npm run health` + `npm run doctor`) only if you want to avoid a known-broken first CI run on the branch. Otherwise, push and let CI tell you.
+- **Per PR:** nothing required locally. CI is mandatory.
+
+If targeted local tests fail mid-sequence, stop and fix forward, do not pile more commits on top of red.
 
 After every commit, also pause to consider the code-health impact: did this change touch any file that has an open finding in the latest `learning/logs/health-scores.jsonl`? Could the same diff have resolved or improved a bucket score in passing? Prefer changes that hold or improve the score over changes that ship test-green but quietly degrade a bucket (dangling refs, complexity, dead code). This is a habit, not a hard gate; the gate runs at PR-time via `npm run health` in §9.
 
