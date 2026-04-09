@@ -7,10 +7,12 @@ references_system_vault: true
 
 # fix Skill
 
-/fix has one job: gather inputs and hand them to `superpowers:writing-plans`.
-It never edits code, never runs tests, never rotates logs, never creates
-GitHub Issues, never commits, never runs browser tests, never touches a
-routing table, never dispatches verifiers. Those jobs live elsewhere now.
+/fix has two jobs: (1) gather inputs and hand them to `superpowers:writing-plans`,
+and (2) create every GitHub Issue the plan will reference (step 5b, see below).
+It never edits code, never runs tests, never rotates logs, never commits, never
+runs browser tests, never touches a routing table, never dispatches verifiers.
+Those jobs live elsewhere now. /fix is the sole creator of GitHub Issues in
+this workspace (Issue #113); plans never run `gh issue create` themselves.
 
 ## Plan execution: per-sibling dispatch via spawn-sibling.sh
 
@@ -141,14 +143,15 @@ full filesystem access) and the permission wall is there for a reason.
 The fix is either a targeted manual edit or a targeted permission
 allowlist, never a blanket bypass.
 
-## Flow (8 steps)
+## Flow
 
-1. List open Issues: `gh issue list --state open --json number,title,labels,body --limit 200`. Group by label.
-2. Read `learning/feedback.md` and any `learning/system-vault/feedback/` articles since the last /fix run. Feedback that matches an existing Issue attaches with "user reinforced this." Orphan feedback flags "propose creating an Issue."
-3. Run `system-vault-query` on the themes surfaced by steps 1 and 2 to pull prior decisions and workarounds.
-4. Read the latest entry of `learning/logs/health-scores.jsonl`. Pull `findings[]` (top 10 ranked by `expected_gain_if_fixed`).
-5. Group by label, root cause, and shared file references using the heuristics in `.claude/skills/fix/references/issue-grouping.md`. Then run the two scanners below and append their results to the input bundle.
+1. Dispatch SIX fetching subagents in parallel via `superpowers:dispatching-parallel-agents`, one per task in `.claude/skills/fix/references/fetching-tasks.md`. The six tasks are: (1) open Issues list, (2) feedback deltas, (3) vault prior art, (4) top health findings, (5) contradictory-instructions scanner, (6) old-plan staleness scanner. Use the exact prompts verbatim from that file. Each subagent returns ~300 words; /fix concatenates the six summaries into the input bundle. No raw Issue bodies, vault articles, or health JSON land in main context. This single dispatch replaces the old serial steps 1 through 4 plus the two scanners that previously ran inline in step 5 (Issue #124).
+2. Verify the returned bundle has all six summaries, each well-formed per the Output schema in `fetching-tasks.md`. If any is missing or malformed, re-dispatch just that one task. Do not proceed until the bundle is complete.
+5. Group by label, root cause, and shared file references using the heuristics in `.claude/skills/fix/references/issue-grouping.md`. Grouping stays in main context: synthesis is judgment, not fetching, and must not be delegated to a subagent (Issue #124 non-goal). Step numbers 3 and 4 are intentionally absent; their former content is now inside the parallel dispatch in step 1, and the external Issue bodies referencing 5b, 5c, 6b keep working unchanged.
+5b. For every orphan-feedback theme surfaced in step 2 and every cut item from the splitting heuristic, create a GitHub Issue NOW via `gh issue create`. Use the depth template in memory `feedback_detailed_issues.md` (Context, Current state verified, Scope with file:line refs, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). Capture every Issue number into the input bundle so the plan only ever references numbers, never runs `gh issue create`. This is the ONLY write operation /fix performs against external state (Issue #113).
+5c. Validate every Issue created in step 5b against the Issue checklist in `.claude/skills/fix/references/plan-validator.md` (Context present, Current state verified with grep/gh/sed commands, Scope with exact file:line refs and literal edit content, Architecture note, Out of scope, Verification naming exact test file paths + the test command + "Verified by separate subagent", Refers to). If ANY section is missing from ANY Issue, /fix refuses to proceed to step 6 and reports the gap to the user. Fix the gap via `gh issue edit <N> --body-file ...` then re-run step 5c (Issue #118).
 6. Invoke `superpowers:writing-plans` with the input bundle, the canonical preamble at `.claude/skills/fix/references/plan-preamble.md`, and a target plan path under the gitignored .claude/plans directory. `superpowers:writing-plans` runs its own exploration and writes the plan; /fix does not write plan steps itself.
+6b. Validate the produced plan file against the plan checklist in `.claude/skills/fix/references/plan-validator.md`: (1) every Group section cites at least one Issue number, (2) every Group has a Test section naming a test layer, (3) every Group declares a per-group test cadence (per commit / group exit / pre-PR), (4) every file path is root-relative or absolute (never bare), (5) no `gh issue create` appears anywhere in the plan body. If ANY check fails, /fix refuses to hand back and reports the gap to the user. Fix the plan file in place then re-run step 6b (Issue #118).
 7. Write a `learning/system-vault/decisions/<plan-slug>.md` article recording why this group is being tackled together and which Issues + feedback notes drove it.
 8. Hand back to the user with the plan path. Done.
 
@@ -180,16 +183,19 @@ Mechanics:
 - /fix hands back both plan paths to the user at the end.
 - Each sibling owns its own worktree at `.claude/worktrees/<parent-slug>-part-N`, its own feature branch `feature/<parent-slug>-part-N`, and its own PR.
 
-## Scanners (run in step 5)
+## Scanners (dispatched via parallel fetching tasks 5 and 6)
+
+Both scanners below are no longer run inline in step 5. They are dispatched as Tasks 5 and 6 of the parallel fetching batch in step 1, per `.claude/skills/fix/references/fetching-tasks.md` (Issue #124). Their output lands in the input bundle via the same summary-per-task schema as the other four fetchers.
 
 - **Contradictory-instructions scanner**: sweep `CLAUDE.md`, every skill `SKILL.md` `## Rules` section, and the per-user memory files for conflicting rules on the same topic. Surface conflicts as findings in the input bundle so `superpowers:writing-plans` can include a "rule reconciliation" group.
 - **Old-plan staleness scanner**: list every file under the gitignored .claude/plans directory and flag any that reference paths no longer present on disk. Surface as cleanup proposals.
 
 ## Rules
 
-1. /fix never modifies code or tests. Only writes one plan (delegated) and one decision article.
-2. Every plan group must reference at least one open Issue OR at least one feedback note by date. Orphan-feedback groups must propose creating an Issue.
+1. /fix never modifies code or tests. Writes one plan (delegated), one decision article, and creates GitHub Issues per step 5b (Issue #113).
+2. Every plan group must reference at least one open Issue. /fix creates the Issue in step 5b before the plan is written; the plan body only ever cites `#N`, never runs `gh issue create`. Orphan feedback surfaced in step 2 becomes a fresh Issue in step 5b (Issue #113).
 3. Every file path in the plan is absolute or repo-root-relative, never bare.
 4. Every plan (or each sibling plan when the bundle is split per the Splitting a big plan section) begins with the Workflow section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/core-workflow.md`.
 5. Every plan includes a Testing section from `.claude/skills/fix/references/plan-preamble.md`, which cites `references/architecture/testing-system.md` and names the right test layer (unit, integration, sim-test, browser via sim-test agent, health).
 6. /fix writes salience-triggered notes during its input gathering and plan authoring. Any moment that feels surprising, exciting, frustrating, or like a self-correction gets a `scripts/note.ts` entry in the moment, not at the end of the session. Any emotion, positive or negative, is a valid signal. Rule: memory `feedback_note_on_salience.md`.
+7. /fix must not hand back a plan until the plan-validator checklist in `.claude/skills/fix/references/plan-validator.md` passes for every Issue it created (step 5c) and for the plan file (step 6b). Failing checks are surfaced to the user with the gap named explicitly (Issue #118).

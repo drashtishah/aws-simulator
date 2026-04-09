@@ -28,17 +28,15 @@ process.stdin.on('end', () => {
 
     process.stdout.write(`[Git Discipline] Code changes starting. Follow the git workflow:
 
-1. Create tasks for work items, then promote to GitHub Issues.
-   See: .claude/skills/git/references/task-to-issue.md
-
-2. After each logical change, follow the commit procedure.
+1. Create a GitHub Issue before any code change (§1).
    See: references/architecture/core-workflow.md
-   Stage specific files, contextual commit with issue ref, include intent action line.
 
-3. Run tests after every commit: npm test
+2. After each logical change, follow the commit procedure (§5).
+   Stage specific files, contextual commit with Ref #N or Closes #N, include intent action line.
 
-4. If tests fail, rollback immediately (git revert), then fix forward.
-   See: .claude/skills/git/references/rollback-procedure.md
+3. Run the per-commit targeted tests after every commit (§6): npx tsx scripts/sim-test.ts run --changed --json
+
+4. If tests fail, rollback immediately via git revert then fix forward (§8).
 `);
   } catch {
     process.exit(0);

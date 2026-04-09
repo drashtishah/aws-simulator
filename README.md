@@ -39,7 +39,6 @@ flowchart TB
     Setup["/setup"]
     Play["/play"]
     Fix["/fix"]
-    Git["/git"]
     FightTeam["/fight-team"]
     CreateSim["/create-sim"]
     SimTest[sim-test CLI]

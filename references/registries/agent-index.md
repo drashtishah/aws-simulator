@@ -9,7 +9,6 @@ Single source of truth for navigating the AWS Incident Simulator workspace. New 
 | create-sim | /create-sim | `.claude/skills/create-sim/SKILL.md` | Generate new AWS incident simulation packages for the play skill. |
 | fight-team | /fight-team | `.claude/skills/fight-team/SKILL.md` | Adversarial 3-agent debate to review workspace quality. |
 | fix | /fix | `.claude/skills/fix/SKILL.md` | Apply accumulated feedback, log patterns, and code-health insights to improve skills. |
-| git | /git | `.claude/skills/git/SKILL.md` | Contextual commits, rollback, GitHub Issues, and history recall. |
 | play | /play | `.claude/skills/play/SKILL.md` | Run an AWS incident simulation through the web app. |
 | setup | /setup | `.claude/skills/setup/SKILL.md` | Initialize the local workspace, profile, and vault for a new player. |
 | sim-test | /sim-test | `.claude/skills/sim-test/SKILL.md` | Extend the sim-test CLI with new browser specs, persona profiles, or commands. |

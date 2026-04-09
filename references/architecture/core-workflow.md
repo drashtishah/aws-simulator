@@ -129,6 +129,10 @@ git status --porcelain
 
 `.mypy_cache` (Issue #76), `.pytest_cache`, `.ruff_cache`, and ad-hoc `.tmp/` directories sometimes regenerate from test runs even though they are gitignored. Sweep them after every PR merge. Prevention via per-tool cache-dir env vars (Issue #76's `MYPY_CACHE_DIR` redirect) is the primary line of defense; this sweep is a backstop. If `git status --porcelain` shows untracked entries you do not recognize, investigate before deleting.
 
+Doc sync check (minimal changes only):
+
+Before opening the PR, the verifier subagent (or the author if no verifier was dispatched) answers each of these questions with one line: does this change touch behavior described in (1) `README.md`, (2) `references/architecture/workspace-map.md`, (3) `references/architecture/testing-system.md`, (4) `scripts/doctor.ts`, (5) `.claude/skills/setup/SKILL.md`, or (6) `CLAUDE.md`? If yes, make the smallest possible update: one paragraph, one bullet, or one row per sync. Never restructure sections, never rewrite for tone, never bundle multiple concerns. If a larger rewrite is genuinely needed, stop and file a follow-up Issue via /fix. Rule: memory `feedback_minimal_doc_changes.md`. Issue #116.
+
 Doctor confirmation:
 
 ```bash
