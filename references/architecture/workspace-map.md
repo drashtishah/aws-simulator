@@ -70,30 +70,30 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  GitHub Issues   |
 +------------------+
 
-+----------------------+   +------------------+
-|   system-vault       |   |  notes.jsonl     |
-|  (long-term agent    |   |  (semantic       |
-|   memory, per user,  |   |   stream)        |
-|   gitignored)        |   |                  |
-|                      |   | Written by:      |
-| Compiled by:         |   |  scripts/note.ts |
-|  daily cron from     |   |  (CLI any agent  |
-|  raw.jsonl + notes   |   |   can call)      |
-|                      |   |                  |
-| Subdirs:             |   | Read by:         |
-|  findings/           |   |  system-vault-   |
-|  decisions/          |   |  compile (daily) |
-|  workarounds/        |   |  /fix            |
-|  components/         |   |                  |
-|  sessions/           |   | Stop hook        |
-|  health/             |   | enforces >=1     |
-|  dreams/             |   | note per session |
-|                      |   |                  |
-| Read by:             |   |                  |
-|  system-vault-query  |   |                  |
-|  /fight-team         |   |                  |
-|  /fix                |   |                  |
-+----------------------+   +------------------+
++----------------------+
+|   system-vault       |
+|  (long-term agent    |
+|   memory, per user,  |
+|   gitignored)        |
+|                      |
+| Compiled by:         |
+|  daily cron from     |
+|  raw.jsonl           |
+|                      |
+| Subdirs:             |
+|  findings/           |
+|  decisions/          |
+|  workarounds/        |
+|  components/         |
+|  sessions/           |
+|  health/             |
+|  dreams/             |
+|                      |
+| Read by:             |
+|  system-vault-query  |
+|  /fight-team         |
+|  /fix                |
++----------------------+
 ```
 
 ## Data Flow
@@ -117,7 +117,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 /feedback ----> writes feedback.md + sessions/{id}.json (during play)
                 |
                 v
-/fix ---------> reads feedback.md + learning/logs/raw.jsonl + learning/logs/notes.jsonl + health scores
+/fix ---------> reads feedback.md + learning/logs/raw.jsonl + health scores
             --> reads web/test-results/summary.json (if exists) for recent test failures
             --> runs tsx scripts/code-health.ts (before, after each edit, final)
             --> reads + writes skill files (.claude/skills/**)
@@ -166,7 +166,6 @@ Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons wit
 
 | Automation | Type | Trigger | Purpose | Source file |
 |---|---|---|---|---|
-| daily-compile-and-rotate | cron | 03:00 local daily | Compile `learning/logs/notes.jsonl` (primary semantic source) and `learning/logs/raw.jsonl` (session metadata) into `learning/system-vault/` topic notes, rotate both log files, append health score | `.claude/scheduled-jobs/daily-compile-and-rotate.json` |
 | weekly-dream | cron | Sunday 03:30 local | Run system-vault-dream skill to consolidate `learning/system-vault/`. Empty-vault guard: skip if vault has fewer than 5 topic files. | `.claude/scheduled-jobs/weekly-dream.json` |
 | system-vault-compile chain | hook (PostCommit) | after every commit | Re-run `system-vault-compile` and append to `learning/logs/health-scores.jsonl` | `.claude/settings.json` |
 | pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `test agent` browser test pass | `.claude/settings.json` |
