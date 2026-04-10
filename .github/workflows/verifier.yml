@@ -7,6 +7,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  actions: read
   id-token: write
 
 jobs:
@@ -94,17 +95,44 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
+      - name: Extract prior session
+        id: session
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          SESSION=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json comments \
+            --jq '[.comments[].body | select(startswith("<!-- session:implementer:"))] | last | ltrimstr("<!-- session:implementer:") | rtrimstr(" -->")' \
+            2>/dev/null || echo "")
+          if [ -n "$SESSION" ]; then
+            echo "resume_arg=--resume $SESSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "resume_arg=" >> "$GITHUB_OUTPUT"
+          fi
+
       - id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
+          additional_permissions: "actions: read"
           claude_args: |
             --model claude-sonnet-4-6
+            ${{ steps.session.outputs.resume_arg }}
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["PASS","FAIL_RETRY","FAIL_ESCALATE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
+
+      - name: Store session metadata
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "<!-- session:verifier:${{ steps.claude.outputs.session_id }} -->"
 
       - name: Swap labels based on verification
         env:
@@ -138,3 +166,16 @@ jobs:
               --remove-label "needs-verify" \
               --add-label "needs-human"
           fi
+
+      - name: Handle stage failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-verify" \
+            --add-label "pipeline-failed"
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "verifier stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

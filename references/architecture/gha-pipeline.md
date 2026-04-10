@@ -22,6 +22,15 @@ Label swaps in critic, implementer, and verifier are driven by `structured_outpu
 - Every agent workflow gates on `sender.login == repository_owner AND issue.user.login == repository_owner`.
 - Each stage has a minimal `--allowed-tools` allowlist.
 
+## Failure recovery
+
+Each workflow has a `Handle stage failure` step with `if: failure()`. On any step failure it:
+1. Removes the trigger label (needs-plan, needs-critique, needs-impl, needs-verify).
+2. Adds `pipeline-failed`.
+3. Posts a comment with the workflow run URL.
+
+Known limitation: if `--resume` is passed with an expired server-side session, the claude step fails and triggers this handler rather than falling back to a fresh session. Re-add the trigger label to retry after the session expires. Graceful retry without resume is tracked as a follow-up.
+
 ## Models per stage
 
 | Stage | Model | Max turns |
@@ -41,6 +50,8 @@ Base tools per role. Additional tools are added by issue type label (see Label G
 | Critic | Read, Glob, Grep, Bash(gh issue view/comment) |
 | Implementer | Read, Glob, Grep, Edit, Write, Bash(git/npm/npx/tsx/python3/gh issue view/comment) |
 | Verifier | Read, Glob, Grep, Edit, Bash(git/npm/tsx/gh issue view/comment/gh pr create/merge) |
+
+Verifier also has `actions: read` permission for CI check-run access.
 
 ## Label groups
 

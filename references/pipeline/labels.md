@@ -25,3 +25,9 @@ Look at the files in the issue's Scope section:
 - Mixed or standard .ts/.json code? -> no type label
 
 If unsure, omit the type label. The default code path is safe for all issue types.
+
+## State labels (set automatically by pipeline)
+
+| Label | Meaning | Recovery |
+|-------|---------|----------|
+| pipeline-failed | A pipeline stage failed; trigger label removed, run link posted | Re-add the appropriate needs-* label after investigation |
