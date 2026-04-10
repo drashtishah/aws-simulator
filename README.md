@@ -34,6 +34,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   Player([Player])
+  Issues[(GitHub Issues)]
 
   subgraph Skills[Claude Code skills]
     Setup["/setup"]
@@ -41,7 +42,7 @@ flowchart TB
     Fix["/fix"]
     FightTeam["/fight-team"]
     CreateSim["/create-sim"]
-    SimTest[test CLI]
+    Test[test CLI]
   end
 
   subgraph Crons[Scheduled crons]
@@ -53,7 +54,7 @@ flowchart TB
   subgraph Memory[Per-user memory, gitignored]
     PlayerVault[(player-vault<br/>Obsidian knowledge graph)]
     SystemVault[(system-vault<br/>long-term agent memory)]
-    Logs[(logs<br/>raw.jsonl + notes.jsonl)]
+    Logs[(logs<br/>raw.jsonl)]
   end
 
   subgraph Web[Web app]
@@ -64,6 +65,14 @@ flowchart TB
   subgraph External[External]
     AwsMcp[AWS Knowledge MCP]
     DevtoolsMcp[Chrome DevTools MCP]
+  end
+
+  subgraph GHA[GHA pipeline]
+    Planner[planner.yml]
+    Critic[critic.yml]
+    Implementer[implementer.yml]
+    Verifier[verifier.yml]
+    AutoMerge[auto-merge]
   end
 
   Player --> Setup
@@ -80,10 +89,15 @@ flowchart TB
   SystemVault --> WeeklyFight
   WeeklyFight --> FightTeam
   Dream --> SystemVault
-  Fix --> Logs
+  Fix --> Issues
+  Issues --> Planner
+  Planner --> Critic
+  Critic --> Implementer
+  Implementer --> Verifier
+  Verifier --> AutoMerge
   Play --> AwsMcp
   CreateSim --> AwsMcp
-  SimTest --> DevtoolsMcp
+  Test --> DevtoolsMcp
 ```
 
 ## The pieces
@@ -92,9 +106,9 @@ flowchart TB
 
 **System vault.** Long-term agent memory: findings, decisions, workarounds, components, dreams. Compiled daily from the logs.
 
-**Logs.** One unified event stream (`raw.jsonl`) for every tool call and session event. A parallel semantic stream (`notes.jsonl`) for findings agents want to remember.
+**Logs.** One unified event stream (`raw.jsonl`) for every tool call and session event.
 
-**Three test layers.** Deterministic unit tests, agent-driven browser tests via Chrome DevTools, and persona-based exploration tests. The browser layer is agent-in-the-loop on purpose.
+**Two test layers.** Deterministic unit tests and agent-driven browser tests via Chrome DevTools. The browser layer is agent-in-the-loop on purpose.
 
 **Hooks.** Every tool call, session event, warning, and error lands in the logs automatically. Both terminal `/play` and the web app write to the same file.
 
@@ -104,7 +118,11 @@ flowchart TB
 
 **Fight-team.** Three agents (coordinator, Challenger, Defender) debate the top health findings weekly. Subagents agree too easily; adversarial pressure surfaces weak claims.
 
-**Git as memory.** Every change is its own small commit, independently revertable. No squash merges, ever. Worktrees keep parallel branches isolated.
+**Pipeline.** Label state machine on GitHub Issues: needs-plan -> needs-critique -> needs-impl -> needs-verify -> auto-merge. Each stage is a separate GHA workflow (planner.yml, critic.yml, implementer.yml, verifier.yml).
+
+**/fix.** Creates GitHub Issues that enter the pipeline, then chains into /test. Does not write plans directly.
+
+**Git as memory.** Every change is its own small commit, independently revertable. No squash merges, ever. The GHA pipeline handles concurrent issue work through label-gated stages.
 
 **Verification by separate agents.** Whoever wrote a change does not verify it. A fresh subagent reads the diff and runs the tests.
 
@@ -112,12 +130,9 @@ flowchart TB
 
 **Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `test evals`.
 
-**Scheduled crons.** Three RemoteTrigger crons keep the system maintaining itself: a daily compile rolls `raw.jsonl` and `notes.jsonl` into the system vault and rotates the logs, a weekly dream consolidates the system vault, and a weekly fight-team debate files copy-paste-ready GitHub Issues from the top health findings. Each cron declares its own `allowed_tools` so unattended runs never prompt.
+**Scheduled crons.** Three RemoteTrigger crons keep the system maintaining itself: a daily compile rolls `raw.jsonl` into the system vault and rotates the logs, a weekly dream consolidates the system vault, and a weekly fight-team debate files copy-paste-ready GitHub Issues from the top health findings. Each cron declares its own `allowed_tools` so unattended runs never prompt.
 
 **MCP integration.** The play skill and the sim author both query the AWS Knowledge MCP server for source-of-truth AWS facts, so the best practices the simulator teaches stay current with real AWS behavior. The browser test layer drives a real Chromium instance through the Chrome DevTools MCP server, so UI assertions land against the actual DOM, not a JSDOM polyfill.
 
 **Sim authoring agent.** A `/create-sim` skill generates new simulation packages: it picks an under-represented service from the catalog, drafts a story, generates fix criteria, hints, and narrator beats, and writes the manifest. The system can grow itself.
 
-## Read more
-
-The C4-style component diagram and impact-analysis guide is in `references/architecture/workspace-map.md`. The canonical commit and test workflow is in `references/architecture/core-workflow.md`. Run `npm run doctor` for a one-shot health check across every moving part.
