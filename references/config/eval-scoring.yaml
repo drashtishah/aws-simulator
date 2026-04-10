@@ -275,7 +275,7 @@ categories:
     - id: nb_stays_in_character
       check: Narrator maintains consistent in-character voice throughout
       requires: llm
-      prompt: Review the narrator responses in the transcript. Does the narrator maintain a consistent persona and stay in character throughout the session, never breaking the fourth wall or referencing game mechanics directly? Rate pass if character is maintained.
+      prompt: Review the narrator responses in the transcript. Does the narrator maintain a consistent voice and stay in character throughout the session, never breaking the fourth wall or referencing game mechanics directly? Rate pass if voice is maintained.
 
     - id: nb_console_markers_wellformed
       check: Console markers are well-formed with proper delimiters
