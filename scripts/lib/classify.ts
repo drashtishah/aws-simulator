@@ -106,6 +106,7 @@ export function classify(rawPath: string): Bucket | null {
     p === '.claude/settings.json' ||
     p === '.claude/settings.local.json' ||
     p === '.mcp.json' ||
+    p === '.mcp.ci.json' ||
     p === '.gitignore' ||
     p === 'mypy.ini' ||
     p === 'package.json' ||
