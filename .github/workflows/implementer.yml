@@ -115,11 +115,13 @@ jobs:
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-impl" \
+              --remove-label "revised-impl" \
               --add-label "needs-human"
           else
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-impl" \
+              --remove-label "revised-impl" \
               --add-label "needs-verify"
           fi
 
