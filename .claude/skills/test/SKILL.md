@@ -1,6 +1,6 @@
 ---
 name: test
-description: Extend the test CLI with new browser specs, persona profiles, or CLI commands. Use when user says "add test", "new spec", "new persona", or "extend test".
+description: Run agent-driven test layers (browser specs, evals) and extend them with new specs. Use when user says "run tests", "add test", "new spec", or "extend test".
 effort: medium
 paths:
   - web/test-specs/**
@@ -16,55 +16,70 @@ references_system_vault: true
 
 # test Skill
 
-Extend the testing CLI with new browser specs, persona profiles, or commands.
+Run agent-driven test layers (browser specs, evals) and extend them with new specs.
+
+Deterministic tests (Layer 1) run via `npm test` in CI. This skill covers the layers that need an agent or LLM judge.
 
 ---
 
-## Phase 1: Understand what needs extending
+## Subcommands
 
-- Read `references/architecture/testing-system.md` for architecture overview
-- Run `test --help` to see current commands
-- List `web/test-specs/browser/` for current coverage
+### agent (Layer 2: browser specs)
 
-## Phase 2: Expand
+Run browser specs against the running web app via Chrome DevTools MCP.
 
-Choose one of these options depending on what is needed.
+```
+tsx scripts/test.ts agent                    # run all browser specs
+tsx scripts/test.ts agent --spec <name>      # run one spec
+tsx scripts/test.ts agent --dry-run          # validate specs without running
+```
 
-### Option A: Add a browser spec
+### evals (Layer 4: evaluation)
+
+Run sim evaluations. Track A is deterministic scoring. Track B uses an LLM judge.
+
+```
+tsx scripts/test.ts evals                    # Track A only
+tsx scripts/test.ts evals --llm              # Track A + Track B (LLM judge)
+```
+
+### validate
+
+Orchestrate agent + evals in sequence.
+
+```
+tsx scripts/test.ts validate                 # run agent then evals
+```
+
+### summary
+
+Aggregate and display test results.
+
+```
+tsx scripts/test.ts summary                  # show results summary
+tsx scripts/test.ts summary --json           # structured output
+```
+
+### content
+
+Validate sim content against metadata using Sonnet.
+
+```
+tsx scripts/test.ts content <simId>          # validate one sim
+tsx scripts/test.ts content <simId> --json   # structured output
+```
+
+Results are written to `web/test-results/content/`.
+
+---
+
+## Extending: Add a browser spec
 
 1. Create YAML file in `web/test-specs/browser/{name}.yaml`
 2. Follow schema: name, description, setup, steps (id, action, target, check)
 3. Check types: has_class, not_has_class, attribute, text_contains, visible, css_property, min_count, screenshot_compare
 4. Action types: click, type, keyboard, emulate, wait
-5. Validate: `test agent --spec {name} --dry-run`
-
-### Option B: Add a CLI command
-
-1. Only possible in dev mode (no active skill), since `scripts/test.ts` is NEVER_WRITABLE during skill execution
-2. Register with commander: `.command('name').description('...').option('--json').action(async (opts) => { ... })`
-3. Must support --json flag, exit codes (0/1/2), --help
-4. Add corresponding npm script alias in `package.json`
-
-### Option D: Run content validation
-
-1. Pick a sim ID from `sims/registry.json`
-2. Run: `test content <simId>`
-3. Review the 7-dimension findings (summary, title, difficulty, services, tags, category, learning_objectives)
-4. If any dimension fails, fix the sim content and re-run
-5. For structured output: `test content <simId> --json`
-6. Results are written to `web/test-results/content/`
-
-This command uses Sonnet to validate that sim metadata accurately describes the sim content. It reads manifest.json, story.md, resolution.md, and all artifacts, then asks the agent to check each dimension.
-
-## Phase 3: Verify
-
-- Run `test --help` to confirm command appears (if adding a command)
-- Run the new spec/persona/command with --dry-run if available
-- Run `npm test` to verify unit tests still pass
-
-## Phase 4: Commit
-
-Follow `references/architecture/core-workflow.md`. If a GitHub Issue exists for this work, reference it in the commit message.
+5. Validate: `tsx scripts/test.ts agent --spec {name} --dry-run`
 
 ---
 
