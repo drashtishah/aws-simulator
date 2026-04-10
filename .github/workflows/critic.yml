@@ -101,5 +101,6 @@ jobs:
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-critique" \
+              --remove-label "revision-1" \
               --add-label "needs-impl"
           fi
