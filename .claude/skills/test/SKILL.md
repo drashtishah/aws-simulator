@@ -60,17 +60,6 @@ tsx scripts/test.ts summary                  # show results summary
 tsx scripts/test.ts summary --json           # structured output
 ```
 
-### content
-
-Validate sim content against metadata using Sonnet.
-
-```
-tsx scripts/test.ts content <simId>          # validate one sim
-tsx scripts/test.ts content <simId> --json   # structured output
-```
-
-Results are written to `web/test-results/content/`.
-
 ---
 
 ## Extending: Add a browser spec
