@@ -25,7 +25,7 @@ Retry budget is 2 (retry-1, retry-2, then needs-human). Critic caps at one revis
 | Stage | Model | Max turns |
 |---|---|---|
 | Planner | claude-sonnet-4-6 | 5 |
-| Critic | claude-opus-4-6 | 5 |
+| Critic | claude-sonnet-4-6 | 5 |
 | Implementer | claude-opus-4-6 | 15 |
 | Verifier | claude-sonnet-4-6 | 8 |
 
