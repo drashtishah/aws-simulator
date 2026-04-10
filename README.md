@@ -27,6 +27,16 @@ flowchart LR
   Trace --> H
   Fix --> H
   H --> R[Rank]
+
+  style Q fill:#e8edf5,stroke:#7b8ba3,color:#2d3748
+  style H fill:#dce5f0,stroke:#7b8ba3,color:#2d3748
+  style R fill:#c5d5e8,stroke:#6b7d94,color:#2d3748
+  style Gather fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Diagnose fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Correlate fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Impact fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Trace fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Fix fill:#e0eaed,stroke:#8fa4af,color:#2d3748
 ```
 
 ## How it fits together
@@ -77,6 +87,26 @@ flowchart TB
   Critic --> Implementer
   Implementer --> Verifier
   Verifier -->|auto-merge| Issues
+
+  style Player fill:#e8edf5,stroke:#7b8ba3,color:#2d3748
+  style Issues fill:#d4dde8,stroke:#8494a7,color:#2d3748
+  style Skills fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Memory fill:#dce0e8,stroke:#8b95a5,color:#2d3748
+  style Web fill:#d8e2e8,stroke:#849aaa,color:#2d3748
+  style Pipeline fill:#cdd8e4,stroke:#7b8da0,color:#2d3748
+  style Setup fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Play fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Fix fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style FightTeam fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style CreateSim fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style PlayerVault fill:#dce0e8,stroke:#8b95a5,color:#2d3748
+  style SystemVault fill:#dce0e8,stroke:#8b95a5,color:#2d3748
+  style Express fill:#d8e2e8,stroke:#849aaa,color:#2d3748
+  style Claude fill:#d8e2e8,stroke:#849aaa,color:#2d3748
+  style Planner fill:#cdd8e4,stroke:#7b8da0,color:#2d3748
+  style Critic fill:#c5d0de,stroke:#7385a0,color:#2d3748
+  style Implementer fill:#bdc9d8,stroke:#6b7d94,color:#2d3748
+  style Verifier fill:#b5c2d2,stroke:#63758a,color:#2d3748
 ```
 
 ## The pieces
