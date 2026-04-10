@@ -40,99 +40,57 @@ flowchart TB
     Setup["/setup"]
     Play["/play"]
     Fix["/fix"]
-    FightTeam["/fight-team"]
     CreateSim["/create-sim"]
-    Test[test CLI]
   end
 
-  subgraph Crons[Scheduled crons]
-    Compile[daily-compile-and-rotate]
-    Dream[weekly-dream]
-    WeeklyFight[weekly-fight-team]
-  end
-
-  subgraph Memory[Per-user memory, gitignored]
-    PlayerVault[(player-vault<br/>Obsidian knowledge graph)]
-    SystemVault[(system-vault<br/>long-term agent memory)]
-    Logs[(logs<br/>raw.jsonl)]
+  subgraph Memory[Per-user memory]
+    PlayerVault[(player vault)]
+    SystemVault[(system vault)]
   end
 
   subgraph Web[Web app]
     Express[Express server]
-    Subprocess[Claude subprocess<br/>Agent SDK]
+    Claude[Claude Agent SDK]
   end
 
-  subgraph External[External]
-    AwsMcp[AWS Knowledge MCP]
-    DevtoolsMcp[Chrome DevTools MCP]
-  end
-
-  subgraph GHA[GHA pipeline]
-    Planner[planner.yml]
-    Critic[critic.yml]
-    Implementer[implementer.yml]
-    Verifier[verifier.yml]
-    AutoMerge[auto-merge]
+  subgraph Pipeline[GitHub Actions pipeline]
+    Planner[Planner]
+    Critic[Critic]
+    Implementer[Implementer]
+    Verifier[Verifier]
   end
 
   Player --> Setup
   Player --> Play
   Player --> Express
-  Express --> Subprocess
-  Subprocess --> Play
+  Express --> Claude
+  Claude --> Play
   Setup --> PlayerVault
   Play --> PlayerVault
-  Play --> Logs
-  Logs --> Compile
-  Compile --> SystemVault
-  SystemVault --> Fix
-  SystemVault --> WeeklyFight
-  WeeklyFight --> FightTeam
-  Dream --> SystemVault
   Fix --> Issues
   Issues --> Planner
   Planner --> Critic
   Critic --> Implementer
   Implementer --> Verifier
-  Verifier --> AutoMerge
-  Play --> AwsMcp
-  CreateSim --> AwsMcp
-  Test --> DevtoolsMcp
+  Verifier -->|auto-merge| Issues
 ```
 
 ## The pieces
 
-**Player vault.** The player's own Obsidian knowledge graph: session journals, concept notes, service pages, behavioral patterns. One per player.
+**Player vault.** Your personal knowledge graph. Session journals, concept notes, service pages, behavioral patterns. One per player, grows with you.
 
-**System vault.** Long-term agent memory: findings, decisions, workarounds, components, dreams. Compiled daily from the logs.
+**System vault.** Long-term agent memory. What the system has learned about itself: findings, decisions, workarounds.
 
-**Logs.** One unified event stream (`raw.jsonl`) for every tool call and session event.
+**Web app.** The play interface. Built with the Anthropic Agent SDK. Sonnet handles interactive narration. Opus handles post-session learning analysis.
 
-**Two test layers.** Deterministic unit tests and agent-driven browser tests via Chrome DevTools. The browser layer is agent-in-the-loop on purpose.
+**Pipeline.** Every improvement flows through four GitHub Actions stages: a planner drafts the change, a critic challenges it, an implementer writes the code, and a verifier checks the work and merges automatically. You trigger it by labeling an issue `needs-plan`.
 
-**Hooks.** Every tool call, session event, warning, and error lands in the logs automatically. Both terminal `/play` and the web app write to the same file.
+**Health score.** A composite across ten buckets that measures code quality. Floors only ever rise, so regressions are caught automatically.
 
-**Types everywhere.** TypeScript on the web, CLI, and scripts side, enforced by `tsc --noEmit`. Python with strict type hints on the data side, enforced by `mypy --strict`. The build itself catches "I forgot to update the consumer" bugs.
+**Sim authoring.** The `/create-sim` skill generates new simulation packages. It can target gaps in your learning profile, so the scenarios you practice are personalized to what you need most.
 
-**Health score.** A composite across ten buckets. Floors only ever rise, so any regression trips an invariant.
+**MCP integration.** The simulator queries the AWS Knowledge MCP server for real AWS facts, so the best practices it teaches stay current. Browser tests run against a real Chromium instance via Chrome DevTools MCP.
 
-**Fight-team.** Three agents (coordinator, Challenger, Defender) debate the top health findings weekly. Subagents agree too easily; adversarial pressure surfaces weak claims.
+**Evals.** Sixty graded checks across eleven categories: scoring integrity, coaching accuracy, hint delivery, question classification, narrator quality, and more. Run them with `test evals`.
 
-**Pipeline.** Label state machine on GitHub Issues: needs-plan -> needs-critique -> needs-impl -> needs-verify -> auto-merge. Each stage is a separate GHA workflow (planner.yml, critic.yml, implementer.yml, verifier.yml).
-
-**/fix.** Creates GitHub Issues that enter the pipeline, then chains into /test. Does not write plans directly.
-
-**Git as memory.** Every change is its own small commit, independently revertable. No squash merges, ever. The GHA pipeline handles concurrent issue work through label-gated stages.
-
-**Verification by separate agents.** Whoever wrote a change does not verify it. A fresh subagent reads the diff and runs the tests.
-
-**Built with the Agent SDK.** The web app is the only entry point for play sessions. It spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Play sessions use Sonnet for fast interactive narration. Post-session learning analysis (knowledge scoring, profile updates, vault note compilation) runs as a separate Opus subprocess for the deeper cross-file reasoning. Both models are set in `web/lib/claude-process.ts`.
-
-**Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `test evals`.
-
-**Scheduled crons.** Three RemoteTrigger crons keep the system maintaining itself: a daily compile rolls `raw.jsonl` into the system vault and rotates the logs, a weekly dream consolidates the system vault, and a weekly fight-team debate files copy-paste-ready GitHub Issues from the top health findings. Each cron declares its own `allowed_tools` so unattended runs never prompt.
-
-**MCP integration.** The play skill and the sim author both query the AWS Knowledge MCP server for source-of-truth AWS facts, so the best practices the simulator teaches stay current with real AWS behavior. The browser test layer drives a real Chromium instance through the Chrome DevTools MCP server, so UI assertions land against the actual DOM, not a JSDOM polyfill.
-
-**Sim authoring agent.** A `/create-sim` skill generates new simulation packages: it picks an under-represented service from the catalog, drafts a story, generates fix criteria, hints, and narrator beats, and writes the manifest. The system can grow itself.
-
+**Types everywhere.** TypeScript on the web side, Python with strict type hints on the data side. Both enforced by their respective type checkers in CI.
