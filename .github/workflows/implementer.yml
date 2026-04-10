@@ -85,12 +85,14 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@v1
+      - id: claude
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
             --model claude-opus-4-6
+            --json-schema '{"type":"object","properties":{"status":{"type":"string","enum":["DONE","BLOCKED"]},"branch":{"type":"string"},"summary":{"type":"string"}},"required":["status","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
@@ -99,10 +101,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          last_comment=$(gh issue view ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --json comments --jq '.comments[-1].body')
-          if echo "$last_comment" | grep -q "Status: BLOCKED."; then
+          status=$(echo '${{ steps.claude.outputs.structured_output }}' | jq -r '.status')
+          if [ "$status" = "BLOCKED" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-impl" \

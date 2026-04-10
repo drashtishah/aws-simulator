@@ -14,6 +14,8 @@ gh issue create (mobile or /fix)
 
 Retry budget is 2 (retry-1, retry-2, then needs-human). Critic caps at one revision. Escape labels: blocked, needs-human.
 
+Label swaps in critic, implementer, and verifier are driven by `structured_output` from `claude-code-action` (via `--json-schema` in `claude_args`), not by grep on comment text.
+
 ## Security
 
 - `close-foreign-issues.yml` auto-closes any issue not opened by the repo owner.
