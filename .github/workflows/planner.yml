@@ -50,8 +50,10 @@ jobs:
                ## Plan
                ### Scope
                - [ ] Focused (1-3 files, one concern)
+               - [ ] Text/docs only (no code, no tests needed)
                - [ ] System-wide (multiple directories, cross-cutting)
-               If system-wide, explain WHY in one sentence. Default is focused.
+               Check one. If system-wide, explain WHY in one sentence.
+               If text/docs only, the implementer skips TDD and commits directly.
                ### Files to read (context only, implementer reads these first)
                - path/to/file.ts, why it matters
                ### Files to change

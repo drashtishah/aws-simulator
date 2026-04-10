@@ -75,6 +75,7 @@ jobs:
                appear in the plan? Unlisted files = scope creep = FAIL.
             2. TDD honesty: `git log --oneline master..HEAD`. Is there a
                failing-test commit before the implementation commit? If not, FAIL.
+               Skip this check if the plan's Scope is "Text/docs only."
             3. Commit hygiene: each commit references `#${{ github.event.issue.number }}`?
                Last commit has `Closes #${{ github.event.issue.number }}`?
             4. Tests pass: `npm test`, `npm run health`, `DOCTOR_SKIP_INTEGRATION=1 npm run doctor`.

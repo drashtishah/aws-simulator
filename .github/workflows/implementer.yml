@@ -70,7 +70,15 @@ jobs:
                `feature/issue-${{ github.event.issue.number }}-<short-slug>`
             2. Git email must be 6rashti5hah@gmail.com.
 
-            TDD red-green (non-negotiable):
+            Check the plan's Scope section:
+
+            If "Text/docs only":
+            - Skip TDD. No tests needed for pure text changes.
+            - Apply the plan's edits directly.
+            - Commit: `docs: <thing>` body: `Ref #${{ github.event.issue.number }}`.
+            - Still run `npm test` before pushing (catches broken path references).
+
+            Otherwise, TDD red-green (non-negotiable):
             1. Write the failing test FIRST. Run it, confirm it fails for the
                expected reason. Commit: `test: failing test for <thing>`
                body: `Ref #${{ github.event.issue.number }}`.
