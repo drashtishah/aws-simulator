@@ -10,9 +10,9 @@
   color: "e68a00"
   description: "Critic workflow picks this up"
 
-- name: revision-1
+- name: revised-plan
   color: "c0c0c0"
-  description: "Critic has bounced the plan once (caps revision loop at 1)"
+  description: "Critic has sent the plan back for revision"
 
 - name: needs-impl
   color: "0075ca"
@@ -22,13 +22,9 @@
   color: "7b2d8b"
   description: "Verifier workflow picks this up"
 
-- name: retry-1
+- name: revised-impl
   color: "c0c0c0"
-  description: "Verifier bounced the implementation once"
-
-- name: retry-2
-  color: "c0c0c0"
-  description: "Verifier bounced the implementation twice (next bounce escalates)"
+  description: "Verifier has sent the implementation back for revision"
 
 - name: blocked
   color: "d73a4a"

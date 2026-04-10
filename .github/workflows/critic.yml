@@ -80,42 +80,16 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
-      - name: Extract prior session
-        id: session
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          SESSION=$(gh issue view ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --json comments \
-            --jq '[.comments[].body | select(startswith("<!-- session:planner:"))] | last | ltrimstr("<!-- session:planner:") | rtrimstr(" -->")' \
-            2>/dev/null || echo "")
-          if [ -n "$SESSION" ]; then
-            echo "resume_arg=--resume $SESSION" >> "$GITHUB_OUTPUT"
-          else
-            echo "resume_arg=" >> "$GITHUB_OUTPUT"
-          fi
-
       - id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --model claude-sonnet-4-6
-            ${{ steps.session.outputs.resume_arg }}
+            --model claude-opus-4-6
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["APPROVED","REVISE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
-
-      - name: Store session metadata
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          gh issue comment ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --body "<!-- session:critic:${{ steps.claude.outputs.session_id }} -->"
 
       - name: Swap labels based on critique
         env:
@@ -126,14 +100,27 @@ jobs:
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-critique" \
-              --remove-label "revision-1" \
+              --remove-label "revised-plan" \
               --add-label "needs-impl"
           else
-            gh issue edit ${{ github.event.issue.number }} \
+            plan_count=$(gh issue view ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --remove-label "needs-critique" \
-              --add-label "needs-plan" \
-              --add-label "revision-1"
+              --json comments --jq '[.comments[].body | select(startswith("Planner starting"))] | length')
+            if [ "$plan_count" -ge 5 ]; then
+              gh issue edit ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --remove-label "needs-critique" \
+                --add-label "needs-human"
+              gh issue comment ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --body "Plan revised $plan_count times without approval. Escalating to human."
+            else
+              gh issue edit ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --remove-label "needs-critique" \
+                --add-label "needs-plan" \
+                --add-label "revised-plan"
+            fi
           fi
 
       - name: Handle stage failure

@@ -46,17 +46,36 @@ Verification checklist (complete ALL):
 5. Karpathy check: any speculative abstractions, unrelated cleanups,
    or "improvements" to adjacent code? FAIL on first violation.
 
+Code review (complete after the checklist passes):
+
+Review `git diff master..HEAD` as an adversarial code reviewer. Surface
+a short, focused list of high-value concerns:
+
+6. Assumptions: did the implementer assume something without basis?
+   Examples: a function never returns null, an array is never empty,
+   a config key always exists.
+7. Edge cases: what inputs or states were overlooked? Empty collections,
+   concurrent access, partial failures, Unicode, zero-length strings.
+8. Cross-file conflicts: do changes in one file break callers,
+   importers, or data flow in another file? Check every changed export,
+   renamed function, or modified return type against its consumers.
+9. Silent failures: can any new code path fail without throwing or
+   logging? Swallowed errors, missing awaits, unchecked return values.
+
+If code review finds issues, list each with file:line and a one-line
+description. These are FAIL conditions equal to checklist items.
+
 You MAY make small fixes (missing import, lint error). Commit as
 `fix: <thing>` with `Ref #{{ISSUE}}`.
 
 DECISION:
-- All checks pass:
+- All checks and code review pass:
   1. `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #{{ISSUE}}"`
   2. `gh pr merge <PR#> --merge --auto --delete-branch`
   Set `verdict` to `PASS`.
-- Any check fails, no `retry-2` label:
+- Fixable issues (missing import, edge case, test gap):
   Set `verdict` to `FAIL_RETRY`.
-- Any check fails, `retry-2` already present:
+- Fundamental flaw (wrong approach, scope misunderstanding, architectural problem):
   Set `verdict` to `FAIL_ESCALATE`.
 
 Post a readable comment summarizing the outcome. The comment does not

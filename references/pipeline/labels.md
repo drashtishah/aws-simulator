@@ -30,4 +30,6 @@ If unsure, omit the type label. The default code path is safe for all issue type
 
 | Label | Meaning | Recovery |
 |-------|---------|----------|
+| revised-plan | Critic sent the plan back for revision | Planner revises and resubmits |
+| revised-impl | Verifier sent the implementation back | Implementer fixes and resubmits |
 | pipeline-failed | A pipeline stage failed; trigger label removed, run link posted | Re-add the appropriate needs-* label after investigation |

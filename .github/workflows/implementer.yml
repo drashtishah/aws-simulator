@@ -93,43 +93,17 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
-      - name: Extract prior session
-        id: session
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          SESSION=$(gh issue view ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --json comments \
-            --jq '[.comments[].body | select(startswith("<!-- session:critic:"))] | last | ltrimstr("<!-- session:critic:") | rtrimstr(" -->")' \
-            2>/dev/null || echo "")
-          if [ -n "$SESSION" ]; then
-            echo "resume_arg=--resume $SESSION" >> "$GITHUB_OUTPUT"
-          else
-            echo "resume_arg=" >> "$GITHUB_OUTPUT"
-          fi
-
       - id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
-            --model claude-opus-4-6
-            ${{ steps.session.outputs.resume_arg }}
+            --model claude-sonnet-4-6
             --json-schema '{"type":"object","properties":{"status":{"type":"string","enum":["DONE","BLOCKED"]},"branch":{"type":"string"},"summary":{"type":"string"}},"required":["status","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
-
-      - name: Store session metadata
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          gh issue comment ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --body "<!-- session:implementer:${{ steps.claude.outputs.session_id }} -->"
 
       - name: Swap labels
         env:

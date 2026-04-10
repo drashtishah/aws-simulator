@@ -6,13 +6,13 @@ Label-driven GitHub Actions pipeline for autonomous issue resolution.
 
 ```
 gh issue create (mobile or /fix)
-  -> [needs-plan]    -> planner.yml   (Sonnet)  -> [needs-critique]
-  -> [needs-critique] -> critic.yml    (Opus)    -> [needs-impl] | [needs-plan, revision-1]
-  -> [needs-impl]    -> implementer.yml (Opus)  -> [needs-verify]
-  -> [needs-verify]  -> verifier.yml   (Sonnet)  -> gh pr create + gh pr merge --merge --auto
+  -> [needs-plan]    -> planner.yml    (Sonnet) -> [needs-critique]
+  -> [needs-critique] -> critic.yml    (Opus)   -> [needs-impl] | [needs-plan, revised-plan]
+  -> [needs-impl]    -> implementer.yml (Sonnet) -> [needs-verify]
+  -> [needs-verify]  -> verifier.yml   (Sonnet) -> gh pr create + gh pr merge --merge --auto
 ```
 
-Retry budget is 2 (retry-1, retry-2, then needs-human). Critic caps at one revision. Escape labels: blocked, needs-human.
+No hard revision caps. Critic and verifier can revise freely, but loop detection in the label swap step counts "Planner starting" or "Implementer starting" comments. At 5+ attempts, the issue is escalated to needs-human. Escape labels: blocked, needs-human.
 
 Label swaps in critic, implementer, and verifier are driven by `structured_output` from `claude-code-action` (via `--json-schema` in `claude_args`), not by grep on comment text.
 
@@ -29,15 +29,13 @@ Each workflow has a `Handle stage failure` step with `if: failure()`. On any ste
 2. Adds `pipeline-failed`.
 3. Posts a comment with the workflow run URL.
 
-Known limitation: if `--resume` is passed with an expired server-side session, the claude step fails and triggers this handler rather than falling back to a fresh session. Re-add the trigger label to retry after the session expires. Graceful retry without resume is tracked as a follow-up.
-
 ## Models per stage
 
 | Stage | Model | Max turns |
 |---|---|---|
 | Planner | claude-sonnet-4-6 | 5 |
-| Critic | claude-sonnet-4-6 | 5 |
-| Implementer | claude-opus-4-6 | 15 |
+| Critic | claude-opus-4-6 | 5 |
+| Implementer | claude-sonnet-4-6 | 15 |
 | Verifier | claude-sonnet-4-6 | 8 |
 
 ## Tool allowlists per stage
