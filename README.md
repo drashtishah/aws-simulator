@@ -67,6 +67,7 @@ flowchart TB
   Express --> Claude
   Play --> PlayerVault
   Setup --> PlayerVault
+  Setup --> SystemVault
   CreateSim --> PlayerVault
   Fix --> Issues
   FightTeam --> Issues
