@@ -22,6 +22,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Post starting comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          labels=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '[.labels[].name] | join(", ")')
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "Planner starting. Labels: $labels"
+
       - name: Classify issue and load prompt
         id: setup
         env:

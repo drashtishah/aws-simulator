@@ -23,6 +23,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Post starting comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          labels=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '[.labels[].name] | join(", ")')
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "Verifier starting. Labels: $labels"
+
       - name: Configure git author
         run: |
           git config user.email "6rashti5hah@gmail.com"
