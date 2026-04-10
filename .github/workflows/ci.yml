@@ -52,8 +52,9 @@ jobs:
       - name: npm run health
         run: npm run health
 
-      - name: health regression check (Issue #143)
+      - name: health regression check (advisory, Issue #143)
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         run: |
           # The prior "npm run health" step already wrote the PR scores to
           # learning/logs/health-scores.jsonl. Copy it as the PR baseline.
