@@ -42,14 +42,8 @@ process.stdin.on('end', () => {
       'Did anything in the last few turns register as surprising, interesting,',
       'frustrating, or did you catch yourself being wrong about something?',
       '',
-      'If yes, write a note NOW before the moment cools:',
-      '  tsx scripts/note.ts --kind finding --topic <slug> --body "..."',
-      '  tsx scripts/note.ts --kind negative_result --topic <slug> --body "..."',
-      '  tsx scripts/note.ts --kind decision --topic <slug> --body "..."',
-      '',
-      'If no, continue without writing a note. This is a prompt, not a requirement.',
-      'Rule: memory feedback_note_on_salience.md. Any emotion, positive or negative,',
-      'is a valid signal. Bodies are now uncapped (Issue #119), so write the full thought.',
+      'If yes, record the observation in a GitHub issue comment or feedback entry.',
+      'If no, continue. This is a prompt, not a requirement.',
       '',
     ].join('\n'));
     process.exit(0);
