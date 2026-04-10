@@ -46,9 +46,9 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-haiku-4-5
-            --max-turns 3
+            --max-turns 8
             --mcp-config .mcp.ci.json
-            --allowed-tools "mcp__chrome-devtools,Bash(npm start:*),Bash(gh issue comment:*),Bash(kill:*)"
+            --allowed-tools "mcp__chrome-devtools,Bash(npm start:*),Bash(curl:*),Bash(for:*),Bash(sleep:*),Bash(gh issue comment:*),Bash(kill:*)"
           prompt: |
             Test Chrome DevTools MCP connectivity.
             Start the web server: npm start &
