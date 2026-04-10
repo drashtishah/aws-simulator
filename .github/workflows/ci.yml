@@ -58,14 +58,15 @@ jobs:
           # Capture health scores on the PR head
           npx tsx scripts/code-health.ts --json > /tmp/pr-health.jsonl
 
-          # Compute health scores on the merge base
+          # Compute health scores on the merge base in a separate worktree
+          # to avoid dirty-tree conflicts from postinstall scripts
           BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
-          git stash --include-untracked
-          git checkout "$BASE_SHA" --quiet
-          npm ci --silent
+          git worktree add /tmp/base-checkout "$BASE_SHA" --quiet
+          cd /tmp/base-checkout
+          npm ci --silent 2>/dev/null
           npx tsx scripts/code-health.ts --json > /tmp/base-health.jsonl
-          git checkout - --quiet
-          git stash pop --quiet || true
+          cd -
+          git worktree remove /tmp/base-checkout --force
 
           # Compare: fail if any bucket regressed
           npx tsx scripts/health-regression-check.ts /tmp/pr-health.jsonl /tmp/base-health.jsonl
