@@ -1,0 +1,20 @@
+name: guard-labels
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  strip:
+    if: |
+      github.event.sender.login != github.repository_owner &&
+      contains(fromJSON('["needs-plan","needs-critique","needs-impl","needs-verify"]'), github.event.label.name)
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "${{ github.event.label.name }}"
