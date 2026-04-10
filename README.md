@@ -60,10 +60,10 @@ flowchart TB
     Verifier[Verifier]
   end
 
-  Player --> Express
+  Player --> Play
   Player --> Setup
+  Play --> Express
   Express --> Claude
-  Claude --> Play
   Play --> PlayerVault
   Setup --> PlayerVault
   Fix --> Issues
