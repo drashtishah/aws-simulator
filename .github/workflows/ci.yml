@@ -55,16 +55,19 @@ jobs:
       - name: health regression check (Issue #143)
         if: github.event_name == 'pull_request'
         run: |
-          # Capture health scores on the PR head
-          npx tsx scripts/code-health.ts --json > /tmp/pr-health.jsonl
+          # The prior "npm run health" step already wrote the PR scores to
+          # learning/logs/health-scores.jsonl. Copy it as the PR baseline.
+          cp learning/logs/health-scores.jsonl /tmp/pr-health.jsonl
 
           # Compute health scores on the merge base in a separate worktree
-          # to avoid dirty-tree conflicts from postinstall scripts
           BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
           git worktree add /tmp/base-checkout "$BASE_SHA" --quiet
           cd /tmp/base-checkout
           npm ci --silent 2>/dev/null
-          npx tsx scripts/code-health.ts --json > /tmp/base-health.jsonl
+          mkdir -p learning/logs learning/system-vault
+          echo '# stub' > learning/system-vault/index.md
+          npx tsx scripts/code-health.ts > /dev/null
+          cp learning/logs/health-scores.jsonl /tmp/base-health.jsonl
           cd -
           git worktree remove /tmp/base-checkout --force
 
