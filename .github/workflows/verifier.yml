@@ -40,6 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          sleep 10
+
           N=${{ github.event.issue.number }}
           labels=$(gh issue view "$N" --repo ${{ github.repository }} \
             --json labels --jq '[.labels[].name] | join(",")')

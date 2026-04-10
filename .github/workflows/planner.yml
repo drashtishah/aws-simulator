@@ -27,6 +27,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          # Give the issue creator time to attach a type label
+          # (text-only, ui, sim-content) after adding the trigger label.
+          sleep 10
+
           N=${{ github.event.issue.number }}
           labels=$(gh issue view "$N" --repo ${{ github.repository }} \
             --json labels --jq '[.labels[].name] | join(",")')
