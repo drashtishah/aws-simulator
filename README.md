@@ -88,12 +88,22 @@ flowchart TB
 
 **Pipeline.** Every improvement flows through four GitHub Actions stages: a planner drafts the change, a critic challenges it, an implementer writes the code, and a verifier checks the work and merges automatically. You trigger it by labeling an issue `needs-plan`.
 
+**Testing.** Deterministic unit tests run on every PR in CI. Agent-in-the-loop browser tests drive a real Chromium instance through Chrome DevTools MCP, so UI assertions land against the actual DOM. Sixty eval checks grade scoring integrity, coaching accuracy, hint delivery, and narrator quality.
+
+**Adaptive hints.** Pre-authored hints trigger after unproductive questions, delivered in order from vague to specific. Hints skip automatically if the player already queried the relevant service.
+
+**Question quality.** Every question is scored on four dimensions: specificity, relevance, building on prior data, and targeting a specific service aspect. These feed directly into the hexagon polygon that determines your rank.
+
+**Spaced repetition.** Sim selection weights stale concepts higher using modified Fibonacci intervals. Services you haven't practiced recently surface first.
+
+**Difficulty pacing.** Within each rank, difficulty oscillates between challenge and consolidation to keep you in flow state. Rank advancement requires sustained quality, not grinding.
+
+**Debrief.** After each sim, a three-stage debrief validates your understanding: summarize the root cause in one sentence, answer seed questions derived from learning objectives, then discuss.
+
 **Health score.** A composite across ten buckets that measures code quality. Floors only ever rise, so regressions are caught automatically.
 
-**Sim authoring.** The `/create-sim` skill generates new simulation packages. It can target gaps in your learning profile, so the scenarios you practice are personalized to what you need most.
+**Sim authoring.** The `/create-sim` skill reads your player vault to find confusion patterns and weak dimensions, then generates scenarios targeting your specific gaps. Personalized learning, not random coverage.
 
-**MCP integration.** The simulator queries the AWS Knowledge MCP server for real AWS facts, so the best practices it teaches stay current. Browser tests run against a real Chromium instance via Chrome DevTools MCP.
-
-**Evals.** Sixty graded checks across eleven categories: scoring integrity, coaching accuracy, hint delivery, question classification, narrator quality, and more. Run them with `test evals`.
+**MCP integration.** The simulator queries the AWS Knowledge MCP server for real AWS facts, so the best practices it teaches stay current.
 
 **Types everywhere.** TypeScript on the web side, Python with strict type hints on the data side. Both enforced by their respective type checkers in CI.
