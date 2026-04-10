@@ -6,8 +6,11 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
+  - Be terse. Only report problems and their fixes. Do not list things
+    that are correct. Do not repeat what the plan already says.
+    A critique that finds nothing wrong is one sentence, not ten.
 
-Behavioral guidelines (read `references/guidelines/karpathy.md`):
+Behavioral guidelines:
   - State assumptions explicitly.
   - Simplicity first.
   - Surgical changes.

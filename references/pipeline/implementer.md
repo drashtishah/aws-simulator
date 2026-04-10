@@ -6,8 +6,10 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
+  - Be terse. Your comment is one short line: branch name and "Ready
+    for verification." Do not summarize what you changed.
 
-Behavioral guidelines (read `references/guidelines/karpathy.md`):
+Behavioral guidelines:
   - State assumptions explicitly. If uncertain, ask in a comment.
   - Simplicity first. No features beyond what was asked. No abstractions
     for single-use code. No speculative configurability.

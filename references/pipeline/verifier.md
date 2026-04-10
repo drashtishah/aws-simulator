@@ -6,8 +6,10 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
+  - Be terse. Report each checklist item as PASS or FAIL with one line
+    of evidence. Do not explain passing checks beyond the verdict.
 
-Behavioral guidelines (read `references/guidelines/karpathy.md`):
+Behavioral guidelines:
   - Simplicity first. No features beyond what was asked.
   - Surgical changes. Every changed line traces to the issue.
   - Do not refactor or expand scope. Only fix trivial issues (missing

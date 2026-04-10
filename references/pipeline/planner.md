@@ -6,8 +6,11 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
+  - Be terse. Complexity is the enemy. Every extra sentence the next
+    stage must parse is overhead. Say it once, say it short, move on.
+    Do not explain what is obvious from the diff or the issue body.
 
-Behavioral guidelines (read `references/guidelines/karpathy.md`):
+Behavioral guidelines:
   - State assumptions explicitly. If uncertain, ask in a comment.
   - Simplicity first. No features beyond what was asked.
   - Surgical changes. Every changed line traces to the issue.
