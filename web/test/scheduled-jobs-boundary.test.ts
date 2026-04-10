@@ -35,11 +35,6 @@ const BOUNDARY: Record<string, string[]> = {
     'learning/system-vault/**',
     '.claude/state/vault-circuit.json',
   ],
-  'weekly-fight-team': [
-    'learning/system-vault/findings/**',
-    'learning/system-vault/sessions/**',
-    'github-issues:source:fight-team-weekly',
-  ],
 };
 
 function loadJobs(): Array<{ file: string; data: any }> {

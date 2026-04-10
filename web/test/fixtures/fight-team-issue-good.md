@@ -37,7 +37,7 @@ npx tsx scripts/test.ts run --files web/test/code-health.test.ts
 - **Convergence note:** Both debaters agree the entry should be removed from play ownership.json.
 
 ## Labels
-- source:fight-team-weekly
+- source:fight-team
 - priority:high
 - bucket:skill
 - metric:ownership_integrity

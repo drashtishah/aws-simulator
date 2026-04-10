@@ -28,7 +28,7 @@ Run the health check command and confirm the score went up by some amount that s
 - both agents agreed that this is bad
 
 ## Labels
-- source:fight-team-weekly
+- source:fight-team
 
 ## Linked context
 - nothing in particular
