@@ -91,16 +91,6 @@ flowchart TB
 
 **Testing.** Deterministic unit tests run on every PR in CI. Agent-in-the-loop browser tests drive a real Chromium instance through Chrome DevTools MCP, so UI assertions land against the actual DOM. Sixty eval checks grade scoring integrity, coaching accuracy, hint delivery, and narrator quality.
 
-**Adaptive hints.** Pre-authored hints trigger after unproductive questions, delivered in order from vague to specific. Hints skip automatically if the player already queried the relevant service.
-
-**Question quality.** Every question is scored on four dimensions: specificity, relevance, building on prior data, and targeting a specific service aspect. These feed directly into the hexagon polygon that determines your rank.
-
-**Spaced repetition.** Sim selection weights stale concepts higher using modified Fibonacci intervals. Services you haven't practiced recently surface first.
-
-**Difficulty pacing.** Within each rank, difficulty oscillates between challenge and consolidation to keep you in flow state. Rank advancement requires sustained quality, not grinding.
-
-**Debrief.** After each sim, a three-stage debrief validates your understanding: summarize the root cause in one sentence, answer seed questions derived from learning objectives, then discuss.
-
 **Health score.** A composite across ten buckets that measures code quality. Floors only ever rise, so regressions are caught automatically.
 
 **Sim authoring.** The `/create-sim` skill reads your player vault to find confusion patterns and weak dimensions, then generates scenarios targeting your specific gaps. Personalized learning, not random coverage.
