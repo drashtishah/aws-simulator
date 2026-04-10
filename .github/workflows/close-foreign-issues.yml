@@ -1,0 +1,19 @@
+name: close-foreign-issues
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close:
+    if: github.event.issue.user.login != github.repository_owner
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue close ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --reason "not planned" \
+            --comment "Thanks for your interest. This repository runs an autonomous agent pipeline that only acts on issues opened by the repository owner. If you have a bug report or feature request, please open a GitHub Discussion instead. (This issue was auto-closed by close-foreign-issues.yml.)"
