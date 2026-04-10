@@ -4,29 +4,17 @@ Single canonical workflow for all code changes in this repo. Every skill, hook, 
 
 ## 1. Issue first
 
-Every change starts with a GitHub Issue, created before any code is touched. Never retroactively. Capture intent, scope, and the plan file path if one exists.
-
-```bash
-gh issue create --title "PR-X: ..." --body "Source plan: .claude/plans/<slug>.md"
-```
+Every change starts with a GitHub Issue, created before any code is touched. Never retroactively. Two creators: the `/fix` skill or manual `gh issue create`. Tag with `needs-plan` to enter the GHA pipeline.
 
 The issue number is referenced in every commit body (`Ref #N`) and the final commit closes it (`Closes #N`).
 
-## 2. Worktree
+## 2. Pipeline
 
-Non-trivial work happens in an isolated git worktree under the `.claude/` directory so the main checkout stays clean and parallel agents cannot collide.
+Issues tagged `needs-plan` flow through the label-driven GHA pipeline described in `references/architecture/gha-pipeline.md`. Four stages: planner (Sonnet), critic (Opus), implementer (Opus), verifier (Sonnet). Each stage runs as a separate GitHub Actions workflow with its own model, tool allowlist, and prompt.
 
-```bash
-git worktree add .claude/worktrees/{slug} -b feature/{slug}
-```
+## 3. Plans live in issue comments
 
-Cleanup rules are in section 9.
-
-Headless `claude -p --permission-mode acceptEdits` dispatches can be blocked on a small set of sensitive paths (notably `.claude/hooks/**`, `.claude/settings.json`, `.mcp.json`, `.claude/skills/**`). The canonical unblock is to extend `.claude/settings.json` `permissions.allow` after auditing the target file against the rule in `references/registries/headless-edit-allowlist.md`: pure `process.stdout.write` reminder hooks qualify, anything that execs, spawns, fetches, or writes outside stdout does not. Enforcement hooks (pre-commit, Stop, SessionStart) are never allowlisted. Drift between the allow list and the registry is enforced by `web/test/headless-allowlist.test.ts`. See Issue #127.
-
-## 3. Plan if non-trivial
-
-If the change touches more than one file or more than one skill, write a plan first in `.claude/plans/<slug>.md` with exhaustive file lists, exact line references, and a commit sequence. Implementation happens in a separate session reading the plan file. Plans are private scratch space and are never scored by health metrics.
+Plans are posted as issue comments by the planner workflow, not as local files. The critic reviews and approves or revises. The implementer treats the approved plan as its contract.
 
 ## 4. TDD red-green
 
@@ -63,9 +51,9 @@ After every commit, also pause to consider the code-health impact: did this chan
 
 Issue comments are the durable agent-to-agent memory. Each pipeline stage (planner, critic, implementer, verifier) posts structured comments that carry context forward. Searchable via `gh issue view` and `gh issue list`.
 
-## 7. Verifier subagent separation
+## 7. Verifier separation
 
-Verification of a change must be performed by a **different subagent** than the one that wrote the code. The author subagent cannot grade its own work. Spawn a fresh verifier with a clean context and have it run the verification commands listed in the plan, then report pass or fail. This is enforced by convention in `/fix` and by plan structure.
+Verification of a change must be performed by a **different agent** than the one that wrote the code. In the GHA pipeline, this is enforced by construction: the implementer and verifier are separate workflow runs with different prompts and different models.
 
 ## 8. Revert, not history rewrite
 
@@ -78,19 +66,9 @@ When a commit on a shared branch turns out to be wrong, the remediation is `git 
 
 History is append-only once pushed. Mistakes get reverted, not erased. Combined with section 5's no-squash rule, this guarantees every change on master is recoverable by SHA forever.
 
-## 9. Cleanup: worktree, branch, Issues, ephemeral artifacts, doctor
+## 9. Cleanup: branch, Issues, ephemeral artifacts, doctor
 
-After a PR merges, five things must be cleaned up: the worktree, the feature branch, any referenced Issues that did not auto-close, any ephemeral build/test artifacts that may have leaked into the repo root, and a final `npm run doctor` confirmation that the workspace is healthy.
-
-Worktree and branch:
-
-```bash
-git worktree remove {worktree path}
-git branch -D feature/{slug}
-git worktree prune
-```
-
-Never leave stale worktrees. Stale worktrees confuse agent navigation, inflate health scores, and pollute `git ls-files` across the monorepo.
+After a PR merges, cleanup is mostly automated. Feature branches are auto-deleted by the repo setting. Issues auto-close via `Closes #N` trailers. Verify and sweep manually only when something fails.
 
 Issue closure verification:
 

@@ -24,11 +24,11 @@ describe('core-workflow.md', () => {
     assert.equal(h2.length, 11, `expected 11 '## ' sections, got ${h2.length}`);
   });
 
-  it('mentions all 11 required workflow topics', () => {
+  it('mentions all required workflow topics', () => {
     const content = fs.readFileSync(DOC, 'utf8').toLowerCase();
     const needles = [
       'issue first',
-      'worktree',
+      'pipeline',
       'plan',
       'tdd',
       'revertable',

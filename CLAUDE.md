@@ -8,7 +8,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 - `/play`: run a simulation; the main game loop
 - `/create-sim`: generate new sim packages (for authors, not players)
 - `/feedback`: log a note during play about the sim system
-- `/fix`: analyze feedback, activity logs, and code health, then apply improvements to skills
+- `/fix`: gather feedback, create Issues for the GHA pipeline, and chain into /test
 
 ## Where things are
 
