@@ -12,7 +12,9 @@ process.stdin.on('end', () => {
   try {
     const data: HookInput = JSON.parse(hookInput);
     const cmd: string = (data.tool_input && (data.tool_input.command as string)) || '';
-    if (!/\bgit\s+commit\b/.test(cmd)) process.exit(0);
+    const segments: string[] = cmd.split(/&&|\|\||;|\|/);
+    const isCommitInvocation: boolean = segments.some(s => /^\s*git\s+commit\b/.test(s));
+    if (!isCommitInvocation) process.exit(0);
 
     // Search the entire command for issue reference patterns
     const hasRef: boolean = /(?:closes|fixes|ref|part of)\s+#\d+/i.test(cmd);
@@ -34,7 +36,6 @@ process.stdin.on('end', () => {
     // so this is a forward-looking guard for any future un-ignoring.
     // Match a real `git rm` invocation (not a string inside a -m commit body).
     // We split on shell separators and look for a token-led command.
-    const segments: string[] = cmd.split(/&&|\|\||;|\|/);
     const hasDeleteCmd: boolean = segments.some(s =>
       /^\s*git\s+rm\b/.test(s) && /learning\/logs\/health-scores\.jsonl/.test(s)
     );
