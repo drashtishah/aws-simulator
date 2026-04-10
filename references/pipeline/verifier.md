@@ -23,9 +23,11 @@ Read:
 3. The critic's comment.
 4. The implementer's branch (find it from the implementer's comment).
 
-Check out the implementer's branch:
+Check out the implementer's branch and update with master:
   git fetch origin
   git checkout feature/issue-{{ISSUE}}-<slug>
+  git merge origin/master --no-edit
+  git push
 
 Verification checklist (complete ALL):
 
