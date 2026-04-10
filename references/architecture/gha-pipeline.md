@@ -31,12 +31,42 @@ Retry budget is 2 (retry-1, retry-2, then needs-human). Critic caps at one revis
 
 ## Tool allowlists per stage
 
-| Stage | Allowed tools |
+Base tools per role. Additional tools are added by issue type label (see Label Groups below).
+
+| Stage | Base tools |
 |---|---|
 | Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment) |
 | Critic | Read, Glob, Grep, Bash(gh issue view/comment) |
 | Implementer | Read, Glob, Grep, Edit, Write, Bash(git/npm/npx/tsx/python3/gh issue view/comment) |
 | Verifier | Read, Glob, Grep, Edit, Bash(git/npm/tsx/gh issue view/comment/gh pr create/merge) |
+
+## Label groups
+
+Issue type labels control which prompt overlay and MCP toolset each agent receives. The classify step in each workflow reads labels and routes accordingly.
+
+| Label | MCP added | Which roles get MCP |
+|---|---|---|
+| text-only | none | n/a |
+| ui | Chrome DevTools | Implementer, Verifier |
+| sim-content | AWS Knowledge | Planner, Critic |
+| (none) | none | n/a |
+
+See `references/pipeline/labels.md` for label definitions and decision rules.
+
+## Prompt files
+
+Base prompts and context overlays live in `references/pipeline/`:
+
+| File | Purpose |
+|---|---|
+| `planner.md` | Base Planner role prompt |
+| `critic.md` | Base Critic role prompt |
+| `implementer.md` | Base Implementer role prompt |
+| `verifier.md` | Base Verifier role prompt |
+| `context-text.md` | Overlay for text-only issues (Planner/Critic) |
+| `context-ui.md` | Overlay for ui issues (all roles) |
+| `context-sim.md` | Overlay for sim-content issues (Planner/Critic) |
+| `labels.md` | Label definitions and routing rules |
 
 ## Repo settings
 

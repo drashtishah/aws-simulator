@@ -37,8 +37,8 @@ The terminal session has full tool access controlled by `.claude/settings.local.
 | Agent | yes | For subagent spawning |
 | WebSearch | yes | For web search |
 | WebFetch | yes | For URL fetching |
-| MCP aws___ | available but DISABLED during /play | Only for /create-sim |
-| MCP chrome-devtools | available | For browser testing |
+| MCP aws___ | available but DISABLED during /play | /create-sim and GHA pipeline (Planner, Critic) on sim-content issues |
+| MCP chrome-devtools | available | Browser testing, GHA pipeline (Implementer, Verifier) on ui issues |
 
 ## Agent SDK Tool Names
 

@@ -1,0 +1,61 @@
+name: mcp-verify
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  verify-aws-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-haiku-4-5
+            --max-turns 3
+            --mcp-config .mcp.ci.json
+            --allowed-tools "mcp__aws-knowledge-mcp-server,Bash(gh issue comment:*)"
+          prompt: |
+            Test AWS Knowledge MCP connectivity.
+            Call aws___search_documentation with search_phrase "S3 bucket policy"
+            and topics ["reference_documentation"].
+            If it returns results, post a comment on issue #1 confirming
+            "MCP verify: AWS Knowledge MCP is reachable."
+            If it fails, post "MCP verify: AWS Knowledge MCP FAILED." with the error.
+
+  verify-chrome-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-haiku-4-5
+            --max-turns 3
+            --mcp-config .mcp.ci.json
+            --allowed-tools "mcp__chrome-devtools,Bash(npm start:*),Bash(gh issue comment:*),Bash(kill:*)"
+          prompt: |
+            Test Chrome DevTools MCP connectivity.
+            Start the web server: npm start &
+            Wait for it: for i in $(seq 1 30); do curl -s http://localhost:3000 > /dev/null && break; sleep 1; done
+            Use mcp__chrome-devtools__navigate_page to open http://localhost:3000.
+            Use mcp__chrome-devtools__take_screenshot to capture the page.
+            If both succeed, post a comment on issue #1 confirming
+            "MCP verify: Chrome DevTools MCP is reachable."
+            If it fails, post "MCP verify: Chrome DevTools MCP FAILED." with the error.
+            Kill the server: kill %1

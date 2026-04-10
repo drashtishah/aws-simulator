@@ -18,6 +18,8 @@ Interactive AWS incident-response game played through Claude Code skills.
 - Code health metrics, buckets, healthignore: `references/config/code-health.md`
 - Agent navigation index and tool registry: `references/registries/agent-index.md`, `references/registries/tool-registry.md`
 - GHA pipeline (planner/critic/implementer/verifier): `references/architecture/gha-pipeline.md`
+- Pipeline prompt files and label routing: `references/pipeline/`
+- MCP servers (AWS Knowledge, Chrome DevTools): `.mcp.json`, `references/registries/tool-registry.md`
 - Logs (`raw.jsonl`, `learning/system-vault/`): `references/architecture/workspace-map.md` Shared Data Files
 
 ## Behavioral guidelines
