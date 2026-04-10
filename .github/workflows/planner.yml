@@ -38,9 +38,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          # Give the issue creator time to attach a type label
-          # (text-only, ui, sim-content) after adding the trigger label.
-          sleep 10
+          # Retry until a type label (text-only, ui, sim-content) appears.
+          for attempt in 1 2 3 4 5; do
+            labels_check=$(gh issue view "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --json labels --jq '[.labels[].name] | join(",")')
+            if echo "$labels_check" | grep -qE "text-only|ui|sim-content"; then
+              break
+            fi
+            sleep 3
+          done
 
           N=${{ github.event.issue.number }}
           labels=$(gh issue view "$N" --repo ${{ github.repository }} \

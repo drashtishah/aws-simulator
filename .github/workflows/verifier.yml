@@ -52,7 +52,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          sleep 10
+          for attempt in 1 2 3 4 5; do
+            labels_check=$(gh issue view "${{ github.event.issue.number }}" \
+              --repo "${{ github.repository }}" \
+              --json labels --jq '[.labels[].name] | join(",")')
+            if echo "$labels_check" | grep -qE "text-only|ui|sim-content"; then
+              break
+            fi
+            sleep 3
+          done
 
           N=${{ github.event.issue.number }}
           labels=$(gh issue view "$N" --repo ${{ github.repository }} \
