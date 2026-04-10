@@ -29,6 +29,9 @@ Check out the implementer's branch and update with master:
   git merge origin/master --no-edit
   git push
 
+0. CI status pre-check: `gh api repos/$GITHUB_REPOSITORY/commits/$(git rev-parse HEAD)/check-runs --jq '.check_runs[] | {name, status, conclusion}'`
+   If all relevant checks already show `conclusion: success`, skip step 4 (npm test).
+
 Verification checklist (complete ALL):
 
 1. Diff vs plan: `git diff master..HEAD`. Does every changed file

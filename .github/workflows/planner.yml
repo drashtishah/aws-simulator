@@ -81,7 +81,8 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@v1
+      - id: claude
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
@@ -89,6 +90,15 @@ jobs:
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
+
+      - name: Store session metadata
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "<!-- session:planner:${{ steps.claude.outputs.session_id }} -->"
 
       - name: Swap labels
         env:
@@ -98,3 +108,16 @@ jobs:
             --repo ${{ github.repository }} \
             --remove-label "needs-plan" \
             --add-label "needs-critique"
+
+      - name: Handle stage failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-plan" \
+            --add-label "pipeline-failed"
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "planner stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
