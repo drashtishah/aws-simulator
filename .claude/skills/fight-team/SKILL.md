@@ -199,10 +199,12 @@ Show the full task list. Ask the user which tasks to promote to GitHub Issues. T
 
 ### 3. Promote to issues
 
-For each confirmed task, the coordinator first composes a candidate Issue
-body that follows `.claude/skills/fight-team/references/issue-template.md`
-exactly. Then it runs the body through the validator BEFORE calling
-`gh issue create`:
+For each confirmed task, the coordinator first searches for an existing
+issue via `gh issue list --search "<keywords>" --state open`. If a match
+exists, add a comment with the new findings instead of creating a
+duplicate. Only if no match exists, compose a candidate Issue body that
+follows `.claude/skills/fight-team/references/issue-template.md` exactly.
+Then run the body through the validator BEFORE calling `gh issue create`:
 
 ```bash
 npx tsx -e "
