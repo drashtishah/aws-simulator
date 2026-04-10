@@ -38,8 +38,12 @@ Post your critique as a single issue comment.
 
 DECISION:
 - If the plan is acceptable OR the issue already has the `revision-1`
-  label (cap at 1 revision): end with `Critique: APPROVED.`
-- Otherwise: end with `Critique: REVISE.`
+  label (cap at 1 revision): set `verdict` to `APPROVED`.
+- Otherwise: set `verdict` to `REVISE`.
+
+Post a readable comment explaining your critique. The comment does not
+need to end with any magic string; the verdict is captured via structured
+JSON output.
 
 Do NOT modify any files. Do NOT push commits.
 

@@ -94,12 +94,14 @@ jobs:
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@v1
+      - id: claude
+        uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
             --model claude-sonnet-4-6
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["PASS","FAIL_RETRY","FAIL_ESCALATE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
@@ -108,14 +110,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          last_comment=$(gh issue view ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --json comments --jq '.comments[-1].body')
-          if echo "$last_comment" | grep -q "Verification: PASS."; then
+          verdict=$(echo '${{ steps.claude.outputs.structured_output }}' | jq -r '.verdict')
+          if [ "$verdict" = "PASS" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-verify"
-          elif echo "$last_comment" | grep -q "Verification: FAIL, retry."; then
+          elif [ "$verdict" = "FAIL_RETRY" ]; then
             labels=$(gh issue view ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --json labels --jq '.labels[].name')

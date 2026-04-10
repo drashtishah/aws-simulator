@@ -48,11 +48,15 @@ DECISION:
 - All checks pass:
   1. `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #{{ISSUE}}"`
   2. `gh pr merge <PR#> --merge --auto --delete-branch`
-  3. Comment: `Verification: PASS. PR #<PR#> opened and queued for auto-merge.`
+  Set `verdict` to `PASS`.
 - Any check fails, no `retry-2` label:
-  Comment ending with `Verification: FAIL, retry.`
+  Set `verdict` to `FAIL_RETRY`.
 - Any check fails, `retry-2` already present:
-  Comment ending with `Verification: FAIL, escalate.`
+  Set `verdict` to `FAIL_ESCALATE`.
+
+Post a readable comment summarizing the outcome. The comment does not
+need to end with any magic string; the verdict is captured via structured
+JSON output.
 
 If an MCP tool call fails (server unreachable, timeout), continue without
 it. Fall back to training knowledge or WebFetch for AWS documentation.

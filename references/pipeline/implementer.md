@@ -61,7 +61,8 @@ Push the branch:
 Post one short comment:
   `Implementation pushed to <branch>. Ready for verification.`
 
-If blocked, post a comment ending with `Status: BLOCKED.`
+If blocked, set `status` to `BLOCKED` in your JSON output and post a
+comment explaining the blocker.
 
 If an MCP tool call fails (server unreachable, timeout), continue without
 it. Fall back to training knowledge or WebFetch for AWS documentation.
