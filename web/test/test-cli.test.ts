@@ -20,9 +20,9 @@ function runWithExit(args) {
 }
 
 describe('test CLI self-tests', () => {
-  it('--help exits with code 0 and lists all 6 commands', () => {
+  it('--help exits with code 0 and lists all 5 commands', () => {
     const output = run('--help');
-    const commands = ['run', 'agent', 'personas', 'evals', 'validate', 'summary'];
+    const commands = ['run', 'agent', 'evals', 'validate', 'summary'];
     for (const cmd of commands) {
       assert.ok(output.includes(cmd), 'help should list command: ' + cmd);
     }
@@ -32,12 +32,6 @@ describe('test CLI self-tests', () => {
     const output = run('agent --dry-run');
     assert.ok(output.includes('dry-run'), 'output should contain dry-run markers');
     assert.ok(output.includes('steps'), 'output should list steps for specs');
-  });
-
-  it('personas --dry-run exits with code 0 and includes persona IDs', () => {
-    const output = run('personas --dry-run');
-    assert.ok(output.includes('dry-run'), 'output should contain dry-run markers');
-    assert.ok(output.includes('behaviors'), 'output should list behaviors');
   });
 
   it('evals --dry-run exits with code 0 and lists categories', () => {
@@ -53,21 +47,8 @@ describe('test CLI self-tests', () => {
       'should indicate no specs matched');
   });
 
-  it('personas --id nonexistent prints no match or exits non-zero', () => {
-    const { output, exitCode } = runWithExit('personas --id __nonexistent_persona__');
-    assert.ok(exitCode !== 0 || output.includes('not found') || output.includes('0 behaviors'),
-      'should indicate persona not found');
-  });
-
   it('agent --dry-run --json produces valid JSON output', () => {
     const { output, exitCode } = runWithExit('agent --dry-run --json');
-    if (exitCode === 0 && output.trim()) {
-      assert.doesNotThrow(() => JSON.parse(output), 'full output should be parseable JSON');
-    }
-  });
-
-  it('personas --dry-run --json produces valid JSON output', () => {
-    const { output, exitCode } = runWithExit('personas --dry-run --json');
     if (exitCode === 0 && output.trim()) {
       assert.doesNotThrow(() => JSON.parse(output), 'full output should be parseable JSON');
     }

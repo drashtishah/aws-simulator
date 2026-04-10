@@ -43,14 +43,6 @@ function freshAjv(): Ajv {
 describe('test output JSON schemas', () => {
   const ajv = freshAjv();
 
-  it('test personas --dry-run --json matches personas-output.schema.json', () => {
-    const schema = loadSchema('personas-output.schema.json');
-    const validate = ajv.compile(schema);
-    const data = runCliJson('personas --dry-run --json');
-    const ok = validate(data);
-    assert.equal(ok, true, `validation errors: ${JSON.stringify(validate.errors)}`);
-  });
-
   it('test agent --dry-run --json matches agent-specs-output.schema.json', () => {
     const schema = loadSchema('agent-specs-output.schema.json');
     const validate = ajv.compile(schema);

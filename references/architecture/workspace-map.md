@@ -131,8 +131,6 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 
 test ----> run: executes node --test (unit tests)
            --> agent: reads web/test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
-           --> personas: reads web/test-specs/personas/*.json, prints prompts for exploration
-           --> personas --feedback: reads web/test-results/personas/, appends to feedback.md
            --> summary: aggregates web/test-results/ into web/test-results/summary.json
 ```
 
@@ -218,16 +216,6 @@ All tests run through the `test` CLI (`scripts/test.ts`). See `references/archit
 | layout | `web/test-specs/browser/layout.yaml` | CSS layout assertions, responsive breakpoints, alignment |
 | accessibility | `web/test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
 
-
-### Layer 3: Agent Persona (`test personas`)
-
-| Persona | Location | Focus areas |
-|---------|----------|-------------|
-| impatient-beginner | `web/test-specs/personas/impatient-beginner.json` | Error handling, loading states, race conditions |
-| hostile-user | `web/test-specs/personas/hostile-user.json` | XSS, input validation, API error handling |
-| screen-reader-user | `web/test-specs/personas/screen-reader-user.json` | ARIA roles, live regions, focus management |
-| power-user | `web/test-specs/personas/power-user.json` | State consistency, performance, concurrent operations |
-| mobile-first-user | `web/test-specs/personas/mobile-first-user.json` | Responsive layout, touch targets, viewport overflow |
 
 Results written to `web/test-results/` (gitignored). Use `test summary` to aggregate.
 

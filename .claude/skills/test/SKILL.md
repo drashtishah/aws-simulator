@@ -24,7 +24,7 @@ Extend the testing CLI with new browser specs, persona profiles, or commands.
 
 - Read `references/architecture/testing-system.md` for architecture overview
 - Run `test --help` to see current commands
-- List `web/test-specs/browser/` and `web/test-specs/personas/` for current coverage
+- List `web/test-specs/browser/` for current coverage
 
 ## Phase 2: Expand
 
@@ -38,13 +38,7 @@ Choose one of these options depending on what is needed.
 4. Action types: click, type, keyboard, emulate, wait
 5. Validate: `test agent --spec {name} --dry-run`
 
-### Option B: Add a persona profile
-
-1. Create JSON file in `web/test-specs/personas/{id}.json`
-2. Required fields: id, name, role, description, behaviors, focus_areas, evaluation_questions, session_minutes
-3. Validate: `test personas --id {id} --dry-run`
-
-### Option C: Add a CLI command
+### Option B: Add a CLI command
 
 1. Only possible in dev mode (no active skill), since `scripts/test.ts` is NEVER_WRITABLE during skill execution
 2. Register with commander: `.command('name').description('...').option('--json').action(async (opts) => { ... })`

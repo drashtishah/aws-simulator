@@ -15,7 +15,6 @@ Reference for the four-layer testing system. Agents interact only through the `t
                                 |
   test run ----------------->  unit tests
   test agent --------------->  web/test-specs/browser/*.yaml
-  test personas ------------>  web/test-specs/personas/*.json
   test evals --------------->  references/config/eval-scoring.yaml
   test validate ------------>  all layers in sequence
                                 |
@@ -47,16 +46,6 @@ test agent --spec nav     # run a specific spec by name
 test agent --dry-run      # print prompts without executing
 ```
 
-### Persona tests (Layer 3)
-
-```
-test personas             # run all persona profiles
-test personas --id hostile   # run a specific persona
-test personas --feedback     # push findings to learning/feedback.md
-```
-
-Layer 3 smoke-run procedure (Issue #106): to walk one persona end-to-end through the live web app, (1) confirm Chrome DevTools MCP is reachable via `mcp__chrome-devtools__list_pages`, (2) boot the server with `npm start`, wait for `listening on 3200`, (3) dispatch an agent subsession with the persona prompt from `test personas --id hostile-user` pointed at `http://localhost:3200`, (4) save findings to `web/test-results/personas/hostile-user-<timestamp>.json` matching `web/lib/schemas/persona-finding.schema.json`, (5) run `test personas --feedback` to merge findings into `learning/feedback.md`, (6) kill the server. Findings files under `web/test-results/personas/` are gitignored; the smoke run is verified when the findings file exists and merge succeeds. If the MCP is not reachable, the runbook bails and Issue #106 stays open until it is configured.
-
 ### Evals (Layer 4)
 
 ```
@@ -70,8 +59,7 @@ test evals --json                 # structured output
 ### Validate (all layers)
 
 ```
-test validate             # run all 4 layers in sequence
-test validate --quick     # skip persona tests
+test validate             # run all layers in sequence
 ```
 
 ### Summary
@@ -91,11 +79,9 @@ test summary              # aggregate results into web/test-results/summary.json
 ```
 web/test-specs/                Protected: declarative test definitions
   browser/                 Layer 2: YAML browser test specs (8 files)
-  personas/                Layer 3: persona profiles (5 files)
 
 web/test-results/              Writable by test skill (gitignored)
   browser/                 Layer 2 results
-  personas/                Layer 3 findings
   evals/                   Layer 4 eval results (JSON per eval)
   validate.json            Full validation run results
   summary.json             Aggregated by test summary
@@ -108,7 +94,7 @@ references/
 
 ### Schema contracts
 
-JSON schemas for test CLI output and the persona-finding file format live at `web/lib/schemas/`. Validation runs in `web/test/test-schemas.test.ts` and smoke self-tests live at `web/test/test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/test-schemas.md` (Issue #31).
+JSON schemas for test CLI output live at `web/lib/schemas/`. Validation runs in `web/test/test-schemas.test.ts` and smoke self-tests live at `web/test/test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/test-schemas.md` (Issue #31).
 
 ### YAML Browser Spec
 
@@ -138,10 +124,6 @@ steps:
           compare_to: string (path to reference image)
 ```
 
-### Persona Profile (JSON)
-
-Required fields: `id`, `name`, `role`, `description`, `behaviors` (array), `focus_areas` (array), `evaluation_questions` (array), `session_minutes` (number).
-
 ### Transcript Format
 
 Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
@@ -156,24 +138,11 @@ Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
 | coaching | string | Coaching feedback (if present) |
 | usage | object | Token usage: { input_tokens, output_tokens } |
 
-### Persona Result Format
-
-Each persona run writes findings to `web/test-results/personas/{persona-id}-{timestamp}.json`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| persona_id | string | Matches profile id |
-| timestamp | string | ISO 8601 |
-| findings | array | Array of { severity, description, selector, screenshot } |
-| evaluation | object | Answers to evaluation_questions from profile |
-| duration_seconds | number | Actual session length |
-
-## Four Testing Layers
+## Testing Layers
 
 1. **Layer 1 (Deterministic):** `test run` executes unit tests. No browser needed.
 2. **Layer 2 (Agent Browser):** `test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
-3. **Layer 3 (Persona):** `test personas` loads profiles and prints prompts. The agent explores freely via Chrome DevTools MCP.
-4. **Layer 4 (Evals):** `test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
+3. **Layer 4 (Evals):** `test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
    - **Deterministic checks:** Run against session.json and transcript.jsonl data. Instant, no LLM needed.
    - **LLM judgment checks:** Optional, evaluate narrator quality with an LLM judge. Triggered with `--llm` flag.
 
@@ -219,23 +188,15 @@ rubric:
 
 - Run deterministic tests: `test run`
 - Execute browser specs: `test agent` (uses Chrome DevTools MCP)
-- Run persona tests: `test personas` (uses Chrome DevTools MCP)
 - Read test results: read files in `web/test-results/`
-- Push persona findings to feedback: `test personas --feedback`
 
 ### What agents cannot do
 
 - Edit unit test files during skill execution: skill-active check blocks `web/test/`
 
-## Findings to Feedback Pipeline
-
-1. Agent runs `test personas` and writes findings to `web/test-results/personas/{id}-{timestamp}.json`.
-2. `test personas --feedback` reads findings and appends to `learning/feedback.md`.
-3. The `/fix` skill reads `learning/feedback.md` and applies improvements.
-
 ## MCP Servers
 
-- **Chrome DevTools MCP:** browser interaction for agent and persona tests.
+- **Chrome DevTools MCP:** browser interaction for agent browser tests.
 
 ## Internals: How `npm test` Runs
 

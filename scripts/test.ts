@@ -23,7 +23,6 @@ import {
 
 const ROOT: string = path.resolve(__dirname, '..');
 const SPECS_DIR: string = path.join(ROOT, 'web', 'test-specs', 'browser');
-const PERSONAS_DIR: string = path.join(ROOT, 'web', 'test-specs', 'personas');
 const RESULTS_DIR: string = path.join(ROOT, 'web', 'test-results');
 
 // ---------------------------------------------------------------------------
@@ -62,25 +61,6 @@ interface AgentResults {
   verdict?: string;
 }
 
-interface PersonaEntry {
-  id?: string;
-  file?: string;
-  name?: string;
-  behaviors?: number;
-  questions?: number;
-  valid?: boolean;
-  status?: string;
-  error?: string;
-}
-
-interface PersonasResults {
-  command: string;
-  ts: string;
-  personas: PersonaEntry[];
-  error?: string;
-  verdict?: string;
-}
-
 interface BrowserSpec {
   name: string;
   description: string;
@@ -107,31 +87,6 @@ interface SpecCheck {
   type?: 'console_clean' | 'network_ok' | 'landmarks_present';
   selector?: string;
   [key: string]: unknown;
-}
-
-interface PersonaFile {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  session_minutes: number;
-  behaviors: string[];
-  focus_areas: string[];
-  evaluation_questions: string[];
-}
-
-interface PersonaResultData {
-  ts?: string;
-  persona?: string;
-  findings?: PersonaFinding[];
-}
-
-interface PersonaFinding {
-  severity: string;
-  category: string;
-  description: string;
-  reproduction?: string;
-  suggested_guardrail?: string;
 }
 
 interface CategoryCounts {
@@ -224,11 +179,6 @@ interface AgentOpts extends JsonOpts {
   dryRun?: boolean;
 }
 
-interface PersonasOpts extends JsonOpts {
-  id?: string;
-  dryRun?: boolean;
-  feedback?: boolean;
-}
 
 interface EvalsOpts extends JsonOpts {
   sim?: string;
@@ -522,174 +472,6 @@ program
   });
 
 // ---------------------------------------------------------------------------
-// test personas
-// ---------------------------------------------------------------------------
-
-program
-  .command('personas')
-  .description('Run all persona exploration sessions')
-  .option('--id <persona>', 'Run a single persona by ID')
-  .option('--dry-run', 'Parse and print personas without executing')
-  .option('--feedback', 'Read findings and append to learning/feedback.md')
-  .option('--json', 'Output structured JSON')
-  .action(async (opts: PersonasOpts) => {
-    if (opts.feedback) {
-      return handlePersonaFeedback(opts);
-    }
-
-    const results: PersonasResults = { command: 'personas', ts: timestamp(), personas: [] };
-    let exitCode = 0;
-
-    if (!fs.existsSync(PERSONAS_DIR)) {
-      results.error = 'web/test-specs/personas/ directory not found';
-      jsonOut(opts.json, results);
-      if (!opts.json) console.log('Error: web/test-specs/personas/ not found');
-      process.exit(2);
-    }
-
-    let files = fs.readdirSync(PERSONAS_DIR).filter((f: string) => f.endsWith('.json'));
-    if (opts.id) {
-      files = files.filter((f: string) => f.replace('.json', '').startsWith(opts.id!));
-      if (files.length === 0) {
-        results.error = 'No persona matching ID "' + opts.id + '"';
-        jsonOut(opts.json, results);
-        if (!opts.json) console.log('Error: no persona matching "' + opts.id + '"');
-        process.exit(2);
-      }
-    }
-
-    for (const file of files) {
-      try {
-        const content = fs.readFileSync(path.join(PERSONAS_DIR, file), 'utf8');
-        const persona: PersonaFile = JSON.parse(content);
-
-        if (opts.dryRun) {
-          results.personas.push({
-            id: persona.id,
-            name: persona.name,
-            behaviors: persona.behaviors.length,
-            questions: persona.evaluation_questions.length,
-            valid: true
-          });
-          if (!opts.json) {
-            console.log('  ' + persona.id + ': ' + persona.behaviors.length + ' behaviors, ' + persona.evaluation_questions.length + ' questions (dry-run)');
-          }
-          continue;
-        }
-
-        // Print structured prompt for agent execution
-        console.log('');
-        console.log('--- PERSONA: ' + persona.name + ' ---');
-        console.log('Role: ' + persona.role);
-        console.log('Description: ' + persona.description);
-        console.log('Session: ' + persona.session_minutes + ' minutes');
-        console.log('');
-        console.log('Behaviors:');
-        for (const b of persona.behaviors) {
-          console.log('  - ' + b);
-        }
-        console.log('');
-        console.log('Focus areas: ' + persona.focus_areas.join(', '));
-        console.log('');
-        console.log('Evaluation questions:');
-        for (const q of persona.evaluation_questions) {
-          console.log('  - ' + q);
-        }
-        console.log('--- END PERSONA ---');
-        console.log('');
-
-        results.personas.push({
-          id: persona.id,
-          name: persona.name,
-          status: 'printed'
-        });
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        results.personas.push({ file, error: message });
-        exitCode = 2;
-        if (!opts.json) console.log('  ' + file + ': PARSE ERROR: ' + message);
-      }
-    }
-
-    if (opts.dryRun) {
-      results.verdict = exitCode === 0 ? 'VALID' : 'ERROR';
-    } else {
-      results.verdict = exitCode === 0 ? 'PRINTED' : 'ERROR';
-    }
-
-    jsonOut(opts.json, results);
-    if (!opts.json && opts.dryRun) {
-      console.log('  ' + results.verdict);
-    }
-    process.exit(exitCode);
-  });
-
-function handlePersonaFeedback(opts: PersonasOpts): void {
-  const personaResultsDir = path.join(RESULTS_DIR, 'personas');
-  if (!fs.existsSync(personaResultsDir)) {
-    if (opts.json) {
-      jsonOut(true, { command: 'personas --feedback', error: 'No persona results found' });
-    } else {
-      console.log('No persona results found in web/test-results/personas/');
-    }
-    process.exit(0);
-  }
-
-  const files = fs.readdirSync(personaResultsDir).filter((f: string) => f.endsWith('.json'));
-  if (files.length === 0) {
-    if (opts.json) {
-      jsonOut(true, { command: 'personas --feedback', findings: 0 });
-    } else {
-      console.log('No persona result files found.');
-    }
-    process.exit(0);
-  }
-
-  const feedbackPath = path.join(ROOT, 'learning', 'feedback.md');
-  let feedbackContent = '';
-  if (fs.existsSync(feedbackPath)) {
-    feedbackContent = fs.readFileSync(feedbackPath, 'utf8');
-  }
-
-  let findingsCount = 0;
-  for (const file of files) {
-    try {
-      const data: PersonaResultData = JSON.parse(fs.readFileSync(path.join(personaResultsDir, file), 'utf8'));
-      if (!data.findings || data.findings.length === 0) continue;
-
-      for (const finding of data.findings) {
-        findingsCount++;
-        const dateStr = data.ts ? data.ts.split('T')[0] : new Date().toISOString().split('T')[0];
-        feedbackContent += '\n## Persona finding: ' + (data.persona ?? 'unknown') + ' (' + dateStr + ')\n';
-        feedbackContent += 'Severity: ' + finding.severity + '\n';
-        feedbackContent += 'Category: ' + finding.category + '\n';
-        feedbackContent += 'Issue: ' + finding.description + '\n';
-        if (finding.reproduction) {
-          feedbackContent += 'Repro: ' + finding.reproduction + '\n';
-        }
-        if (finding.suggested_guardrail) {
-          feedbackContent += 'Suggested guardrail: ' + finding.suggested_guardrail + '\n';
-        }
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('  Warning: could not parse ' + file + ': ' + message);
-    }
-  }
-
-  if (findingsCount > 0 && fs.existsSync(path.dirname(feedbackPath))) {
-    fs.writeFileSync(feedbackPath, feedbackContent);
-  }
-
-  if (opts.json) {
-    jsonOut(true, { command: 'personas --feedback', ts: timestamp(), findings: findingsCount });
-  } else {
-    console.log('  ' + findingsCount + ' findings appended to learning/feedback.md');
-  }
-  process.exit(0);
-}
-
-// ---------------------------------------------------------------------------
 // test evals
 // ---------------------------------------------------------------------------
 
@@ -867,22 +649,6 @@ program
       console.log('  ' + ((r.verdict as string) ?? 'UNKNOWN'));
     }
 
-    // Layer 3: personas (skip if --quick)
-    if (!opts.quick) {
-      if (!opts.json) console.log('--- Layer 3: Personas (dry-run) ---');
-      const l3 = run('node scripts/test.js personas --dry-run --json', 'personas');
-      try { results.layers.personas = JSON.parse(l3.output); } catch { results.layers.personas = { raw: l3.output.slice(0, 500) }; }
-      if (!opts.json) {
-        const r = results.layers.personas as Record<string, unknown>;
-        const personas = r.personas as unknown[] | undefined;
-        if (personas) console.log('  ' + personas.length + ' personas valid');
-        console.log('  ' + ((r.verdict as string) ?? 'UNKNOWN'));
-      }
-    } else {
-      results.layers.personas = { skipped: true };
-      if (!opts.json) console.log('--- Layer 3: Personas (skipped, --quick) ---');
-    }
-
     // Write summary
     const summaryPath = path.join(RESULTS_DIR, 'validate.json');
     ensureDir(RESULTS_DIR);
@@ -945,24 +711,6 @@ program
       summary.layers.browser = { results: specResults.length, files };
     }
 
-    // Layer 3: persona findings
-    const personaDir = path.join(RESULTS_DIR, 'personas');
-    if (fs.existsSync(personaDir)) {
-      const files = fs.readdirSync(personaDir).filter((f: string) => f.endsWith('.json'));
-      let totalFindings = 0;
-      let highSeverity = 0;
-      for (const f of files) {
-        try {
-          const data: PersonaResultData = JSON.parse(fs.readFileSync(path.join(personaDir, f), 'utf8'));
-          if (data.findings) {
-            totalFindings += data.findings.length;
-            highSeverity += data.findings.filter((x: PersonaFinding) => x.severity === 'high').length;
-          }
-        } catch (_e: unknown) { /* skip */ }
-      }
-      summary.layers.personas = { results: files.length, totalFindings, highSeverity };
-    }
-
     const summaryPath = path.join(RESULTS_DIR, 'summary.json');
     fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2) + '\n');
 
@@ -979,10 +727,6 @@ program
       const browserLayer = summary.layers.browser as { results: number } | undefined;
       if (browserLayer) {
         console.log('  browser: ' + browserLayer.results + ' result files');
-      }
-      const personasLayer = summary.layers.personas as { totalFindings: number; highSeverity: number } | undefined;
-      if (personasLayer) {
-        console.log('  personas: ' + personasLayer.totalFindings + ' findings (' + personasLayer.highSeverity + ' high)');
       }
     }
     process.exit(0);

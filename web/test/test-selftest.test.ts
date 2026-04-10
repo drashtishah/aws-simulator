@@ -42,19 +42,9 @@ describe('test CLI self-test', () => {
   it('test --help exits 0 and lists all expected subcommands', () => {
     const { stdout, status } = run('--help');
     assert.equal(status, 0);
-    for (const cmd of ['run', 'agent', 'personas', 'evals', 'validate', 'summary']) {
+    for (const cmd of ['run', 'agent', 'evals', 'validate', 'summary']) {
       assert.ok(stdout.includes(cmd), `help output missing subcommand: ${cmd}`);
     }
-  });
-
-  it('test personas --dry-run --json produces a valid top-level shape', () => {
-    const { stdout, status } = run('personas --dry-run --json');
-    assert.equal(status, 0);
-    const data = parseJsonFromOutput(stdout) as Record<string, unknown>;
-    assert.equal(data.command, 'personas');
-    assert.ok(typeof data.ts === 'string');
-    assert.ok(Array.isArray(data.personas));
-    assert.ok((data.personas as unknown[]).length > 0, 'personas array must be non-empty');
   });
 
   it('test agent --dry-run --json produces a valid top-level shape', () => {
