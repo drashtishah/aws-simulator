@@ -20,6 +20,12 @@ Interactive AWS incident-response game played through Claude Code skills.
 - Notes CLI and `notes.jsonl` schema: `scripts/note.ts` source comments and `references/architecture/core-workflow.md` §6b
 - Logs (`raw.jsonl`, `notes.jsonl`, `learning/system-vault/`): `references/architecture/workspace-map.md` Shared Data Files
 
+## Behavioral guidelines
+
+All agents (local Claude Code sessions and GitHub Actions workflows) must
+follow `references/guidelines/karpathy.md`: state assumptions, simplicity
+first, surgical changes, goal-driven execution.
+
 ## Conventions
 
 - No emojis.
