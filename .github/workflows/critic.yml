@@ -94,8 +94,9 @@ jobs:
       - name: Swap labels based on critique
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          STRUCTURED_OUTPUT: ${{ steps.claude.outputs.structured_output }}
         run: |
-          verdict=$(echo '${{ steps.claude.outputs.structured_output }}' | jq -r '.verdict')
+          verdict=$(echo "$STRUCTURED_OUTPUT" | jq -r '.verdict')
           if [ "$verdict" = "APPROVED" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \

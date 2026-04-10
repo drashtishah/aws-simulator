@@ -108,8 +108,9 @@ jobs:
       - name: Swap labels
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          STRUCTURED_OUTPUT: ${{ steps.claude.outputs.structured_output }}
         run: |
-          status=$(echo '${{ steps.claude.outputs.structured_output }}' | jq -r '.status')
+          status=$(echo "$STRUCTURED_OUTPUT" | jq -r '.status')
           if [ "$status" = "BLOCKED" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
