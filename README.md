@@ -40,6 +40,7 @@ flowchart TB
     Setup["/setup"]
     Play["/play"]
     Fix["/fix"]
+    FightTeam["/fight-team"]
     CreateSim["/create-sim"]
   end
 
@@ -66,7 +67,10 @@ flowchart TB
   Express --> Claude
   Play --> PlayerVault
   Setup --> PlayerVault
+  CreateSim --> PlayerVault
   Fix --> Issues
+  FightTeam --> Issues
+  CreateSim --> Issues
   Issues --> Planner
   Planner --> Critic
   Critic --> Implementer

@@ -55,9 +55,13 @@ Tell the user:
 
 Wait for the user's response. Store their answer as `mcp_available: true/false` and use it throughout the workflow.
 
-### 0. Create task and issue
+### 0. Create issue for the scenario
 
-Create a GitHub Issue per `references/architecture/core-workflow.md` §1. Subject: "Create sim for <topic or service>". Use the `enhancement` label. Record the issue number for commit references.
+Search for an existing issue first: `gh issue list --search "create sim <topic>" --state open`.
+If a match exists, use that issue. Otherwise, create a new one:
+`gh issue create --label needs-triage --title "Create sim: <topic>" --body "<details about the scenario, target services, difficulty, what gap it fills, how the sim should play>"`.
+Include enough detail that the GHA pipeline could plan and review the scenario.
+Record the issue number for commit references.
 
 ---
 
@@ -66,7 +70,8 @@ Create a GitHub Issue per `references/architecture/core-workflow.md` §1. Subjec
 ### Phase 1: Identify Knowledge Gaps
 
 1. Read `learning/catalog.csv` for service metadata and player progress
-2. Filter for services where `knowledge_score < 2`
+1b. Read the player vault (`learning/player-vault/`) for confusion patterns, recurring mistakes, and weak dimensions. Look at session journals for services the player struggled with and questions they asked poorly. This personalizes scenario selection beyond catalog scores.
+2. Filter for services where `knowledge_score < 2`, prioritizing services the player vault shows active confusion about
 3. Sort by `sims_completed` ascending (least practiced first)
 4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter by `category` column
 5. Note which certifications each service appears in (`cert_relevance` column)
