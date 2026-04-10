@@ -14,11 +14,11 @@ Interactive AWS incident-response game played through Claude Code skills.
 
 - Architecture, components, shared data files, scheduled jobs: `references/architecture/workspace-map.md`
 - Commit, PR, test, revert, cleanup, Issue-closure workflow: `references/architecture/core-workflow.md`
-- Test layers, test CLI, browser tests, persona tests: `references/architecture/testing-system.md`
+- Test layers, test CLI, browser tests: `references/architecture/testing-system.md`
 - Code health metrics, buckets, healthignore: `references/config/code-health.md`
 - Agent navigation index and tool registry: `references/registries/agent-index.md`, `references/registries/tool-registry.md`
-- Notes CLI and `notes.jsonl` schema: `scripts/note.ts` source comments and `references/architecture/core-workflow.md` §6b
-- Logs (`raw.jsonl`, `notes.jsonl`, `learning/system-vault/`): `references/architecture/workspace-map.md` Shared Data Files
+- GHA pipeline (planner/critic/implementer/verifier): `references/architecture/gha-pipeline.md`
+- Logs (`raw.jsonl`, `learning/system-vault/`): `references/architecture/workspace-map.md` Shared Data Files
 
 ## Behavioral guidelines
 

@@ -18,8 +18,6 @@
     "health": "tsx scripts/code-health.ts",
     "audit:permissions": "tsx scripts/audit-permissions.ts",
     "install-git-hooks": "tsx scripts/install-git-hooks.ts",
-    "spawn-sibling": "./scripts/spawn-sibling.sh",
-    "sibling-status": "./scripts/sibling-status.sh",
     "check-budget": "./scripts/check-budget.sh",
     "postinstall": "tsx scripts/install-git-hooks.ts && python3 scripts/extract_paths.py",
     "build-agent-index": "tsx scripts/build-agent-index.ts",

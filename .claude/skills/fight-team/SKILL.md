@@ -169,7 +169,7 @@ Present the full report to the user.
 
 After synthesis, before proceeding to Phase 6 (Issue Pipeline), the Coordinator writes salience notes for:
 
-- Every convergence decision that flipped mid-synthesis (started as priority:high, ended priority:investigate or dropped, or vice versa): one `decision` note explaining the flip trigger. `tsx scripts/note.ts --kind decision --topic fight-team-convergence-<slug> --body "..."`
+- Every convergence decision that flipped mid-synthesis (started as priority:high, ended priority:investigate or dropped, or vice versa): one `decision` note explaining the flip trigger.
 - Any finding whose ranking was significantly different from its `expected_gain_if_fixed` score (the score suggested one thing, the debate revealed another): one `finding` note.
 - Any cross-finding pattern the debaters surfaced that is not captured by any single finding (e.g., "three of the top 10 findings all trace back to the same missing test layer"): one `finding` note.
 
@@ -323,7 +323,7 @@ Why current state is sound (or honestly conceded): <one sentence>
 ## Rules
 
 1. No emojis.
-2. Debaters use read-only tools: Read, Glob, Grep, Bash (for `gh issue list`, `npm run health`, and `scripts/note.ts`). No repo edits. `scripts/note.ts` appends to the per-user gitignored `learning/logs/notes.jsonl` and is the only "write" allowed, because salience-triggered notes during rounds are the whole point of rule 13 below.
+2. Debaters use read-only tools: Read, Glob, Grep, Bash (for `gh issue list`, `npm run health`). No repo edits.
 3. Coordinator (this session) is the only one that creates tasks and issues.
 4. Use sonnet model for both debaters.
 5. All file paths in the report must be root-relative.
@@ -334,4 +334,4 @@ Why current state is sound (or honestly conceded): <one sentence>
 10. Every Issue body filed by fight-team must pass `scripts/lib/validate-fight-team-issue.ts` before `gh issue create`. Up to 2 retries on failure; on the third failure, surface the malformed body and validator errors to the user instead of filing.
 11. Evidence sections require at least one absolute file:line citation. Relative paths in Evidence are rejected by the validator.
 12. Never edit Issue bodies after `gh issue create`. If a follow-up correction is needed, file a new Issue that links back to the original.
-13. Debaters and coordinator write salience-triggered notes via `scripts/note.ts` during each round. Any moment that feels surprising, interesting, frustrating, or like a self-correction gets a note IN THE MOMENT, not at the end of the debate. Concrete triggers for fight-team specifically: a CONCEDED rebuttal where the concession surprised the conceding debater, a steelman that turned out stronger than the original attack, a convergence decision where the Coordinator changed their mind mid-synthesis, or a finding whose file:line evidence turned out to be weaker or stronger than the health-score description implied. Bodies are uncapped (Issue #119), so write the full thought. Any emotion, positive or negative, is a valid signal. Rule: memory `feedback_note_on_salience.md`.
+13. Debaters and coordinator note salience-triggered observations during each round. Any moment that feels surprising, interesting, frustrating, or like a self-correction is worth recording in an issue comment or feedback entry.

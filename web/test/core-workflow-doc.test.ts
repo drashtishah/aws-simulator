@@ -33,7 +33,7 @@ describe('core-workflow.md', () => {
       'tdd',
       'revertable',
       'test --changed',
-      'notes.jsonl',
+      'issue comments',
       'verifier',
       'revert',
       'cleanup',

@@ -59,23 +59,9 @@ If targeted local tests fail mid-sequence, stop and fix forward, do not pile mor
 
 After every commit, also pause to consider the code-health impact: did this change touch any file that has an open finding in the latest `learning/logs/health-scores.jsonl`? Could the same diff have resolved or improved a bucket score in passing? Prefer changes that hold or improve the score over changes that ship test-green but quietly degrade a bucket (dangling refs, complexity, dead code). This is a habit, not a hard gate; the gate runs at PR-time via `npm run health` in §9.
 
-## 6b. Notes after every commit
+## 6b. Durable memory via issue comments
 
-After every commit, write one entry to `learning/logs/notes.jsonl` via `scripts/note.ts`. This is the semantic stream the daily compile cron rolls into the system vault, and it is the project's only durable agent-to-agent memory. Writing one note per commit gives the vault a guaranteed cadence so it grows in lockstep with the work.
-
-```bash
-tsx scripts/note.ts --kind <finding|negative_result|workaround|decision|none> --topic <slug> --body "<one or two sentences>"
-```
-
-Allowed kinds:
-
-- `finding`: a non-obvious thing the commit revealed (a constraint, a gotcha, a measurement, an architectural insight).
-- `negative_result`: a path that did not work, with the reason it failed, so the next agent does not retry it.
-- `workaround`: a temporary fix or known-bad pattern that should be revisited later, with the symptom it papers over.
-- `decision`: a deliberate choice the commit embodies, with the reason why this option won.
-- `none`: explicit "nothing worth recording" escape hatch, requires `--reason` so the gap is auditable.
-
-The Stop hook (`.claude/hooks/stop-journal-check.ts`) enforces at least one note per session before exit. The cadence rule above is stricter: one note per commit, not just one per session, so each individual change carries its own context forward rather than being collapsed into a session-level summary. Future agents querying the system vault see the same unit of detail the original author committed.
+Issue comments are the durable agent-to-agent memory. Each pipeline stage (planner, critic, implementer, verifier) posts structured comments that carry context forward. Searchable via `gh issue view` and `gh issue list`.
 
 ## 7. Verifier subagent separation
 
