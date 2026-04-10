@@ -34,7 +34,7 @@ process.stdin.on('end', () => {
 2. After each logical change, follow the commit procedure (§5).
    Stage specific files, contextual commit with Ref #N or Closes #N, include intent action line.
 
-3. Run the per-commit targeted tests after every commit (§6): npx tsx scripts/sim-test.ts run --changed --json
+3. Run the per-commit targeted tests after every commit (§6): npx tsx scripts/test.ts run --changed --json
 
 4. If tests fail, rollback immediately via git revert then fix forward (§8).
 `);

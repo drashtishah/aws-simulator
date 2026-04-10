@@ -6,24 +6,23 @@ tags:
 
 # Testing System Architecture
 
-Reference for the four-layer testing system. Agents interact only through the `sim-test` CLI boundary.
+Reference for the four-layer testing system. Agents interact only through the `test` CLI boundary.
 
 ## Overview
 
 ```
   Agent Side                    |  System Side (protected)
                                 |
-  sim-test run ----------------->  unit tests
-  sim-test agent --------------->  web/test-specs/browser/*.yaml
-  sim-test personas ------------>  web/test-specs/personas/*.json
-  sim-test evals --------------->  references/config/eval-scoring.yaml
-  sim-test validate ------------>  all layers in sequence
+  test run ----------------->  unit tests
+  test agent --------------->  web/test-specs/browser/*.yaml
+  test evals --------------->  references/config/eval-scoring.yaml
+  test validate ------------>  all layers in sequence
                                 |
   stdout (text or JSON) <--------  web/test-results/
   exit code (0, 1, 2) <---------  pass / fail / infra error
 ```
 
-Agents interact only via `sim-test` commands and stdout. Everything on the system side (reference files, specs, generation scripts) is protected from direct editing.
+Agents interact only via `test` commands and stdout. Everything on the system side (reference files, specs, generation scripts) is protected from direct editing.
 
 ## CLI Commands
 
@@ -32,52 +31,41 @@ All commands support `--json` for structured output.
 ### Test execution
 
 ```
-sim-test run                  # run unit tests
-sim-test run --json           # structured JSON output
-sim-test run --changed --json # run ONLY tests affected by staged/last-commit changes
+test run                  # run unit tests
+test run --json           # structured JSON output
+test run --changed --json # run ONLY tests affected by staged/last-commit changes
 ```
 
-**Cadence (per `references/architecture/core-workflow.md` §6):** plans run `sim-test run --changed` after every commit (~1 second), `npm test` at group boundaries (every 3-6 commits), and the full pre-PR gate (`npm test + npm run health + npm run doctor`) once before opening the PR. Plans never run `npm test` per commit.
+**Cadence (per `references/architecture/core-workflow.md` §6):** plans run `test run --changed` after every commit (~1 second), `npm test` at group boundaries (every 3-6 commits), and the full pre-PR gate (`npm test + npm run health + npm run doctor`) once before opening the PR. Plans never run `npm test` per commit.
 
 ### Agent browser tests (Layer 2)
 
 ```
-sim-test agent                # run all browser specs
-sim-test agent --spec nav     # run a specific spec by name
-sim-test agent --dry-run      # print prompts without executing
+test agent                # run all browser specs
+test agent --spec nav     # run a specific spec by name
+test agent --dry-run      # print prompts without executing
 ```
-
-### Persona tests (Layer 3)
-
-```
-sim-test personas             # run all persona profiles
-sim-test personas --id hostile   # run a specific persona
-sim-test personas --feedback     # push findings to learning/feedback.md
-```
-
-Layer 3 smoke-run procedure (Issue #106): to walk one persona end-to-end through the live web app, (1) confirm Chrome DevTools MCP is reachable via `mcp__chrome-devtools__list_pages`, (2) boot the server with `npm start`, wait for `listening on 3200`, (3) dispatch an agent subsession with the persona prompt from `sim-test personas --id hostile-user` pointed at `http://localhost:3200`, (4) save findings to `web/test-results/personas/hostile-user-<timestamp>.json` matching `web/lib/schemas/persona-finding.schema.json`, (5) run `sim-test personas --feedback` to merge findings into `learning/feedback.md`, (6) kill the server. Findings files under `web/test-results/personas/` are gitignored; the smoke run is verified when the findings file exists and merge succeeds. If the MCP is not reachable, the runbook bails and Issue #106 stays open until it is configured.
 
 ### Evals (Layer 4)
 
 ```
-sim-test evals                        # score a random completed session
-sim-test evals --sim <id>             # score a specific session
-sim-test evals --llm                  # include LLM judgment checks
-sim-test evals --dry-run              # list all 60 checks by category
-sim-test evals --json                 # structured output
+test evals                        # score a random completed session
+test evals --sim <id>             # score a specific session
+test evals --llm                  # include LLM judgment checks
+test evals --dry-run              # list all 60 checks by category
+test evals --json                 # structured output
 ```
 
 ### Validate (all layers)
 
 ```
-sim-test validate             # run all 4 layers in sequence
-sim-test validate --quick     # skip persona tests
+test validate             # run all layers in sequence
 ```
 
 ### Summary
 
 ```
-sim-test summary              # aggregate results into web/test-results/summary.json
+test summary              # aggregate results into web/test-results/summary.json
 ```
 
 ### Exit codes
@@ -91,14 +79,12 @@ sim-test summary              # aggregate results into web/test-results/summary.
 ```
 web/test-specs/                Protected: declarative test definitions
   browser/                 Layer 2: YAML browser test specs (8 files)
-  personas/                Layer 3: persona profiles (5 files)
 
 web/test-results/              Writable by test skill (gitignored)
   browser/                 Layer 2 results
-  personas/                Layer 3 findings
   evals/                   Layer 4 eval results (JSON per eval)
   validate.json            Full validation run results
-  summary.json             Aggregated by sim-test summary
+  summary.json             Aggregated by test summary
 
 references/
   eval-scoring.yaml           Layer 4: 60-check eval scorecard
@@ -108,7 +94,7 @@ references/
 
 ### Schema contracts
 
-JSON schemas for sim-test CLI output and the persona-finding file format live at `web/lib/schemas/`. Validation runs in `web/test/sim-test-schemas.test.ts` and smoke self-tests live at `web/test/sim-test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/sim-test-schemas.md` (Issue #31).
+JSON schemas for test CLI output live at `web/lib/schemas/`. Validation runs in `web/test/test-schemas.test.ts` and smoke self-tests live at `web/test/test-selftest.test.ts`. Full rationale and evolution rules in `references/architecture/test-schemas.md` (Issue #31).
 
 ### YAML Browser Spec
 
@@ -138,10 +124,6 @@ steps:
           compare_to: string (path to reference image)
 ```
 
-### Persona Profile (JSON)
-
-Required fields: `id`, `name`, `role`, `description`, `behaviors` (array), `focus_areas` (array), `evaluation_questions` (array), `session_minutes` (number).
-
 ### Transcript Format
 
 Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
@@ -156,24 +138,11 @@ Each line in `learning/sessions/{sim_id}/transcript.jsonl` is a JSON object:
 | coaching | string | Coaching feedback (if present) |
 | usage | object | Token usage: { input_tokens, output_tokens } |
 
-### Persona Result Format
+## Testing Layers
 
-Each persona run writes findings to `web/test-results/personas/{persona-id}-{timestamp}.json`:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| persona_id | string | Matches profile id |
-| timestamp | string | ISO 8601 |
-| findings | array | Array of { severity, description, selector, screenshot } |
-| evaluation | object | Answers to evaluation_questions from profile |
-| duration_seconds | number | Actual session length |
-
-## Four Testing Layers
-
-1. **Layer 1 (Deterministic):** `sim-test run` executes unit tests. No browser needed.
-2. **Layer 2 (Agent Browser):** `sim-test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
-3. **Layer 3 (Persona):** `sim-test personas` loads profiles and prints prompts. The agent explores freely via Chrome DevTools MCP.
-4. **Layer 4 (Evals):** `sim-test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
+1. **Layer 1 (Deterministic):** `test run` executes unit tests. No browser needed.
+2. **Layer 2 (Agent Browser):** `test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
+3. **Layer 4 (Evals):** `test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
    - **Deterministic checks:** Run against session.json and transcript.jsonl data. Instant, no LLM needed.
    - **LLM judgment checks:** Optional, evaluate narrator quality with an LLM judge. Triggered with `--llm` flag.
 
@@ -210,36 +179,28 @@ rubric:
 | Level | Trigger | What runs |
 |---|---|---|
 | Per-commit | Automatic | `npm test` |
-| Feature-complete | Automatic (end of /fix) | `sim-test validate` |
-| Model change | User-triggered | `sim-test evals --llm` |
+| Feature-complete | Automatic (end of /fix) | `test validate` |
+| Model change | User-triggered | `test evals --llm` |
 
 ## Anti-Cheat Enforcement
 
 ### What agents can do
 
-- Run deterministic tests: `sim-test run`
-- Execute browser specs: `sim-test agent` (uses Chrome DevTools MCP)
-- Run persona tests: `sim-test personas` (uses Chrome DevTools MCP)
+- Run deterministic tests: `test run`
+- Execute browser specs: `test agent` (uses Chrome DevTools MCP)
 - Read test results: read files in `web/test-results/`
-- Push persona findings to feedback: `sim-test personas --feedback`
 
 ### What agents cannot do
 
 - Edit unit test files during skill execution: skill-active check blocks `web/test/`
 
-## Findings to Feedback Pipeline
-
-1. Agent runs `sim-test personas` and writes findings to `web/test-results/personas/{id}-{timestamp}.json`.
-2. `sim-test personas --feedback` reads findings and appends to `learning/feedback.md`.
-3. The `/fix` skill reads `learning/feedback.md` and applies improvements.
-
 ## MCP Servers
 
-- **Chrome DevTools MCP:** browser interaction for agent and persona tests.
+- **Chrome DevTools MCP:** browser interaction for agent browser tests.
 
 ## Internals: How `npm test` Runs
 
-Knowing the wiring matters when a single test fails inside the aggregate `unit: N/M passed` summary. Since Issue #92, `sim-test run` also prints `FAIL <basename>: <N> failure(s)` to stderr per failing file plus a final `Failed test files (N):` summary block, so the failing file is named in the output and you no longer have to bisect by hand.
+Knowing the wiring matters when a single test fails inside the aggregate `unit: N/M passed` summary. Since Issue #92, `test run` also prints `FAIL <basename>: <N> failure(s)` to stderr per failing file plus a final `Failed test files (N):` summary block, so the failing file is named in the output and you no longer have to bisect by hand.
 
 ### Pipeline
 
@@ -249,12 +210,12 @@ Knowing the wiring matters when a single test fails inside the aggregate `unit: 
 python3 scripts/extract_paths.py        # regenerate references/registries/path-registry.csv
 mypy --strict scripts/extract_paths.py  # typecheck the path extractor
 npm run typecheck                       # tsc --noEmit on tsconfig.json + tsconfig.frontend.json
-tsx scripts/sim-test.ts run             # run unit tests via the sim-test CLI boundary
+tsx scripts/test.ts run             # run unit tests via the test CLI boundary
 ```
 
 ### Per-file test spawn
 
-`sim-test run` does NOT call `node --test` on the whole `web/test/` directory. Instead, `scripts/sim-test.ts:270-318` reads every `web/test/*.test.ts` file and spawns each one in its own `tsx` subprocess:
+`test run` does NOT call `node --test` on the whole `web/test/` directory. Instead, `scripts/test.ts:270-318` reads every `web/test/*.test.ts` file and spawns each one in its own `tsx` subprocess:
 
 ```
 spawnSync('tsx', ['--test', '--test-force-exit', testFile], { cwd: ROOT, ... })
@@ -263,10 +224,10 @@ spawnSync('tsx', ['--test', '--test-force-exit', testFile], { cwd: ROOT, ... })
 Why per-file:
 
 - The unit test files are `.ts` but use CommonJS `require()`. Plain `node --test` cannot resolve `require('../lib/progression')` against `web/lib/progression.ts`, so they must run under `tsx`.
-- A single `tsx --test web/test/*.test.ts` invocation hangs when multiple files share one process (see inline comment at `scripts/sim-test.ts:270`).
+- A single `tsx --test web/test/*.test.ts` invocation hangs when multiple files share one process (see inline comment at `scripts/test.ts:270`).
 - `--test-force-exit` ensures each subprocess exits even if a test leaves an open handle.
 
-The runner parses `ℹ pass N` and `ℹ fail N` from each subprocess and aggregates into the `unit: N/M passed` summary line. Pure parsing and aggregation helpers live in `scripts/sim-test-runner.ts` so they can be unit-tested without spawning the CLI recursively (`web/test/sim-test-run.test.ts`); `node:test` refuses to run itself recursively from inside `tsx --test`, so the integration assertion is the manual verification step in Issue #92.
+The runner parses `ℹ pass N` and `ℹ fail N` from each subprocess and aggregates into the `unit: N/M passed` summary line. Pure parsing and aggregation helpers live in `scripts/test-runner.ts` so they can be unit-tested without spawning the CLI recursively (`web/test/test-run.test.ts`); `node:test` refuses to run itself recursively from inside `tsx --test`, so the integration assertion is the manual verification step in Issue #92.
 
 In JSON mode, the per-run result also exposes `unit.failedFiles: string[]` listing every failed file basename. Agents and CI can branch on that array directly without parsing stderr.
 

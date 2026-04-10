@@ -1,0 +1,23 @@
+name: PoC Claude OAuth
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  poc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: "--model claude-sonnet-4-6 --max-turns 2"
+          prompt: |
+            Print the contents of the file CLAUDE.md.
+            Then post a one-line comment to issue #1 saying
+            "PoC successful: OAuth token works".
+            If issue #1 does not exist, create one titled
+            "PoC test issue" with body "test".

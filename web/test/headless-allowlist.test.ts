@@ -84,7 +84,6 @@ describe('headless edit allowlist drift (Issue #127)', () => {
       '.claude/hooks/pre-commit-issues.ts',
       '.claude/hooks/pre-commit-ui-tests.ts',
       '.claude/hooks/stop-journal-check.ts',
-      '.claude/hooks/post-commit-note-check.ts',
       '.claude/hooks/git-discipline-reminder.ts',
       '.claude/hooks/emotion-check.ts',
     ];

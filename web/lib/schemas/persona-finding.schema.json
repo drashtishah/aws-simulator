@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://aws-simulator.local/schemas/persona-finding.schema.json",
   "title": "Persona exploration finding file",
-  "description": "Shape of a single file under web/test-results/personas/<persona-id>-<timestamp>.json, consumed by `sim-test personas --feedback`. Derived from the PersonaResultData and PersonaFinding interfaces in scripts/sim-test.ts on 2026-04-08.",
+  "description": "Shape of a single file under web/test-results/personas/<persona-id>-<timestamp>.json, consumed by `test personas --feedback`. Derived from the PersonaResultData and PersonaFinding interfaces in scripts/test.ts on 2026-04-08.",
   "type": "object",
   "required": ["persona", "findings"],
   "properties": {

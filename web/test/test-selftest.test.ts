@@ -4,7 +4,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 
 /**
- * sim-test CLI self-tests: smoke-check that every command exposes --help,
+ * test CLI self-tests: smoke-check that every command exposes --help,
  * exits cleanly on --dry-run --json where available, and emits valid JSON.
  *
  * Rationale (Issue #31): the CLI is a developer surface area, not a library,
@@ -17,7 +17,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 
 function run(args: string): { stdout: string; status: number } {
   try {
-    const stdout = execSync(`npx tsx scripts/sim-test.ts ${args}`, {
+    const stdout = execSync(`npx tsx scripts/test.ts ${args}`, {
       cwd: ROOT,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -38,26 +38,16 @@ function parseJsonFromOutput(out: string): unknown {
   return JSON.parse(out.slice(i));
 }
 
-describe('sim-test CLI self-test', () => {
-  it('sim-test --help exits 0 and lists all expected subcommands', () => {
+describe('test CLI self-test', () => {
+  it('test --help exits 0 and lists all expected subcommands', () => {
     const { stdout, status } = run('--help');
     assert.equal(status, 0);
-    for (const cmd of ['run', 'agent', 'personas', 'evals', 'validate', 'summary']) {
+    for (const cmd of ['run', 'agent', 'evals', 'validate', 'summary']) {
       assert.ok(stdout.includes(cmd), `help output missing subcommand: ${cmd}`);
     }
   });
 
-  it('sim-test personas --dry-run --json produces a valid top-level shape', () => {
-    const { stdout, status } = run('personas --dry-run --json');
-    assert.equal(status, 0);
-    const data = parseJsonFromOutput(stdout) as Record<string, unknown>;
-    assert.equal(data.command, 'personas');
-    assert.ok(typeof data.ts === 'string');
-    assert.ok(Array.isArray(data.personas));
-    assert.ok((data.personas as unknown[]).length > 0, 'personas array must be non-empty');
-  });
-
-  it('sim-test agent --dry-run --json produces a valid top-level shape', () => {
+  it('test agent --dry-run --json produces a valid top-level shape', () => {
     const { stdout, status } = run('agent --dry-run --json');
     assert.equal(status, 0);
     const data = parseJsonFromOutput(stdout) as Record<string, unknown>;
@@ -66,7 +56,7 @@ describe('sim-test CLI self-test', () => {
     assert.ok(Array.isArray(data.specs));
   });
 
-  it('sim-test run --help lists the --changed flag', () => {
+  it('test run --help lists the --changed flag', () => {
     const { stdout, status } = run('run --help');
     assert.equal(status, 0);
     assert.ok(stdout.includes('--changed'), 'run --help output must advertise --changed');

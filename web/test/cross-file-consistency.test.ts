@@ -186,13 +186,13 @@ describe('playtester mode removed', () => {
   });
 });
 
-// --- 7. sim-test CLI commands ---
+// --- 7. test CLI commands ---
 
-describe('sim-test CLI commands', () => {
-  const simTestJs = readFile('scripts/sim-test.ts');
+describe('test CLI commands', () => {
+  const simTestJs = readFile('scripts/test.ts');
 
   it('has evals command', () => {
-    assert.ok(simTestJs.includes(".command('evals')"), 'sim-test should have evals command');
+    assert.ok(simTestJs.includes(".command('evals')"), 'test should have evals command');
   });
 
   it('does not have old eval command', () => {

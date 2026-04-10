@@ -3,7 +3,7 @@
 // passing, fresh agent browser test run.
 //
 // Reads web/test-results/agent-browser-latest.json (written by
-// scripts/agent-browser-summarize.ts after a sim-test agent run).
+// scripts/agent-browser-summarize.ts after a test agent run).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -79,7 +79,7 @@ process.stdin.on('end', () => {
 
     if (!fs.existsSync(ARTIFACT)) {
       process.stderr.write(
-        'BLOCKED: UI files staged but no recent browser test run. Run `sim-test agent` (or /fix Phase 4 step 11) before committing.\n'
+        'BLOCKED: UI files staged but no recent browser test run. Run `test agent` (or /fix Phase 4 step 11) before committing.\n'
       );
       process.exit(2);
     }
@@ -107,7 +107,7 @@ process.stdin.on('end', () => {
         : hashStagedUiContents(uiFiles);
       if (artifact.staged_files_hash !== freshHash) {
         process.stderr.write(
-          'BLOCKED: Browser tests are stale relative to staged UI changes. Re-run `sim-test agent`.\n'
+          'BLOCKED: Browser tests are stale relative to staged UI changes. Re-run `test agent`.\n'
         );
         process.exit(2);
       }

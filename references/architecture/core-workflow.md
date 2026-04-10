@@ -4,29 +4,17 @@ Single canonical workflow for all code changes in this repo. Every skill, hook, 
 
 ## 1. Issue first
 
-Every change starts with a GitHub Issue, created before any code is touched. Never retroactively. Capture intent, scope, and the plan file path if one exists.
-
-```bash
-gh issue create --title "PR-X: ..." --body "Source plan: .claude/plans/<slug>.md"
-```
+Every change starts with a GitHub Issue, created before any code is touched. Never retroactively. Two creators: the `/fix` skill or manual `gh issue create`. Tag with `needs-plan` to enter the GHA pipeline.
 
 The issue number is referenced in every commit body (`Ref #N`) and the final commit closes it (`Closes #N`).
 
-## 2. Worktree
+## 2. Pipeline
 
-Non-trivial work happens in an isolated git worktree under the `.claude/` directory so the main checkout stays clean and parallel agents cannot collide.
+Issues tagged `needs-plan` flow through the label-driven GHA pipeline described in `references/architecture/gha-pipeline.md`. Four stages: planner (Sonnet), critic (Opus), implementer (Opus), verifier (Sonnet). Each stage runs as a separate GitHub Actions workflow with its own model, tool allowlist, and prompt.
 
-```bash
-git worktree add .claude/worktrees/{slug} -b feature/{slug}
-```
+## 3. Plans live in issue comments
 
-Cleanup rules are in section 9.
-
-Headless `claude -p --permission-mode acceptEdits` dispatches can be blocked on a small set of sensitive paths (notably `.claude/hooks/**`, `.claude/settings.json`, `.mcp.json`, `.claude/skills/**`). The canonical unblock is to extend `.claude/settings.json` `permissions.allow` after auditing the target file against the rule in `references/registries/headless-edit-allowlist.md`: pure `process.stdout.write` reminder hooks qualify, anything that execs, spawns, fetches, or writes outside stdout does not. Enforcement hooks (pre-commit, Stop, SessionStart) are never allowlisted. Drift between the allow list and the registry is enforced by `web/test/headless-allowlist.test.ts`. See Issue #127.
-
-## 3. Plan if non-trivial
-
-If the change touches more than one file or more than one skill, write a plan first in `.claude/plans/<slug>.md` with exhaustive file lists, exact line references, and a commit sequence. Implementation happens in a separate session reading the plan file. Plans are private scratch space and are never scored by health metrics.
+Plans are posted as issue comments by the planner workflow, not as local files. The critic reviews and approves or revises. The implementer treats the approved plan as its contract.
 
 ## 4. TDD red-green
 
@@ -51,7 +39,7 @@ The deterministic test gate runs in `.github/workflows/ci.yml` on every push and
 
 Recommended local cadence:
 
-- **Per commit:** `sim-test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
+- **Per commit:** `test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
 - **Pre-push:** optional. Run the full local gate (`npm test` + `npm run health` + `npm run doctor`) only if you want to avoid a known-broken first CI run on the branch. Otherwise, push and let CI tell you.
 - **Per PR:** nothing required locally. CI is mandatory.
 
@@ -59,27 +47,13 @@ If targeted local tests fail mid-sequence, stop and fix forward, do not pile mor
 
 After every commit, also pause to consider the code-health impact: did this change touch any file that has an open finding in the latest `learning/logs/health-scores.jsonl`? Could the same diff have resolved or improved a bucket score in passing? Prefer changes that hold or improve the score over changes that ship test-green but quietly degrade a bucket (dangling refs, complexity, dead code). This is a habit, not a hard gate; the gate runs at PR-time via `npm run health` in §9.
 
-## 6b. Notes after every commit
+## 6b. Durable memory via issue comments
 
-After every commit, write one entry to `learning/logs/notes.jsonl` via `scripts/note.ts`. This is the semantic stream the daily compile cron rolls into the system vault, and it is the project's only durable agent-to-agent memory. Writing one note per commit gives the vault a guaranteed cadence so it grows in lockstep with the work.
+Issue comments are the durable agent-to-agent memory. Each pipeline stage (planner, critic, implementer, verifier) posts structured comments that carry context forward. Searchable via `gh issue view` and `gh issue list`.
 
-```bash
-tsx scripts/note.ts --kind <finding|negative_result|workaround|decision|none> --topic <slug> --body "<one or two sentences>"
-```
+## 7. Verifier separation
 
-Allowed kinds:
-
-- `finding`: a non-obvious thing the commit revealed (a constraint, a gotcha, a measurement, an architectural insight).
-- `negative_result`: a path that did not work, with the reason it failed, so the next agent does not retry it.
-- `workaround`: a temporary fix or known-bad pattern that should be revisited later, with the symptom it papers over.
-- `decision`: a deliberate choice the commit embodies, with the reason why this option won.
-- `none`: explicit "nothing worth recording" escape hatch, requires `--reason` so the gap is auditable.
-
-The Stop hook (`.claude/hooks/stop-journal-check.ts`) enforces at least one note per session before exit. The cadence rule above is stricter: one note per commit, not just one per session, so each individual change carries its own context forward rather than being collapsed into a session-level summary. Future agents querying the system vault see the same unit of detail the original author committed.
-
-## 7. Verifier subagent separation
-
-Verification of a change must be performed by a **different subagent** than the one that wrote the code. The author subagent cannot grade its own work. Spawn a fresh verifier with a clean context and have it run the verification commands listed in the plan, then report pass or fail. This is enforced by convention in `/fix` and by plan structure.
+Verification of a change must be performed by a **different agent** than the one that wrote the code. In the GHA pipeline, this is enforced by construction: the implementer and verifier are separate workflow runs with different prompts and different models.
 
 ## 8. Revert, not history rewrite
 
@@ -92,19 +66,9 @@ When a commit on a shared branch turns out to be wrong, the remediation is `git 
 
 History is append-only once pushed. Mistakes get reverted, not erased. Combined with section 5's no-squash rule, this guarantees every change on master is recoverable by SHA forever.
 
-## 9. Cleanup: worktree, branch, Issues, ephemeral artifacts, doctor
+## 9. Cleanup: branch, Issues, ephemeral artifacts, doctor
 
-After a PR merges, five things must be cleaned up: the worktree, the feature branch, any referenced Issues that did not auto-close, any ephemeral build/test artifacts that may have leaked into the repo root, and a final `npm run doctor` confirmation that the workspace is healthy.
-
-Worktree and branch:
-
-```bash
-git worktree remove {worktree path}
-git branch -D feature/{slug}
-git worktree prune
-```
-
-Never leave stale worktrees. Stale worktrees confuse agent navigation, inflate health scores, and pollute `git ls-files` across the monorepo.
+After a PR merges, cleanup is mostly automated. Feature branches are auto-deleted by the repo setting. Issues auto-close via `Closes #N` trailers. Verify and sweep manually only when something fails.
 
 Issue closure verification:
 
@@ -143,4 +107,4 @@ Must return exit 0 with zero FAIL lines. `npm run doctor` is the live workspace 
 
 ## 10. Testing system pointer
 
-For how the test runner, agent browser tests, and `sim-test --changed` actually work, see `references/architecture/testing-system.md`. That doc is the source of truth for the testing infrastructure; this doc only prescribes when to run tests, not how they are implemented.
+For how the test runner, agent browser tests, and `test --changed` actually work, see `references/architecture/testing-system.md`. That doc is the source of truth for the testing infrastructure; this doc only prescribes when to run tests, not how they are implemented.

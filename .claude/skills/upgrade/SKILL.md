@@ -22,7 +22,7 @@ Before checking sources, read these files to build a context summary describing 
 | `references/architecture/workspace-map.md` | Component diagram, data flow, shared data files, test layers |
 | `package.json` | Scripts (test, health, extract-paths, feedback:personas), dependencies (express, js-yaml, acorn, commander) |
 | `references/architecture/testing-system.md` | 3-layer test architecture: deterministic (node --test), agent browser (YAML specs + Chrome DevTools MCP), agent persona (JSON profiles) |
-| `.claude/skills/*/SKILL.md` | Frontmatter only: name + description of each skill (play, create-sim, setup, fix, sim-test) |
+| `.claude/skills/*/SKILL.md` | Frontmatter only: name + description of each skill (play, create-sim, setup, fix, test) |
 
 If `.claude/skills/upgrade/references/workspace-context.md` exists and is recent, use it directly instead of re-reading all files. Only rebuild context from source files if the workspace has changed significantly.
 
@@ -56,7 +56,7 @@ WORKSPACE CONTEXT:
 
 For each finding, assess:
 - Does this affect hooks? (this workspace uses PreToolUse guard-write + 6-event log-hook)
-- Does this affect skills? (5 skills: play, create-sim, setup, fix, sim-test)
+- Does this affect skills? (5 skills: play, create-sim, setup, fix, test)
 - Does this affect MCP? (uses aws-knowledge, chrome-devtools)
 - Does this affect testing? (3-layer: node --test, agent browser YAML specs, agent personas)
 - Does this affect plugins? (superpowers, playground, cli-anything, agent teams)

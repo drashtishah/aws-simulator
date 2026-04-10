@@ -1,12 +1,12 @@
 #!/usr/bin/env npx tsx
-// Summarizes a sim-test agent browser run into web/test-results/agent-browser-latest.json.
+// Summarizes a test agent browser run into web/test-results/agent-browser-latest.json.
 // The pre-commit-ui-tests hook reads this artifact to gate UI commits.
 //
 // Usage:
 //   tsx scripts/agent-browser-summarize.ts --status pass
 //   tsx scripts/agent-browser-summarize.ts --status fail --failed-specs home,session
 //
-// Per-spec results are not currently emitted by sim-test agent (the runner is a
+// Per-spec results are not currently emitted by test agent (the runner is a
 // YAML to instruction translator; chrome-devtools calls happen in a downstream
 // subagent). The summarizer therefore takes the overall status from CLI args
 // and computes git metadata (HEAD, hash of UI files at HEAD) itself.

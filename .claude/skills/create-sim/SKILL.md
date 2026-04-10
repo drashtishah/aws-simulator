@@ -366,7 +366,7 @@ tags:
 
 ### Step 21b: Validate sim content
 
-Run: `sim-test content <simId>`
+Run: `test content <simId>`
 
 This uses an LLM agent to validate that the summary, title, difficulty, services, tags, category, and learning objectives all accurately match the generated sim content. All 7 dimensions must pass before committing. If any fail, fix the issue and re-run until all pass.
 
@@ -412,7 +412,7 @@ Sim titles are theme-invariant. They read like chapter headings -- quiet, unders
 10. Sim IDs are globally unique and sequential -- always check registry.json for the next available number
 11. Never generate a sim for a topic that already exists in the registry unless the user explicitly asks for a variant
 12. Sim titles read like chapter headings -- quiet, understated, slightly literary
-13. /create-sim writes salience-triggered notes during research and sim generation. Any moment that feels surprising (unexpected AWS behavior, interesting failure mode), exciting (a particularly good scenario idea), or frustrating (MCP returns less than expected, SOP contradicts a best practice) gets a `scripts/note.ts` entry in the moment. Any emotion, positive or negative, is a valid signal. Rule: memory `feedback_note_on_salience.md`.
+13. /create-sim notes salience-triggered observations during research and sim generation. Any moment that feels surprising (unexpected AWS behavior, interesting failure mode), exciting (a particularly good scenario idea), or frustrating (MCP returns less than expected, SOP contradicts a best practice) is a valid signal worth recording in an issue comment or feedback entry.
 
 ## Related
 

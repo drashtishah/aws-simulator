@@ -1,8 +1,8 @@
-// Tests for sim-test run failing-file reporting helpers (Group A of plan
+// Tests for test run failing-file reporting helpers (Group A of plan
 // .claude/plans/replicated-exploring-thompson.md, Issue #92).
 //
 // node:test refuses to spawn itself recursively, so the per-file run logic
-// is extracted into pure helpers (scripts/sim-test-runner.ts) that can be
+// is extracted into pure helpers (scripts/test-runner.ts) that can be
 // unit-tested without invoking the real CLI. Integration is verified by the
 // manual step in the plan: break web/test/markdown.test.ts and run npm test.
 
@@ -13,7 +13,7 @@ const {
   parseTestOutput,
   aggregateRuns,
   formatFailedFilesSummary,
-} = require('../../scripts/sim-test-runner');
+} = require('../../scripts/test-runner');
 
 describe('parseTestOutput', () => {
   it('parses node:test "# pass N / # fail N" output', () => {

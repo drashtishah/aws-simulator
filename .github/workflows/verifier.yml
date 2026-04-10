@@ -1,0 +1,157 @@
+name: verifier
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  verify:
+    if: |
+      github.event.label.name == 'needs-verify' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.email "6rashti5hah@gmail.com"
+          git config user.name  "Drashti Shah"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 8
+            --allowed-tools "Read,Glob,Grep,Edit,Bash(git:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*)"
+          prompt: |
+            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
+            The repository is checked out at the workspace root. You have:
+              - Read access to the entire repo
+              - Edit access to files (for small fixes only)
+              - Access to `gh` CLI for issue, PR create, and PR merge operations
+              - git, npm, tsx for testing
+
+            Project rules (from CLAUDE.md, MUST follow):
+              - No emojis in any output
+              - Never use `--` as punctuation; use commas, periods, or colons
+              - All file paths in markdown and JSON must be root-relative
+              - Backticks only for file paths and code
+
+            Behavioral guidelines (read references/guidelines/karpathy.md before acting):
+              1. State assumptions explicitly. If uncertain, ask in a comment instead of guessing.
+              2. Simplicity first. Minimum code that solves the problem. No speculative features.
+              3. Surgical changes. Touch only what you must. Never refactor adjacent code.
+              4. Goal-driven execution. Define verifiable success criteria before acting.
+
+            Issue context: read the full issue body and all comments before acting.
+
+            Your role: VERIFIER
+
+            Read:
+            1. The original issue body.
+            2. The planner's plan comment.
+            3. The critic's comment.
+            4. The implementer's branch (find it via the implementer's comment, e.g.
+               `feature/issue-${{ github.event.issue.number }}-...`).
+
+            Check out the implementer's branch:
+              git fetch origin
+              git checkout feature/issue-${{ github.event.issue.number }}-<slug>
+
+            Verification checklist (you MUST complete all of these):
+
+            1. Diff vs plan: read `git log master..HEAD` and `git diff master..HEAD`.
+               Does every changed file appear in the plan? If a changed file is NOT
+               in the plan, that is scope creep. FAIL.
+            2. TDD honesty: does the commit history contain a failing-test commit
+               BEFORE the implementation commit? Use `git log --oneline master..HEAD`
+               to check. If not, FAIL.
+            3. Commit hygiene: each commit independently revertable? Each commit
+               references `#${{ github.event.issue.number }}`? Last commit closes it
+               with `Closes #${{ github.event.issue.number }}`?
+            4. Tests pass: run `npm test`. Run `npm run health`. Run `npm run doctor`
+               with DOCTOR_SKIP_INTEGRATION=1. All three must exit 0.
+            5. Karpathy guidelines: skim the diff. Any speculative abstractions?
+               Any unrelated cleanups? Any "improvements" to adjacent code? FAIL on
+               first violation.
+
+            You MAY make small fixes yourself if a check fails for a trivial reason
+            (missing import, lint error, missed edge case in the test). If you fix
+            something, commit it with message `fix: <thing>` body `Ref #${{ github.event.issue.number }}`.
+            Do not refactor or expand scope.
+
+            DECISION:
+            - If all checks pass:
+              1. Open a PR:
+                 gh pr create --base master --head <branch> \
+                   --title "<issue title>" \
+                   --body "Closes #${{ github.event.issue.number }}
+
+                   Verified by verifier.yml. Checks: diff-vs-plan, TDD honesty, commit hygiene, tests pass, karpathy guidelines."
+              2. Capture the PR number from `gh pr create` output.
+              3. Auto-merge it:
+                 gh pr merge <PR#> --merge --auto --delete-branch
+              4. Post a comment:
+                 `Verification: PASS. PR #<PR#> opened and queued for auto-merge.`
+            - If any check fails AND no `retry-2` label is on the issue: end your
+              comment with `Verification: FAIL, retry.`
+            - If any check fails AND `retry-2` is already on the issue: end your
+              comment with `Verification: FAIL, escalate.`
+
+            If `gh pr merge --auto` fails because branch protection is not configured
+            correctly (e.g., required checks are not set), fall back to a non-auto
+            merge: `gh pr merge <PR#> --merge --delete-branch`. Then comment so the
+            human knows branch protection needs fixing.
+
+      - name: Swap labels based on verification
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          last_comment=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json comments --jq '.comments[-1].body')
+          if echo "$last_comment" | grep -q "Verification: PASS."; then
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-verify"
+          elif echo "$last_comment" | grep -q "Verification: FAIL, retry."; then
+            labels=$(gh issue view ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --json labels --jq '.labels[].name')
+            if echo "$labels" | grep -q '^retry-1$'; then
+              next_retry="retry-2"
+              rm_retry="--remove-label retry-1"
+            else
+              next_retry="retry-1"
+              rm_retry=""
+            fi
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-verify" \
+              $rm_retry \
+              --add-label "needs-impl" \
+              --add-label "$next_retry"
+          else
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-verify" \
+              --add-label "needs-human"
+          fi

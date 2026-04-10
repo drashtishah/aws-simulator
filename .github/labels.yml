@@ -1,0 +1,39 @@
+# Label set for the GHA agent pipeline.
+# Create these labels via: gh label create <name> --color <color> --description "<desc>"
+# or use gh-label-sync to apply from this file.
+
+- name: needs-plan
+  color: "fbca04"
+  description: "Planner workflow picks this up"
+
+- name: needs-critique
+  color: "e68a00"
+  description: "Critic workflow picks this up"
+
+- name: revision-1
+  color: "c0c0c0"
+  description: "Critic has bounced the plan once (caps revision loop at 1)"
+
+- name: needs-impl
+  color: "0075ca"
+  description: "Implementer workflow picks this up"
+
+- name: needs-verify
+  color: "7b2d8b"
+  description: "Verifier workflow picks this up"
+
+- name: retry-1
+  color: "c0c0c0"
+  description: "Verifier bounced the implementation once"
+
+- name: retry-2
+  color: "c0c0c0"
+  description: "Verifier bounced the implementation twice (next bounce escalates)"
+
+- name: blocked
+  color: "d73a4a"
+  description: "Agents stop touching this issue"
+
+- name: needs-human
+  color: "d73a4a"
+  description: "Escape hatch: retries exhausted, ambiguous, or blocked"

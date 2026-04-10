@@ -7,9 +7,8 @@ memory: stable, structured, small.
 
 ## Inputs
 
-- `learning/logs/notes.jsonl` (last 24 hours, JSONL). Each entry is
-  `{ts, kind, topic, body}` written by `scripts/note.ts`. This is the
-  primary semantic signal: every entry is a topic claim the agent made.
+- `learning/logs/notes.jsonl` (last 24 hours, JSONL, if present). Each entry is
+  `{ts, kind, topic, body}`. This is the primary semantic signal when available.
 - `learning/logs/raw.jsonl` (last 24 hours, JSONL). Mechanical session
   metadata (SessionStart, PostToolUse, Stop, Failure events).
 - Existing files under `learning/system-vault/`.

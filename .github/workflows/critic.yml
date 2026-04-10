@@ -1,0 +1,101 @@
+name: critic
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  critique:
+    if: |
+      github.event.label.name == 'needs-critique' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 5
+            --allowed-tools "Read,Glob,Grep,Bash(gh issue view:*),Bash(gh issue comment:*)"
+          prompt: |
+            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
+            The repository is checked out at the workspace root. You have:
+              - Read access to the entire repo
+              - Access to `gh` CLI for issue operations
+
+            Project rules (from CLAUDE.md, MUST follow):
+              - No emojis in any output
+              - Never use `--` as punctuation; use commas, periods, or colons
+              - All file paths in markdown and JSON must be root-relative
+              - Backticks only for file paths and code
+
+            Behavioral guidelines (read references/guidelines/karpathy.md before acting):
+              1. State assumptions explicitly. If uncertain, ask in a comment instead of guessing.
+              2. Simplicity first. Minimum code that solves the problem. No speculative features.
+              3. Surgical changes. Touch only what you must. Never refactor adjacent code.
+              4. Goal-driven execution. Define verifiable success criteria before acting.
+
+            Issue context: read the full issue body and all comments before acting.
+
+            Your role: ADVERSARIAL CRITIC
+
+            Read the planner's comment (the most recent comment ending with
+            "Plan ready for critique."). Your job is to attack it.
+
+            Specifically:
+            1. Is this the simplest possible solution? If a 50-line plan could be a
+               10-line plan, say so and propose the smaller version.
+            2. Is anything in the plan speculative, configurable, or "for future
+               flexibility"? Strip it.
+            3. Does the plan touch files unrelated to the issue? Push back.
+            4. Does the plan invent abstractions for one-time code? Reject.
+            5. Does the plan have verifiable success criteria? If not, name what is
+               missing.
+            6. Is the test plan red-green honest? (A failing test must reproduce the
+               issue's intent before any implementation.) If the plan skips the
+               failing-test step, demand it.
+
+            Post your critique as a single issue comment.
+
+            DECISION:
+            - If the plan is acceptable as-is OR the issue already has the
+              `revision-1` label (we cap revisions at 1): end the comment with
+              `Critique: APPROVED.`
+            - Otherwise: end the comment with `Critique: REVISE.` In this case the
+              workflow will re-add `needs-plan` and add `revision-1`.
+
+            Do NOT modify any files. Do NOT push commits.
+
+      - name: Swap labels based on critique
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          last_comment=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json comments --jq '.comments[-1].body')
+          has_revision1=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '.labels[].name' | grep -c '^revision-1$' || true)
+          if echo "$last_comment" | grep -q "Critique: REVISE." && [ "$has_revision1" = "0" ]; then
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-critique" \
+              --add-label "needs-plan" \
+              --add-label "revision-1"
+          else
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-critique" \
+              --add-label "needs-impl"
+          fi

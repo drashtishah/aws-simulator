@@ -10,7 +10,7 @@ Interactive AWS incident-response training game played through Claude Code skill
 - create-sim: Generates sim packages using web research + AWS MCP
 - setup: Initializes player profile and workspace
 - fix: Analyzes feedback + activity logs, applies skill improvements
-- sim-test: CLI for deterministic tests, agent browser specs, persona tests
+- test: CLI for deterministic tests, agent browser specs, persona tests
 
 ### Hooks (2)
 - guard-write.js: PreToolUse Write hook. Skill ownership enforcement, protected paths (path-registry.csv, activity.jsonl, scripts/, node_modules/, web/test-specs/)
@@ -36,7 +36,7 @@ Interactive AWS incident-response training game played through Claude Code skill
 
 ### Key Tooling
 - npm run health: Code health metrics (modularity, complexity, size balance, dependency depth)
-- npm test: Path extraction + sim-test CLI
+- npm test: Path extraction + test CLI
 - npm run feedback:personas: Run persona-based testing
 
 ### Data Patterns

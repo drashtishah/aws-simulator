@@ -16,10 +16,10 @@ describe('guard-write coverage', () => {
     );
   });
 
-  it('sim-test.js removed from NEVER_WRITABLE for TS migration', () => {
+  it('test.js removed from NEVER_WRITABLE for TS migration', () => {
     assert.ok(
-      !guardSource.includes("'scripts/sim-test.js'"),
-      'guard-write.js should no longer protect scripts/sim-test.js (removed for TS migration)'
+      !guardSource.includes("'scripts/test.js'"),
+      'guard-write.js should no longer protect scripts/test.js (removed for TS migration)'
     );
   });
 
@@ -41,13 +41,13 @@ describe('guard-write coverage', () => {
     }
   });
 
-  it('sim-test ownership includes web/test-results/ dir', () => {
+  it('test ownership includes web/test-results/ dir', () => {
     const ownership = JSON.parse(
-      fs.readFileSync(path.join(ROOT, '.claude', 'skills', 'sim-test', 'ownership.json'), 'utf8')
+      fs.readFileSync(path.join(ROOT, '.claude', 'skills', 'test', 'ownership.json'), 'utf8')
     );
     assert.ok(
       ownership.dirs.includes('web/test-results/'),
-      'sim-test ownership should include web/test-results/ directory'
+      'test ownership should include web/test-results/ directory'
     );
   });
 

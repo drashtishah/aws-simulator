@@ -7,9 +7,8 @@
 # If any file has a pending reset, exits non-zero with a clear human
 # message naming the reset time. Otherwise exits 0.
 #
-# Used by scripts/spawn-sibling.sh as a pre-flight gate so we do not
-# dispatch a new headless session into a near-exhausted 5-hour rolling
-# token budget. Issue #148.
+# Pre-flight gate to avoid dispatching into a near-exhausted 5-hour
+# rolling token budget. Issue #148.
 #
 # Usage:
 #   scripts/check-budget.sh            # default dir: learning/logs/
@@ -66,17 +65,6 @@ if (( MAX_RESET > NOW_EPOCH )); then
   remaining=$(( MAX_RESET - NOW_EPOCH ))
   echo "check-budget: rate limit resets at epoch $MAX_RESET ($reset_human), ${remaining}s from now" >&2
   echo "check-budget: refusing to dispatch; wait for reset" >&2
-
-  # Record a decision note so the refusal is discoverable in
-  # learning/logs/notes.jsonl and surfaces via the Stop hook. Issue #131.
-  # Best-effort only: note.ts failure must not mask the original refusal,
-  # and the note is redundant to stderr anyway. NOTES_LOG_DIR override is
-  # honored for tests.
-  note_body="check-budget refused dispatch; rate limit resets at epoch ${MAX_RESET} (${reset_human}), ${remaining}s from now"
-  npx tsx "$(dirname "$0")/note.ts" \
-    --kind decision \
-    --topic ratelimit-refusal \
-    --body "$note_body" >/dev/null 2>&1 || true
 
   exit 1
 fi

@@ -38,7 +38,7 @@ the malformed body to the user instead of filing.
 ## Verification
 \`\`\`bash
 npm run health
-npx tsx scripts/sim-test.ts run --files <glob>
+npx tsx scripts/test.ts run --files <glob>
 \`\`\`
 
 ## Debate transcript excerpts

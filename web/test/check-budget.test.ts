@@ -17,19 +17,11 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const SCRIPT = path.join(ROOT, 'scripts/check-budget.sh');
 
 function runScript(logDir: string): { status: number | null; stdout: string; stderr: string } {
-  // Always sandbox notes.jsonl writes to a temp dir so refusal-path tests
-  // do not pollute the real learning/logs/notes.jsonl. Individual tests
-  // that care about the note contents override NOTES_LOG_DIR themselves.
-  const notesSandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'check-budget-notes-sb-'));
-  try {
-    const r = spawnSync('bash', [SCRIPT], {
-      encoding: 'utf8',
-      env: { ...process.env, BUDGET_LOG_DIR: logDir, NOTES_LOG_DIR: notesSandbox },
-    });
-    return { status: r.status, stdout: r.stdout, stderr: r.stderr };
-  } finally {
-    fs.rmSync(notesSandbox, { recursive: true, force: true });
-  }
+  const r = spawnSync('bash', [SCRIPT], {
+    encoding: 'utf8',
+    env: { ...process.env, BUDGET_LOG_DIR: logDir },
+  });
+  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
 function setupLogDir(): { dir: string; cleanup: () => void; write: (name: string, content: string) => void } {
@@ -152,59 +144,4 @@ describe('scripts/check-budget.sh', () => {
     }
   });
 
-  it('writes a decision note to notes.jsonl when refusing dispatch on rate limit (Issue #131)', () => {
-    const logs = setupLogDir();
-    const notesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'check-budget-notes-'));
-    try {
-      const futureEpoch = Math.floor(Date.now() / 1000) + 3600;
-      logs.write(
-        'run-fake-part-1.jsonl',
-        JSON.stringify({
-          type: 'rate_limit_event',
-          rate_limit_info: { status: 'rejected', resetsAt: futureEpoch },
-        }) + '\n',
-      );
-      const r = spawnSync('bash', [SCRIPT], {
-        encoding: 'utf8',
-        env: { ...process.env, BUDGET_LOG_DIR: logs.dir, NOTES_LOG_DIR: notesDir },
-      });
-      assert.notStrictEqual(r.status, 0, 'must still refuse dispatch');
-
-      const notesPath = path.join(notesDir, 'notes.jsonl');
-      assert.ok(fs.existsSync(notesPath), 'notes.jsonl must be created');
-      const lines = fs
-        .readFileSync(notesPath, 'utf8')
-        .split('\n')
-        .filter((l) => l.trim().length > 0);
-      assert.strictEqual(lines.length, 1, 'exactly one note per refusal');
-      const entry = JSON.parse(lines[0]);
-      assert.strictEqual(entry.kind, 'decision');
-      assert.match(entry.topic, /ratelimit/);
-      assert.match(entry.body, /rate.?limit|refus|reset/i);
-    } finally {
-      logs.cleanup();
-      fs.rmSync(notesDir, { recursive: true, force: true });
-    }
-  });
-
-  it('does NOT write a note when the budget check passes (Issue #131)', () => {
-    const logs = setupLogDir();
-    const notesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'check-budget-notes-'));
-    try {
-      logs.write(
-        'run-clean.jsonl',
-        JSON.stringify({ type: 'result', is_error: false }) + '\n',
-      );
-      const r = spawnSync('bash', [SCRIPT], {
-        encoding: 'utf8',
-        env: { ...process.env, BUDGET_LOG_DIR: logs.dir, NOTES_LOG_DIR: notesDir },
-      });
-      assert.strictEqual(r.status, 0);
-      const notesPath = path.join(notesDir, 'notes.jsonl');
-      assert.ok(!fs.existsSync(notesPath), 'no note should be written on clean pass');
-    } finally {
-      logs.cleanup();
-      fs.rmSync(notesDir, { recursive: true, force: true });
-    }
-  });
 });

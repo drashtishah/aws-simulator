@@ -1,0 +1,125 @@
+name: implementer
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  implement:
+    if: |
+      github.event.label.name == 'needs-impl' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.email "6rashti5hah@gmail.com"
+          git config user.name  "Drashti Shah"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 15
+            --allowed-tools "Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(npm:*),Bash(npx:*),Bash(tsx:*),Bash(python3:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
+          prompt: |
+            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
+            The repository is checked out at the workspace root. You have:
+              - Read access to the entire repo
+              - Write access to files (use the Edit/Write tools)
+              - Access to `gh` CLI for issue operations
+              - git, npm, tsx, python3 for building and testing
+
+            Project rules (from CLAUDE.md, MUST follow):
+              - No emojis in any output
+              - Never use `--` as punctuation; use commas, periods, or colons
+              - All file paths in markdown and JSON must be root-relative
+              - Backticks only for file paths and code
+
+            Behavioral guidelines (read references/guidelines/karpathy.md before acting):
+              1. State assumptions explicitly. If uncertain, ask in a comment instead of guessing.
+              2. Simplicity first. Minimum code that solves the problem. No speculative features.
+              3. Surgical changes. Touch only what you must. Never refactor adjacent code.
+              4. Goal-driven execution. Define verifiable success criteria before acting.
+
+            Issue context: read the full issue body and all comments before acting.
+
+            Your role: IMPLEMENTER
+
+            Read the issue, the planner's plan comment, and the critic's comment.
+            The plan is your contract.
+
+            Setup:
+            1. Create a feature branch from master named:
+               `feature/issue-${{ github.event.issue.number }}-<short-slug>`
+            2. Make sure git is configured with email 6rashti5hah@gmail.com.
+
+            TDD red-green discipline (this is non-negotiable):
+            1. Write the failing test FIRST. Run it and confirm it fails for the
+               expected reason. Commit the failing test alone with a message like:
+               `test: failing test for <thing>` body containing `Ref #${{ github.event.issue.number }}`.
+            2. Implement the minimum code to make the test pass. Run the test and
+               confirm it passes. Commit with message `feat: <thing>` body containing
+               `Ref #${{ github.event.issue.number }}`.
+            3. If a refactor is genuinely needed (not "I want to clean up unrelated
+               stuff"), do it as a third commit `refactor: <thing>`.
+
+            Constraints (karpathy guidelines, MUST follow):
+            - Surgical changes only. Every changed line must trace to the issue.
+            - Never edit code unrelated to the plan.
+            - Never refactor pre-existing code that is not broken.
+            - Match existing style.
+            - No speculative abstractions, no unnecessary configurability.
+            - Each commit must be independently revertable (small, focused, tests
+              alongside implementation).
+
+            When all commits are made, push the branch:
+              git push -u origin feature/issue-${{ github.event.issue.number }}-<slug>
+
+            The LAST commit's message body must include:
+              `Closes #${{ github.event.issue.number }}`
+
+            Run `npm test` locally before pushing. If it fails, fix it before pushing.
+            Do NOT post a comment with file diffs (the verifier will read git directly).
+            Post one short comment: `Implementation pushed to <branch>. Ready for verification.`
+
+            If you cannot complete the work (ambiguous spec, missing context, etc.),
+            DO NOT guess. Post a comment explaining what is blocked and end it with
+            `Status: BLOCKED.` so the workflow can label it `needs-human`.
+
+      - name: Swap labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          last_comment=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json comments --jq '.comments[-1].body')
+          if echo "$last_comment" | grep -q "Status: BLOCKED."; then
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-impl" \
+              --add-label "needs-human"
+          else
+            gh issue edit ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --remove-label "needs-impl" \
+              --add-label "needs-verify"
+          fi

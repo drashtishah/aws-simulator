@@ -4,12 +4,9 @@
 # master. Mirrors the local pre-PR gate so the human is no longer the only
 # verifier and so master is auditable per commit. Issue #137.
 #
-# A health-score regression guard step is intentionally omitted from this
-# initial workflow because `learning/logs/health-scores.jsonl` is gitignored
-# and cannot be `git show`-ed from origin/master. The baseline strategy
-# (gha cache, dual-run, or selectively tracking the snapshot file) is
-# tracked as a follow-up to Issue #143; the regression-check script itself
-# already ships at scripts/health-regression-check.ts and is unit-tested.
+# Includes a hard health-regression gate (Issue #143): computes health
+# scores on the PR head and on the merge base, then fails if any bucket
+# regressed. This is critical for autonomous merging by the verifier.
 
 name: ci
 
@@ -54,6 +51,28 @@ jobs:
 
       - name: npm run health
         run: npm run health
+
+      - name: health regression check (Issue #143)
+        if: github.event_name == 'pull_request'
+        run: |
+          # The prior "npm run health" step already wrote the PR scores to
+          # learning/logs/health-scores.jsonl. Copy it as the PR baseline.
+          cp learning/logs/health-scores.jsonl /tmp/pr-health.jsonl
+
+          # Compute health scores on the merge base in a separate worktree
+          BASE_SHA=$(git merge-base HEAD origin/${{ github.base_ref }})
+          git worktree add /tmp/base-checkout "$BASE_SHA" --quiet
+          cd /tmp/base-checkout
+          npm ci --silent 2>/dev/null
+          mkdir -p learning/logs learning/system-vault
+          echo '# stub' > learning/system-vault/index.md
+          npx tsx scripts/code-health.ts > /dev/null
+          cp learning/logs/health-scores.jsonl /tmp/base-health.jsonl
+          cd -
+          git worktree remove /tmp/base-checkout --force
+
+          # Compare: fail if any bucket regressed
+          npx tsx scripts/health-regression-check.ts /tmp/pr-health.jsonl /tmp/base-health.jsonl
 
       - name: seed per-user state for doctor
         run: |

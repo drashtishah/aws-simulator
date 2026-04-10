@@ -129,10 +129,8 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> writes GitHub Issues (actionable findings from debate)
             --> /fix picks up issues in its gather phase (step 3b)
 
-sim-test ----> run: executes node --test (unit tests)
+test ----> run: executes node --test (unit tests)
            --> agent: reads web/test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
-           --> personas: reads web/test-specs/personas/*.json, prints prompts for exploration
-           --> personas --feedback: reads web/test-results/personas/, appends to feedback.md
            --> summary: aggregates web/test-results/ into web/test-results/summary.json
 ```
 
@@ -156,7 +154,7 @@ sim-test ----> run: executes node --test (unit tests)
 | `learning/system-vault/` | setup (seed), system-vault-compile, system-vault-dream, system-vault-prune | system-vault-query, fight-team | Per-user, gitignored long-term system memory: findings, decisions, workarounds, components, sessions, health, dreams. Compiled daily from `learning/logs/raw.jsonl`. Index capped at 200 lines, topic files capped at 4KB. |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
-| `web/test-results/summary.json` | `sim-test summary` | fix | JSON: aggregated test results across all layers |
+| `web/test-results/summary.json` | `test summary` | fix | JSON: aggregated test results across all layers |
 
 ### Model split
 
@@ -172,7 +170,7 @@ Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons wit
 | weekly-fight-team | cron | Sunday 04:00 local | Run 4-round fight-team debate over top 10 findings in `learning/logs/health-scores.jsonl`, file copy-paste-ready GitHub Issues via `scripts/lib/validate-fight-team-issue.ts` | `.claude/scheduled-jobs/weekly-fight-team.json` |
 | weekly-dream | cron | Sunday 03:30 local | Run system-vault-dream skill to consolidate `learning/system-vault/`. Empty-vault guard: skip if vault has fewer than 5 topic files. | `.claude/scheduled-jobs/weekly-dream.json` |
 | system-vault-compile chain | hook (PostCommit) | after every commit | Re-run `system-vault-compile` and append to `learning/logs/health-scores.jsonl` | `.claude/settings.json` |
-| pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `sim-test agent` browser test pass | `.claude/settings.json` |
+| pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `test agent` browser test pass | `.claude/settings.json` |
 | pre-commit-issues | hook (pre-commit) | before every commit | Require Closes/Ref/Fixes/Part of issue reference; block deletion of `learning/logs/health-scores.jsonl` (PR-C invariant 6) | `.claude/hooks/pre-commit-issues.ts` |
 
 State file backing these automations: `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Tracked and seeded by PR-Pre.
@@ -181,9 +179,9 @@ GitHub secret-scanning exclusions live in `.github/secret_scanning.yml`. `sims/*
 
 ## Tests
 
-All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `references/architecture/testing-system.md` for full architecture.
+All tests run through the `test` CLI (`scripts/test.ts`). See `references/architecture/testing-system.md` for full architecture.
 
-### Layer 1: Deterministic (`sim-test run`)
+### Layer 1: Deterministic (`test run`)
 
 | Type | Location | What it covers |
 |------|----------|----------------|
@@ -206,7 +204,7 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `reference
 | Unit | `web/test/setup-consistency.test.ts` | Validates /setup command integrity |
 | Unit | `web/test/transcript.test.ts` | Session transcript format |
 
-### Layer 2: Agent Browser (`sim-test agent`)
+### Layer 2: Agent Browser (`test agent`)
 
 | Spec | Location | What it covers |
 |------|----------|----------------|
@@ -219,17 +217,7 @@ All tests run through the `sim-test` CLI (`scripts/sim-test.ts`). See `reference
 | accessibility | `web/test-specs/browser/accessibility.yaml` | ARIA roles, attributes, focus order, keyboard nav |
 
 
-### Layer 3: Agent Persona (`sim-test personas`)
-
-| Persona | Location | Focus areas |
-|---------|----------|-------------|
-| impatient-beginner | `web/test-specs/personas/impatient-beginner.json` | Error handling, loading states, race conditions |
-| hostile-user | `web/test-specs/personas/hostile-user.json` | XSS, input validation, API error handling |
-| screen-reader-user | `web/test-specs/personas/screen-reader-user.json` | ARIA roles, live regions, focus management |
-| power-user | `web/test-specs/personas/power-user.json` | State consistency, performance, concurrent operations |
-| mobile-first-user | `web/test-specs/personas/mobile-first-user.json` | Responsive layout, touch targets, viewport overflow |
-
-Results written to `web/test-results/` (gitignored). Use `sim-test summary` to aggregate.
+Results written to `web/test-results/` (gitignored). Use `test summary` to aggregate.
 
 ## Impact Analysis Guide
 

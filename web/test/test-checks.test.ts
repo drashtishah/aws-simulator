@@ -1,5 +1,5 @@
 // Tests for the new browser-spec check types: console_clean, network_ok, landmarks_present.
-// The sim-test runner is an agent-instruction translator: it parses YAML specs and prints
+// The test runner is an agent-instruction translator: it parses YAML specs and prints
 // step-by-step instructions for a chrome-devtools-driving subagent. These tests assert that
 // the schema accepts the new check types and that the agent printer renders them correctly,
 // including spec-level allowlists and origin lists.
@@ -12,7 +12,7 @@ const path = require('node:path');
 const os = require('node:os');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CLI = 'npx tsx scripts/sim-test.ts';
+const CLI = 'npx tsx scripts/test.ts';
 const SCHEMA_PATH = path.join(ROOT, 'references/schemas/browser-spec.schema.json');
 const SPECS_DIR = path.join(ROOT, 'web/test-specs/browser');
 
@@ -103,7 +103,7 @@ describe('all 7 browser specs: contain the new check types', () => {
   });
 });
 
-describe('sim-test runner: prints new check types', () => {
+describe('test runner: prints new check types', () => {
   // Write a temporary spec file in web/test-specs/browser, run dry-run + non-dry-run agent
   // print, capture output, then delete the temp file. We isolate by using a unique name.
   function withTempSpec(name: string, body: string, fn: (file: string) => void): void {
