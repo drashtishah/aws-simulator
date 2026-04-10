@@ -1,0 +1,93 @@
+name: planner
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  plan:
+    if: |
+      github.event.label.name == 'needs-plan' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'needs-human')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model claude-sonnet-4-6
+            --max-turns 5
+            --allowed-tools "Read,Glob,Grep,WebFetch,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*)"
+          prompt: |
+            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
+            The repository is checked out at the workspace root. You have:
+              - Read access to the entire repo
+              - Access to `gh` CLI for issue operations
+              - Network access via WebFetch if needed
+
+            Project rules (from CLAUDE.md, MUST follow):
+              - No emojis in any output
+              - Never use `--` as punctuation; use commas, periods, or colons
+              - All file paths in markdown and JSON must be root-relative
+              - Backticks only for file paths and code
+
+            Behavioral guidelines (read references/guidelines/karpathy.md before acting):
+              1. State assumptions explicitly. If uncertain, ask in a comment instead of guessing.
+              2. Simplicity first. Minimum code that solves the problem. No speculative features.
+              3. Surgical changes. Touch only what you must. Never refactor adjacent code.
+              4. Goal-driven execution. Define verifiable success criteria before acting.
+
+            Issue context: read the full issue body and all comments before acting.
+
+            Your role: PLANNER
+
+            Read this issue end-to-end including all comments. Your job:
+
+            1. Determine what the issue is asking for.
+            2. Check whether the issue body or any existing comment already contains a
+               detailed plan (file paths, line refs, exact edits, test plan). If it
+               does, your job is to VALIDATE and lightly refine, NOT to rewrite.
+               Post a short comment confirming the plan is workable, with at most a
+               handful of targeted suggestions. Do not bloat it.
+            3. If the issue does NOT already have a detailed plan, produce one. Format:
+
+               ## Plan
+               ### Files to change
+               - path/to/file.ts:LINE, what changes
+               - ...
+               ### Files NOT to touch (out of scope)
+               - ...
+               ### Tests
+               - new test: web/test/foo.test.ts (failing test that reproduces / proves intent)
+               - existing tests that must still pass: ...
+               ### Verification command
+               - npm test
+               - <specific test invocation if needed>
+               ### Risks / open questions
+               - ...
+
+            4. Be surgical. Smaller is better. Reject scope creep up front.
+            5. Post the plan as a single issue comment. End the comment with the line:
+               `Plan ready for critique.`
+
+            Do NOT modify any files. Do NOT push commits. Do NOT create branches.
+            Only post one comment.
+
+      - name: Swap labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-plan" \
+            --add-label "needs-critique"
