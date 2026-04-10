@@ -22,59 +22,51 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Classify issue and load prompt
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          N=${{ github.event.issue.number }}
+          labels=$(gh issue view "$N" --repo ${{ github.repository }} \
+            --json labels --jq '[.labels[].name] | join(",")')
+
+          BASE="references/pipeline/planner.md"
+          OVERLAY=""
+          TOOLS="Read,Glob,Grep,WebFetch,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*)"
+          MCP_ARG=""
+
+          if echo "$labels" | grep -q "text-only"; then
+            OVERLAY="references/pipeline/context-text.md"
+          elif echo "$labels" | grep -q "ui"; then
+            OVERLAY="references/pipeline/context-ui.md"
+          elif echo "$labels" | grep -q "sim-content"; then
+            OVERLAY="references/pipeline/context-sim.md"
+            TOOLS="$TOOLS,mcp__aws-knowledge-mcp-server"
+            MCP_ARG="--mcp-config .mcp.ci.json"
+          fi
+
+          {
+            echo 'prompt<<PROMPT_EOF'
+            sed "s/{{ISSUE}}/$N/g" "$BASE"
+            if [ -n "$OVERLAY" ]; then
+              echo ""
+              sed "s/{{ISSUE}}/$N/g" "$OVERLAY"
+            fi
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
+          echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-sonnet-4-6
-            --allowed-tools "Read,Glob,Grep,WebFetch,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*)"
-          prompt: |
-            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
-            The repository is checked out at the workspace root.
-
-            Rules:
-              - No emojis
-              - No `--` as punctuation
-              - All file paths must be root-relative
-              - Backticks only for file paths and code
-
-            Your role: PLANNER
-
-            Read the full issue body and all comments.
-
-            1. If the issue already has a detailed plan (file paths, line refs, edits,
-               test plan), VALIDATE it. Post a short comment confirming it works, with
-               at most a few targeted suggestions. Do not rewrite.
-            2. If there is no plan, produce one using this template exactly:
-
-               ## Plan
-               ### Scope
-               - [ ] Focused (1-3 files, one concern)
-               - [ ] Text/docs only (no code, no tests needed)
-               - [ ] System-wide (multiple directories, cross-cutting)
-               Check one. If system-wide, explain WHY in one sentence.
-               If text/docs only, the implementer skips TDD and commits directly.
-               ### Files to read (context only, implementer reads these first)
-               - path/to/file.ts, why it matters
-               ### Files to change
-               - path/to/file.ts:LINE, what changes (include old/new strings)
-               ### Files NOT to touch (out of scope)
-               - ...
-               ### Tests
-               - new test: web/test/foo.test.ts (failing test first, always)
-               - existing tests that must still pass: ...
-               ### Verification command
-               - npm test
-               ### Risks / open questions
-               - ...
-
-            3. Be surgical. Smaller is better.
-            4. The "Files to read" section saves the implementer tokens. List every
-               file it needs to understand, and nothing else.
-            5. Post the plan as a single issue comment ending with:
-               `Plan ready for critique.`
-
-            Do NOT modify any files. Do NOT push commits. Do NOT create branches.
+            ${{ steps.setup.outputs.mcp_arg }}
+            --allowed-tools "${{ steps.setup.outputs.tools }}"
+          prompt: ${{ steps.setup.outputs.prompt }}
 
       - name: Swap labels
         env:

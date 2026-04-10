@@ -35,66 +35,51 @@ jobs:
 
       - run: npm ci
 
+      - name: Classify issue and load prompt
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          N=${{ github.event.issue.number }}
+          labels=$(gh issue view "$N" --repo ${{ github.repository }} \
+            --json labels --jq '[.labels[].name] | join(",")')
+
+          BASE="references/pipeline/verifier.md"
+          OVERLAY=""
+          TOOLS="Read,Glob,Grep,Edit,Bash(git:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*)"
+          MCP_ARG=""
+
+          if echo "$labels" | grep -q "text-only"; then
+            OVERLAY="references/pipeline/context-text.md"
+          elif echo "$labels" | grep -q "ui"; then
+            OVERLAY="references/pipeline/context-ui.md"
+            TOOLS="$TOOLS,mcp__chrome-devtools"
+            MCP_ARG="--mcp-config .mcp.ci.json"
+          elif echo "$labels" | grep -q "sim-content"; then
+            OVERLAY="references/pipeline/context-sim.md"
+          fi
+
+          {
+            echo 'prompt<<PROMPT_EOF'
+            sed "s/{{ISSUE}}/$N/g" "$BASE"
+            if [ -n "$OVERLAY" ]; then
+              echo ""
+              sed "s/{{ISSUE}}/$N/g" "$OVERLAY"
+            fi
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
+          echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-sonnet-4-6
-            --allowed-tools "Read,Glob,Grep,Edit,Bash(git:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*)"
-          prompt: |
-            You are running inside GitHub Actions on issue #${{ github.event.issue.number }}.
-            The repository is checked out at the workspace root.
-
-            Rules:
-              - No emojis
-              - No `--` as punctuation
-              - All file paths must be root-relative
-              - Backticks only for file paths and code
-
-            Behavioral guidelines (non-negotiable):
-              - Simplicity first. No features beyond what was asked.
-              - Surgical changes. Every changed line traces to the issue.
-              - Do not refactor or expand scope. Only fix trivial issues (missing
-                import, lint error, missed edge case).
-
-            Your role: VERIFIER
-
-            Read:
-            1. The original issue body.
-            2. The planner's plan comment.
-            3. The critic's comment.
-            4. The implementer's branch (find it from the implementer's comment).
-
-            Check out the implementer's branch:
-              git fetch origin
-              git checkout feature/issue-${{ github.event.issue.number }}-<slug>
-
-            Verification checklist (complete ALL):
-
-            1. Diff vs plan: `git diff master..HEAD`. Does every changed file
-               appear in the plan? Unlisted files = scope creep = FAIL.
-            2. TDD honesty: `git log --oneline master..HEAD`. Is there a
-               failing-test commit before the implementation commit? If not, FAIL.
-               Skip this check if the plan's Scope is "Text/docs only."
-            3. Commit hygiene: each commit references `#${{ github.event.issue.number }}`?
-               Last commit has `Closes #${{ github.event.issue.number }}`?
-            4. Tests pass: `npm test`, `npm run health`, `DOCTOR_SKIP_INTEGRATION=1 npm run doctor`.
-               All three must exit 0.
-            5. Karpathy check: any speculative abstractions, unrelated cleanups,
-               or "improvements" to adjacent code? FAIL on first violation.
-
-            You MAY make small fixes (missing import, lint error). Commit as
-            `fix: <thing>` with `Ref #${{ github.event.issue.number }}`.
-
-            DECISION:
-            - All checks pass:
-              1. `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #${{ github.event.issue.number }}"`
-              2. `gh pr merge <PR#> --merge --auto --delete-branch`
-              3. Comment: `Verification: PASS. PR #<PR#> opened and queued for auto-merge.`
-            - Any check fails, no `retry-2` label:
-              Comment ending with `Verification: FAIL, retry.`
-            - Any check fails, `retry-2` already present:
-              Comment ending with `Verification: FAIL, escalate.`
+            ${{ steps.setup.outputs.mcp_arg }}
+            --allowed-tools "${{ steps.setup.outputs.tools }}"
+          prompt: ${{ steps.setup.outputs.prompt }}
 
       - name: Swap labels based on verification
         env:
