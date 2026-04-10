@@ -59,7 +59,7 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 
 Search for an existing issue first: `gh issue list --search "create sim <topic>" --state open`.
 If a match exists, use that issue. Otherwise, create a new one:
-`gh issue create --label needs-triage --title "Create sim: <topic>" --body "<details about the scenario, target services, difficulty, what gap it fills, how the sim should play>"`.
+`gh issue create --label needs-triage --label sim-content --title "Create sim: <topic>" --body "<details about the scenario, target services, difficulty, what gap it fills, how the sim should play>"`.
 Include enough detail that the GHA pipeline could plan and review the scenario.
 Record the issue number for commit references.
 
@@ -368,12 +368,6 @@ tags:
 |---|---|---|---|---|
 | 001-s3-bucket-breach | The Midnight S3 Breach at NovaPay | 2 | security | s3, iam, cloudtrail |
 ```
-
-### Step 21b: Validate sim content
-
-Run: `test content <simId>`
-
-This uses an LLM agent to validate that the summary, title, difficulty, services, tags, category, and learning objectives all accurately match the generated sim content. All 7 dimensions must pass before committing. If any fail, fix the issue and re-run until all pass.
 
 ### Phase 6: Commit
 

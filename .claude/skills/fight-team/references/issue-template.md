@@ -49,7 +49,7 @@ npx tsx scripts/test.ts run --files <glob>
 - **Convergence note:** <one line: why this finding survived>
 
 ## Labels
-- source:fight-team-weekly
+- source:fight-team
 - priority:high if both agreed by r3, else priority:investigate
 - bucket:<bucket>
 - metric:<metric>

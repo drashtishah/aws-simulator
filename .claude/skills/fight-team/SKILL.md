@@ -173,7 +173,7 @@ After synthesis, before proceeding to Phase 6 (Issue Pipeline), the Coordinator 
 - Any finding whose ranking was significantly different from its `expected_gain_if_fixed` score (the score suggested one thing, the debate revealed another): one `finding` note.
 - Any cross-finding pattern the debaters surfaced that is not captured by any single finding (e.g., "three of the top 10 findings all trace back to the same missing test layer"): one `finding` note.
 
-These notes compile into the system vault via the daily-compile-and-rotate cron and become input for future /fix and fight-team runs. Bodies are uncapped (Issue #119). Skip with `--kind none --reason "..."` only if the synthesis produced zero shifts, which is unusual in a real debate. Per rule 13.
+These notes compile into the system vault and become input for future /fix and fight-team runs. Bodies are uncapped (Issue #119). Skip with `--kind none --reason "..."` only if the synthesis produced zero shifts, which is unusual in a real debate. Per rule 13.
 
 ---
 
@@ -227,15 +227,17 @@ Only when the validator returns `{valid: true}` does the coordinator run:
 
 ```bash
 gh issue create --title "<one-sentence finding>" \
-  --label "source:fight-team-weekly,priority:high,bucket:<bucket>,metric:<metric>" \
+  --label "source:fight-team,priority:high,bucket:<bucket>,metric:<metric>" \
   --body-file /tmp/fight-team-issue-body.md
 ```
 
 Labels (set in the body's `## Labels` section AND on the gh issue create call):
-- `source:fight-team-weekly` always
+- `source:fight-team` always
 - `priority:high` if both debaters agreed by r3, else `priority:investigate`
 - `bucket:<bucket>` from the health-score finding
 - `metric:<metric>` from the health-score finding
+- Type label: determine from the health-score finding's file paths.
+  Refer to `references/pipeline/labels.md`. Add alongside the other labels.
 
 ### 4. Report issue numbers
 

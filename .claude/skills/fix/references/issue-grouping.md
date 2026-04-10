@@ -15,7 +15,7 @@ Open Issues are pre-labelled by fight-team and other sources:
   almost always share a fix shape.
 - priority:high and priority:investigate split into separate plans.
   Investigate items become research notes, not edits.
-- source:fight-team-weekly indicates the body already passed the
+- source:fight-team indicates the body already passed the
   fight-team validator and the Suggested approach is copy-paste-ready.
 
 ## Group by root cause
