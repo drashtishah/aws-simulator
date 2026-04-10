@@ -97,6 +97,7 @@ jobs:
           gh issue edit ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
             --remove-label "needs-plan" \
+            --remove-label "revised-plan" \
             --add-label "needs-critique"
 
       - name: Handle stage failure
