@@ -12,13 +12,8 @@ const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.json');
 // item; system-vault-compile on commit must become either a real git
 // post-commit hook or a PostToolUse hook filtered on git commit).
 //
-// Restored in Commit 8 of fluffy-hugging-wilkes plan: the new Stop hook
-// stop-journal-check enforces per-session note recording before allowing
-// session end. Commit 1 of the same plan emptied this array when the
-// broken dream-check SessionStart hook was removed.
-const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [
-  { event: 'Stop', commandMatch: 'stop-journal-check' },
-];
+// Stop hook removed: notes.jsonl replaced by issue comments in GHA pipeline.
+const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [];
 
 function loadSettings(): any {
   assert.ok(fs.existsSync(SETTINGS_PATH), `${SETTINGS_PATH} must exist`);
