@@ -204,6 +204,11 @@ issue via `gh issue list --search "<keywords>" --state open`. If a match
 exists, add a comment with the new findings instead of creating a
 duplicate. Only if no match exists, compose a candidate Issue body that
 follows `.claude/skills/fight-team/references/issue-template.md` exactly.
+
+Issue granularity: findings that touch the same files or share a root
+cause belong in ONE issue. Do not create separate issues for symptoms
+of the same problem. The test: "would a reviewer want to see these
+changes in the same PR?" If yes, one issue. If no, separate issues.
 Then run the body through the validator BEFORE calling `gh issue create`:
 
 ```bash

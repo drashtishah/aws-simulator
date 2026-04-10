@@ -58,10 +58,12 @@ Wait for the user's response. Store their answer as `mcp_available: true/false` 
 ### 0. Create issue for the scenario
 
 Search for an existing issue first: `gh issue list --search "create sim <topic>" --state open`.
-If a match exists, use that issue. Otherwise, create a new one:
+If a match exists, use that issue. Otherwise, create one issue per scenario:
 `gh issue create --label needs-triage --label sim-content --title "Create sim: <topic>" --body "<details about the scenario, target services, difficulty, what gap it fills, how the sim should play>"`.
 Include enough detail that the GHA pipeline could plan and review the scenario.
 Record the issue number for commit references.
+
+Issue granularity: one issue per simulation scenario. A scenario's manifest, story, resolution, artifacts, and registry update are ONE issue because they ship as one unit. Do not split a single sim across multiple issues. If generating multiple sims in one session, each sim gets its own issue.
 
 ---
 
