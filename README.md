@@ -117,7 +117,7 @@ flowchart TB
 
 **Web app.** The play interface. Built with the Anthropic Agent SDK. Sonnet handles interactive narration. Opus handles post-session learning analysis.
 
-**Pipeline.** Every improvement flows through four GitHub Actions stages: a planner drafts the change, a critic challenges it, an implementer writes the code, and a verifier checks the work and merges automatically. You trigger it by labeling an issue `needs-plan`.
+**Pipeline.** Label an issue `needs-plan` and the pipeline takes over. A planner (Sonnet) reads the issue and posts a structured plan. A critic (Opus) challenges it. If the plan needs revision, it bounces back to the planner once. Once approved, an implementer (Opus) writes the code with TDD and pushes a branch. A verifier (Sonnet) checks the diff against the plan, runs all tests, opens a PR, and auto-merges. The whole cycle runs without human intervention.
 
 **Testing.** Deterministic unit tests run on every PR in CI. Agent-in-the-loop browser tests drive a real Chromium instance through Chrome DevTools MCP, so UI assertions land against the actual DOM. Sixty eval checks grade scoring integrity, coaching accuracy, hint delivery, and narrator quality.
 
