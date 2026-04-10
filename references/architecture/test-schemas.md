@@ -1,18 +1,18 @@
-# sim-test CLI output schemas
+# test CLI output schemas
 
-This document describes the JSON contracts emitted by the `sim-test` CLI and the file format consumed by `sim-test personas --feedback`. Schemas live at `web/lib/schemas/` and are exercised by `web/test/sim-test-schemas.test.ts` and `web/test/sim-test-selftest.test.ts`.
+This document describes the JSON contracts emitted by the `test` CLI and the file format consumed by `test personas --feedback`. Schemas live at `web/lib/schemas/` and are exercised by `web/test/test-schemas.test.ts` and `web/test/test-selftest.test.ts`.
 
 ## Why schemas
 
-The `sim-test` CLI is a developer surface area. Callers include the user at the terminal, `npm test`, the web app's background test runner, and the agent-driven browser tests. Each caller parses the JSON output. Without a schema, a field rename or type change silently breaks every downstream consumer and the failure mode is "my script crashed" rather than "the CLI contract was violated."
+The `test` CLI is a developer surface area. Callers include the user at the terminal, `npm test`, the web app's background test runner, and the agent-driven browser tests. Each caller parses the JSON output. Without a schema, a field rename or type change silently breaks every downstream consumer and the failure mode is "my script crashed" rather than "the CLI contract was violated."
 
-The schemas are derived from observed CLI output, not guessed. `web/test/sim-test-schemas.test.ts` spawns the real CLI in dry-run mode and validates its output against the schemas, so drift shows up the next time `npm test` runs.
+The schemas are derived from observed CLI output, not guessed. `web/test/test-schemas.test.ts` spawns the real CLI in dry-run mode and validates its output against the schemas, so drift shows up the next time `npm test` runs.
 
 ## Schemas
 
 ### `web/lib/schemas/personas-output.schema.json`
 
-Covers `sim-test personas --json` and `sim-test personas --dry-run --json`.
+Covers `test personas --json` and `test personas --dry-run --json`.
 
 Top-level envelope:
 
@@ -25,7 +25,7 @@ Top-level envelope:
 
 ### `web/lib/schemas/agent-specs-output.schema.json`
 
-Covers `sim-test agent --json` and `sim-test agent --dry-run --json`.
+Covers `test agent --json` and `test agent --dry-run --json`.
 
 Top-level envelope:
 
@@ -36,7 +36,7 @@ Top-level envelope:
 
 ### `web/lib/schemas/persona-finding.schema.json`
 
-Covers a single file under `web/test-results/personas/<persona-id>-<timestamp>.json`, the shape consumed by `sim-test personas --feedback` when merging agent-authored findings into `learning/feedback.md`.
+Covers a single file under `web/test-results/personas/<persona-id>-<timestamp>.json`, the shape consumed by `test personas --feedback` when merging agent-authored findings into `learning/feedback.md`.
 
 Envelope:
 
@@ -50,7 +50,7 @@ Envelope:
 
 1. Run the CLI and eyeball the output.
 2. Edit the schema to match, keeping `additionalProperties: true` on the envelope for forward compatibility.
-3. Run `npx tsx --test web/test/sim-test-schemas.test.ts` and confirm it passes.
+3. Run `npx tsx --test web/test/test-schemas.test.ts` and confirm it passes.
 4. Update this document if the contract changed.
 
 ## Related

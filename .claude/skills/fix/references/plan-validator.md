@@ -23,8 +23,8 @@ If any checkbox is missing, run `gh issue edit <N> --body-file /tmp/issue-<N>-bo
 Run this checklist against EVERY plan file produced in step 6. Fail loudly on the first missing field; do not proceed to step 7 until the plan passes.
 
 - [ ] **Every Group section cites at least one Issue number.** Look for `#\d+` or `Closes #\d+` inside every `### Group` section. Orphan groups (no Issue) are forbidden.
-- [ ] **Every Group has a Test layer declaration.** One of: unit, integration, sim-test, browser (via sim-test agent), health, markdown.
-- [ ] **Every Group declares a per-group test cadence.** Must name what runs per commit (typically `sim-test --changed`), what runs at group exit (typically `npm test`), and what runs pre-PR (typically `npm test + npm run health + npm run doctor`). See `feedback_test_cadence.md`.
+- [ ] **Every Group has a Test layer declaration.** One of: unit, integration, test, browser (via test agent), health, markdown.
+- [ ] **Every Group declares a per-group test cadence.** Must name what runs per commit (typically `test --changed`), what runs at group exit (typically `npm test`), and what runs pre-PR (typically `npm test + npm run health + npm run doctor`). See `feedback_test_cadence.md`.
 - [ ] **Every file path is root-relative or absolute.** No bare filenames. A filename without a directory is a fail; a root-relative path like `.claude/skills/fix/SKILL.md` or an absolute path rooted at the workspace passes.
 - [ ] **No `gh issue create` anywhere in the plan body.** /fix is the sole Issue creator (Issue #113). The plan references numbers only.
 - [ ] **Workflow section references `references/architecture/core-workflow.md`** by §section numbers, not literal duplication.

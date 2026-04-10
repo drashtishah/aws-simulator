@@ -366,7 +366,7 @@ tags:
 
 ### Step 21b: Validate sim content
 
-Run: `sim-test content <simId>`
+Run: `test content <simId>`
 
 This uses an LLM agent to validate that the summary, title, difficulty, services, tags, category, and learning objectives all accurately match the generated sim content. All 7 dimensions must pass before committing. If any fail, fix the issue and re-run until all pass.
 

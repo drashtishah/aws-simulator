@@ -1,8 +1,8 @@
-// sim-test-runner: pure helpers for sim-test run output parsing and
-// aggregation. Extracted from scripts/sim-test.ts so they can be unit-tested
+// test-runner: pure helpers for test run output parsing and
+// aggregation. Extracted from scripts/test.ts so they can be unit-tested
 // without spawning the CLI (node:test refuses to spawn itself recursively).
 //
-// Used by scripts/sim-test.ts to detect failed test files and emit a clear
+// Used by scripts/test.ts to detect failed test files and emit a clear
 // FAIL <basename>: <N> failure(s) line per file plus a final summary block.
 // Group A of plan .claude/plans/replicated-exploring-thompson.md (Issue #92).
 
@@ -54,7 +54,7 @@ export function parseTestOutput(out: string): ParsedTestOutput {
 // ---------------------------------------------------------------------------
 
 // Folds a list of per-file results into the aggregate `unit` block that
-// sim-test run emits. failedFiles holds the basenames of files where
+// test run emits. failedFiles holds the basenames of files where
 // failed > 0, in the order they appeared, deduplicated. hasError reflects
 // the existing "infrastructure error" path: any file whose run produced no
 // detectable test output (passed === 0 && failed === 0 && !signal) flips

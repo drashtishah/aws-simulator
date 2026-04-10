@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { checkAccess } = require('../../.claude/hooks/guard-write');
 
-const ROOT = '/tmp/aws-sim-test-root';
+const ROOT = '/tmp/aws-test-root';
 
 // Ownership objects matching the ownership.json files
 const PLAY_OWNERSHIP = {
@@ -63,8 +63,8 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
-    it('allows scripts/sim-test.js (no longer never writable)', () => {
-      const r = checkAccess(path.join(ROOT, 'scripts/sim-test.js'), null, ROOT);
+    it('allows scripts/test.js (no longer never writable)', () => {
+      const r = checkAccess(path.join(ROOT, 'scripts/test.js'), null, ROOT);
       assert.equal(r.allowed, true);
     });
 

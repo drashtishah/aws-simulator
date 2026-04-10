@@ -119,9 +119,9 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Tests
 
-- [ ] `sim-test run` passes all unit tests
-- [ ] `sim-test agent` passes all YAML browser specs
-- [ ] `sim-test personas` produces findings for all 5 personas
+- [ ] `test run` passes all unit tests
+- [ ] `test agent` passes all YAML browser specs
+- [ ] `test personas` produces findings for all 5 personas
 - [ ] All API endpoints have unit tests (GET and POST routes)
 - [ ] Game endpoints tested for 400 (validation) and 503 (no claude-process)
 - [ ] Logger thresholds tested (context, latency, tool loop)

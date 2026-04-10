@@ -51,7 +51,7 @@ The deterministic test gate runs in `.github/workflows/ci.yml` on every push and
 
 Recommended local cadence:
 
-- **Per commit:** `sim-test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
+- **Per commit:** `test --changed` (1 to 3 seconds) ONLY when you suspect a regression: you touched core code, you touched test infrastructure, or you are fix-forwarding after a red run. Skip it for trivial commits (typos, comments, doc edits, formatting).
 - **Pre-push:** optional. Run the full local gate (`npm test` + `npm run health` + `npm run doctor`) only if you want to avoid a known-broken first CI run on the branch. Otherwise, push and let CI tell you.
 - **Per PR:** nothing required locally. CI is mandatory.
 
@@ -143,4 +143,4 @@ Must return exit 0 with zero FAIL lines. `npm run doctor` is the live workspace 
 
 ## 10. Testing system pointer
 
-For how the test runner, agent browser tests, and `sim-test --changed` actually work, see `references/architecture/testing-system.md`. That doc is the source of truth for the testing infrastructure; this doc only prescribes when to run tests, not how they are implemented.
+For how the test runner, agent browser tests, and `test --changed` actually work, see `references/architecture/testing-system.md`. That doc is the source of truth for the testing infrastructure; this doc only prescribes when to run tests, not how they are implemented.

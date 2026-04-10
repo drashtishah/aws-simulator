@@ -114,7 +114,8 @@ export function classify(rawPath: string): Bucket | null {
     p === 'tsconfig.frontend.json' ||
     (p.startsWith('scripts/') && p.endsWith('.json')) ||
     (p.startsWith('.github/workflows/') && (p.endsWith('.yml') || p.endsWith('.yaml'))) ||
-    p === '.github/secret_scanning.yml'
+    p === '.github/secret_scanning.yml' ||
+    p === '.github/labels.yml'
   ) {
     return 'config';
   }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// sim-test: CLI entry point for the testing system.
+// test: CLI entry point for the testing system.
 // Agents interact through commands only. This file is NEVER_WRITABLE.
 
 import { Command } from 'commander';
@@ -9,13 +9,13 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import * as evalRunner from './eval-runner';
-import { filterByGlob, mapChangedToTests } from './sim-test-select';
+import { filterByGlob, mapChangedToTests } from './test-select';
 import {
   parseTestOutput,
   aggregateRuns,
   formatFailedFilesSummary,
   type FileRunResult,
-} from './sim-test-runner';
+} from './test-runner';
 
 // ---------------------------------------------------------------------------
 // Path constants
@@ -253,7 +253,7 @@ interface AllCheckEntry {
 const program = new Command();
 
 program
-  .name('sim-test')
+  .name('test')
   .description('AWS Incident Simulator test CLI')
   .version('1.0.0');
 
@@ -276,7 +276,7 @@ function timestamp(): string {
 }
 
 // ---------------------------------------------------------------------------
-// sim-test run
+// test run
 // ---------------------------------------------------------------------------
 
 program
@@ -405,7 +405,7 @@ program
   });
 
 // ---------------------------------------------------------------------------
-// sim-test agent
+// test agent
 // ---------------------------------------------------------------------------
 
 program
@@ -522,7 +522,7 @@ program
   });
 
 // ---------------------------------------------------------------------------
-// sim-test personas
+// test personas
 // ---------------------------------------------------------------------------
 
 program
@@ -690,7 +690,7 @@ function handlePersonaFeedback(opts: PersonasOpts): void {
 }
 
 // ---------------------------------------------------------------------------
-// sim-test evals
+// test evals
 // ---------------------------------------------------------------------------
 
 program
@@ -800,7 +800,7 @@ program
   });
 
 // ---------------------------------------------------------------------------
-// sim-test validate
+// test validate
 // ---------------------------------------------------------------------------
 
 program
@@ -826,7 +826,7 @@ program
 
     // Layer 1: deterministic tests
     if (!opts.json) console.log('--- Layer 1: Deterministic Tests ---');
-    const l1 = run('node scripts/sim-test.js run --json', 'run');
+    const l1 = run('node scripts/test.js run --json', 'run');
     try { results.layers.run = JSON.parse(l1.output); } catch { results.layers.run = { raw: l1.output.slice(0, 500) }; }
     if (!opts.json) {
       const r = results.layers.run as Record<string, unknown>;
@@ -839,7 +839,7 @@ program
     if (!opts.json) console.log('--- Layer 4: Evals (scorecard) ---');
     const completedSessions = evalRunner.listCompletedSessions();
     if (completedSessions.length > 0) {
-      const l4 = run('node scripts/sim-test.js evals --sim ' + completedSessions[0] + ' --json', 'evals');
+      const l4 = run('node scripts/test.js evals --sim ' + completedSessions[0] + ' --json', 'evals');
       try { results.layers.evals = JSON.parse(l4.output); } catch { results.layers.evals = { raw: l4.output.slice(0, 500) }; }
       if (!opts.json) {
         const r = results.layers.evals as Record<string, unknown>;
@@ -858,7 +858,7 @@ program
 
     // Layer 2: agent specs (dry-run only in validate)
     if (!opts.json) console.log('--- Layer 2: Agent Specs (dry-run) ---');
-    const l2 = run('node scripts/sim-test.js agent --dry-run --json', 'agent');
+    const l2 = run('node scripts/test.js agent --dry-run --json', 'agent');
     try { results.layers.agent = JSON.parse(l2.output); } catch { results.layers.agent = { raw: l2.output.slice(0, 500) }; }
     if (!opts.json) {
       const r = results.layers.agent as Record<string, unknown>;
@@ -870,7 +870,7 @@ program
     // Layer 3: personas (skip if --quick)
     if (!opts.quick) {
       if (!opts.json) console.log('--- Layer 3: Personas (dry-run) ---');
-      const l3 = run('node scripts/sim-test.js personas --dry-run --json', 'personas');
+      const l3 = run('node scripts/test.js personas --dry-run --json', 'personas');
       try { results.layers.personas = JSON.parse(l3.output); } catch { results.layers.personas = { raw: l3.output.slice(0, 500) }; }
       if (!opts.json) {
         const r = results.layers.personas as Record<string, unknown>;
@@ -897,7 +897,7 @@ program
   });
 
 // ---------------------------------------------------------------------------
-// sim-test summary
+// test summary
 // ---------------------------------------------------------------------------
 
 program

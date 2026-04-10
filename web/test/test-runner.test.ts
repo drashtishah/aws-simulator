@@ -1,5 +1,5 @@
-// Tests for sim-test run selection helpers: --files <glob> and --changed.
-// These cover pure selection logic in scripts/sim-test-select.ts.
+// Tests for test run selection helpers: --files <glob> and --changed.
+// These cover pure selection logic in scripts/test-select.ts.
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
@@ -9,9 +9,9 @@ const {
   filterByGlob,
   mapChangedToTests,
   globToRegExp,
-} = require('../../scripts/sim-test-select');
+} = require('../../scripts/test-select');
 
-describe('sim-test selection: globToRegExp', () => {
+describe('test selection: globToRegExp', () => {
   it('matches literal file names', () => {
     const re = globToRegExp('web/test/code-health.test.ts');
     assert.ok(re.test('web/test/code-health.test.ts'));
@@ -44,12 +44,12 @@ describe('sim-test selection: globToRegExp', () => {
   });
 });
 
-describe('sim-test selection: filterByGlob', () => {
+describe('test selection: filterByGlob', () => {
   const files = [
     'web/test/code-health.test.ts',
     'web/test/code-health-extras.test.ts',
     'web/test/guard-write.test.ts',
-    'web/test/sim-test-cli.test.ts',
+    'web/test/test-cli.test.ts',
   ];
 
   it('filters by single-segment star glob', () => {
@@ -71,11 +71,11 @@ describe('sim-test selection: filterByGlob', () => {
   });
 });
 
-describe('sim-test selection: mapChangedToTests', () => {
+describe('test selection: mapChangedToTests', () => {
   const existingTests = new Set([
     'web/test/code-health.test.ts',
     'web/test/guard-write.test.ts',
-    'web/test/sim-test-cli.test.ts',
+    'web/test/test-cli.test.ts',
   ]);
 
   function hasTest(rel: string): boolean {

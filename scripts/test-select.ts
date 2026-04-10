@@ -1,7 +1,7 @@
-// sim-test-select: pure helpers for sim-test run selection flags.
-// Used by scripts/sim-test.ts to support `run --files <glob>` and
+// test-select: pure helpers for test run selection flags.
+// Used by scripts/test.ts to support `run --files <glob>` and
 // `run --changed`. Kept as a separate module so it can be unit-tested
-// without triggering the CLI entrypoint in sim-test.ts.
+// without triggering the CLI entrypoint in test.ts.
 
 import path from 'node:path';
 

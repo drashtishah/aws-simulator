@@ -26,7 +26,7 @@ Each directory has exactly one owner. Ownership is unambiguous so that /fix and 
 ## Verification
 ```bash
 npm run health
-npx tsx scripts/sim-test.ts run --files web/test/code-health.test.ts
+npx tsx scripts/test.ts run --files web/test/code-health.test.ts
 ```
 
 ## Debate transcript excerpts

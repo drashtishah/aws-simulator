@@ -22,8 +22,8 @@ group:
 - Unit tests in `web/test/*.test.ts` for pure logic.
 - Integration tests in `web/test/` that touch the filesystem or the
   unified log.
-- `npx tsx scripts/sim-test.ts run` for the full unit/integration suite.
-- Browser tests via the sim-test agent (see `scripts/sim-test.ts agent`)
+- `npx tsx scripts/test.ts run` for the full unit/integration suite.
+- Browser tests via the test agent (see `scripts/test.ts agent`)
   for any UI change. The pre-commit-ui-tests hook enforces this.
 - `npm run health` after each commit for code-health regressions.
 
@@ -35,7 +35,7 @@ executing agent will run. TDD red-green is mandatory.
 Every plan follows the three-tier cadence in `references/architecture/core-workflow.md` §6 and memory `feedback_test_cadence.md`:
 
 1. **Inside a TDD red-green cycle**: run ONLY the specific test file you just wrote via `tsx --test --test-force-exit web/test/<name>.test.ts`. Use `superpowers:test-driven-development`.
-2. **After every commit**: run `npx tsx scripts/sim-test.ts run --changed --json`. Maps the files in `git diff HEAD~1 HEAD` to their affected tests and runs only that subset (~1 second typical). This is the §6 per-commit rule. Plans NEVER run `npm test` per commit.
+2. **After every commit**: run `npx tsx scripts/test.ts run --changed --json`. Maps the files in `git diff HEAD~1 HEAD` to their affected tests and runs only that subset (~1 second typical). This is the §6 per-commit rule. Plans NEVER run `npm test` per commit.
 3. **At group boundaries** (every 3 to 6 commits): run `npm test` once as a cross-file regression checkpoint.
 4. **Before opening the PR**: run `npm test` + `npm run health` + `npm run doctor`. Full verification per §6, §5, §9.
 
@@ -43,7 +43,7 @@ Every `### Group` section in this plan MUST include a `**Test cadence:**` block 
 
 ```
 **Test cadence:**
-- Per commit: `npx tsx scripts/sim-test.ts run --changed --json`
+- Per commit: `npx tsx scripts/test.ts run --changed --json`
 - Group exit: `npm test`
 - Pre-PR (last group only): `npm test` + `npm run health` + `npm run doctor`
 ```

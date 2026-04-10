@@ -18,7 +18,7 @@ web/test/e2e/test-results/
 # Per-test scratch dirs (PR-A.4.1: AWS_SIMULATOR_SESSIONS_DIR override target)
 web/test/.tmp/
 
-# sim-test output
+# test output
 web/test-results/
 
 # Runtime skill state

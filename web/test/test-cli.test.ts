@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const CLI = 'npx tsx scripts/sim-test.ts';
+const CLI = 'npx tsx scripts/test.ts';
 
 function run(args) {
   return execSync(CLI + ' ' + args, { cwd: ROOT, encoding: 'utf8', timeout: 30000 });
@@ -19,7 +19,7 @@ function runWithExit(args) {
   }
 }
 
-describe('sim-test CLI self-tests', () => {
+describe('test CLI self-tests', () => {
   it('--help exits with code 0 and lists all 6 commands', () => {
     const output = run('--help');
     const commands = ['run', 'agent', 'personas', 'evals', 'validate', 'summary'];

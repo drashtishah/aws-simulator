@@ -54,7 +54,7 @@ export interface CheckContext {
 }
 
 export interface RunAllOptions extends CheckContext {
-  // When true, runAll appends the 4 integration checks (sim-test smoke,
+  // When true, runAll appends the 4 integration checks (test smoke,
   // web-server boot, skill dangling refs, path-registry hash freshness)
   // after the required checks. Issue #105.
   runIntegration?: boolean;
@@ -289,16 +289,16 @@ export function checkSimTestSmoke(
 ): CheckResult {
   const r = runner(
     'npx',
-    ['tsx', 'scripts/sim-test.ts', 'run', '--files', 'web/test/path-registry.test.ts'],
+    ['tsx', 'scripts/test.ts', 'run', '--files', 'web/test/path-registry.test.ts'],
     { cwd: ctx.rootDir, encoding: 'utf8', timeout: 30000 },
   );
   if (r.status === 0) {
-    return { ok: true, name: 'sim_test_smoke', detail: 'sim-test smoke passed' };
+    return { ok: true, name: 'sim_test_smoke', detail: 'test smoke passed' };
   }
   return {
     ok: false,
     name: 'sim_test_smoke',
-    detail: 'sim-test smoke failed; run `npm run test:file -- web/test/path-registry.test.ts` to diagnose',
+    detail: 'test smoke failed; run `npm run test:file -- web/test/path-registry.test.ts` to diagnose',
   };
 }
 
@@ -513,7 +513,7 @@ function isMain(): boolean {
 function main(): void {
   const rootDir = path.resolve(__dirname, '..');
   // Integration checks (Issue #105) include process spawning (web server
-  // boot, sim-test smoke, extract_paths) which is flaky on cold CI runners.
+  // boot, test smoke, extract_paths) which is flaky on cold CI runners.
   // Allow CI to skip them via DOCTOR_SKIP_INTEGRATION=1.
   const skipIntegration = process.env.DOCTOR_SKIP_INTEGRATION === '1';
   const summary = runAll({ rootDir, runIntegration: !skipIntegration });

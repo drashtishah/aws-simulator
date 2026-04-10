@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://aws-simulator.local/schemas/agent-specs-output.schema.json",
-  "title": "sim-test agent --json output",
-  "description": "Shape of the JSON document printed by `sim-test agent --json` and `sim-test agent --dry-run --json`. Derived from observed CLI output on 2026-04-08.",
+  "title": "test agent --json output",
+  "description": "Shape of the JSON document printed by `test agent --json` and `test agent --dry-run --json`. Derived from observed CLI output on 2026-04-08.",
   "type": "object",
   "required": ["command", "ts", "specs", "verdict"],
   "properties": {

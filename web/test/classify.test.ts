@@ -8,7 +8,7 @@ const { classify, BUCKETS } = require('../../scripts/lib/classify');
 const POSITIVE: Array<[string, string]> = [
   ['web/lib/paths.ts', 'code'],
   ['web/server.ts', 'code'],
-  ['scripts/sim-test.ts', 'code'],
+  ['scripts/test.ts', 'code'],
   ['scripts/lib/classify.ts', 'code'],
   ['web/test/code-health.test.ts', 'test'],
   ['web/test/classify.test.ts', 'test'],

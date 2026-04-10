@@ -7,7 +7,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 
 /**
- * Schema validation tests for the sim-test CLI JSON outputs and the
+ * Schema validation tests for the test CLI JSON outputs and the
  * persona-finding file format. Derived from Issue #31.
  *
  * Each test runs a dry-run command in JSON mode, feeds the parsed output
@@ -24,7 +24,7 @@ function loadSchema(name: string): object {
 }
 
 function runCliJson(args: string): unknown {
-  const out = execSync(`npx tsx scripts/sim-test.ts ${args}`, {
+  const out = execSync(`npx tsx scripts/test.ts ${args}`, {
     cwd: ROOT,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -40,10 +40,10 @@ function freshAjv(): Ajv {
   return ajv;
 }
 
-describe('sim-test output JSON schemas', () => {
+describe('test output JSON schemas', () => {
   const ajv = freshAjv();
 
-  it('sim-test personas --dry-run --json matches personas-output.schema.json', () => {
+  it('test personas --dry-run --json matches personas-output.schema.json', () => {
     const schema = loadSchema('personas-output.schema.json');
     const validate = ajv.compile(schema);
     const data = runCliJson('personas --dry-run --json');
@@ -51,7 +51,7 @@ describe('sim-test output JSON schemas', () => {
     assert.equal(ok, true, `validation errors: ${JSON.stringify(validate.errors)}`);
   });
 
-  it('sim-test agent --dry-run --json matches agent-specs-output.schema.json', () => {
+  it('test agent --dry-run --json matches agent-specs-output.schema.json', () => {
     const schema = loadSchema('agent-specs-output.schema.json');
     const validate = ajv.compile(schema);
     const data = runCliJson('agent --dry-run --json');

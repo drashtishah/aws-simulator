@@ -32,7 +32,7 @@ describe('core-workflow.md', () => {
       'plan',
       'tdd',
       'revertable',
-      'sim-test --changed',
+      'test --changed',
       'notes.jsonl',
       'verifier',
       'revert',

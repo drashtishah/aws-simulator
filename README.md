@@ -41,7 +41,7 @@ flowchart TB
     Fix["/fix"]
     FightTeam["/fight-team"]
     CreateSim["/create-sim"]
-    SimTest[sim-test CLI]
+    SimTest[test CLI]
   end
 
   subgraph Crons[Scheduled crons]
@@ -110,7 +110,7 @@ flowchart TB
 
 **Built with the Agent SDK.** The web app is the only entry point for play sessions. It spawns a Claude subprocess per session via `@anthropic-ai/claude-agent-sdk`. Play sessions use Sonnet for fast interactive narration. Post-session learning analysis (knowledge scoring, profile updates, vault note compilation) runs as a separate Opus subprocess for the deeper cross-file reasoning. Both models are set in `web/lib/claude-process.ts`.
 
-**Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `sim-test evals`.
+**Evals.** Sixty graded checks across eleven categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, narrator quality, and more. The deterministic checks read session JSON and transcripts; the LLM-graded ones rate narrative coherence, immersion, pacing, tone, and player agency. Run them with `test evals`.
 
 **Scheduled crons.** Three RemoteTrigger crons keep the system maintaining itself: a daily compile rolls `raw.jsonl` and `notes.jsonl` into the system vault and rotates the logs, a weekly dream consolidates the system vault, and a weekly fight-team debate files copy-paste-ready GitHub Issues from the top health findings. Each cron declares its own `allowed_tools` so unattended runs never prompt.
 
