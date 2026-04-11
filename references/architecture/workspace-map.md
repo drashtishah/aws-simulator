@@ -72,27 +72,27 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 
 +----------------------+
 |   system-vault       |
-|  (long-term agent    |
-|   memory, per user,  |
-|   gitignored)        |
+|  (shared long-term   |
+|   agent memory,      |
+|   tracked in git)    |
 |                      |
-| Compiled by:         |
-|  daily cron from     |
-|  raw.jsonl           |
+| Written by:          |
+|  reflector (GHA)     |
 |                      |
 | Subdirs:             |
-|  findings/           |
-|  decisions/          |
-|  workarounds/        |
-|  components/         |
-|  sessions/           |
-|  health/             |
-|  dreams/             |
+|  problems/           |
+|  solutions/          |
+|  playbooks/          |
+|  patterns/           |
+|                      |
+| Enforced by:         |
+|  scripts/vault-lint  |
+|  (80-line, 3KB cap,  |
+|   120-line index)    |
 |                      |
 | Read by:             |
-|  system-vault-query  |
-|  /fight-team         |
-|  /fix                |
+|  pipeline stages,    |
+|  /fight-team, /fix   |
 +----------------------+
 ```
 
@@ -149,9 +149,9 @@ test ----> run: executes node --test (unit tests)
 | `learning/player-vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
-| `learning/logs/raw.jsonl` | hooks, web logger | fix, system-vault-compile | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
+| `learning/logs/raw.jsonl` | hooks, web logger | fix | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
-| `learning/system-vault/` | setup (seed), system-vault-compile, system-vault-dream, system-vault-prune | system-vault-query, fight-team | Per-user, gitignored long-term system memory: findings, decisions, workarounds, components, sessions, health, dreams. Compiled daily from `learning/logs/raw.jsonl`. Index capped at 200 lines, topic files capped at 4KB. |
+| `learning/system-vault/` | reflector (GHA) | pipeline stages, local agents | Tracked in git, written by reflector (GHA), read by pipeline stages and local agents; 4 subdirs (problems, solutions, playbooks, patterns); `scripts/vault-lint.ts` enforces 80-line/3KB note cap and 120-line index cap. |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `test summary` | fix | JSON: aggregated test results across all layers |
@@ -166,12 +166,8 @@ Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons wit
 
 | Automation | Type | Trigger | Purpose | Source file |
 |---|---|---|---|---|
-| weekly-dream | cron | Sunday 03:30 local | Run system-vault-dream skill to consolidate `learning/system-vault/`. Empty-vault guard: skip if vault has fewer than 5 topic files. | `.claude/scheduled-jobs/weekly-dream.json` |
-| system-vault-compile chain | hook (PostCommit) | after every commit | Re-run `system-vault-compile` and append to `learning/logs/health-scores.jsonl` | `.claude/settings.json` |
 | pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `test agent` browser test pass | `.claude/settings.json` |
 | pre-commit-issues | hook (pre-commit) | before every commit | Require Closes/Ref/Fixes/Part of issue reference; block deletion of `learning/logs/health-scores.jsonl` (PR-C invariant 6) | `.claude/hooks/pre-commit-issues.ts` |
-
-State file backing these automations: `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Tracked and seeded by PR-Pre.
 
 GitHub secret-scanning exclusions live in `.github/secret_scanning.yml`. `sims/**` is path-ignored so fictional incident fixtures (fake CloudTrail snapshots, resolution writeups, fake config JSON) never trip the scanner. See Issue #126.
 
