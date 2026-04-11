@@ -12,7 +12,7 @@ gh issue create (mobile or /fix)
   -> [needs-verify]  -> verifier.yml   (Sonnet) -> gh pr create + gh pr merge --merge --auto
 ```
 
-No hard revision caps. Critic and verifier can revise freely, but loop detection in the label swap step counts "Planner starting" or "Implementer starting" comments. At 5+ attempts, the issue is escalated to needs-human. Escape labels: blocked, needs-human.
+No hard revision caps. Critic and verifier can revise freely, but loop detection in the label swap step counts "Planner starting" or "Implementer starting" comments. At `MAX_ITERATIONS` attempts (see `.github/scripts/pipeline-iterations.sh`, currently 5), the issue is escalated to needs-human with both plan and implementation counts included. Verifier also posts the counts on PASS. Escape labels: blocked, needs-human.
 
 Label swaps in critic, implementer, and verifier are driven by `structured_output` from `claude-code-action` (via `--json-schema` in `claude_args`), not by grep on comment text.
 
