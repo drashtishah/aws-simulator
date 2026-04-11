@@ -236,4 +236,4 @@ When changing a component, check what else reads/writes the same data:
 | `journal.md` format | play (writes entries), web/ server.ts `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `references/architecture/core-workflow.md` | every skill (commit and merge discipline lives here now that /git has been removed) |
-| GitHub Issues | /fix (sole creator, step 5b), /fight-team (creates from debate findings), /create-sim and /upgrade (create per core-workflow.md §1) |
+| GitHub Issues | /fix (sole creator, step 5b), /fight-team (creates from debate findings), /create-sim (creates per core-workflow.md §1) |

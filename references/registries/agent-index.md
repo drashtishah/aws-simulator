@@ -12,7 +12,6 @@ Single source of truth for navigating the AWS Incident Simulator workspace. New 
 | play | /play | `.claude/skills/play/SKILL.md` | Run an AWS incident simulation through the web app. |
 | setup | /setup | `.claude/skills/setup/SKILL.md` | Initialize the local workspace, profile, and vault for a new player. |
 | test | /test | `.claude/skills/test/SKILL.md` | Extend the test CLI with new browser specs or commands. |
-| upgrade | /upgrade | `.claude/skills/upgrade/SKILL.md` | Scan Claude Code ecosystem sources for upgrades relevant to this workspace. |
 
 ## Hooks
 
