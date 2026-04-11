@@ -61,12 +61,19 @@ a short, focused list of high-value concerns:
    renamed function, or modified return type against its consumers.
 9. Silent failures: can any new code path fail without throwing or
    logging? Swallowed errors, missing awaits, unchecked return values.
+10. Dead code and unreachable branches: does the diff add a code path that cannot execute under the production invocation? Examples: an env var check for a var nothing sets, an ownership branch gated on a value the global invocation never provides, a condition whose antecedent is always false. Ask "what production call path reaches this branch?" If the answer is "none," it is dead code. FAIL with file:line.
 
-If code review finds issues, list each with file:line and a one-line
-description. These are FAIL conditions equal to checklist items.
+If code review finds issues, list each with file:line and recommend EXACTLY ONE fix per finding. State the fix as a directive, not a menu. If multiple paths exist, pick the smallest one that restores the invariant and explain in one line why each alternative does not work. The implementer is not the decision maker; you are. Offering options "a/b/c" is a prompt violation. These are FAIL conditions equal to checklist items.
 
 You MAY make small fixes (missing import, lint error). Commit as
 `fix: <thing>` with `Ref #{{ISSUE}}`.
+
+Loop detection. Before writing your verdict, read prior verifier comments on this issue:
+
+    gh issue view {{ISSUE}} --json comments \
+      --jq '.comments[] | select(.body | startswith("## Verifier report")) | .body'
+
+If a finding you are about to flag was already flagged by a prior verifier comment (verbatim or substantively the same root cause), the implementer has failed to address it twice. Set verdict to `FAIL_ESCALATE`, not `FAIL_RETRY`. Quote the prior verifier comment URL and the current finding in your report. The issue goes to `needs-human`.
 
 DECISION:
 - All checks and code review pass:
