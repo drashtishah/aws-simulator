@@ -1,6 +1,8 @@
 # Player data per-user (profile, sessions, logs, player vault); system vault tracked (Issue #171)
 learning/*
 !learning/system-vault/
+# Per-user Obsidian config inside the shared system vault (workspace.json etc are local UI state)
+learning/system-vault/.obsidian/
 
 # Node dependencies
 node_modules/
