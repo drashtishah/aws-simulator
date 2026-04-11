@@ -1,6 +1,8 @@
-You are running inside GitHub Actions on issue #{{ISSUE}}, which was just
-merged and labeled `needs-reflection`. The repository is checked out at
-master.
+You are running inside GitHub Actions on issue #{{ISSUE}}, which passed
+verification and is labeled `needs-reflection`. The feature branch is NOT yet
+merged. You own merging master into both branches, PR creation, and auto-merge
+queueing for both the feature branch and the optional vault branch. The
+repository is checked out at master.
 
 Rules:
   - No emojis
@@ -24,15 +26,21 @@ entries in `learning/system-vault/`.
 
 ## Gather inputs
 
-1. `gh issue view {{ISSUE}} --json body,comments,labels,state_reason`
+0. Discover the feature branch:
+   `git ls-remote origin 'feature/issue-{{ISSUE}}-*' | awk '{print $2}' | sed 's|refs/heads/||' | tail -1`
+   Capture result as `<branch>`. If nothing returned, skip the feature PR step in Queue PRs (feature PR was already created on a prior run or branch was deleted).
+1. `gh issue view {{ISSUE}} --json title,body,comments,labels,state_reason`
+   Capture `title` for use in the feature PR.
 2. Parse emotion-tag comments (lines starting with `[surprise]`,
    `[frustration]`, `[insight]`, `[self-correction]`).
 3. Count revisions: how many times did `Planner starting` or
    `Implementer starting` appear?
    Use `.github/scripts/pipeline-iterations.sh` helpers if present.
-4. Merge diff:
-   `git log --merges -1 --format=%H`
-   `git diff HEAD^..HEAD`
+4. Pending diff:
+   `git fetch origin <branch>`
+   `git diff origin/master...origin/<branch>`
+   The feature branch is not merged yet; read the pending diff.
+   Skip this step if step 0 returned no branch.
 5. Vault topology: `Read learning/system-vault/index.md` (if it exists).
 
 ## Detect signals (frustration-first framing)
@@ -117,22 +125,52 @@ links to satisfy a connectivity rule. Disconnected notes are fine.
    stale entries to the prune queue if space is tight.
 4. Budget: at most 3 files created or updated per issue.
 
-## Commit and merge
+## Commit vault notes (only if CREATE or UPDATE)
 
 ```
 git checkout -b reflection/issue-{{ISSUE}}
 git add learning/system-vault/
 git commit -m "reflect: #{{ISSUE}} <short description>" -m "Ref #{{ISSUE}}" -m "loop detected: yes|no"
 git push -u origin reflection/issue-{{ISSUE}}
-gh pr create --base master --head reflection/issue-{{ISSUE}} \
-  --title "reflect: #{{ISSUE}} <slug>" \
-  --body "Pipeline reflection for #{{ISSUE}}"
-gh pr merge --merge --auto --delete-branch
 ```
 
 The git log on `learning/system-vault/` is the audit trail; the
 `loop detected:` trailer in the commit message body is the searchable
 loop signal. No separate log.md file.
+
+## Queue PRs
+
+**Feature PR (always, unless step 0 found no branch):**
+
+```
+git fetch origin
+git checkout <branch>
+git merge origin/master --no-edit
+git push
+gh pr create --base master --head <branch> \
+  --title "<title from step 1>" \
+  --body "Closes #{{ISSUE}}"
+gh pr merge <PR#> --merge --auto --delete-branch
+```
+
+Post issue comment: `Reflector: feature PR #<PR#> queued for auto-merge.`
+
+**Vault PR (only if "Commit vault notes" ran above):**
+
+```
+git checkout reflection/issue-{{ISSUE}}
+git merge origin/master --no-edit
+git push
+gh pr create --base master --head reflection/issue-{{ISSUE}} \
+  --title "reflect: #{{ISSUE}} <slug>" \
+  --body "Pipeline reflection for #{{ISSUE}}"
+gh pr merge <PR#> --merge --auto --delete-branch
+```
+
+Post issue comment: `Reflector: vault PR #<PR#> queued for auto-merge.`
+
+Both PRs enter GitHub's auto-merge queue. Each is gated by the required `test` check.
+Vault PR auto-merge depends on that check running; vault commits must not carry `[skip ci]` (removed by PR #204). If a future change re-adds it, auto-merge silently stalls.
 
 ## Hard constraints
 
