@@ -6,7 +6,7 @@ into a small number of plan groups before delegating to
 
 ## Group by label first
 
-Open Issues are pre-labelled by fight-team and other sources:
+Open Issues are pre-labelled by their source. Route on labels:
 
 - bucket:<bucket> groups all findings touching the same bucket (code,
   test, skill, command, hook, sim, reference, registry, config,
@@ -15,8 +15,6 @@ Open Issues are pre-labelled by fight-team and other sources:
   almost always share a fix shape.
 - priority:high and priority:investigate split into separate plans.
   Investigate items become research notes, not edits.
-- source:fight-team indicates the body already passed the
-  fight-team validator and the Suggested approach is copy-paste-ready.
 
 ## Group by root cause
 

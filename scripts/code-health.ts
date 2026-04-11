@@ -1401,7 +1401,7 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
   }
 
   // Append a history entry for the test_density invariant + future trends.
-  // Includes the top-10 ranked findings for fight-team (PR-H) consumption.
+  // Includes the top-10 ranked findings for doc consumption.
   appendHistory({
     ts: new Date().toISOString(),
     composite: bucketReport.composite,

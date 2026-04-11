@@ -20,12 +20,12 @@ PR-C delivers Layers 1 and 2 of the four-layer scorer:
 | 1     | Scope discovery via `git ls-files` plus pure `classify(path)` | done (PR-C) |
 | 2     | Per-bucket scoring, completeness, composite, invariants, floors | done (PR-C) |
 | 3     | Bucket-specific metrics: frontmatter_valid, manifest_schema_valid, recently_used, ownership_consistent, freshness, inbound_link_count | PR-D |
-| 4     | Aggregation, graph metrics, fight-team feedback loop | PR-D |
+| 4     | Aggregation, graph metrics, doc feedback loop | PR-D |
 
 The legacy seven-metric scorer (modularity, encapsulation, size_balance,
 dep_depth, complexity, test_sync, references_health) still runs in parallel
 and prints alongside the new bucket report. It is preserved so downstream
-consumers (`/fix`, web/test, future fight-team) keep working unchanged.
+consumers (`/fix`, web/test, doc) keep working unchanged.
 
 ## Buckets
 

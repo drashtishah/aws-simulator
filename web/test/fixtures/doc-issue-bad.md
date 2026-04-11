@@ -24,11 +24,11 @@ Just fix the ownership stuff somehow, you know what to do, I trust you to figure
 ## Verification
 Run the health check command and confirm the score went up by some amount that seems reasonable to you.
 
-## Debate transcript excerpts
+## Review excerpts
 - both agents agreed that this is bad
 
 ## Labels
-- source:fight-team
+- source:doc
 
 ## Linked context
 - nothing in particular
