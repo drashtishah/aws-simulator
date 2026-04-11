@@ -1,7 +1,7 @@
-const { describe, it, beforeEach, afterEach, after } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
+import { describe, it, beforeEach, afterEach, after } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -11,6 +11,9 @@ const TMP_SESSIONS_DIR = path.join(__dirname, '.tmp', `session-persistence-${pro
 process.env.AWS_SIMULATOR_SESSIONS_DIR = TMP_SESSIONS_DIR;
 fs.mkdirSync(TMP_SESSIONS_DIR, { recursive: true });
 
+// require() preserved for paths and claude-session: must run after
+// AWS_SIMULATOR_SESSIONS_DIR is set above. ESM imports are hoisted before
+// module-level code, which would cause paths.ts to load without the env var.
 const paths = require('../lib/paths');
 const { persistSession, recoverSessions, sessions, SESSION_MAX_AGE_MS } = require('../lib/claude-session');
 
@@ -77,6 +80,8 @@ describe('recoverSessions', () => {
   const realSimId = '001-ec2-unreachable';
   const testDir = paths.sessionDir(realSimId);
   const filePath = path.join(testDir, 'web-session.json');
+  // require() preserved: prompt-builder imports paths; must run after env var is set.
+  const { buildPrompt } = require('../lib/prompt-builder');
 
   beforeEach(() => {
     // Clear sessions map
@@ -106,7 +111,7 @@ describe('recoverSessions', () => {
       turnCount: 3
     }));
 
-    recoverSessions(require('../lib/prompt-builder').buildPrompt);
+    recoverSessions(buildPrompt);
     assert.ok(sessions.has('recover-1'), 'session should be recovered');
     const session = sessions.get('recover-1');
     assert.equal(session.simId, realSimId);
@@ -125,7 +130,7 @@ describe('recoverSessions', () => {
       turnCount: 0
     }));
 
-    recoverSessions(require('../lib/prompt-builder').buildPrompt);
+    recoverSessions(buildPrompt);
     const session = sessions.get('recover-fields');
     assert.ok(session, 'session should exist');
     assert.ok(session.claudeSessionId);
@@ -149,7 +154,7 @@ describe('recoverSessions', () => {
       turnCount: 10
     }));
 
-    recoverSessions(require('../lib/prompt-builder').buildPrompt);
+    recoverSessions(buildPrompt);
     assert.ok(!sessions.has('recover-old'), 'old session should not be recovered');
   });
 
@@ -157,7 +162,7 @@ describe('recoverSessions', () => {
     fs.writeFileSync(filePath, '{invalid json!!!');
 
     // Should not throw
-    recoverSessions(require('../lib/prompt-builder').buildPrompt);
+    recoverSessions(buildPrompt);
     assert.equal(sessions.size, 0, 'no sessions recovered from corrupt file');
   });
 
@@ -187,7 +192,7 @@ describe('recoverSessions', () => {
       turnCount: 0
     }));
 
-    recoverSessions(require('../lib/prompt-builder').buildPrompt);
+    recoverSessions(buildPrompt);
     assert.ok(!sessions.has('recover-missing'), 'session with missing sim should not be recovered');
 
     // Cleanup
@@ -196,6 +201,7 @@ describe('recoverSessions', () => {
 });
 
 describe('endSession cleanup', () => {
+  // require() preserved: claude-process imports paths; must run after env var is set.
   const { endSession } = require('../lib/claude-process');
   const testSimId = '__test-end-cleanup__';
   const testDir = paths.sessionDir(testSimId);

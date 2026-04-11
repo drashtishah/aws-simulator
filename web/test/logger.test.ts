@@ -1,10 +1,11 @@
-const { describe, it, before, after } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import os from 'os';
+import paths from '../lib/paths';
+import { logEvent, generateFixManifest, sessionTraces } from '../lib/logger';
 
-const paths = require('../lib/paths');
 
 // PR-B unification: there is now a single raw.jsonl. The legacy LOG_FILE
 // and SYSTEM_LOG_FILE constants alias to RAW_LOG_FILE; tests that used to
@@ -16,7 +17,6 @@ paths.RAW_LOG_FILE = tmpRawLogFile;
 paths.LOG_FILE = tmpRawLogFile;
 paths.SYSTEM_LOG_FILE = tmpRawLogFile;
 
-const { logEvent, generateFixManifest, sessionTraces } = require('../lib/logger');
 
 const RAW_LOG_FILE = tmpRawLogFile;
 

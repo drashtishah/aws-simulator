@@ -223,7 +223,7 @@ spawnSync('tsx', ['--test', '--test-force-exit', testFile], { cwd: ROOT, ... })
 
 Why per-file:
 
-- The unit test files are `.ts` but use CommonJS `require()`. Plain `node --test` cannot resolve `require('../lib/progression')` against `web/lib/progression.ts`, so they must run under `tsx`.
+- Most test files have been migrated from `require()` to `import` (Issue #162). A few files retain `require()` for modules that read env vars at load time (`paths.ts`, `migrate-logs.ts`); these are documented inline. Plain `node --test` still cannot resolve bare `.ts` module paths, so tsx remains the test runtime. Smoke test alternative: `npx tsx --test --test-force-exit web/test/logger.test.ts` confirms ESM-only imports work outside the sim-test runner.
 - A single `tsx --test web/test/*.test.ts` invocation hangs when multiple files share one process (see inline comment at `scripts/test.ts:270`).
 - `--test-force-exit` ensures each subprocess exits even if a test leaves an open handle.
 

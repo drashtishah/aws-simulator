@@ -1,7 +1,8 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -11,7 +12,6 @@ describe('permission bypass audit', () => {
   });
 
   it('permission-bypass-registry.md exists after running audit', () => {
-    const { execSync } = require('child_process');
     execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT, timeout: 60000 });
     assert.ok(fs.existsSync(path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md')));
   });
@@ -31,7 +31,6 @@ describe('permission bypass audit', () => {
   });
 
   it('running audit twice with no input changes leaves file untouched (PR-A.4.2)', () => {
-    const { execSync } = require('child_process');
     const registryPath = path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md');
     execSync('npx tsx scripts/audit-permissions.ts', { cwd: ROOT, timeout: 60000 });
     const firstContent = fs.readFileSync(registryPath, 'utf8');

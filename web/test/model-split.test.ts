@@ -1,13 +1,13 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import * as claudeProcess from '../lib/claude-process.ts';
 // Asserts the Sonnet/Opus model split is hardcoded via named constants,
 // not inline literals. See Issue #107. Sonnet drives interactive play,
 // Opus runs post-session scoring. Do not flip without an A/B on quality.
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
 
-const claudeProcess = require('../lib/claude-process.ts');
 
 describe('model split constants', () => {
   it('exports PLAY_SESSION_MODEL as claude-sonnet-4-6', () => {

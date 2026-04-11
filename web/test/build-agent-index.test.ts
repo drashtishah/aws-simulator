@@ -1,10 +1,10 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 'use strict';
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const INDEX_PATH = path.join(ROOT, 'references', 'registries', 'agent-index.md');

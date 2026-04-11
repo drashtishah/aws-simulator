@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.json');

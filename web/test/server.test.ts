@@ -1,11 +1,11 @@
-const { describe, it, before, after, beforeEach } = require('node:test');
-const assert = require('node:assert/strict');
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
+import { describe, it, before, after, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import express from 'express';
+import { currentRank, normalizeHexagon, parseCatalog, getQuestionTypes, getConfig, progression } from '../lib/progress';
 
-const { currentRank, normalizeHexagon, parseCatalog, getQuestionTypes, getConfig, progression } = require('../lib/progress');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

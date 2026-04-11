@@ -1,11 +1,10 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs, { globSync } from 'fs';
+import path from 'path';
 // Permission contracts test suite
 // Validates security invariants across tool whitelists, hook wiring, and guard-write rules.
 // See: https://github.com/drashti-shah/aws-simulator/issues/24
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const { globSync } = require('fs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { execSync } = require('child_process');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { execSync } from 'child_process';
+import path from 'path';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CLI = 'npx tsx scripts/test.ts';

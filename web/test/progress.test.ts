@@ -1,13 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { getQuestionTypes, currentRank, normalizeHexagon, parseCatalog, serviceProgress } from '../lib/progress';
 
-const {
-  getQuestionTypes,
-  currentRank,
-  normalizeHexagon,
-  parseCatalog,
-  serviceProgress
-} = require('../lib/progress');
 
 describe('getQuestionTypes', () => {
   it('has six types', () => {

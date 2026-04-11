@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import * as claudeStream from '../lib/claude-stream';
 
-const claudeStream = require('../lib/claude-stream');
 
 describe('claude-stream exports', () => {
   it('exports streamQuery as an async generator function', () => {

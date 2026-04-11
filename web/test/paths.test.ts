@@ -1,7 +1,7 @@
-const assert = require('node:assert/strict');
-const { describe, it } = require('node:test');
-const path = require('path');
-const paths = require('../lib/paths');
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import path from 'path';
+import paths from '../lib/paths';
 
 describe('paths', () => {
   describe('static paths', () => {

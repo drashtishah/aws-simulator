@@ -1,10 +1,10 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import { loadConfig, axisNames } from '../lib/progression';
 
-const { loadConfig, axisNames } = require('../lib/progression');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CONFIG_PATH = path.join(ROOT, 'references', 'config', 'progression.yaml');

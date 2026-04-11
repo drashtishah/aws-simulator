@@ -1,3 +1,7 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { scoreAllBuckets } from '../../scripts/code-health';
+import { BUCKETS } from '../../scripts/lib/classify';
 'use strict';
 
 /**
@@ -7,13 +11,7 @@
  * unless --rebase-floors is passed. Going below the floor zeros the bucket.
  */
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
 
-const {
-  scoreAllBuckets,
-} = require('../../scripts/code-health');
-const { BUCKETS } = require('../../scripts/lib/classify');
 
 function makeDiscovery(byBucket: Record<string, string[]>) {
   const full: Record<string, string[]> = Object.fromEntries(BUCKETS.map((b: string) => [b, []]));

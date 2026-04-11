@@ -1,8 +1,9 @@
-const { describe, it, beforeEach, after } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import { describe, it, beforeEach, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+
 
 // PR-B step 2: tests for the activity.jsonl + system.jsonl -> raw.jsonl
 // migration. Every test runs against a tmp logs dir wired through the
@@ -11,6 +12,8 @@ const path = require('path');
 
 const tmpRoot: string = fs.mkdtempSync(path.join(os.tmpdir(), 'migrate-logs-test-'));
 process.env.AWS_SIMULATOR_LOGS_DIR = tmpRoot;
+// require() preserved: migrate-logs.ts reads AWS_SIMULATOR_LOGS_DIR at module load time.
+// Hoisting this import would cause it to load before the env var is set above.
 const { migrate } = require('../../scripts/migrate-logs');
 
 after(() => {

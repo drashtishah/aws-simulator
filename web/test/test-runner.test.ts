@@ -1,15 +1,11 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { filterByGlob, mapChangedToTests, globToRegExp } from '../../scripts/test-select';
 // Tests for test run selection helpers: --files <glob> and --changed.
 // These cover pure selection logic in scripts/test-select.ts.
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('node:path');
 
-const {
-  filterByGlob,
-  mapChangedToTests,
-  globToRegExp,
-} = require('../../scripts/test-select');
 
 describe('test selection: globToRegExp', () => {
   it('matches literal file names', () => {

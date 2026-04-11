@@ -1,9 +1,9 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { execSync } from 'node:child_process';
+import path from 'path';
 'use strict';
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { execSync } = require('node:child_process');
-const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

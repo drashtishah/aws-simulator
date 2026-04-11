@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { qualityFactor, updateRunningAverage } from '../lib/question-quality';
 
-const { qualityFactor, updateRunningAverage } = require('../lib/question-quality');
 
 describe('qualityFactor', () => {
   it('returns 0.25 when avgQuality is 0', () => {

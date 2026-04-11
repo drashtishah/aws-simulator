@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('node:path');
-const { checkAccess } = require('../../.claude/hooks/guard-write');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { checkAccess } from '../../.claude/hooks/guard-write';
 
 const ROOT = '/tmp/aws-test-root';
 
