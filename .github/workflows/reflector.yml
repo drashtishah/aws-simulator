@@ -80,11 +80,17 @@ jobs:
       - name: Scope check (writes limited to learning/system-vault/)
         env:
           MASTER_SHA: ${{ steps.baseline.outputs.master_sha }}
+          ISSUE: ${{ github.event.issue.number }}
         run: |
-          git fetch origin master
-          CHANGED=$(git diff --name-only "$MASTER_SHA"..HEAD)
+          git fetch origin
+          if ! git ls-remote --exit-code origin "refs/heads/reflection/issue-$ISSUE" >/dev/null 2>&1; then
+            echo "No reflection branch found; NOOP confirmed."
+            exit 0
+          fi
+          MERGE_BASE=$(git merge-base "$MASTER_SHA" "origin/reflection/issue-$ISSUE")
+          CHANGED=$(git diff --name-only "$MERGE_BASE"..origin/reflection/issue-$ISSUE)
           if [ -z "$CHANGED" ]; then
-            echo "No commits since baseline; nothing to scope-check."
+            echo "No vault commits; nothing to scope-check."
             exit 0
           fi
           OUT_OF_SCOPE=$(echo "$CHANGED" | grep -v '^learning/system-vault/' || true)
