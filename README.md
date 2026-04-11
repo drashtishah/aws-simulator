@@ -50,7 +50,7 @@ flowchart TB
     Setup["/setup"]
     Play["/play"]
     Fix["/fix"]
-    FightTeam["/fight-team"]
+    Doc["/doc"]
     CreateSim["/create-sim"]
   end
 
@@ -69,6 +69,7 @@ flowchart TB
     Critic[Critic]
     Implementer[Implementer]
     Verifier[Verifier]
+    Reflector[Reflector]
   end
 
   Player --> Play
@@ -80,13 +81,15 @@ flowchart TB
   Setup --> SystemVault
   CreateSim --> PlayerVault
   Fix --> Issues
-  FightTeam --> Issues
+  Doc --> Issues
   CreateSim --> Issues
   Issues --> Planner
   Planner --> Critic
   Critic --> Implementer
   Implementer --> Verifier
   Verifier -->|auto-merge| Issues
+  Verifier --> Reflector
+  Reflector --> SystemVault
 
   style Player fill:#e8edf5,stroke:#7b8ba3,color:#2d3748
   style Issues fill:#d4dde8,stroke:#8494a7,color:#2d3748
@@ -97,7 +100,7 @@ flowchart TB
   style Setup fill:#e0eaed,stroke:#8fa4af,color:#2d3748
   style Play fill:#e0eaed,stroke:#8fa4af,color:#2d3748
   style Fix fill:#e0eaed,stroke:#8fa4af,color:#2d3748
-  style FightTeam fill:#e0eaed,stroke:#8fa4af,color:#2d3748
+  style Doc fill:#e0eaed,stroke:#8fa4af,color:#2d3748
   style CreateSim fill:#e0eaed,stroke:#8fa4af,color:#2d3748
   style PlayerVault fill:#dce0e8,stroke:#8b95a5,color:#2d3748
   style SystemVault fill:#dce0e8,stroke:#8b95a5,color:#2d3748
@@ -107,6 +110,7 @@ flowchart TB
   style Critic fill:#c5d0de,stroke:#7385a0,color:#2d3748
   style Implementer fill:#bdc9d8,stroke:#6b7d94,color:#2d3748
   style Verifier fill:#b5c2d2,stroke:#63758a,color:#2d3748
+  style Reflector fill:#adb9d0,stroke:#5b6d80,color:#2d3748
 ```
 
 ## The pieces
@@ -117,7 +121,7 @@ flowchart TB
 
 **Web app.** The play interface. Built with the Anthropic Agent SDK. Sonnet handles interactive narration. Opus handles post-session learning analysis.
 
-**Pipeline.** Label an issue `needs-plan` and the pipeline takes over. A planner (Sonnet) reads the issue and posts a structured plan. A critic (Opus) challenges it. If the plan needs revision, it bounces back to the planner once. Once approved, an implementer (Opus) writes the code with TDD and pushes a branch. A verifier (Sonnet) checks the diff against the plan, runs all tests, opens a PR, and auto-merges. The whole cycle runs without human intervention.
+**Pipeline.** The pipeline uses different Claude models per stage, with Opus reserved for reasoning-heavy work. Label an issue `needs-plan` and the pipeline takes over. A planner posts a structured plan, then the issue flips to `needs-critique`. An Opus critic challenges it adversarially and either approves (`needs-impl`) or bounces it back (`needs-plan`). An implementer writes the code with TDD, pushes a branch, and flips to `needs-verify`. A verifier checks the diff against the plan, runs every test suite, opens a PR, auto-merges, and flips to `needs-reflection`. An Opus pass on `needs-reflection` reads the full issue chain and writes learnings into the shared system vault. The whole cycle runs without human intervention.
 
 **Testing.** Deterministic unit tests run on every PR in CI. Agent-in-the-loop browser tests drive a real Chromium instance through Chrome DevTools MCP, so UI assertions land against the actual DOM. Sixty eval checks grade scoring integrity, coaching accuracy, hint delivery, and narrator quality.
 
