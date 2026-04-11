@@ -30,9 +30,9 @@
     "command": 1,
     "hook": 11,
     "sim": 278,
-    "reference": 26,
+    "reference": 33,
     "registry": 4,
-    "config": 25,
+    "config": 26,
     "memory_link": 5
   },
   "budgets": {
