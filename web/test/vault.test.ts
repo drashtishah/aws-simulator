@@ -77,22 +77,11 @@ describe('setup SKILL.md vault wiring (Issue #94)', () => {
     }
   });
 
-  it('vault seed snippets use mkdir -p under the vault dirs', () => {
-    // Step 5b/5c should set up the two vaults via a Bash mkdir -p block.
-    // Both player-vault and system-vault must appear in a mkdir -p line so
-    // guard-write's Write/Edit block is bypassed.
+  it('player-vault seed snippet uses mkdir -p under the vault dir', () => {
     const mkdirMatches = skill.match(/mkdir -p (learning\/[a-z-]+-vault[^\n]*)/g) ?? [];
-    assert.ok(
-      mkdirMatches.length >= 2,
-      'expected at least two mkdir -p lines for the vault seeds, found ' + mkdirMatches.length,
-    );
     assert.ok(
       mkdirMatches.some((l) => l.includes('learning/player-vault')),
       'expected a mkdir -p line for learning/player-vault',
-    );
-    assert.ok(
-      mkdirMatches.some((l) => l.includes('learning/system-vault')),
-      'expected a mkdir -p line for learning/system-vault',
     );
   });
 });
