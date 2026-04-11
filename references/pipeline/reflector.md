@@ -122,7 +122,7 @@ links to satisfy a connectivity rule. Disconnected notes are fine.
 ```
 git checkout -b reflection/issue-{{ISSUE}}
 git add learning/system-vault/
-git commit -m "reflect: #{{ISSUE}} <short description> [skip ci]" -m "Ref #{{ISSUE}}" -m "loop detected: yes|no"
+git commit -m "reflect: #{{ISSUE}} <short description>" -m "Ref #{{ISSUE}}" -m "loop detected: yes|no"
 git push -u origin reflection/issue-{{ISSUE}}
 gh pr create --base master --head reflection/issue-{{ISSUE}} \
   --title "reflect: #{{ISSUE}} <slug>" \
@@ -142,9 +142,7 @@ loop signal. No separate log.md file.
 2. Match the existing vault voice (read 2 existing entries first if
    any exist).
 3. Do not duplicate entries; always grep first.
-4. Use `[skip ci]` in commit messages so the reflection PR does not
-   re-run the full test suite.
-5. If `loop_detected` is true in your JSON output, also mention the
+4. If `loop_detected` is true in your JSON output, also mention the
    loop in the final issue comment so a human can see the
    system-improvement signal.
 
