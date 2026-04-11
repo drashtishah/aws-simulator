@@ -114,23 +114,26 @@ jobs:
           STRUCTURED_OUTPUT: ${{ steps.claude.outputs.structured_output }}
         run: |
           verdict=$(echo "$STRUCTURED_OUTPUT" | jq -r '.verdict')
+          source .github/scripts/pipeline-iterations.sh
+          plan_count=$(count_plans ${{ github.event.issue.number }} ${{ github.repository }})
+          impl_count=$(count_impls ${{ github.event.issue.number }} ${{ github.repository }})
           if [ "$verdict" = "PASS" ]; then
+            gh issue comment ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --body "Verifier PASS. plans=$plan_count, implementations=$impl_count. Creating PR."
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-verify" \
               --remove-label "revised-impl"
           elif [ "$verdict" = "FAIL_RETRY" ]; then
-            impl_count=$(gh issue view ${{ github.event.issue.number }} \
-              --repo ${{ github.repository }} \
-              --json comments --jq '[.comments[].body | select(startswith("Implementer starting"))] | length')
-            if [ "$impl_count" -ge 5 ]; then
+            if [ "$impl_count" -ge "$MAX_ITERATIONS" ]; then
               gh issue edit ${{ github.event.issue.number }} \
                 --repo ${{ github.repository }} \
                 --remove-label "needs-verify" \
                 --add-label "needs-human"
               gh issue comment ${{ github.event.issue.number }} \
                 --repo ${{ github.repository }} \
-                --body "Implementation revised $impl_count times without passing. Escalating to human."
+                --body "Implementation revised $impl_count times without passing (max $MAX_ITERATIONS). plans=$plan_count, implementations=$impl_count. Escalating to human."
             else
               gh issue edit ${{ github.event.issue.number }} \
                 --repo ${{ github.repository }} \
