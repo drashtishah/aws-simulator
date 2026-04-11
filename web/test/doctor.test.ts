@@ -121,14 +121,14 @@ describe('checkSystemVaultPresent', () => {
     }
   });
 
-  it('fail with hint to run system-vault-compile when index.md missing', () => {
+  it('fail with hint to run /setup when index.md missing', () => {
     const root = buildHealthyFixture();
     fs.unlinkSync(path.join(root, 'learning', 'system-vault', 'index.md'));
     try {
       const r = checkSystemVaultPresent({ rootDir: root });
       assert.equal(r.ok, false);
       assert.match(r.detail, /learning\/system-vault\/index\.md/);
-      assert.match(r.detail, /system-vault-compile/);
+      assert.match(r.detail, /\/setup/);
     } finally {
       rmTmpDir(root);
     }

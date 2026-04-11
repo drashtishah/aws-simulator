@@ -87,13 +87,11 @@ hook does not match):
 If `learning/player-vault/` does not exist, run:
 
 ```bash
-mkdir -p learning/player-vault/{sessions,concepts,patterns,services,raw}
-[ -f learning/player-vault/index.md ] || \
-  cp references/vault-templates/index.md learning/player-vault/index.md
-for f in behavioral-profile question-quality investigation-style; do
-  [ -f "learning/player-vault/patterns/$f.md" ] || \
-    cp "references/vault-templates/patterns/$f.md" "learning/player-vault/patterns/$f.md"
-done
+mkdir -p learning/player-vault/sessions learning/player-vault/concepts learning/player-vault/patterns learning/player-vault/services learning/player-vault/raw
+[ -f learning/player-vault/index.md ] || cp references/vault-templates/index.md learning/player-vault/index.md
+[ -f learning/player-vault/patterns/behavioral-profile.md ] || cp references/vault-templates/patterns/behavioral-profile.md learning/player-vault/patterns/behavioral-profile.md
+[ -f learning/player-vault/patterns/question-quality.md ] || cp references/vault-templates/patterns/question-quality.md learning/player-vault/patterns/question-quality.md
+[ -f learning/player-vault/patterns/investigation-style.md ] || cp references/vault-templates/patterns/investigation-style.md learning/player-vault/patterns/investigation-style.md
 ```
 
 If `learning/player-vault/` already exists, leave it. Do not overwrite.
@@ -107,11 +105,9 @@ Local setup only seeds the scaffolding. Same Bash-only rule applies.
 If `learning/system-vault/` does not exist, run:
 
 ```bash
-mkdir -p learning/system-vault/{problems,solutions,playbooks,patterns}
-[ -f learning/system-vault/index.md ] || \
-  cp references/vault-templates/system/index.md learning/system-vault/index.md
-[ -f learning/system-vault/log.md ] || \
-  cp references/vault-templates/system/log.md learning/system-vault/log.md
+mkdir -p learning/system-vault/problems learning/system-vault/solutions learning/system-vault/playbooks learning/system-vault/patterns
+[ -f learning/system-vault/index.md ] || cp references/vault-templates/system/index.md learning/system-vault/index.md
+[ -f learning/system-vault/log.md ] || cp references/vault-templates/system/log.md learning/system-vault/log.md
 ```
 
 If `learning/system-vault/` already exists with any content, skip.

@@ -160,9 +160,9 @@ test ----> run: executes node --test (unit tests)
 
 The Sonnet/Opus split is hardcoded via two named constants in `web/lib/claude-process.ts`: `PLAY_SESSION_MODEL` (claude-sonnet-4-6) drives interactive play, and `POST_SESSION_MODEL` (claude-opus-4-6) drives post-session scoring. Sonnet is fast and cheap enough for narrator plus investigation reasoning; Opus runs cross-file analysis (session.json, manifest, coaching-patterns, progression) where deeper reasoning matters. Do not flip these without an A/B test on quality. See Issue #107.
 
-## Scheduled Jobs and Hooks
+## Hooks
 
-Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons with explicit `allowed_tools` so unattended runs never prompt. Hook entries in `.claude/settings.json` follow the same no-wildcard rule. Both are enforced by `web/test/scheduled-jobs-boundary.test.ts` and `web/test/hook-permissions.test.ts`.
+Hook entries in `.claude/settings.json` follow a no-wildcard rule and are enforced by `web/test/hook-permissions.test.ts`.
 
 | Automation | Type | Trigger | Purpose | Source file |
 |---|---|---|---|---|
