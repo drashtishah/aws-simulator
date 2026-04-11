@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-11
-note_count: 14
+note_count: 15
 ---
 # system-vault index
 
@@ -16,6 +16,7 @@ for the per-stage version of this protocol.
 - [[problem-tsx-test-recursion]] scope/testing tool/tsx: tsx --test refuses to run itself recursively; outer integration test silently passes while inner suite skips
 
 ## solutions
+- [[solution-baseline-via-worktree]] cost/trivial: git worktree add master to compare pre-existing test failures without leaving the main clone dirty
 - [[solution-doctor-skip-integration-on-ci]] cost/trivial: DOCTOR_SKIP_INTEGRATION=1 in ci.yml so the 12s web-server boot check does not flake on cold runners
 - [[solution-extract-cli-helpers-then-unit-test]] cost/moderate: pull per-file logic out of the CLI into a pure helper and unit-test the helper
 - [[solution-revert-floor-config-pre-commit]] cost/trivial: revert metrics.config.json floors to post-deletion actuals before committing
