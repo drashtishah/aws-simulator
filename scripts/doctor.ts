@@ -102,7 +102,7 @@ export function checkSystemVaultPresent(ctx: CheckContext): CheckResult {
       name: 'system_vault',
       detail:
         'missing ' + SYSTEM_VAULT_INDEX_REL +
-        ' (run /setup, or invoke the system-vault-compile skill to seed it)',
+        ' (run /setup to seed from references/vault-templates/system/)',
     };
   }
   return { ok: true, name: 'system_vault', detail: SYSTEM_VAULT_INDEX_REL + ' present' };
