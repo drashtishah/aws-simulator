@@ -124,7 +124,8 @@ jobs:
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-verify" \
-              --remove-label "revised-impl"
+              --remove-label "revised-impl" \
+              --add-label "needs-reflection"
           elif [ "$verdict" = "FAIL_RETRY" ]; then
             if [ "$impl_count" -ge "$MAX_ITERATIONS" ]; then
               gh issue edit ${{ github.event.issue.number }} \
