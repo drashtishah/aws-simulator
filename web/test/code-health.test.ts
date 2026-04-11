@@ -623,7 +623,7 @@ describe('Layer 3+4 aggregation', () => {
     );
   });
 
-  it('every ranked finding has the fight-team JSON shape', () => {
+  it('every ranked finding has the doc JSON shape', () => {
     const d = discoverScope(undefined, defaultCfg());
     const { layer34 } = scoreAllBuckets(d, defaultCfg());
     for (const f of layer34.findings) {

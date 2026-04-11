@@ -58,7 +58,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
                            +-------------------+
 
 +------------------+
-|  /fight-team     |
+|  /doc            |
 |  (skill)         |
 |                  |
 | Reads:           |
@@ -92,7 +92,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |                      |
 | Read by:             |
 |  pipeline stages,    |
-|  /fight-team, /fix   |
+|  /doc, /fix          |
 +----------------------+
 ```
 
@@ -125,9 +125,8 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
             --> clears feedback.md
             --> updates scripts/metrics.config.json (last_fix_analyzed timestamp)
 
-/fight-team --> reads everything (workspace-wide adversarial review)
-            --> writes GitHub Issues (actionable findings from debate)
-            --> /fix picks up issues in its gather phase (step 3b)
+/doc --> reads everything (workspace-wide system health review)
+     --> writes GitHub Issues (system health findings tagged needs-human)
 
 test ----> run: executes node --test (unit tests)
            --> agent: reads web/test-specs/browser/*.yaml, prints prompts for Chrome DevTools MCP
@@ -232,4 +231,4 @@ When changing a component, check what else reads/writes the same data:
 | `journal.md` format | play (writes entries), web/ server.ts `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `references/architecture/core-workflow.md` | every skill (commit and merge discipline lives here now that /git has been removed) |
-| GitHub Issues | /fix (sole creator, step 5b), /fight-team (creates from debate findings), /create-sim (creates per core-workflow.md §1) |
+| GitHub Issues | /fix (sole creator, step 5b), /doc (creates from system health review), /create-sim (creates per core-workflow.md §1) |
