@@ -4,12 +4,6 @@ description: Initialize the local workspace for a new player. Creates the learni
 effort: low
 paths:
   - learning/**
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write"
-      hooks:
-        - type: command
-          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/setup/ownership.json"
 references_system_vault: true
 ---
 
@@ -91,28 +85,29 @@ If `learning/player-vault/` does not exist, create the vault directory structure
 
 If `learning/player-vault/` already exists, leave it. Do not overwrite.
 
-### 5c. System vault seed (PR-E)
+### 5c. System vault seed (Issue #171)
 
-If `learning/system-vault/` does not exist, create it and seed it. This
-is a per-user, gitignored area; the seed action is committed but the
-seeded contents are not.
+If `learning/system-vault/` does not exist, create it and seed it from
+the template. Unlike the player vault, the system vault is SHARED and
+tracked in git; the reflector pipeline stage writes durable FAQ-style
+notes here. Local setup only seeds the scaffolding; real entries arrive
+via pipeline runs.
 
 1. Create the root: `learning/system-vault/`.
-2. Create subdirectories: `learning/system-vault/health/`,
-   `learning/system-vault/findings/`, `learning/system-vault/workarounds/`,
-   `learning/system-vault/decisions/`, `learning/system-vault/sessions/`,
-   `learning/system-vault/components/`, `learning/system-vault/dreams/`.
-3. Write a starter `learning/system-vault/index.md` with one section
-   per subdirectory and no entries yet. Keep under 200 lines.
-4. Copy the obsidian config directory from `learning/player-vault/` to
-   `learning/system-vault/` if the player vault has one (the dotfile
-   subdirectory `learning/player-vault/` ships with for Obsidian compatibility).
-5. Write a starter `learning/system-vault/health/current.md` with a
-   single H1 `# System health` and an empty bullet list.
-6. Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
+2. Create subdirectories: `learning/system-vault/problems/`,
+   `learning/system-vault/solutions/`, `learning/system-vault/playbooks/`,
+   `learning/system-vault/patterns/`.
+3. Copy `references/vault-templates/system/index.md` to
+   `learning/system-vault/index.md`.
+4. Copy `references/vault-templates/system/log.md` to
+   `learning/system-vault/log.md`.
 
-If `learning/system-vault/` already exists, leave every file in place.
-Do not overwrite.
+If `learning/system-vault/` already exists with any content, skip all
+copies and leave it alone. The `_example-*.md` files under
+`references/vault-templates/system/` are reference-only and must NOT be
+copied into the vault (they would pollute the index).
+
+Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
 
 ### 6. Verify sim packages
 
