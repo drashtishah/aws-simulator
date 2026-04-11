@@ -73,7 +73,6 @@ jobs:
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
             --model claude-opus-4-6
-            --max-turns 10
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["CREATED","UPDATED","NOOP"]},"summary":{"type":"string"},"files":{"type":"array","items":{"type":"string"}},"loop_detected":{"type":"boolean"}},"required":["verdict","summary","files","loop_detected"]}'
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
