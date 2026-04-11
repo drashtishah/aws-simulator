@@ -5,6 +5,12 @@ effort: medium
 paths:
   - web/test-specs/**
   - scripts/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/test/ownership.json"
 references_system_vault: true
 ---
 

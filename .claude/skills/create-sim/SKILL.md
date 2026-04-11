@@ -4,6 +4,12 @@ description: Generate AWS incident simulation packages for the play skill. Searc
 effort: high
 paths:
   - sims/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/create-sim/ownership.json"
 references_system_vault: true
 ---
 
