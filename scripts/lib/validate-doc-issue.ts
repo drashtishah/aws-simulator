@@ -1,14 +1,14 @@
 /**
- * Pure validator for fight-team Issue bodies.
+ * Pure validator for doc Issue bodies.
  *
  * Enforces the 6 hard requirements from
- * .claude/skills/fight-team/references/issue-template.md so that every
- * Issue filed by fight-team is copy-paste-ready for a downstream /fix
+ * .claude/skills/doc/references/issue-template.md so that every
+ * Issue filed by doc is copy-paste-ready for a downstream /fix
  * plan with no extra research.
  *
  * Used by:
- * - .claude/skills/fight-team/SKILL.md coordinator (inline before gh issue create)
- * - web/test/fight-team-issue-format.test.ts (CI gate)
+ * - .claude/skills/doc/SKILL.md coordinator (inline before gh issue create)
+ * - web/test/doc-issue-format.test.ts (CI gate)
  */
 
 export interface ValidationResult {
@@ -24,16 +24,15 @@ const REQUIRED_SECTIONS = [
   '## Expected behavior',
   '## Suggested approach',
   '## Verification',
-  '## Debate transcript excerpts',
+  '## Review excerpts',
   '## Labels',
   '## Linked context',
 ];
 
-const DEBATE_LABELS = [
-  'Challenger r1',
-  'Defender r2 rebuttal',
-  'Challenger r2 counter',
-  'Steelman r3 by Defender',
+const REVIEW_LABELS = [
+  'Challenger lens',
+  'Defender lens',
+  'Steelman pass',
 ];
 
 // Match an absolute path ending in one of the allowed extensions plus :line.
@@ -55,7 +54,7 @@ function sliceSection(body: string, heading: string): string {
   return next === -1 ? rest : rest.slice(0, next);
 }
 
-export function validateFightTeamIssue(body: string): ValidationResult {
+export function validateDocIssue(body: string): ValidationResult {
   const errors: string[] = [];
 
   // Rule 6: length 600 to 4000.
@@ -106,13 +105,13 @@ export function validateFightTeamIssue(body: string): ValidationResult {
     errors.push('Verification section needs at least 1 fenced code block');
   }
 
-  // Rule 5: Debate transcript has >= 3 of the 4 bullet labels.
-  const debate = sliceSection(body, '## Debate transcript excerpts');
-  if (debate) {
-    const found = DEBATE_LABELS.filter((label) => debate.includes(label));
+  // Rule 5: Review excerpts has all 3 bullet labels.
+  const review = sliceSection(body, '## Review excerpts');
+  if (review) {
+    const found = REVIEW_LABELS.filter((label) => review.includes(label));
     if (found.length < 3) {
       errors.push(
-        `Debate transcript needs at least 3 of the 4 bullet labels (Challenger r1, Defender r2 rebuttal, Challenger r2 counter, Steelman r3 by Defender); found ${found.length}`,
+        `Review excerpts needs all 3 bullet labels (Challenger lens, Defender lens, Steelman pass); found ${found.length}`,
       );
     }
   }
