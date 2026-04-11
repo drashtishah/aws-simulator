@@ -4,6 +4,12 @@ description: Initialize the local workspace for a new player. Creates the learni
 effort: low
 paths:
   - learning/**
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/setup/ownership.json"
 references_system_vault: true
 ---
 
@@ -72,42 +78,47 @@ All progress columns default to `0,0,,`.
 
 If `learning/catalog.csv` already exists, leave it. Do not overwrite.
 
-### 5b. Create learning vault
+### 5b. Create learning vault (player, Bash-only seed)
 
-If `learning/player-vault/` does not exist, create the vault directory structure:
+Both vaults are in `guard-write.ts` NEVER_WRITABLE_DIRS, so Write and
+Edit tools are blocked. Seed via Bash instead (mkdir + cp, which the
+hook does not match):
 
-1. Create directories: `learning/player-vault/sessions/`, `learning/player-vault/concepts/`, `learning/player-vault/patterns/`, `learning/player-vault/services/`, `learning/player-vault/raw/`
-2. Copy vault templates from `references/vault-templates/` to `learning/player-vault/`:
-   - `references/vault-templates/index.md` -> `learning/player-vault/index.md`
-   - `references/vault-templates/patterns/behavioral-profile.md` -> `learning/player-vault/patterns/behavioral-profile.md`
-   - `references/vault-templates/patterns/question-quality.md` -> `learning/player-vault/patterns/question-quality.md`
-   - `references/vault-templates/patterns/investigation-style.md` -> `learning/player-vault/patterns/investigation-style.md`
+If `learning/player-vault/` does not exist, run:
+
+```bash
+mkdir -p learning/player-vault/{sessions,concepts,patterns,services,raw}
+[ -f learning/player-vault/index.md ] || \
+  cp references/vault-templates/index.md learning/player-vault/index.md
+for f in behavioral-profile question-quality investigation-style; do
+  [ -f "learning/player-vault/patterns/$f.md" ] || \
+    cp "references/vault-templates/patterns/$f.md" "learning/player-vault/patterns/$f.md"
+done
+```
 
 If `learning/player-vault/` already exists, leave it. Do not overwrite.
 
-### 5c. System vault seed (Issue #171)
+### 5c. System vault seed (Issue #171, Bash-only)
 
-If `learning/system-vault/` does not exist, create it and seed it from
-the template. Unlike the player vault, the system vault is SHARED and
-tracked in git; the reflector pipeline stage writes durable FAQ-style
-notes here. Local setup only seeds the scaffolding; real entries arrive
-via pipeline runs.
+Unlike the player vault, the system vault is SHARED and tracked in
+git; the reflector pipeline stage writes durable FAQ-style notes here.
+Local setup only seeds the scaffolding. Same Bash-only rule applies.
 
-1. Create the root: `learning/system-vault/`.
-2. Create subdirectories: `learning/system-vault/problems/`,
-   `learning/system-vault/solutions/`, `learning/system-vault/playbooks/`,
-   `learning/system-vault/patterns/`.
-3. Copy `references/vault-templates/system/index.md` to
-   `learning/system-vault/index.md`.
-4. Copy `references/vault-templates/system/log.md` to
-   `learning/system-vault/log.md`.
+If `learning/system-vault/` does not exist, run:
 
-If `learning/system-vault/` already exists with any content, skip all
-copies and leave it alone. The `_example-*.md` files under
-`references/vault-templates/system/` are reference-only and must NOT be
-copied into the vault (they would pollute the index).
+```bash
+mkdir -p learning/system-vault/{problems,solutions,playbooks,patterns}
+[ -f learning/system-vault/index.md ] || \
+  cp references/vault-templates/system/index.md learning/system-vault/index.md
+[ -f learning/system-vault/log.md ] || \
+  cp references/vault-templates/system/log.md learning/system-vault/log.md
+```
 
-Ensure `learning/logs/raw.jsonl` exists (touch it if missing).
+If `learning/system-vault/` already exists with any content, skip.
+The `_example-*.md` files under `references/vault-templates/system/`
+are reference-only and must NOT be copied into the vault.
+
+Ensure `learning/logs/raw.jsonl` exists (`mkdir -p learning/logs && touch learning/logs/raw.jsonl`).
 
 ### 6. Verify sim packages
 
