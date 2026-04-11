@@ -1,6 +1,6 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { buildRecord, logFileName } = require('../../.claude/hooks/log-hook');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildRecord, logFileName } from '../../.claude/hooks/log-hook';
 
 describe('buildRecord', () => {
   it('always includes base fields', () => {

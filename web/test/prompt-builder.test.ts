@@ -1,9 +1,9 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import { buildPrompt } from '../lib/prompt-builder';
 
-const { buildPrompt } = require('../lib/prompt-builder');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 

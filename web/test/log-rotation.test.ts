@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { canRotate } from '../lib/system-vault';
 
-const { canRotate } = require('../lib/system-vault');
 
 describe('log rotation: only-referenced rotation', () => {
   it('allows rotation of an unreferenced archive older than 7 days', () => {

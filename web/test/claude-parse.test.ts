@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import * as claudeParse from '../lib/claude-parse';
 
-const claudeParse = require('../lib/claude-parse');
 
 describe('claude-parse exports', () => {
   it('exports parseEvents as a function', () => {

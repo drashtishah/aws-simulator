@@ -1,16 +1,16 @@
-'use strict';
-
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
-const acorn = require('acorn');
-
-const {
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import acorn from 'acorn';
+import cfg from '../../scripts/metrics.config.json';
+import { classify, BUCKETS } from '../../scripts/lib/classify';
+import {
   parseFile, walk, extractRequires, extractExportCount, computeComplexity,
   scoreModularity, scoreEncapsulation, scoreSizeBalance,
-  scoreDepDepth, scoreComplexity, scoreTestSync, loadWeights, main, round
-} = require('../../scripts/code-health');
+  scoreDepDepth, scoreComplexity, scoreTestSync, loadWeights, main, round,
+  discoverScope, scoreAllBuckets, scoreLayer34,
+} from '../../scripts/code-health';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const TMP_DIR = path.join(ROOT, 'learning', 'logs', '_health_test_tmp');
@@ -394,12 +394,6 @@ describe('round', () => {
 // PR-C invariants and anti-gaming guardrails
 // ---------------------------------------------------------------------------
 
-const {
-  classify, BUCKETS,
-} = require('../../scripts/lib/classify');
-const {
-  discoverScope, scoreAllBuckets,
-} = require('../../scripts/code-health');
 
 function emptyDiscovery() {
   const byBucket = Object.fromEntries(BUCKETS.map(b => [b, []]));
@@ -533,7 +527,6 @@ describe('anti-gaming scenarios (12 rows from PR-C plan)', () => {
   });
 
   it('A7 (lower the bar in config): bucketWeights are equal across all 10 buckets', () => {
-    const cfg = require('../../scripts/metrics.config.json');
     const expected = 1 / BUCKETS.length;
     for (const v of Object.values(cfg.bucketWeights)) {
       assert.ok(Math.abs((v as number) - expected) < 0.001);
@@ -545,11 +538,9 @@ describe('anti-gaming scenarios (12 rows from PR-C plan)', () => {
   });
 
   it('A9 (delete health-scores.jsonl): the canonical path is constant and recreated', () => {
-    const fsX = require('fs');
-    const pathX = require('path');
-    const expected = pathX.join(__dirname, '..', '..', 'learning', 'logs', 'health-scores.jsonl');
+    const expected = path.join(__dirname, '..', '..', 'learning', 'logs', 'health-scores.jsonl');
     main();
-    assert.ok(fsX.existsSync(expected));
+    assert.ok(fs.existsSync(expected));
   });
 
   it('A10 (add a new bucket): BUCKETS list is exactly the 10 PR-C buckets', () => {
@@ -608,7 +599,6 @@ describe('plans are invisible to the scorer', () => {
 // PR-D Layer 3+4 aggregation: scoreLayer34, ranked findings, JSON shape
 // ---------------------------------------------------------------------------
 
-const { scoreLayer34 } = require('../../scripts/code-health');
 
 describe('Layer 3+4 aggregation', () => {
   it('returns ranked findings sorted by point impact, deterministic', () => {

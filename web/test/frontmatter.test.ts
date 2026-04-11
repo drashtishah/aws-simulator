@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { stripFrontmatter } from '../lib/frontmatter';
 
-const { stripFrontmatter } = require('../lib/frontmatter');
 
 describe('stripFrontmatter', () => {
   it('returns body and empty meta when no frontmatter', () => {

@@ -1,16 +1,15 @@
-const { describe, it, beforeEach, afterEach, mock } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
+import { describe, it, beforeEach, afterEach, mock, after } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import { parseEvents, parseAgentMessages, logTurn, sendMessage, endSession, collectMessages, withRetry, buildPostSessionPrompt } from '../lib/claude-process';
+import { sessions } from '../lib/claude-session';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
 // --- parseEvents (marker extraction, unchanged logic) ---
 
 describe('parseEvents', () => {
-  // Lazy-load to allow mocking in other describe blocks
-  const { parseEvents } = require('../lib/claude-process');
-
   it('extracts text content', () => {
     const result = parseEvents('Hello, investigator.');
     assert.equal(result.events.length, 1);
@@ -67,8 +66,6 @@ describe('parseEvents', () => {
 // --- parseAgentMessages ---
 
 describe('parseAgentMessages', () => {
-  const { parseAgentMessages } = require('../lib/claude-process');
-
   it('extracts session_id from init message', () => {
     const messages = [
       { type: 'system', subtype: 'init', session_id: 'sess-abc' },
@@ -227,7 +224,6 @@ describe('parseAgentMessages', () => {
 // --- logTurn ---
 
 describe('logTurn', () => {
-  const { logTurn } = require('../lib/claude-process');
   const testSimId = '__test-turn-log__';
   const testDir = path.join(ROOT, 'learning', 'sessions', testSimId);
   const turnsPath = path.join(testDir, 'turns.jsonl');
@@ -271,8 +267,6 @@ describe('logTurn', () => {
 // --- sendMessage SESSION_LOST ---
 
 describe('sendMessage', () => {
-  const { sendMessage } = require('../lib/claude-process');
-
   it('throws SESSION_LOST for unknown sessionId', async () => {
     await assert.rejects(
       () => sendMessage('nonexistent-session-id', 'hello'),
@@ -288,9 +282,6 @@ describe('sendMessage', () => {
 // --- endSession ---
 
 describe('endSession', () => {
-  const { endSession } = require('../lib/claude-process');
-  const { sessions } = require('../lib/claude-session');
-
   it('silently handles nonexistent session', async () => {
     await endSession('nonexistent-session-xyz');
   });
@@ -310,8 +301,6 @@ describe('endSession', () => {
 // --- sessions map ---
 
 describe('sessions map', () => {
-  const { sessions } = require('../lib/claude-session');
-
   it('is exported and is a Map', () => {
     assert.ok(sessions instanceof Map);
   });
@@ -320,8 +309,6 @@ describe('sessions map', () => {
 // --- collectMessages timeout ---
 
 describe('collectMessages', () => {
-  const { collectMessages } = require('../lib/claude-process');
-
   it('collects messages from async generator', async () => {
     async function* generator() {
       yield { type: 'system', subtype: 'init', session_id: 's1' };
@@ -353,8 +340,6 @@ describe('collectMessages', () => {
 // --- parseAgentMessages error detection ---
 
 describe('parseAgentMessages error detection', () => {
-  const { parseAgentMessages } = require('../lib/claude-process');
-
   it('captures resultError from error result messages', () => {
     const messages = [
       { type: 'system', subtype: 'init', session_id: 's1' },
@@ -437,8 +422,6 @@ describe('cost budgeting', () => {
 // --- parseAgentMessages hasToolUse ---
 
 describe('parseAgentMessages hasToolUse', () => {
-  const { parseAgentMessages } = require('../lib/claude-process');
-
   it('returns hasToolUse: true when messages contain tool_use blocks', () => {
     const messages = [
       { type: 'assistant', message: { content: [
@@ -475,8 +458,6 @@ describe('streamMessage resume validation', () => {
 // --- withRetry ---
 
 describe('withRetry', () => {
-  const { withRetry } = require('../lib/claude-process');
-
   it('returns result on first success', async () => {
     const result = await withRetry(() => Promise.resolve('ok'));
     assert.equal(result, 'ok');
@@ -504,8 +485,6 @@ describe('withRetry', () => {
 // --- Post-session prompt includes solves pattern ---
 
 describe('buildPostSessionPrompt includes solves', () => {
-  const { buildPostSessionPrompt } = require('../lib/claude-process');
-
   it('prompt includes solves instruction', () => {
     // Use a known sim ID from registry
     const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
@@ -543,8 +522,6 @@ describe('model is hardcoded', () => {
 // --- playtest transcript logging ---
 
 describe('playtest transcript logging', () => {
-  const { parseEvents } = require('../lib/claude-process');
-
   it('text can be split into narrator/console/coaching for transcripts', () => {
     const text = 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.';
     const result = parseEvents(text);
@@ -565,5 +542,4 @@ describe('playtest transcript logging', () => {
 
 // Force exit after all tests complete: the Claude SDK import keeps open handles
 // that prevent the node --test runner from exiting within test's timeout.
-const { after } = require('node:test');
 after(() => setTimeout(() => process.exit(0), 500));

@@ -1,22 +1,16 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { proseDuplication, danglingReferences, activityFreshness, skillOwnershipIntegrity, dedupeOwnershipFindings } from '../../scripts/lib/graph-metrics';
 'use strict';
 
 // Tests for scripts/lib/graph-metrics.ts (PR-D Layers 3+4).
 // Pure unit tests over inline string fixtures and tmp dirs. No git, no
 // real raw.jsonl. Each metric: positive case, negative case, edge case.
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
 
-const {
-  proseDuplication,
-  danglingReferences,
-  activityFreshness,
-  skillOwnershipIntegrity,
-  dedupeOwnershipFindings,
-} = require('../../scripts/lib/graph-metrics');
 
 function mkTmp(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), `gm-${prefix}-`));

@@ -1,15 +1,15 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { execSync } from 'child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 // Tests for the new browser-spec check types: console_clean, network_ok, landmarks_present.
 // The test runner is an agent-instruction translator: it parses YAML specs and prints
 // step-by-step instructions for a chrome-devtools-driving subagent. These tests assert that
 // the schema accepts the new check types and that the agent printer renders them correctly,
 // including spec-level allowlists and origin lists.
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { execSync } = require('child_process');
-const fs = require('node:fs');
-const path = require('node:path');
-const os = require('node:os');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CLI = 'npx tsx scripts/test.ts';

@@ -1,7 +1,8 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import { runAgentCheck, parseAgentJSON } from '../../scripts/agent-test-runner';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -13,8 +14,7 @@ describe('agent-test-runner', () => {
   });
 
   it('exports runAgentCheck function', () => {
-    const mod = require(sourcePath);
-    assert.equal(typeof mod.runAgentCheck, 'function');
+    assert.equal(typeof runAgentCheck, 'function');
   });
 
   it('hardcodes claude-sonnet-4-6', () => {
@@ -42,14 +42,12 @@ describe('agent-test-runner', () => {
   });
 
   it('parseAgentJSON extracts JSON from mixed text', () => {
-    const { parseAgentJSON } = require(sourcePath);
     const text = 'Some preamble\n```json\n{"pass": true, "findings": []}\n```\nMore text';
     const result = parseAgentJSON(text);
     assert.deepStrictEqual(result, { pass: true, findings: [] });
   });
 
   it('parseAgentJSON extracts bare JSON object', () => {
-    const { parseAgentJSON } = require(sourcePath);
     const text = '{"pass": false, "findings": [{"dimension": "summary", "pass": false, "detail": "wrong"}]}';
     const result = parseAgentJSON(text);
     assert.equal(result.pass, false);
@@ -57,7 +55,6 @@ describe('agent-test-runner', () => {
   });
 
   it('parseAgentJSON returns null for invalid input', () => {
-    const { parseAgentJSON } = require(sourcePath);
     assert.equal(parseAgentJSON('no json here'), null);
   });
 });

@@ -1,7 +1,7 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const { spawnSync } = require('node:child_process');
-const path = require('node:path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const HOOK = path.join(ROOT, '.claude', 'hooks', 'pre-commit-issues.ts');

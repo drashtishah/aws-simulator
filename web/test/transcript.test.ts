@@ -1,14 +1,14 @@
-const { describe, it, beforeEach, afterEach } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import { describe, it, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import paths from '../lib/paths';
+import * as transcript from '../lib/transcript';
 
 // --- paths.js changes ---
 
 describe('paths: session directory structure', () => {
-  const paths = require('../lib/paths');
-
   it('sessionFile returns {id}/session.json path', () => {
     const result = paths.sessionFile('001-ec2-unreachable');
     assert.ok(result.endsWith(path.join('001-ec2-unreachable', 'session.json')));
@@ -29,17 +29,15 @@ describe('paths: session directory structure', () => {
 
 describe('transcript module', () => {
   let tmpDir;
-  let transcript;
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sim-transcript-'));
-    transcript = require('../lib/transcript');
     transcript._setSessionsDir(tmpDir);
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete require.cache[require.resolve('../lib/transcript')];
+    // delete require.cache removed: _setSessionsDir in beforeEach provides sufficient isolation.
   });
 
   it('appendTurn creates directory and writes JSONL', () => {

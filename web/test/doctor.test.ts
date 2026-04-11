@@ -1,3 +1,9 @@
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { checkRawLogAppendable, checkSystemVaultPresent, checkScheduledJobs, checkMcpConfig, checkPostCommitHook, checkHealthScoreRecent, checkPathRegistryFresh, checkSimTestSmoke, checkWebServerBoot, checkSkillDanglingRefs, checkPathRegistryHashFresh, formatCheckLine, runAll } from '../../scripts/doctor';
 // Tests for scripts/doctor.ts (Group F of plan
 // .claude/plans/replicated-exploring-thompson.md, Issue #96).
 //
@@ -8,27 +14,7 @@
 // exact actionable path/command in the detail string. The user's
 // requirement is that any FAIL must point at the fix.
 
-const { describe, it, before, after } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 
-const {
-  checkRawLogAppendable,
-  checkSystemVaultPresent,
-  checkScheduledJobs,
-  checkMcpConfig,
-  checkPostCommitHook,
-  checkHealthScoreRecent,
-  checkPathRegistryFresh,
-  checkSimTestSmoke,
-  checkWebServerBoot,
-  checkSkillDanglingRefs,
-  checkPathRegistryHashFresh,
-  formatCheckLine,
-  runAll,
-} = require('../../scripts/doctor');
 
 // ---------------------------------------------------------------------------
 // Fixture helpers

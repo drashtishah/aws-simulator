@@ -1,11 +1,11 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import { scoreReferencesHealth, main } from '../../scripts/code-health';
 'use strict';
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
 
-const { scoreReferencesHealth } = require('../../scripts/code-health');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -70,7 +70,6 @@ describe('scoreReferencesHealth', () => {
 
 describe('main composite includes references_health', () => {
   it('reports references_health in the scores object', () => {
-    const { main } = require('../../scripts/code-health');
     // Capture stdout to silence
     const origLog = console.log;
     console.log = () => {};

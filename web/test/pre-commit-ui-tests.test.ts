@@ -1,8 +1,8 @@
-const { describe, it, before, after } = require('node:test');
-const assert = require('node:assert/strict');
-const { spawnSync, execSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync, execSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const HOOK = path.join(ROOT, '.claude', 'hooks', 'pre-commit-ui-tests.ts');

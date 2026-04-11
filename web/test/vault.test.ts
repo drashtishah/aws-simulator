@@ -1,9 +1,10 @@
-const { describe, it, before } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import { describe, it, before } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import paths from '../lib/paths';
+import { qualityFactor, updateRunningAverage } from '../lib/question-quality';
 
-const paths = require('../lib/paths');
 const ROOT = paths.ROOT;
 const VAULT_DIR = paths.VAULT_DIR;
 
@@ -160,10 +161,6 @@ describe('vault template content', () => {
 });
 
 describe('question quality scoring', () => {
-  const { qualityFactor, updateRunningAverage } = (() => {
-    try { return require('../lib/question-quality'); } catch { return {}; }
-  })();
-
   it('qualityFactor: quality 0 returns 0.25 (floor)', () => {
     if (!qualityFactor) return;
     assert.equal(qualityFactor(0), 0.25);

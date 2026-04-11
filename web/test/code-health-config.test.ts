@@ -1,3 +1,8 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
+import { BUCKETS } from '../../scripts/lib/classify';
 'use strict';
 
 /**
@@ -11,16 +16,11 @@
  * metrics.config.json" cannot be done silently.
  */
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const CONFIG_PATH = path.join(ROOT, 'scripts', 'metrics.config.json');
 const cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 
-const { BUCKETS } = require('../../scripts/lib/classify');
 
 describe('metrics.config.json', () => {
   it('exists and is valid JSON', () => {

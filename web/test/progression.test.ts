@@ -1,21 +1,8 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import { loadConfig, axisNames, evaluateGate, currentRank, maxDifficulty, applyDecay, scoreSim, availableModifiers, normalizePolygon, initPolygon, applyDiminishingReturns, evaluateQualityGate } from '../lib/progression';
 
-const {
-  loadConfig,
-  axisNames,
-  evaluateGate,
-  currentRank,
-  maxDifficulty,
-  applyDecay,
-  scoreSim,
-  availableModifiers,
-  normalizePolygon,
-  initPolygon,
-  applyDiminishingReturns,
-  evaluateQualityGate,
-} = require('../lib/progression');
 
 const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'config', 'progression.yaml');
 
