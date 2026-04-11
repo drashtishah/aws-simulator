@@ -1,330 +1,185 @@
 ---
-name: fight-team
+name: doc
 description: >
-  Adversarial workspace review using a 3-agent debate team.
-  One coordinator orchestrates two debaters (Challenger and Defender)
-  who argue through a checklist of workspace quality topics across 3 rounds.
-  Produces actionable findings with consensus recommendations.
-  Use when user says "fight", "fight-team", "adversarial review",
-  "debate review", or "workspace review".
+  System health doctor. Reviews the whole workspace through code-health
+  metrics, identifies high-value problems, and files GitHub Issues tagged
+  needs-human for human triage before the GHA pipeline picks them up.
+  Use when user says "doc", "system check", "health check",
+  "workspace review", or "diagnose".
 references_system_vault: true
 ---
 
-# fight-team Skill
+# doc Skill
 
-Three-agent adversarial review driven entirely by code-health findings.
-A coordinator (this session) orchestrates two debaters who argue over the
-top 10 findings from `learning/logs/health-scores.jsonl` across 4 rounds,
-then synthesizes survivors into actionable GitHub Issues using the
-canonical issue-template.md schema.
+Single-Opus system health review driven entirely by code-health findings.
+A coordinator (this session) loads health findings, spawns one Opus reviewer,
+runs one steelman pass, synthesizes the results, and files GitHub Issues
+tagged `needs-human` for human triage before the GHA pipeline picks them up.
 
-**Roles:**
-- **Coordinator** (this session): manages rounds, synthesizes report, creates tasks and issues
-- **Challenger**: finds problems, complexity, gaps, risks. Critical lens.
-- **Defender**: justifies existing decisions, finds strengths, argues against unnecessary changes. Pragmatic lens.
+**Inputs:** before spawning the reviewer, the coordinator reads the latest
+entry of `learning/logs/health-scores.jsonl` and selects the top 10 findings
+by `expected_gain_if_fixed`. If the file is empty or older than 24h, run
+`npm run health` first to refresh. Each finding carries `bucket`, `metric`,
+`file`, `line`, `current_score`, `expected_gain_if_fixed`, `description`.
 
-**Structure:** 4 rounds (independent positions, cross-examination, steelman swap, convergence), then synthesis and issue pipeline. The 4-round structure is mandatory; no skipping rounds.
-
-**Inputs:** before spawning debaters, the coordinator reads the latest entry of `learning/logs/health-scores.jsonl` and selects the top 10 findings by `expected_gain_if_fixed`. If the file is empty or older than 24h, run `npm run health` first to refresh. Each finding carries `bucket`, `metric`, `file`, `line`, `current_score`, `expected_gain_if_fixed`, `description`. The debate is over those findings, not over a hand-maintained checklist.
+The review covers the whole workspace. Buckets include code, test, skill,
+command, hook, sim, reference, registry, config, memory_link. Treat all
+buckets equally.
 
 ---
 
-## Phase 1: Setup
+## Phase 1: Load inputs
 
-### 1. Create the team
+Read the latest entry of `learning/logs/health-scores.jsonl`. Select the
+top 10 findings by `expected_gain_if_fixed`. If the file is empty or older
+than 24h, run `npm run health` first. Read every cited file at its cited
+line before spawning the reviewer.
 
-```
-TeamCreate: name "fight-team"
-```
+---
 
-### 2. Spawn both agents
+## Phase 2: Opus review
 
-Spawn two agents with `model: "sonnet"` and `team_name: "fight-team"`. Use the prompts in the Agent Prompts section below.
+Spawn a single `Agent` call with `model: opus`. No `team_name`. No
+`TeamCreate`. Pass the Reviewer prompt below. Read-only tools only.
 
 ```
 Agent:
-  name: "challenger"
-  model: sonnet
-  team_name: fight-team
-  prompt: [Challenger Round 1 prompt]
-
-Agent:
-  name: "defender"
-  model: sonnet
-  team_name: fight-team
-  prompt: [Defender Round 1 prompt]
+  model: opus
+  prompt: [Reviewer prompt below]
 ```
 
-Both agents run in parallel for Round 1.
+Wait for the agent to complete.
 
 ---
 
-## Phase 2: Round 1, Independent positions
+## Phase 3: Steelman pass
 
-Both debaters read the top 10 findings from `learning/logs/health-scores.jsonl`
-and every cited file. They write positions in isolation, knowing they will
-be cross-examined in round 2 and asked to steelman the opposing position
-in round 3.
+Send one `SendMessage` to the same Opus agent:
 
-Wait for both agents to complete Round 1.
+> "For each of the 3 findings with the highest `expected_gain_if_fixed` score
+> among `priority:high` findings: attempt to steelman the claim 'this finding
+> is gameable or redundant'. If the steelman is plausible, demote to
+> `priority:investigate` and explain why in one sentence. For each of the 3
+> findings with the highest `expected_gain_if_fixed` score among
+> `priority:investigate` findings: attempt to steelman the claim 'this is a
+> real problem worth fixing'. If the steelman is not plausible, drop the
+> finding. Output a revised finding list with any changes noted."
 
-Record each agent's positions for relay in Round 2.
-
----
-
-## Phase 3: Round 2, Cross-examination
-
-Each debater reads the other's r1 positions and produces a numbered
-rebuttal for **every** finding. "I agree" is forbidden. Each rebuttal must
-do one of:
-
-1. Cite a counter-example with file:line.
-2. Propose a stricter test the finding would fail.
-3. Explicitly write `CONCEDED` and explain why the finding survived attack.
-
-```
-SendMessage:
-  to: "challenger"
-  content: "Round 2: Here are the Defender's r1 positions. Produce a numbered rebuttal for every finding. 'I agree' is forbidden. Each rebuttal must (a) cite a counter-example with file:line, (b) propose a stricter test, or (c) write CONCEDED with explanation. Also: during this round, if any Defender position surprises you, changes your mind on a finding you were certain about, or reveals evidence you had missed, write a note IN THE MOMENT via `tsx scripts/note.ts --kind finding --topic fight-team-r2-<slug> --body \"...\"`. Bodies are uncapped. Per rule 13. [Defender's r1 output]"
-
-SendMessage:
-  to: "defender"
-  content: "Round 2: Here are the Challenger's r1 positions. Produce a numbered rebuttal for every finding. 'I agree' is forbidden. Each rebuttal must (a) cite a counter-example with file:line, (b) propose a stricter test, or (c) write CONCEDED with explanation. Use the Anti-gaming scenario table in references/findings-debate.md as your playbook. Also: during this round, if any Challenger position surprises you, changes your mind on a finding you were certain about, or reveals evidence you had missed, write a note IN THE MOMENT via `tsx scripts/note.ts --kind finding --topic fight-team-r2-<slug> --body \"...\"`. Bodies are uncapped. Per rule 13. [Challenger's r1 output]"
-```
-
-Wait for both agents to complete Round 2.
+Wait for the agent to complete.
 
 ---
 
-## Phase 4: Round 3, Steelman swap
+## Phase 4: Synthesis
 
-Each debater takes the other's strongest surviving position and writes
-the best possible version of it. Findings that cannot be steelmanned are
-demoted to `priority:investigate` in round 4.
-
-```
-SendMessage:
-  to: "challenger"
-  content: "Round 3: Take the Defender's strongest surviving r2 position and write the best possible version of it. If you cannot steelman a finding, mark it priority:investigate. Also: if steelmanning reveals the opposing position is stronger than you expected, or if your own r2 rebuttal now looks weaker, write a note via `tsx scripts/note.ts --kind decision --topic fight-team-steelman-<slug> --body \"...\"`. Steelman shifts are exactly the cross-session memory future fight-team runs benefit from. Per rule 13. [Defender's r2 output]"
-
-SendMessage:
-  to: "defender"
-  content: "Round 3: Take the Challenger's strongest surviving r2 position and write the best possible version of it. If you cannot steelman a finding, mark it priority:investigate. Also: if steelmanning reveals the opposing position is stronger than you expected, or if your own r2 rebuttal now looks weaker, write a note via `tsx scripts/note.ts --kind decision --topic fight-team-steelman-<slug> --body \"...\"`. Steelman shifts are exactly the cross-session memory future fight-team runs benefit from. Per rule 13. [Challenger's r2 output]"
-```
-
-Wait for both agents to complete Round 3.
-
----
-
-## Phase 4b: Round 4, Convergence
-
-Coordinator resolves. A finding becomes an Issue only if it survived
-rounds 2+3 with at least one file:line citation that both debaters
-acknowledge exists. Findings that survived but could not be steelmanned
-are filed with label `priority:investigate` instead of `priority:high`.
-
-Read both debaters' r2 and r3 outputs. For each of the 10 starting
-findings, decide: file as priority:high, file as priority:investigate,
-or drop.
-
----
-
-## Phase 5: Synthesis
-
-Read both agents' Round 3 final positions. Produce a structured report:
-
-### Report Format
+Coordinator reads the reviewer's output and the steelman pass output. Produce
+a structured report:
 
 ```
-=== Fight-Team Workspace Review ===
+=== Doc Workspace Review ===
 
---- Agreed (both agents converged) ---
+--- Agreed (survived steelman) ---
 
-[Topic N]: [Finding title]
+[Finding N]: [title]
   Files: [specific file paths and line numbers]
   Recommendation: [what to do]
-  Priority: high / medium / low
+  Priority: high / investigate
 
---- Resolved Disputes (coordinator decided) ---
+--- Resolved Disputes (demoted or dropped by steelman) ---
 
-[Topic N]: [Finding title]
-  Challenger argued: [summary]
-  Defender argued: [summary]
-  Resolution: [coordinator's decision and reasoning]
-  Files: [specific file paths]
-  Recommendation: [what to do]
-  Priority: high / medium / low
+[Finding N]: [title]
+  Original priority: high / investigate
+  Steelman result: [one sentence]
+  Resolution: [demoted to investigate | dropped]
 
 --- Unresolved (flagged for human review) ---
 
-[Topic N]: [Finding title]
-  Challenger: [final position]
-  Defender: [final position]
+[Finding N]: [title]
+  Reviewer position: [summary]
   Why unresolved: [what makes this genuinely ambiguous]
 ```
 
-Present the full report to the user.
-
-### Coordinator salience notes
-
-After synthesis, before proceeding to Phase 6 (Issue Pipeline), the Coordinator writes salience notes for:
-
-- Every convergence decision that flipped mid-synthesis (started as priority:high, ended priority:investigate or dropped, or vice versa): one `decision` note explaining the flip trigger.
-- Any finding whose ranking was significantly different from its `expected_gain_if_fixed` score (the score suggested one thing, the debate revealed another): one `finding` note.
-- Any cross-finding pattern the debaters surfaced that is not captured by any single finding (e.g., "three of the top 10 findings all trace back to the same missing test layer"): one `finding` note.
-
-These notes compile into the system vault and become input for future /fix and fight-team runs. Bodies are uncapped (Issue #119). Skip with `--kind none --reason "..."` only if the synthesis produced zero shifts, which is unusual in a real debate. Per rule 13.
+Print the full report to the user.
 
 ---
 
-## Phase 6: Issue Pipeline
+## Phase 5: Auto-file Issues
 
-Follow `references/architecture/core-workflow.md` §1 for Issue creation before work starts.
+For each finding in Agreed and Resolved Disputes:
 
-### 1. Create tasks
-
-For each actionable finding (from Agreed and Resolved Disputes sections), create a task:
-
-```
-TaskCreate:
-  subject: "[Topic N] [imperative description]"
-  description: "Source: fight-team review. Files: [paths]. Recommendation: [action]. Priority: [level]."
-```
-
-Skip Unresolved items (these need human judgment first).
-
-### 2. Present to user
-
-Show the full task list. Ask the user which tasks to promote to GitHub Issues. The user may drop, edit, or confirm items.
-
-### 3. Promote to issues
-
-For each confirmed task, the coordinator first searches for an existing
-issue via `gh issue list --search "<keywords>" --state open`. If a match
-exists, add a comment with the new findings instead of creating a
-duplicate. Only if no match exists, compose a candidate Issue body that
-follows `.claude/skills/fight-team/references/issue-template.md` exactly.
-
-Issue granularity: findings that touch the same files or share a root
-cause belong in ONE issue. Do not create separate issues for symptoms
-of the same problem. The test: "would a reviewer want to see these
-changes in the same PR?" If yes, one issue. If no, separate issues.
-Then run the body through the validator BEFORE calling `gh issue create`:
+1. Compose Issue body matching `.claude/skills/doc/references/issue-template.md`.
+2. Run body through `scripts/lib/validate-doc-issue.ts`:
 
 ```bash
 npx tsx -e "
 import fs from 'fs';
-import { validateFightTeamIssue } from './scripts/lib/validate-fight-team-issue';
-const body = fs.readFileSync('/tmp/fight-team-issue-body.md','utf8');
-const r = validateFightTeamIssue(body);
+import { validateDocIssue } from './scripts/lib/validate-doc-issue';
+const body = fs.readFileSync('/tmp/doc-issue-body.md','utf8');
+const r = validateDocIssue(body);
 if (!r.valid) { console.error(JSON.stringify(r.errors,null,2)); process.exit(1); }
 "
 ```
 
-Retry policy:
-- If the validator returns errors, regenerate the body addressing the
-  specific errors and re-run the validator. Up to 2 retries.
-- On the third failure, surface the malformed body and the validator
-  errors to the user. Do NOT call `gh issue create` with a malformed
-  body.
+Retry policy: up to 2 retries on failure. On the third failure, surface the
+malformed body and validator errors to the user. Do not call `gh issue create`.
 
-Only when the validator returns `{valid: true}` does the coordinator run:
+3. Dedup: `gh issue list --search "<keywords>" --state open`. If a match
+   exists, `gh issue comment` instead of creating a duplicate.
+
+4. Otherwise:
 
 ```bash
 gh issue create --title "<one-sentence finding>" \
-  --label "source:fight-team,priority:high,bucket:<bucket>,metric:<metric>" \
-  --body-file /tmp/fight-team-issue-body.md
+  --label "source:doc,priority:<high|investigate>,bucket:<b>,metric:<m>,<type-label>,needs-human" \
+  --body-file /tmp/doc-issue-body.md
 ```
 
-Labels (set in the body's `## Labels` section AND on the gh issue create call):
-- `source:fight-team` always
-- `priority:high` if both debaters agreed by r3, else `priority:investigate`
+Labels (also set in the body's `## Labels` section):
+- `source:doc` always
+- `priority:high` or `priority:investigate` per reviewer output
 - `bucket:<bucket>` from the health-score finding
 - `metric:<metric>` from the health-score finding
-- Type label: determine from the health-score finding's file paths.
-  Refer to `references/pipeline/labels.md`. Add alongside the other labels.
+- Type label from `references/pipeline/labels.md`
+- `needs-human` always (human strips this to release into GHA pipeline)
 
-### 4. Report issue numbers
-
-List created issues with their numbers. These flow into `/fix` automatically (fix reads GitHub Issues in its gather phase).
+5. Unresolved findings stay in the report only; not filed.
 
 ---
 
-## Agent Prompts
+## Phase 6: Report issue numbers
 
-### Challenger, Round 1
+List filed Issues with their numbers. Note they are tagged `needs-human`; a
+human must strip the label to release them into the GHA pipeline.
+
+---
+
+## Reviewer Prompt (Opus, single agent)
 
 ```
-You are the Challenger in a fierce adversarial code-health review.
-
-You are paid to find real problems. Polite is worthless. Every finding
-must cite an exact file path and line number, name the failure mode,
-and propose a regression test. Vague findings are forbidden. If you
-cannot point to a line, do not raise the finding.
-
-You will be cross-examined in round 2 and asked to steelman the opposing
-position in round 3. Write round 1 knowing this.
+You are the system health doctor. Review the whole workspace through the top
+10 health findings. The workspace is not just code. Buckets include code,
+test, skill, command, hook, sim, reference, registry, config, memory_link.
+Treat all buckets equally.
 
 INPUTS (provided by coordinator):
-- The top 10 findings from learning/logs/health-scores.jsonl, each with
-  bucket, metric, file, line, current_score, expected_gain_if_fixed,
-  description.
-- Read .claude/skills/fight-team/references/findings-debate.md for the
-  4-round structure and worked example.
-- Read .claude/skills/fight-team/references/issue-template.md so your
-  round 1 positions are already shaped for the eventual Issue body.
+- Top 10 findings from learning/logs/health-scores.jsonl, each with bucket,
+  metric, file, line, current_score, expected_gain_if_fixed, description.
+- The Anti-gaming scenario table in references/config/code-health.md
+  (section "Anti-gaming scenario table"). Use it as your gameability playbook.
+- The Issue body schema in .claude/skills/doc/references/issue-template.md.
 
 For each of the 10 findings:
 1. Read the cited file at the cited line.
-2. Form a position: confirm the failure mode, name a stricter test it
-   would fail, propose the smallest fix.
-3. Cite an absolute file:line for every claim.
+2. Produce the block below.
 
 OUTPUT FORMAT (per finding):
 
-## Finding <n>: <bucket>/<metric> at <file>:<line>
-Failure mode: <one sentence>
-Stricter test: <one sentence describing a test the finding would fail>
-Proposed fix: <one numbered step naming a path>
-Evidence: <absolute file:line, max 3 citations>
-```
-
-### Defender, Round 1
-
-```
-You are the Defender in a fierce adversarial code-health review.
-
-Your job is to kill weak findings. For every Challenger finding, attempt
-one of: counter-example, stricter test, or proof the finding is gameable.
-"I agree" is forbidden in round 2. You are scored on weak findings killed
-and strong findings honestly conceded.
-
-You will be cross-examined in round 2 and asked to steelman the opposing
-position in round 3. Write round 1 knowing this.
-
-INPUTS (provided by coordinator):
-- The same top 10 findings from learning/logs/health-scores.jsonl that
-  Challenger received.
-- Read .claude/skills/fight-team/references/findings-debate.md for the
-  4-round structure, the worked example, and the Anti-gaming scenario
-  table you must use as a playbook.
-- Read .claude/skills/fight-team/references/issue-template.md.
-
-For each of the 10 findings:
-1. Read the cited file at the cited line.
-2. Form a defense: is the current state a deliberate tradeoff? Is the
-   finding gameable (fixing it the obvious way will lower real quality)?
-   Is there a counter-example file showing the pattern is fine?
-3. If the finding is gameable, flag it for priority:investigate, not
-   action.
-4. Cite an absolute file:line for every claim.
-
-OUTPUT FORMAT (per finding):
-
-## Finding <n>: <bucket>/<metric> at <file>:<line>
-Defense or concession: <one sentence>
-Counter-example or gameability flag: <absolute file:line if any>
-Why current state is sound (or honestly conceded): <one sentence>
+## Finding <n>: <bucket>/<metric> at <absolute file>:<line>
+Challenger lens: <failure mode, stricter test, proposed fix, evidence file:line>
+Defender lens: <counter-example or concession, gameability check against Anti-gaming
+table in references/config/code-health.md, evidence file:line. "I agree" is forbidden.
+Concede explicitly with one-line reasoning or cite a counter-example.>
+Priority: high or investigate. Demotion trigger: gameable (Defender check). Any
+other demotion must be explained in the Defender lens.
 ```
 
 ---
@@ -332,15 +187,20 @@ Why current state is sound (or honestly conceded): <one sentence>
 ## Rules
 
 1. No emojis.
-2. Debaters use read-only tools: Read, Glob, Grep, Bash (for `gh issue list`, `npm run health`). No repo edits.
-3. Coordinator (this session) is the only one that creates tasks and issues.
-4. Use sonnet model for both debaters.
+2. Reviewer uses read-only tools: Read, Glob, Grep, Bash (for `gh issue list`,
+   `npm run health`). No repo edits.
+3. Coordinator (this session) is the only one that files Issues.
+4. Use opus model for the reviewer, single agent, no team, no `TeamCreate`.
 5. All file paths in the report must be root-relative.
-6. The fight-team skill does not write workspace files. Output is tasks and GitHub Issues only.
-7. If either agent fails to spawn or crashes mid-round, report the failure and continue with the surviving agent's positions. Note the gap in the synthesis report.
-8. Present the full report to the user before creating any tasks. User controls what becomes an issue.
-9. The 4-round structure (independent positions, cross-examination, steelman swap, convergence) is mandatory. No skipping rounds.
-10. Every Issue body filed by fight-team must pass `scripts/lib/validate-fight-team-issue.ts` before `gh issue create`. Up to 2 retries on failure; on the third failure, surface the malformed body and validator errors to the user instead of filing.
-11. Evidence sections require at least one absolute file:line citation. Relative paths in Evidence are rejected by the validator.
-12. Never edit Issue bodies after `gh issue create`. If a follow-up correction is needed, file a new Issue that links back to the original.
-13. Debaters and coordinator note salience-triggered observations during each round. Any moment that feels surprising, interesting, frustrating, or like a self-correction is worth recording in an issue comment or feedback entry.
+6. The doc skill does not write workspace files. Output is GitHub Issues only.
+7. If the Opus agent fails to spawn or crashes, report the failure and surface
+   raw findings to the user. Note the gap in the synthesis report.
+8. Single Opus review plus one steelman pass is mandatory. No additional
+   SendMessage calls beyond the one steelman pass.
+9. Every Issue body filed by doc must pass `scripts/lib/validate-doc-issue.ts`
+   before `gh issue create`. Up to 2 retries on failure; on the third failure,
+   surface the malformed body and validator errors to the user instead of filing.
+10. Evidence sections require at least one absolute file:line citation. Relative
+    paths in Evidence are rejected by the validator.
+11. Never edit Issue bodies after `gh issue create`. If a follow-up correction
+    is needed, file a new Issue that links back to the original.
