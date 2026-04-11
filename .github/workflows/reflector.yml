@@ -1,0 +1,121 @@
+name: reflector
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  reflect:
+    if: |
+      github.event.label.name == 'needs-reflection' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'pipeline-failed')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Post starting comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "Reflector starting."
+
+      - name: Configure git author
+        run: |
+          git config user.email "6rashti5hah@gmail.com"
+          git config user.name  "Drashti Shah"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Record master HEAD for scope check
+        id: baseline
+        run: echo "master_sha=$(git rev-parse origin/master)" >> "$GITHUB_OUTPUT"
+
+      - name: Load reflector prompt
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          N=${{ github.event.issue.number }}
+          TODAY=$(date -u +%Y-%m-%d)
+          BASE="references/pipeline/reflector.md"
+          TOOLS="Read,Glob,Grep,Write,Edit,Bash(git:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(rg:*),Bash(npx tsx scripts/vault-lint.ts:*)"
+
+          {
+            echo 'prompt<<PROMPT_EOF'
+            sed -e "s/{{ISSUE}}/$N/g" -e "s/{{TODAY}}/$TODAY/g" "$BASE"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
+
+      - id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: |
+            --model claude-opus-4-6
+            --max-turns 10
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["CREATED","UPDATED","NOOP"]},"summary":{"type":"string"},"files":{"type":"array","items":{"type":"string"}},"loop_detected":{"type":"boolean"}},"required":["verdict","summary","files","loop_detected"]}'
+            --allowed-tools "${{ steps.setup.outputs.tools }}"
+          prompt: ${{ steps.setup.outputs.prompt }}
+
+      - name: Scope check (writes limited to learning/system-vault/)
+        env:
+          MASTER_SHA: ${{ steps.baseline.outputs.master_sha }}
+        run: |
+          git fetch origin master
+          CHANGED=$(git diff --name-only "$MASTER_SHA"..HEAD)
+          if [ -z "$CHANGED" ]; then
+            echo "No commits since baseline; nothing to scope-check."
+            exit 0
+          fi
+          OUT_OF_SCOPE=$(echo "$CHANGED" | grep -v '^learning/system-vault/' || true)
+          if [ -n "$OUT_OF_SCOPE" ]; then
+            echo "FAIL: reflector touched files outside learning/system-vault/:"
+            echo "$OUT_OF_SCOPE"
+            exit 1
+          fi
+
+      - name: Vault lint
+        run: npx tsx scripts/vault-lint.ts
+
+      - name: Remove needs-reflection label
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-reflection"
+
+      - name: Handle stage failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-reflection" \
+            --add-label "pipeline-failed"
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "reflector stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
