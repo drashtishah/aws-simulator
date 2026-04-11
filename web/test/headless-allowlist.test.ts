@@ -74,18 +74,13 @@ describe('headless edit allowlist drift (Issue #127)', () => {
     const settings = JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
     const editPaths = extractEditPaths(settings.permissions?.allow);
 
-    // Hooks excluded per Issue #127 audit: either they enforce an
-    // invariant (pre-commit, Stop, SessionStart) or they use fs.write
-    // outside stdout. git-discipline-reminder.ts falls in the second
-    // category (fs.writeFileSync for a session marker file).
+    // Hooks excluded per Issue #127 audit: they enforce an invariant
+    // (guard-write, pre-commit-*) or write outside stdout (log-hook).
     const forbidden = [
       '.claude/hooks/guard-write.ts',
       '.claude/hooks/log-hook.ts',
       '.claude/hooks/pre-commit-issues.ts',
       '.claude/hooks/pre-commit-ui-tests.ts',
-      '.claude/hooks/stop-journal-check.ts',
-      '.claude/hooks/git-discipline-reminder.ts',
-      '.claude/hooks/emotion-check.ts',
     ];
     for (const p of forbidden) {
       assert.ok(

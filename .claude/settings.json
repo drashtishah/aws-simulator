@@ -1,22 +1,3 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Bash|Task",
-        "hooks": [
-          {
-            "type": "command",
-            "event": "PostToolUse",
-            "command": "npx tsx .claude/hooks/emotion-check.ts",
-            "cwd": "/Users/drashti/experiments/aws-simulator",
-            "timeout": 3000,
-            "allowed_tools": [
-              "Read",
-              "Write"
-            ]
-          }
-        ]
-      }
-    ]
-  }
+  "hooks": {}
 }

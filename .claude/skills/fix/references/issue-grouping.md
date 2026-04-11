@@ -28,8 +28,7 @@ When labels are insufficient, group by root cause:
 
 ## Group by feedback theme
 
-Feedback notes from `learning/feedback.md` and any new
-`learning/system-vault/feedback/` articles cluster by topic. If a
+Feedback notes from `learning/feedback.md` cluster by topic. If a
 feedback theme matches an open Issue, attach the feedback to that
 Issue's group as "user reinforced this." Orphan feedback (no matching
 Issue) becomes a separate group with the action "propose creating an

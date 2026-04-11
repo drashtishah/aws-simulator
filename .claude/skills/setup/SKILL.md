@@ -107,7 +107,6 @@ If `learning/system-vault/` does not exist, run:
 ```bash
 mkdir -p learning/system-vault/problems learning/system-vault/solutions learning/system-vault/playbooks learning/system-vault/patterns
 [ -f learning/system-vault/index.md ] || cp references/vault-templates/system/index.md learning/system-vault/index.md
-[ -f learning/system-vault/log.md ] || cp references/vault-templates/system/log.md learning/system-vault/log.md
 ```
 
 If `learning/system-vault/` already exists with any content, skip.

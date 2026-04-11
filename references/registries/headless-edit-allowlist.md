@@ -25,4 +25,3 @@ Drift between this registry and `.claude/settings.json` is enforced by
 
 | Path | Kind | Audit date | Reviewer | Rationale |
 | --- | --- | --- | --- | --- |
-| `.claude/hooks/plan-exit-reminder.ts` | Edit | 2026-04-09 | headless-sweep agent | Nine-line pure `process.stdout.write` reminder fired on ExitPlanMode. Zero `exec`, zero `spawn`, zero `fetch`, zero `fs.write`. Not an enforcement hook: exits 0 regardless of input. Grep verified: `grep -cE 'exec\|spawn\|fetch\|fs\.write\|child_process' .claude/hooks/plan-exit-reminder.ts` returns 0. |

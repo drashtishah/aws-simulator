@@ -115,22 +115,24 @@ links to satisfy a connectivity rule. Disconnected notes are fine.
 3. Update `learning/system-vault/index.md` to add or refresh the row
    under the correct kind section. Keep `index.md` <= 120 lines; move
    stale entries to the prune queue if space is tight.
-4. Append a one-line entry to `learning/system-vault/log.md`:
-   `{{TODAY}} #{{ISSUE}} CREATED problems/<id>.md (loop detected: <yes|no>)`.
-5. Budget: at most 3 files created or updated per issue.
+4. Budget: at most 3 files created or updated per issue.
 
 ## Commit and merge
 
 ```
 git checkout -b reflection/issue-{{ISSUE}}
 git add learning/system-vault/
-git commit -m "reflect: #{{ISSUE}} <short description> [skip ci]" -m "Ref #{{ISSUE}}"
+git commit -m "reflect: #{{ISSUE}} <short description> [skip ci]" -m "Ref #{{ISSUE}}" -m "loop detected: yes|no"
 git push -u origin reflection/issue-{{ISSUE}}
 gh pr create --base master --head reflection/issue-{{ISSUE}} \
   --title "reflect: #{{ISSUE}} <slug>" \
   --body "Pipeline reflection for #{{ISSUE}}"
 gh pr merge --merge --auto --delete-branch
 ```
+
+The git log on `learning/system-vault/` is the audit trail; the
+`loop detected:` trailer in the commit message body is the searchable
+loop signal. No separate log.md file.
 
 ## Hard constraints
 

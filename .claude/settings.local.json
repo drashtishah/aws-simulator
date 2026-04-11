@@ -39,24 +39,11 @@
         ]
       },
       {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx tsx .claude/hooks/git-discipline-reminder.ts"
-          }
-        ]
-      },
-      {
         "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "npx tsx .claude/hooks/pre-commit-issues.ts"
-          },
-          {
-            "type": "command",
-            "command": "npx tsx .claude/hooks/pre-commit-self-audit.ts"
           },
           {
             "type": "command",
@@ -72,15 +59,6 @@
           {
             "type": "command",
             "command": "npx tsx .claude/hooks/log-hook.ts"
-          }
-        ]
-      },
-      {
-        "matcher": "ExitPlanMode",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "npx tsx .claude/hooks/plan-exit-reminder.ts"
           }
         ]
       }

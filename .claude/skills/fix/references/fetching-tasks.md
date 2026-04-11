@@ -101,6 +101,19 @@ Output schema:
 .claude/plans/<slug>.md: fresh
 ```
 
+## Task 7: raw.jsonl system-improvement scan
+
+Prompt (verbatim):
+
+> Read `learning/logs/raw.jsonl` (JSONL of every tool call and session event from local Claude Code sessions). Scan it for ANY signal that the WHOLE SYSTEM (skills, hooks, prompts, workflow, tooling, conventions) could be improved. Look for: repeated identical errors, the same tool failing the same way across sessions, permission denials that suggest a missing allowlist entry, hooks blocking work that should be allowed, prompts that produce confused output, patterns where the agent had to back out of a decision, latency spikes on the same MCP call, the same file being edited from many directions in one session (churn), workflow steps that always fire then immediately get reverted, or any other system-level smell. Do NOT report individual tool failures unless they form a pattern. Aggregate by failure mode or theme. For each theme output one line: `theme: <one-sentence description> (seen Nx across <date range>) -> proposed system change`. If nothing systemic emerged, output `raw.jsonl: no systemic signal`. Hard cap: 300 words. After finishing your scan, do NOT write or modify the file; main context will truncate it as part of step 5b.
+
+Output schema:
+
+```
+theme: <description> (seen Nx across <date range>) -> <proposed system change>
+raw.jsonl: no systemic signal
+```
+
 ## Why 300 words per task
 
 A 300-word cap is empirically enough to carry the grouping signal
