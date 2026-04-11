@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 SCAN_EXTENSIONS: Set[str] = {'.md', '.json'}
 
-EXCLUDE_DIRS: Set[str] = {'node_modules', '.git', 'learning', 'sims', 'web/test-results', 'docs', 'plans', '.worktrees', 'worktrees'}
+EXCLUDE_DIRS: Set[str] = {'node_modules', '.git', 'learning', 'sims', 'web/test-results', 'docs', 'plans', '.worktrees', 'worktrees', '.tmp'}
 
 EXCLUDE_FILES: Set[str] = {'package-lock.json'}
 
