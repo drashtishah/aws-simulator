@@ -32,7 +32,6 @@ const POSITIVE: Array<[string, string]> = [
   ['tsconfig.json', 'config'],
   ['.claude/settings.json', 'config'],
   ['.mcp.json', 'config'],
-  ['.claude/scheduled-jobs/daily-compile-and-rotate.json', 'config'],
   ['.claude/state/something.json', 'config'],
   ['CLAUDE.md', 'memory_link'],
   ['README.md', 'memory_link'],

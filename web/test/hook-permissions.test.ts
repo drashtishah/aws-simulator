@@ -6,13 +6,9 @@ import path from 'path';
 const ROOT = path.resolve(__dirname, '..', '..');
 const SETTINGS_PATH = path.join(ROOT, '.claude', 'settings.json');
 
-// Hooks introduced by PR-Pre that MUST carry explicit allowed_tools.
-// Keyed by a substring match against the hook command string.
-// PostCommit is NOT a valid Claude Code hook event (tracked as a pending
-// item; system-vault-compile on commit must become either a real git
-// post-commit hook or a PostToolUse hook filtered on git commit).
-//
-// Stop hook removed: notes.jsonl replaced by issue comments in GHA pipeline.
+// Hooks that MUST carry explicit allowed_tools, keyed by a substring
+// match against the hook command string. Empty under the current
+// reflector model; entries added here must be enforced by the test.
 const REQUIRED_HOOKS: Array<{ event: string; commandMatch: string }> = [];
 
 function loadSettings(): any {
