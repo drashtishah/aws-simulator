@@ -78,8 +78,7 @@ flowchart TB
   Express --> Claude
   Play --> PlayerVault
   Setup --> PlayerVault
-  Setup --> SystemVault
-  CreateSim --> PlayerVault
+  PlayerVault --> CreateSim
   Fix --> Issues
   Doc --> Issues
   CreateSim --> Issues

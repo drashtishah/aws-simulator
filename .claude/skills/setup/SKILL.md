@@ -96,23 +96,6 @@ mkdir -p learning/player-vault/sessions learning/player-vault/concepts learning/
 
 If `learning/player-vault/` already exists, leave it. Do not overwrite.
 
-### 5c. System vault seed (Issue #171, Bash-only)
-
-Unlike the player vault, the system vault is SHARED and tracked in
-git; the reflector pipeline stage writes durable FAQ-style notes here.
-Local setup only seeds the scaffolding. Same Bash-only rule applies.
-
-If `learning/system-vault/` does not exist, run:
-
-```bash
-mkdir -p learning/system-vault/problems learning/system-vault/solutions learning/system-vault/playbooks learning/system-vault/patterns
-[ -f learning/system-vault/index.md ] || cp references/vault-templates/system/index.md learning/system-vault/index.md
-```
-
-If `learning/system-vault/` already exists with any content, skip.
-The `_example-*.md` files under `references/vault-templates/system/`
-are reference-only and must NOT be copied into the vault.
-
 Ensure `learning/logs/raw.jsonl` exists (`mkdir -p learning/logs && touch learning/logs/raw.jsonl`).
 
 ### 6. Verify sim packages
