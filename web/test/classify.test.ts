@@ -10,6 +10,7 @@ const POSITIVE: Array<[string, string]> = [
   ['web/server.ts', 'code'],
   ['scripts/test.ts', 'code'],
   ['scripts/lib/classify.ts', 'code'],
+  ['.github/scripts/pipeline-iterations.sh', 'code'],
   ['web/test/code-health.test.ts', 'test'],
   ['web/test/classify.test.ts', 'test'],
   ['web/test-specs/browser/chat.yaml', 'test'],

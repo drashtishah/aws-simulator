@@ -99,6 +99,9 @@ export function classify(rawPath: string): Bucket | null {
   ) {
     return 'code';
   }
+  if (p.startsWith('.github/scripts/') && p.endsWith('.sh')) {
+    return 'code';
+  }
 
   if (
     p.startsWith('.claude/scheduled-jobs/') ||
