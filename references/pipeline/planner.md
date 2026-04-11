@@ -16,6 +16,27 @@ Behavioral guidelines:
   - Surgical changes. Every changed line traces to the issue.
   - Goal-driven. Define success criteria before acting.
 
+## Vault query protocol (before you act)
+
+1. Read `learning/system-vault/index.md` (one call, <= 120 lines).
+2. Scan summaries for signal/tool/scope matches against the current issue.
+3. If no obvious candidate, grep triggers:
+   `rg "^triggers:" -A 3 learning/system-vault/problems/ | rg <keyword>`
+4. Read at most 3 candidate notes in full. Hard stop.
+5. Follow each matched problem's `solutions:` one hop: read the first 1 or 2
+   solution notes. No transitive traversal.
+6. If still no hit, broad grep:
+   `rg -l "<keyword>" learning/system-vault/`
+   Read at most 2 additional files.
+7. Record the result in your issue comment: `vault consulted, applied
+   [[problem-id]]` or `vault consulted, no match`. This feeds the reflector's
+   missing-note detection.
+
+Down-weight `confidence: ambiguous` notes; require a second independent match
+before acting on them.
+
+Hard cap per stage per issue: 1 index read, up to 5 note reads, up to 3 grep calls.
+
 Your role: PLANNER
 
 Read the full issue body and all comments.
@@ -62,3 +83,21 @@ If an MCP tool call fails (server unreachable, timeout), continue without
 it. Fall back to training knowledge or WebFetch for AWS documentation.
 Do not block on MCP availability. Post a comment noting the MCP failure
 so the issue can be retried later if needed.
+
+## Reflection signals (optional, only if notable)
+
+Before you finish, if anything during this stage was surprising, frustrating,
+insightful, or self-corrected: post a SEPARATE comment (in addition to your
+main output) containing ONLY:
+
+    ## Reflection
+    - [surprise] <what was unexpected and why>
+    - [frustration] <what blocked you or wasted effort, and the root cause if you can name it>
+    - [insight] <a pattern noticed that could help future runs>
+    - [self-correction] <where your first approach was wrong and why>
+
+Use only tags that apply. Omit empty categories. Skip the entire section if
+nothing notable happened. Do not fabricate. The reflector stage will pick up
+these comments after the issue closes. `[frustration]` is especially
+important: repeated frustration across issues is the signal that the
+pipeline is stuck in an inefficient loop.

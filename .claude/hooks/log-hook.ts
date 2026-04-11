@@ -4,10 +4,9 @@
 //
 // PR-B (giggly-riding-comet plan): the previous activity.jsonl + system.jsonl
 // split was incidental. Both files now collapse into a single raw.jsonl
-// stream which the system-vault-compile skill ingests in PR-E. Keeping a
-// single producer means we never have to reason about which events landed
-// where, and the per-event `kind` subfield (Failure events) preserves the
-// information that the file split previously implied.
+// stream. Keeping a single producer means we never have to reason about
+// which events landed where, and the per-event `kind` subfield (Failure
+// events) preserves the information that the file split previously implied.
 
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';

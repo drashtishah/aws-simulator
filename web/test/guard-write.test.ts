@@ -63,6 +63,16 @@ describe('checkAccess', () => {
       assert.equal(r.allowed, false);
     });
 
+    it('blocks learning/system-vault/ directory (universal)', () => {
+      const r = checkAccess(path.join(ROOT, 'learning/system-vault/problems/foo.md'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks learning/player-vault/ directory (universal)', () => {
+      const r = checkAccess(path.join(ROOT, 'learning/player-vault/index.md'), null, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
     it('allows scripts/test.js (no longer never writable)', () => {
       const r = checkAccess(path.join(ROOT, 'scripts/test.js'), null, ROOT);
       assert.equal(r.allowed, true);
@@ -107,6 +117,16 @@ describe('checkAccess', () => {
 
     it('blocks path-registry.csv (never writable)', () => {
       const r = checkAccess(path.join(ROOT, 'references/registries/path-registry.csv'), PLAY_OWNERSHIP, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks learning/system-vault/ (never writable even in skill mode)', () => {
+      const r = checkAccess(path.join(ROOT, 'learning/system-vault/problems/x.md'), PLAY_OWNERSHIP, ROOT);
+      assert.equal(r.allowed, false);
+    });
+
+    it('blocks learning/player-vault/ (not owned by play)', () => {
+      const r = checkAccess(path.join(ROOT, 'learning/player-vault/index.md'), PLAY_OWNERSHIP, ROOT);
       assert.equal(r.allowed, false);
     });
   });

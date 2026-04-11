@@ -332,14 +332,15 @@ describe('scoreComplexity (controlled)', () => {
 });
 
 describe('scoreTestSync (controlled)', () => {
-  it('reports correct coverage ratio for real lib files', () => {
+  it('reports every real lib file has a dedicated test', () => {
     const libFiles = fs.readdirSync(path.join(ROOT, 'web', 'lib'))
       .filter(f => f.endsWith('.ts'))
       .map(f => path.join(ROOT, 'web', 'lib', f));
 
     const result = scoreTestSync(libFiles);
-    // All 13 lib files have dedicated test files
-    assert.equal(result.sub.covered, '13/13');
+    const [covered, total] = String(result.sub.covered).split('/').map(Number);
+    assert.equal(covered, total, `expected every lib to be covered, got ${result.sub.covered}`);
+    assert.equal(covered, libFiles.length, `covered count must match lib count`);
     assert.ok(result.score >= 80, `score ${result.score} should be >= 80`);
   });
 });

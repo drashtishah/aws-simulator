@@ -20,7 +20,7 @@ Interactive AWS incident-response game played through Claude Code skills.
 - GHA pipeline (planner/critic/implementer/verifier): `references/architecture/gha-pipeline.md`
 - Pipeline prompt files and label routing: `references/pipeline/`
 - MCP servers (AWS Knowledge, Chrome DevTools): `.mcp.json`, `references/registries/tool-registry.md`
-- Logs (`raw.jsonl`, `learning/system-vault/`): `references/architecture/workspace-map.md` Shared Data Files
+- Logs (`raw.jsonl`) and shared git-tracked `learning/system-vault/` (problems, solutions, playbooks, patterns), written by the reflector pipeline stage and enforced by `scripts/vault-lint.ts`: `references/architecture/workspace-map.md` Shared Data Files
 
 ## Behavioral guidelines
 

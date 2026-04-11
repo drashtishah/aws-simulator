@@ -33,10 +33,16 @@ const NEVER_WRITABLE: string[] = [
   'package-lock.json'
 ];
 
-// Directories NEVER writable
+// Directories NEVER writable (blocks Write/Edit even in skill mode).
+// Vaults are here per Issue #171: reflector writes system-vault from GHA
+// where this hook does not fire, so local sessions are universally blocked.
+// Setup seeds the initial scaffold via Bash (mkdir + cp), which bypasses
+// this PreToolUse matcher since it only guards Edit|Write.
 const NEVER_WRITABLE_DIRS: string[] = [
   'node_modules',
-  'web/test-specs'
+  'web/test-specs',
+  'learning/system-vault',
+  'learning/player-vault'
 ];
 
 function checkAccess(filePath: string, ownership: Ownership | null, root: string): AccessResult {

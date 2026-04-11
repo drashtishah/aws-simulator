@@ -1,5 +1,6 @@
-# Player-specific data (created by /setup)
-learning/
+# Player data per-user (profile, sessions, logs, player vault); system vault tracked (Issue #171)
+learning/*
+!learning/system-vault/
 
 # Node dependencies
 node_modules/

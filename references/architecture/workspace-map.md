@@ -72,27 +72,27 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 
 +----------------------+
 |   system-vault       |
-|  (long-term agent    |
-|   memory, per user,  |
-|   gitignored)        |
+|  (shared long-term   |
+|   agent memory,      |
+|   tracked in git)    |
 |                      |
-| Compiled by:         |
-|  daily cron from     |
-|  raw.jsonl           |
+| Written by:          |
+|  reflector (GHA)     |
 |                      |
 | Subdirs:             |
-|  findings/           |
-|  decisions/          |
-|  workarounds/        |
-|  components/         |
-|  sessions/           |
-|  health/             |
-|  dreams/             |
+|  problems/           |
+|  solutions/          |
+|  playbooks/          |
+|  patterns/           |
+|                      |
+| Enforced by:         |
+|  scripts/vault-lint  |
+|  (80-line, 3KB cap,  |
+|   120-line index)    |
 |                      |
 | Read by:             |
-|  system-vault-query  |
-|  /fight-team         |
-|  /fix                |
+|  pipeline stages,    |
+|  /fight-team, /fix   |
 +----------------------+
 ```
 
@@ -149,9 +149,9 @@ test ----> run: executes node --test (unit tests)
 | `learning/player-vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
-| `learning/logs/raw.jsonl` | hooks, web logger | fix, system-vault-compile | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
+| `learning/logs/raw.jsonl` | hooks, web logger | fix | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
-| `learning/system-vault/` | setup (seed), system-vault-compile, system-vault-dream, system-vault-prune | system-vault-query, fight-team | Per-user, gitignored long-term system memory: findings, decisions, workarounds, components, sessions, health, dreams. Compiled daily from `learning/logs/raw.jsonl`. Index capped at 200 lines, topic files capped at 4KB. |
+| `learning/system-vault/` | reflector (GHA) | pipeline stages, local agents | Tracked in git, written by reflector (GHA), read by pipeline stages and local agents; 4 subdirs (problems, solutions, playbooks, patterns); `scripts/vault-lint.ts` enforces 80-line/3KB note cap and 120-line index cap. |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `test summary` | fix | JSON: aggregated test results across all layers |
@@ -160,18 +160,14 @@ test ----> run: executes node --test (unit tests)
 
 The Sonnet/Opus split is hardcoded via two named constants in `web/lib/claude-process.ts`: `PLAY_SESSION_MODEL` (claude-sonnet-4-6) drives interactive play, and `POST_SESSION_MODEL` (claude-opus-4-6) drives post-session scoring. Sonnet is fast and cheap enough for narrator plus investigation reasoning; Opus runs cross-file analysis (session.json, manifest, coaching-patterns, progression) where deeper reasoning matters. Do not flip these without an A/B test on quality. See Issue #107.
 
-## Scheduled Jobs and Hooks
+## Hooks
 
-Tracked manifests under `.claude/scheduled-jobs/` define RemoteTrigger crons with explicit `allowed_tools` so unattended runs never prompt. Hook entries in `.claude/settings.json` follow the same no-wildcard rule. Both are enforced by `web/test/scheduled-jobs-boundary.test.ts` and `web/test/hook-permissions.test.ts`.
+Hook entries in `.claude/settings.json` follow a no-wildcard rule and are enforced by `web/test/hook-permissions.test.ts`.
 
 | Automation | Type | Trigger | Purpose | Source file |
 |---|---|---|---|---|
-| weekly-dream | cron | Sunday 03:30 local | Run system-vault-dream skill to consolidate `learning/system-vault/`. Empty-vault guard: skip if vault has fewer than 5 topic files. | `.claude/scheduled-jobs/weekly-dream.json` |
-| system-vault-compile chain | hook (PostCommit) | after every commit | Re-run `system-vault-compile` and append to `learning/logs/health-scores.jsonl` | `.claude/settings.json` |
 | pre-commit-ui-tests | hook (pre-commit) | before every commit touching `web/public/**`, `web/server.ts`, `web/test-specs/browser/**` | Enforce `test agent` browser test pass | `.claude/settings.json` |
 | pre-commit-issues | hook (pre-commit) | before every commit | Require Closes/Ref/Fixes/Part of issue reference; block deletion of `learning/logs/health-scores.jsonl` (PR-C invariant 6) | `.claude/hooks/pre-commit-issues.ts` |
-
-State file backing these automations: `.claude/state/vault-circuit.json` (compile/dream failure circuit breaker). Tracked and seeded by PR-Pre.
 
 GitHub secret-scanning exclusions live in `.github/secret_scanning.yml`. `sims/**` is path-ignored so fictional incident fixtures (fake CloudTrail snapshots, resolution writeups, fake config JSON) never trip the scanner. See Issue #126.
 
@@ -236,4 +232,4 @@ When changing a component, check what else reads/writes the same data:
 | `journal.md` format | play (writes entries), web/ server.ts `/api/journal-summary` parser |
 | UI theme CSS variable contract | web/ style.css (references all variables), all ui-themes/*.css files must define them |
 | `references/architecture/core-workflow.md` | every skill (commit and merge discipline lives here now that /git has been removed) |
-| GitHub Issues | /fix (sole creator, step 5b), /fight-team (creates from debate findings), /create-sim and /upgrade (create per core-workflow.md §1) |
+| GitHub Issues | /fix (sole creator, step 5b), /fight-team (creates from debate findings), /create-sim (creates per core-workflow.md §1) |

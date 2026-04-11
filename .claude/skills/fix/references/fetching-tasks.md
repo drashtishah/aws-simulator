@@ -44,7 +44,7 @@ Output schema:
 
 Prompt (verbatim):
 
-> Read `learning/feedback.md`. Then list every file under `learning/system-vault/feedback/` that has an `mtime` newer than the last /fix run's decision article under `learning/system-vault/decisions/` (find the newest decisions/*.md and compare). For each feedback entry or article, output one line: `YYYY-MM-DD: theme (source)` where source is either the feedback.md heading or the article filename. Note whether each theme matches an existing Issue (by grep over the open-Issue titles supplied in Task 1's output, if you have it; otherwise mark "unmatched"). Hard cap: 300 words.
+> Read `learning/feedback.md`. For each entry, output one line: `YYYY-MM-DD: theme (feedback.md heading)`. Note whether each theme matches an existing Issue (by grep over the open-Issue titles supplied in Task 1's output, if you have it; otherwise mark "unmatched"). Hard cap: 300 words.
 
 Output schema:
 
@@ -56,12 +56,12 @@ YYYY-MM-DD: theme (source) [matched #N | orphan]
 
 Prompt (verbatim):
 
-> Given the themes list from Tasks 1 and 2 (if available, otherwise the latest feedback themes), run `system-vault-query` against each theme to find prior decisions, findings, and workarounds. For each hit, output one line: `theme -> learning/system-vault/<subdir>/<article>.md: one-line relevance`. Do not quote article bodies. If a theme has no hits, output `theme -> no prior art`. Hard cap: 300 words.
+> Given the themes list from Tasks 1 and 2, query `learning/system-vault/` inline: read `learning/system-vault/index.md` (one call), then for each theme grep `rg "<theme-keyword>" -l learning/system-vault/` and `rg "^triggers:" -A 3 learning/system-vault/problems/ | rg "<keyword>"`. Open at most 3 candidate notes in full. For each hit, output one line: `theme -> learning/system-vault/<subdir>/<note>.md: one-line relevance`. If a theme has no hits, output `theme -> no prior art`. Hard cap per query: 1 index read, 5 note reads, 3 grep calls. Hard cap on output: 300 words.
 
 Output schema:
 
 ```
-theme -> learning/system-vault/<subdir>/<article>.md: one-line relevance
+theme -> learning/system-vault/<subdir>/<note>.md: one-line relevance
 ```
 
 ## Task 4: top health findings

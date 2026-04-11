@@ -53,13 +53,10 @@ describe('setup SKILL.md vault wiring (Issue #94)', () => {
   });
 
   it('every vault template SKILL.md tells setup to copy actually exists on disk', () => {
-    // Parse the "Copy vault templates from references/vault-templates/" block
-    // (step 5b). Each bullet has the shape:
-    //   - `references/vault-templates/<rel>` -> `learning/player-vault/<rel>`
-    // Pull every src and verify it resolves under references/vault-templates/.
-    // Glob entries from the tool-reference table (e.g. `references/vault-templates/*`)
-    // are filtered out: they document the high-level move, not concrete files.
-    const re = /`(references\/vault-templates\/[^`]+)`\s*->/g;
+    // Step 5b and 5c seed via Bash (mkdir + cp) since guard-write blocks
+    // Write/Edit under learning/*-vault/. Parse every `cp` source referenced
+    // in the skill markdown under references/vault-templates/.
+    const re = /cp\s+(?:"|`)?(references\/vault-templates\/[^\s"'`]+)/g;
     const sources: string[] = [];
     let m: RegExpExecArray | null;
     while ((m = re.exec(skill)) !== null) {
@@ -69,7 +66,7 @@ describe('setup SKILL.md vault wiring (Issue #94)', () => {
     }
     assert.ok(
       sources.length >= 4,
-      'expected at least 4 concrete template-copy bullets in SKILL.md, found ' + sources.length,
+      'expected at least 4 cp sources under references/vault-templates/, found ' + sources.length,
     );
     for (const rel of sources) {
       const abs = path.join(ROOT, rel);
@@ -80,21 +77,23 @@ describe('setup SKILL.md vault wiring (Issue #94)', () => {
     }
   });
 
-  it('every vault directory SKILL.md tells setup to create lives under player-vault', () => {
-    // Parse step 5b's "Create directories: ..." line. Every directory
-    // entry must start with learning/player-vault/ and not learning/vault/.
-    const createMatch = skill.match(/Create directories?: (.+)/);
-    assert.ok(createMatch, 'SKILL.md must contain a "Create directories" line');
-    const dirs = createMatch[1]!
-      .split(',')
-      .map((s: string) => s.trim().replace(/^`|`$/g, ''));
-    assert.ok(dirs.length > 0, 'expected at least one directory to be created');
-    for (const d of dirs) {
-      assert.ok(
-        d.startsWith('learning/player-vault/'),
-        'directory ' + d + ' should be under learning/player-vault/',
-      );
-    }
+  it('vault seed snippets use mkdir -p under the vault dirs', () => {
+    // Step 5b/5c should set up the two vaults via a Bash mkdir -p block.
+    // Both player-vault and system-vault must appear in a mkdir -p line so
+    // guard-write's Write/Edit block is bypassed.
+    const mkdirMatches = skill.match(/mkdir -p (learning\/[a-z-]+-vault[^\n]*)/g) ?? [];
+    assert.ok(
+      mkdirMatches.length >= 2,
+      'expected at least two mkdir -p lines for the vault seeds, found ' + mkdirMatches.length,
+    );
+    assert.ok(
+      mkdirMatches.some((l) => l.includes('learning/player-vault')),
+      'expected a mkdir -p line for learning/player-vault',
+    );
+    assert.ok(
+      mkdirMatches.some((l) => l.includes('learning/system-vault')),
+      'expected a mkdir -p line for learning/system-vault',
+    );
   });
 });
 

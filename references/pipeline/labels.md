@@ -33,3 +33,9 @@ If unsure, omit the type label. The default code path is safe for all issue type
 | revised-plan | Critic sent the plan back for revision | Planner revises and resubmits |
 | revised-impl | Verifier sent the implementation back | Implementer fixes and resubmits |
 | pipeline-failed | A pipeline stage failed; trigger label removed, run link posted | Re-add the appropriate needs-* label after investigation |
+
+## Reflection labels
+
+| Label | When applied | Effect |
+|-------|--------------|--------|
+| needs-reflection | Verifier auto-labels on PASS after merging the PR | Reflector workflow fires, scans the full issue chain, writes durable FAQ entries to `learning/system-vault/`, then removes the label |
