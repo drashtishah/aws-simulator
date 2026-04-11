@@ -1,9 +1,9 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { classify, BUCKETS } from '../../scripts/lib/classify';
 'use strict';
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
 
-const { classify, BUCKETS } = require('../../scripts/lib/classify');
 
 const POSITIVE: Array<[string, string]> = [
   ['web/lib/paths.ts', 'code'],

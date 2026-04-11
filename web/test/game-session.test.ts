@@ -1,7 +1,7 @@
-const { describe, it, beforeEach, afterEach, after } = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const fs = require('fs');
+import { describe, it, beforeEach, afterEach, after } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import fs from 'fs';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -31,6 +31,8 @@ const sessionPath = path.join(testDir, 'session.json');
 // --- createGameSession ---
 
 describe('createGameSession', () => {
+  // require() preserved: must run after AWS_SIMULATOR_SESSIONS_DIR is set above.
+  // Hoisting this import would cause paths.ts to load before the env var is set.
   const { createGameSession } = require('../lib/claude-session');
 
   beforeEach(() => {
@@ -121,6 +123,7 @@ describe('createGameSession', () => {
 // --- updateGameSession ---
 
 describe('updateGameSession', () => {
+  // require() preserved: must run after AWS_SIMULATOR_SESSIONS_DIR is set above.
   const { updateGameSession, createGameSession } = require('../lib/claude-session');
 
   afterEach(() => {
@@ -165,6 +168,7 @@ describe('updateGameSession', () => {
 // --- runPostSessionAgent ---
 
 describe('runPostSessionAgent', () => {
+  // require() preserved: must run after AWS_SIMULATOR_SESSIONS_DIR is set above.
   const { runPostSessionAgent } = require('../lib/claude-process');
 
   it('function exists and is exported', () => {
@@ -177,6 +181,7 @@ describe('runPostSessionAgent', () => {
 });
 
 describe('buildPostSessionPrompt', () => {
+  // require() preserved: must run after AWS_SIMULATOR_SESSIONS_DIR is set above.
   const { buildPostSessionPrompt } = require('../lib/claude-process');
 
   it('prompt contains required file paths', () => {

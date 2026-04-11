@@ -1,5 +1,5 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 
 /**
  * Validates commit message format against the contextual commits spec.

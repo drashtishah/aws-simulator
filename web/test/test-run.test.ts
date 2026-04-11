@@ -1,3 +1,6 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseTestOutput, aggregateRuns, formatFailedFilesSummary } from '../../scripts/test-runner';
 // Tests for test run failing-file reporting helpers (Group A of plan
 // .claude/plans/replicated-exploring-thompson.md, Issue #92).
 //
@@ -6,14 +9,7 @@
 // unit-tested without invoking the real CLI. Integration is verified by the
 // manual step in the plan: break web/test/markdown.test.ts and run npm test.
 
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
 
-const {
-  parseTestOutput,
-  aggregateRuns,
-  formatFailedFilesSummary,
-} = require('../../scripts/test-runner');
 
 describe('parseTestOutput', () => {
   it('parses node:test "# pass N / # fail N" output', () => {

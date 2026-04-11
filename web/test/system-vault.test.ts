@@ -1,23 +1,10 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { VAULT_SUBDIRS, layout, INDEX_MAX_LINES, TOPIC_FILE_MAX_BYTES, QUERY_MAX_FILES_PER_TURN, QUERY_MAX_BYTES_PER_TURN, QUERY_MAX_BYTES_PER_SESSION, checkIndex, checkTopicSizes, QueryBudget, DREAM_PHASES, validateDreamPlan } from '../lib/system-vault';
 
-const {
-  VAULT_SUBDIRS,
-  layout,
-  INDEX_MAX_LINES,
-  TOPIC_FILE_MAX_BYTES,
-  QUERY_MAX_FILES_PER_TURN,
-  QUERY_MAX_BYTES_PER_TURN,
-  QUERY_MAX_BYTES_PER_SESSION,
-  checkIndex,
-  checkTopicSizes,
-  QueryBudget,
-  DREAM_PHASES,
-  validateDreamPlan,
-} = require('../lib/system-vault');
 
 function makeVault(): { root: string; learning: string } {
   const learning = fs.mkdtempSync(path.join(os.tmpdir(), 'sv-learning-'));

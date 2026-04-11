@@ -1,8 +1,9 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
+import * as evalRunner from '../../scripts/eval-runner';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -80,7 +81,6 @@ describe('eval scoring spec', () => {
 // Eval runner tests
 // ---------------------------------------------------------------------------
 
-const evalRunner = require('../../scripts/eval-runner');
 
 describe('eval runner: loadScoringSpec', () => {
   it('loads and returns spec with categories', () => {

@@ -1,9 +1,9 @@
-const { describe, it } = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
+import { renderMarkdown } from '../public/markdown.ts';
 
-const { renderMarkdown } = require('../public/markdown.ts');
 
 describe('renderMarkdown', () => {
   // In Node.js test environment, marked is not loaded (CDN-only).
