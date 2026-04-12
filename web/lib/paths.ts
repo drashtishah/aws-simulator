@@ -9,6 +9,7 @@ const LEARNING_DIR: string = path.join(ROOT, 'learning');
 // longer leak `learning/sessions/<simId>/` directories back into the worktree.
 const SESSIONS_DIR: string = process.env.AWS_SIMULATOR_SESSIONS_DIR ?? path.join(LEARNING_DIR, 'sessions');
 const LOGS_DIR: string = path.join(LEARNING_DIR, 'logs');
+const VIDEOS_DIR: string = process.env.AWS_SIMULATOR_VIDEOS_DIR ?? path.join(LEARNING_DIR, 'videos');
 // Issue #94: renamed from learning/vault/ to learning/player-vault/ so the
 // player Obsidian vault stops colliding semantically with learning/system-vault/
 // (the long-term agent memory). Both stay gitignored and per-user.
@@ -51,6 +52,7 @@ const paths = {
   LEARNING_DIR,
   SESSIONS_DIR,
   LOGS_DIR,
+  VIDEOS_DIR,
   VAULT_DIR,
   UI_THEMES_DIR,
   PUBLIC_DIR,

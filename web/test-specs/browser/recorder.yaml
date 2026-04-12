@@ -1,0 +1,19 @@
+name: recorder
+description: Record button is present in the topbar with correct initial state.
+setup:
+  navigate: /
+steps:
+  - id: record-button-present
+    check:
+      - selector: "#btn-record"
+        visible: true
+
+  - id: record-button-aria
+    check:
+      - selector: "#btn-record"
+        attribute: { aria-label: "Record" }
+
+  - id: record-button-not-recording
+    check:
+      - selector: "#btn-record.recording"
+        visible: false
