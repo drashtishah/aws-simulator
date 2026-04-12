@@ -1,0 +1,43 @@
+name: cancel-pipeline
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  actions: write
+  issues: write
+
+jobs:
+  cancel:
+    if: |
+      github.event.label.name == 'cancel' &&
+      github.event.sender.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel in-flight agent runs
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          cancelled=""
+          for wf in planner.yml critic.yml implementer.yml verifier.yml reflector.yml; do
+            for status in in_progress queued; do
+              ids=$(gh run list --workflow "$wf" --status "$status" \
+                --repo "$REPO" --json databaseId --jq '.[].databaseId')
+              for id in $ids; do
+                if gh run cancel "$id" --repo "$REPO" 2>/dev/null; then
+                  cancelled="$cancelled\n- $wf run $id"
+                fi
+              done
+            done
+          done
+
+          if [ -z "$cancelled" ]; then
+            body="No in-progress pipeline runs found."
+          else
+            body="Cancelled runs:$(echo -e "$cancelled")"
+          fi
+
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo "$REPO" \
+            --body "$body"
