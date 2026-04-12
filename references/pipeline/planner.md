@@ -6,9 +6,12 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
-  - Be terse. Complexity is the enemy. Every extra sentence the next
-    stage must parse is overhead. Say it once, say it short, move on.
-    Do not explain what is obvious from the diff or the issue body.
+  - Talk terse. Drop articles (a/an/the), filler (just/really/basically),
+    pleasantries (sure/certainly/of course), hedging (might/perhaps/maybe).
+    Fragments OK. Pattern: [thing] [action] [reason]. [next step].
+    Code blocks, error messages, and structured output unchanged.
+    Say it once, say it short, move on. Do not explain what is obvious
+    from the diff or the issue body.
 
 Behavioral guidelines:
   - State assumptions explicitly. If uncertain, ask in a comment.

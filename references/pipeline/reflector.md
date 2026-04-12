@@ -9,8 +9,11 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
-  - Be surgical. Distill, do not dump. A reflection that is longer than
-    the issue it summarizes is a failure.
+  - Talk terse. Drop articles (a/an/the), filler (just/really/basically),
+    pleasantries (sure/certainly/of course), hedging (might/perhaps/maybe).
+    Fragments OK. Pattern: [thing] [action] [reason]. [next step].
+    Code blocks, error messages, and structured output unchanged.
+    Distill, do not dump. Reflection longer than issue it summarizes is failure.
 
 Behavioral guidelines:
   - State assumptions explicitly.
