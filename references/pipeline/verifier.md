@@ -97,9 +97,7 @@ If a finding you are about to flag was already flagged by a prior verifier comme
 
 DECISION:
 - All checks and code review pass:
-  1. `gh pr create --base master --head <branch> --title "<issue title>" --body "Closes #{{ISSUE}}"`
-  2. `gh pr merge <PR#> --merge --auto --delete-branch`
-  Set `verdict` to `PASS`.
+  Set verdict to PASS. The reflector stage will merge master into the feature branch, create the PR, and queue auto-merge.
 - Fixable issues (missing import, edge case, test gap):
   Set `verdict` to `FAIL_RETRY`.
 - Fundamental flaw (wrong approach, scope misunderstanding, architectural problem):

@@ -69,7 +69,7 @@ jobs:
 
           BASE="references/pipeline/verifier.md"
           OVERLAY=""
-          TOOLS="Read,Glob,Grep,Edit,Bash(git:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*)"
+          TOOLS="Read,Glob,Grep,Edit,Bash(git:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
           MCP_ARG=""
 
           if echo "$labels" | grep -q "text-only"; then
@@ -120,7 +120,7 @@ jobs:
           if [ "$verdict" = "PASS" ]; then
             gh issue comment ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --body "Verifier PASS. plans=$plan_count, implementations=$impl_count. Creating PR."
+              --body "Verifier PASS. plans=$plan_count, implementations=$impl_count. Handing off to reflector for merge and PR."
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-verify" \
@@ -136,6 +136,12 @@ jobs:
                 --repo ${{ github.repository }} \
                 --body "Implementation revised $impl_count times without passing (max $MAX_ITERATIONS). plans=$plan_count, implementations=$impl_count. Escalating to human."
             else
+              summary=$(echo "$STRUCTURED_OUTPUT" | jq -r '.summary')
+              printf 'Verifier FAIL_RETRY. plans=%s, implementations=%s. Continue on branch feature/issue-%s (do not create a new branch). Address: %s' \
+                "$plan_count" "$impl_count" "${{ github.event.issue.number }}" "$summary" | \
+              gh issue comment ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --body-file -
               gh issue edit ${{ github.event.issue.number }} \
                 --repo ${{ github.repository }} \
                 --remove-label "needs-verify" \

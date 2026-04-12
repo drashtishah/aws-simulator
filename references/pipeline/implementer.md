@@ -45,8 +45,16 @@ the plan's "Files to read" section, then edit ONLY the files in
 "Files to change."
 
 Setup:
-1. Create a feature branch from master:
-   `feature/issue-{{ISSUE}}-<short-slug>`
+1. Branch (deterministic, same branch across retries):
+   `BRANCH=feature/issue-{{ISSUE}}`
+   `git fetch origin`
+   If `origin/$BRANCH` exists (this is a retry after `revised-impl`):
+     `git checkout -B "$BRANCH" "origin/$BRANCH"`
+     Read the most recent issue comment whose body begins with
+     `Verifier FAIL_RETRY`, address only the items it flagged,
+     and add new commits on top. Do not rebase, squash, or force-push.
+   Else (first run):
+     `git checkout -b "$BRANCH"` from master.
 2. Git email must be 6rashti5hah@gmail.com.
 
 Check the plan's Scope section:
@@ -76,10 +84,10 @@ Constraints:
   `Closes #{{ISSUE}}`
 
 Push the branch:
-  git push -u origin feature/issue-{{ISSUE}}-<slug>
+  git push -u origin "$BRANCH"
 
 Post one short comment:
-  `Implementation pushed to <branch>. Ready for verification.`
+  `Implementation pushed to feature/issue-{{ISSUE}}. Ready for verification.`
 
 If blocked, set `status` to `BLOCKED` in your JSON output and post a
 comment explaining the blocker.
