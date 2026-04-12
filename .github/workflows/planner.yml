@@ -91,6 +91,27 @@ jobs:
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
 
+      - name: Auto-apply type label
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          N=${{ github.event.issue.number }}
+          REPO=${{ github.repository }}
+          labels=$(gh issue view "$N" --repo "$REPO" \
+            --json labels --jq '[.labels[].name] | join(",")')
+          if echo "$labels" | grep -qE "text-only|ui|sim-content"; then
+            echo "Type label already present, skipping."
+            exit 0
+          fi
+          body=$(gh issue view "$N" --repo "$REPO" --json body --jq '.body')
+          if echo "$body" | grep -qE 'web/'; then
+            echo "Detected web/ paths, adding ui label."
+            gh issue edit "$N" --repo "$REPO" --add-label "ui"
+          elif echo "$body" | grep -qE 'sims/'; then
+            echo "Detected sims/ paths, adding sim-content label."
+            gh issue edit "$N" --repo "$REPO" --add-label "sim-content"
+          fi
+
       - name: Swap labels
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}

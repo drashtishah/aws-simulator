@@ -24,7 +24,7 @@ Look at the files in the issue's Scope section:
 - Any file under `sims/`? -> sim-content
 - Mixed or standard .ts/.json code? -> no type label
 
-If unsure, omit the type label. The default code path is safe for all issue types.
+If unsure, omit the type label. The planner workflow auto-applies `ui` (when the plan body contains `web/` paths) or `sim-content` (when it contains `sims/` paths) if no type label is present after the plan is written.
 
 ## State labels (set automatically by pipeline)
 
