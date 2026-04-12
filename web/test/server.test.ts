@@ -1,6 +1,7 @@
 import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'http';
+import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import express from 'express';
@@ -41,12 +42,54 @@ function request(app, method, url, body) {
   });
 }
 
+function requestRaw(app, method, url, body, contentType) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(0, () => {
+      const port = server.address().port;
+      const opts = {
+        hostname: '127.0.0.1',
+        port,
+        path: url,
+        method,
+        headers: { 'Content-Type': contentType, 'Content-Length': body.length }
+      };
+      const req = http.request(opts, (res) => {
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => {
+          server.close();
+          try {
+            resolve({ status: res.statusCode, body: JSON.parse(data) });
+          } catch {
+            resolve({ status: res.statusCode, body: data });
+          }
+        });
+      });
+      req.on('error', (err) => { server.close(); reject(err); });
+      req.write(body);
+      req.end();
+    });
+  });
+}
+
 // --- Build a test app that mirrors server.js routes without startup validation ---
 
 function buildApp() {
   const app = express();
   app.use(express.json());
+  app.use('/api/save-recording', express.raw({ type: 'video/webm', limit: '100mb' }));
   app.use(express.static(path.join(ROOT, 'web', 'public')));
+  const videosDir = () => process.env.AWS_SIMULATOR_VIDEOS_DIR ?? path.join(ROOT, 'learning', 'videos');
+  app.post('/api/save-recording', (req, res) => {
+    if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+      res.status(400).json({ error: 'empty body' });
+      return;
+    }
+    fs.mkdirSync(videosDir(), { recursive: true });
+    const filename = `session-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
+    fs.writeFileSync(path.join(videosDir(), filename), req.body);
+    res.status(201).json({ filename });
+  });
 
   function readJSON(filePath, fallback) {
     try {
@@ -720,5 +763,31 @@ describe('POST /api/game/message SSE events', () => {
     const types = res.events.map(e => e.type);
     assert.ok(!types.includes('profile_updating'), 'should not include profile_updating');
     assert.ok(!types.includes('profile_updated'), 'should not include profile_updated');
+  });
+});
+
+describe('POST /api/save-recording', () => {
+  let tmpDir;
+  before(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'recorder-test-'));
+    process.env.AWS_SIMULATOR_VIDEOS_DIR = tmpDir;
+  });
+  after(() => {
+    delete process.env.AWS_SIMULATOR_VIDEOS_DIR;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('returns 400 for empty body', async () => {
+    const app = buildApp();
+    const res = await requestRaw(app, 'POST', '/api/save-recording', Buffer.alloc(0), 'video/webm');
+    assert.equal(res.status, 400);
+  });
+
+  it('returns 201 and filename for valid buffer', async () => {
+    const app = buildApp();
+    const res = await requestRaw(app, 'POST', '/api/save-recording', Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), 'video/webm');
+    assert.equal(res.status, 201);
+    assert.match(res.body.filename, /^session-.+\.webm$/);
+    assert.ok(fs.existsSync(path.join(tmpDir, res.body.filename)));
   });
 });

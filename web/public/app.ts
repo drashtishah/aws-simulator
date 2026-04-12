@@ -1115,10 +1115,82 @@
     // Setup helpers
     setupScrollDetection();
     setupTextareaResize();
+    initRecorder();
 
     // Load initial data
     loadDashboard();
     loadSettings();
+  }
+
+  // --- Recorder ---
+
+  let mediaRecorder: MediaRecorder | null = null;
+  let recordedChunks: BlobPart[] = [];
+
+  function initRecorder(): void {
+    const btn = document.getElementById('btn-record') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+      let displayStream: MediaStream;
+      try {
+        displayStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false, preferCurrentTab: true });
+      } catch {
+        btn.classList.remove('recording');
+        return;
+      }
+      let audioStream: MediaStream;
+      try {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch {
+        displayStream.getTracks().forEach(t => t.stop());
+        btn.classList.remove('recording');
+        return;
+      }
+      const combined = new MediaStream([...displayStream.getTracks(), ...audioStream.getTracks()]);
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(combined, { mimeType: 'video/webm' });
+      mediaRecorder.addEventListener('dataavailable', e => { if (e.data.size > 0) recordedChunks.push(e.data); });
+      mediaRecorder.addEventListener('stop', async () => {
+        btn.classList.remove('recording');
+        combined.getTracks().forEach(t => t.stop());
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        try {
+          const res = await fetch('/api/save-recording', {
+            method: 'POST',
+            headers: { 'Content-Type': 'video/webm' },
+            body: blob
+          });
+          if (res.status === 201) {
+            const { filename } = await res.json() as { filename: string };
+            const toast = document.createElement('div');
+            toast.textContent = `Saved: ${filename}`;
+            toast.style.cssText = 'position:fixed;bottom:16px;right:16px;background:var(--bg-elevated);padding:8px 12px;border-radius:6px;font-size:13px;z-index:9999';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+          } else {
+            console.error('Recording upload failed:', res.status);
+          }
+        } catch {
+          console.error('Recording upload error');
+        } finally {
+          mediaRecorder = null;
+        }
+      });
+      btn.classList.add('recording');
+      mediaRecorder.start();
+      const videoTrack = displayStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.addEventListener('ended', () => {
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        });
+      }
+    });
   }
 
   // --- Start ---

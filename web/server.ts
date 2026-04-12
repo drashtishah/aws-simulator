@@ -22,8 +22,22 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use(express.json());
+app.use('/api/save-recording', express.raw({ type: 'video/webm', limit: '100mb' }));
 app.use(express.static(path.join(paths.ROOT, 'dist', 'public')));
 app.use(express.static(paths.PUBLIC_DIR));
+
+// --- Recording ---
+
+app.post('/api/save-recording', (req: Request, res: Response) => {
+  if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+    res.status(400).json({ error: 'empty body' });
+    return;
+  }
+  fs.mkdirSync(paths.VIDEOS_DIR, { recursive: true });
+  const filename = `session-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
+  fs.writeFileSync(path.join(paths.VIDEOS_DIR, filename), req.body);
+  res.status(201).json({ filename });
+});
 
 // --- Startup validation ---
 
