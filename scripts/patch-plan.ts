@@ -87,6 +87,7 @@ function main(): void {
   console.log(`Patched section "${section}" in issue #${issue}`);
 }
 
-if (process.argv[1] && process.argv[1].endsWith('patch-plan.ts')) {
+const isMain = process.argv[1]?.endsWith('patch-plan.ts') || process.argv[1]?.endsWith('patch-plan');
+if (isMain) {
   main();
 }
