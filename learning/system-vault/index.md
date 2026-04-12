@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
-updated: 2026-04-11
-note_count: 17
+updated: 2026-04-12
+note_count: 18
 ---
 # system-vault index
 
@@ -14,6 +14,7 @@ for the per-stage version of this protocol.
 - [[problem-plan-old-string-master-drift]] scope/pipeline stage/planner signal/loop: copy-pasted old_string in a revised plan goes stale when a sibling PR merges mid-revision; match fails or silently reverts sibling work
 - [[problem-shell-bsd-gnu-drift]] scope/ci signal/regression: shell scripts using BSD-only flags pass on macOS, fail every Linux CI run
 - [[problem-sibling-issue-collision]] scope/skills signal/loop: ad-hoc commit duplicates work a live sibling worktree already owns, requires revert and burns trust
+- [[problem-misapplied-label-persists-through-pipeline]] scope/pipeline signal/waste: wrong label persists through all stages because no stage can remove or correct labels
 - [[problem-tsx-test-recursion]] scope/testing tool/tsx: tsx --test refuses to run itself recursively; outer integration test silently passes while inner suite skips
 
 ## solutions
