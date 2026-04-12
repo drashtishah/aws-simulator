@@ -1158,22 +1158,27 @@
         btn.classList.remove('recording');
         combined.getTracks().forEach(t => t.stop());
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const res = await fetch('/api/save-recording', {
-          method: 'POST',
-          headers: { 'Content-Type': 'video/webm' },
-          body: blob
-        });
-        if (res.status === 201) {
-          const { filename } = await res.json() as { filename: string };
-          const toast = document.createElement('div');
-          toast.textContent = `Saved: ${filename}`;
-          toast.style.cssText = 'position:fixed;bottom:16px;right:16px;background:var(--bg-elevated);padding:8px 12px;border-radius:6px;font-size:13px;z-index:9999';
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 4000);
-        } else {
-          console.error('Recording upload failed:', res.status);
+        try {
+          const res = await fetch('/api/save-recording', {
+            method: 'POST',
+            headers: { 'Content-Type': 'video/webm' },
+            body: blob
+          });
+          if (res.status === 201) {
+            const { filename } = await res.json() as { filename: string };
+            const toast = document.createElement('div');
+            toast.textContent = `Saved: ${filename}`;
+            toast.style.cssText = 'position:fixed;bottom:16px;right:16px;background:var(--bg-elevated);padding:8px 12px;border-radius:6px;font-size:13px;z-index:9999';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+          } else {
+            console.error('Recording upload failed:', res.status);
+          }
+        } catch {
+          console.error('Recording upload error');
+        } finally {
+          mediaRecorder = null;
         }
-        mediaRecorder = null;
       });
       btn.classList.add('recording');
       mediaRecorder.start();
