@@ -48,9 +48,9 @@ Base tools per role. Additional tools are added by issue type label (see Label G
 |---|---|
 | Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment) |
 | Critic | Read, Glob, Grep, Bash(gh issue view/comment) |
-| Implementer | Read, Glob, Grep, Edit, Write, Bash(git/npm/npx/tsx/python3/gh issue view/comment) |
-| Verifier | Read, Glob, Grep, Edit, Bash(git/npm/tsx/gh issue view/comment) |
-| Reflector | Read, Glob, Grep, Write, Edit, Bash(git/gh issue view/edit/comment/gh pr create/merge/rg/npx tsx scripts/vault-lint.ts) |
+| Implementer | Read, Glob, Grep, Edit, Write, Bash(git/rtk/which/npm/npx/tsx/python3/gh issue view/comment) |
+| Verifier | Read, Glob, Grep, Edit, Bash(git/rtk/which/npm/tsx/gh issue view/comment) |
+| Reflector | Read, Glob, Grep, Write, Edit, Bash(git/rtk/which/gh issue view/edit/comment/gh pr create/merge/rg/npx tsx scripts/vault-lint.ts) |
 
 Verifier also has `actions: read` permission for CI check-run access.
 

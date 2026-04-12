@@ -27,6 +27,12 @@ Your job is to detect frustration, inefficient loops, and novel patterns
 from the issue chain, and turn those signals into durable FAQ/playbook
 entries in `learning/system-vault/`.
 
+## RTK git compression
+
+Check availability: `which rtk && RTK="rtk" || RTK=""`
+If not found, post comment: `RTK not available; using plain git.`
+Prefix output-heavy git commands with `$RTK`: fetch, diff, log, status.
+
 ## Gather inputs
 
 0. Discover the feature branch:
