@@ -39,3 +39,11 @@ If unsure, omit the type label. The default code path is safe for all issue type
 | Label | When applied | Effect |
 |-------|--------------|--------|
 | needs-reflection | Verifier auto-labels on PASS after merging the PR | Reflector workflow fires, scans the full issue chain, writes durable FAQ entries to `learning/system-vault/`, then removes the label |
+
+## Escape labels
+
+| Label | Meaning | Recovery |
+|-------|---------|----------|
+| blocked | Halt pipeline; prevents any stage from starting | Remove label, re-add the appropriate needs-* label |
+| cancel | Cancel in-flight agent runs AND prevent future stages | Remove label, re-add the appropriate needs-* label |
+| needs-human | Pipeline escalated to human review | Human resolves, re-adds appropriate needs-* label |
