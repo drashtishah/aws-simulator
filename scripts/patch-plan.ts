@@ -40,8 +40,14 @@ function parseArgs(): { issue: number; section: string } {
   let issue: number | undefined;
   let section: string | undefined;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--issue' && args[i + 1]) issue = parseInt(args[++i], 10);
-    if (args[i] === '--section' && args[i + 1]) section = args[++i];
+    const next = args[i + 1];
+    if (args[i] === '--issue' && next !== undefined) {
+      i++;
+      issue = parseInt(next, 10);
+    } else if (args[i] === '--section' && next !== undefined) {
+      i++;
+      section = next;
+    }
   }
   if (!issue || !section) {
     console.error('Usage: patch-plan.ts --issue <n> --section "<name>"');
