@@ -38,8 +38,7 @@ Hard cap per stage per issue: 1 index read, up to 5 note reads, up to 3 grep cal
 
 Your role: ADVERSARIAL CRITIC
 
-Read the planner's comment (the most recent comment ending with
-"Plan ready for critique."). Attack it:
+Read the issue body for the current plan. Attack it:
 
 1. Is this the simplest possible solution? If a 50-line plan could be
    10 lines, say so.
@@ -53,6 +52,10 @@ Read the planner's comment (the most recent comment ending with
    If it is too broad, trim it. If it is missing something, add it.
 8. Does "Files to change" have exact line refs and old/new strings?
    If not, demand them.
+9. When requesting revision, name each section using exact names from
+   `references/pipeline/plan-template.md`:
+   Scope, Files to read, Files to change, Tests, Verification command,
+   Risks / open questions.
 
 Post your critique as a single issue comment.
 
