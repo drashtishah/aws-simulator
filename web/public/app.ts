@@ -1135,28 +1135,23 @@
         mediaRecorder.stop();
         return;
       }
-      let displayStream: MediaStream;
+      let stream: MediaStream;
       try {
-        displayStream = await (navigator.mediaDevices as any).getDisplayMedia({ video: true, audio: false, preferCurrentTab: true });
+        stream = await (navigator.mediaDevices as any).getDisplayMedia({
+          video: true,
+          audio: true,
+          preferCurrentTab: true
+        });
       } catch {
         btn.classList.remove('recording');
         return;
       }
-      let audioStream: MediaStream;
-      try {
-        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      } catch {
-        displayStream.getTracks().forEach(t => t.stop());
-        btn.classList.remove('recording');
-        return;
-      }
-      const combined = new MediaStream([...displayStream.getTracks(), ...audioStream.getTracks()]);
       recordedChunks = [];
-      mediaRecorder = new MediaRecorder(combined, { mimeType: 'video/webm' });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
       mediaRecorder.addEventListener('dataavailable', e => { if (e.data.size > 0) recordedChunks.push(e.data); });
       mediaRecorder.addEventListener('stop', async () => {
         btn.classList.remove('recording');
-        combined.getTracks().forEach(t => t.stop());
+        stream.getTracks().forEach(t => t.stop());
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         try {
           const res = await fetch('/api/save-recording', {
@@ -1182,7 +1177,7 @@
       });
       btn.classList.add('recording');
       mediaRecorder.start();
-      const videoTrack = displayStream.getVideoTracks()[0];
+      const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.addEventListener('ended', () => {
           if (mediaRecorder && mediaRecorder.state === 'recording') {

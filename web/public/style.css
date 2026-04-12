@@ -158,10 +158,12 @@ a:hover {
 
 .topbar-record:hover { background: var(--bg-elevated); }
 
-.topbar-record svg { width: 16px; height: 16px; }
+.topbar-record svg { width: 18px; height: 18px; }
+
+.topbar-record.recording .icon-record { display: none !important; }
+.topbar-record.recording .icon-stop { display: block !important; }
 
 .topbar-record.recording {
-  color: var(--accent-red, #F87171);
   animation: pulse-record 1.2s ease-in-out infinite;
 }
 
