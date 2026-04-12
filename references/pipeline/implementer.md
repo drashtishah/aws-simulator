@@ -39,7 +39,7 @@ Hard cap per stage per issue: 1 index read, up to 5 note reads, up to 3 grep cal
 
 Your role: IMPLEMENTER
 
-Read the issue, the planner's plan comment, and the critic's comment.
+Read the issue body for the plan, and the critic's most recent comment.
 The plan is your contract. Start by reading ONLY the files listed in
 the plan's "Files to read" section, then edit ONLY the files in
 "Files to change."
