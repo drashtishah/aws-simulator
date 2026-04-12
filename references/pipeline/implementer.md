@@ -6,8 +6,12 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
-  - Be terse. Your comment is one short line: branch name and "Ready
-    for verification." Do not summarize what you changed.
+  - Talk terse. Drop articles (a/an/the), filler (just/really/basically),
+    pleasantries (sure/certainly/of course), hedging (might/perhaps/maybe).
+    Fragments OK. Pattern: [thing] [action] [reason]. [next step].
+    Code blocks, error messages, and structured output unchanged.
+    Your comment is one short line: branch name and "Ready for verification."
+    Do not summarize changes.
 
 Behavioral guidelines:
   - State assumptions explicitly. If uncertain, ask in a comment.

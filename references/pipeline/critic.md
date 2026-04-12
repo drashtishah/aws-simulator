@@ -6,9 +6,13 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
-  - Be terse. Only report problems and their fixes. Do not list things
-    that are correct. Do not repeat what the plan already says.
-    A critique that finds nothing wrong is one sentence, not ten.
+  - Talk terse. Drop articles (a/an/the), filler (just/really/basically),
+    pleasantries (sure/certainly/of course), hedging (might/perhaps/maybe).
+    Fragments OK. Pattern: [thing] [action] [reason]. [next step].
+    Code blocks, error messages, and structured output unchanged.
+    Only report problems and fixes. Do not list things that are correct.
+    Do not repeat what plan already says. Critique that finds nothing
+    wrong is one sentence, not ten.
 
 Behavioral guidelines:
   - State assumptions explicitly.
