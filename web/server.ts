@@ -2,7 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import { execSync } from 'node:child_process';
+import { exec, execSync } from 'node:child_process';
 import paths from './lib/paths';
 import { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression, parseCatalog } from './lib/progress';
 import { stripFrontmatter } from './lib/frontmatter';
@@ -34,9 +34,15 @@ app.post('/api/save-recording', (req: Request, res: Response) => {
     return;
   }
   fs.mkdirSync(paths.VIDEOS_DIR, { recursive: true });
-  const filename = `session-${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
-  fs.writeFileSync(path.join(paths.VIDEOS_DIR, filename), req.body);
-  res.status(201).json({ filename });
+  const basename = `session-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  const webmPath = path.join(paths.VIDEOS_DIR, `${basename}.webm`);
+  const mp4Path = path.join(paths.VIDEOS_DIR, `${basename}.mp4`);
+  fs.writeFileSync(webmPath, req.body);
+  exec(`ffmpeg -i "${webmPath}" -c:v libx264 -c:a aac -movflags +faststart "${mp4Path}"`, (err) => {
+    if (err) console.error(`mp4 conversion failed for ${basename}:`, err.message);
+    else console.log(`Converted ${basename}.mp4`);
+  });
+  res.status(201).json({ filename: `${basename}.webm` });
 });
 
 // --- Startup validation ---

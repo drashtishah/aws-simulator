@@ -1,5 +1,5 @@
 name: recorder
-description: Record button is present in the topbar with correct initial state.
+description: Record button with classic record/stop icons and correct initial state.
 setup:
   navigate: /
 steps:
@@ -17,3 +17,25 @@ steps:
     check:
       - selector: "#btn-record.recording"
         visible: false
+
+  - id: record-icon-visible
+    check:
+      - selector: "#btn-record .icon-record"
+        visible: true
+
+  - id: stop-icon-hidden
+    check:
+      - selector: "#btn-record .icon-stop"
+        style: { display: "none" }
+
+  - id: record-icon-is-circle
+    description: The record icon should be an SVG with a circle element (classic record symbol).
+    check:
+      - selector: "#btn-record .icon-record circle"
+        attribute: { fill: "#F87171" }
+
+  - id: stop-icon-is-square
+    description: The stop icon should be an SVG with a rect element (classic stop symbol).
+    check:
+      - selector: "#btn-record .icon-stop rect"
+        attribute: { fill: "#F87171" }
