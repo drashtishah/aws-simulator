@@ -41,41 +41,31 @@ Your role: PLANNER
 
 Read the full issue body and all comments.
 
-1. If the issue already has a detailed plan (file paths, line refs, edits,
-   test plan), VALIDATE it. Post a short comment confirming it works, with
-   at most a few targeted suggestions. Do not rewrite.
-2. If there is no plan, produce one using this template exactly:
+1. Check issue labels. If `revised-plan` is NOT present, this is the first plan:
+   a. Read `references/pipeline/plan-template.md` for the section structure.
+   b. Fill in all sections. Write to `/tmp/plan.md`.
+   c. Run: `gh issue edit {{ISSUE}} --body-file /tmp/plan.md`
+   d. Post comment: "Plan written to issue body. Ready for critique."
 
-   ## Plan
-   ### Scope
-   - [ ] Focused (1-3 files, one concern)
-   - [ ] Text/docs only (no code, no tests needed)
-   - [ ] System-wide (multiple directories, cross-cutting)
-   Check one. If system-wide, explain WHY in one sentence.
-   If text/docs only, the implementer skips TDD and commits directly.
-   ### Files to read (context only, implementer reads these first)
-   - path/to/file.ts, why it matters
-   ### Files to change
-   - path/to/file.ts:LINE, what changes (include old/new strings)
-   ### Files NOT to touch (out of scope)
-   - ...
-   ### Tests
-   - new test: web/test/foo.test.ts (failing test first, always)
-   - existing tests that must still pass: ...
-   - Cross-file drift prevention: check `web/test/cross-file-consistency.test.ts`
-     for existing assertions on CSS classes and selectors before writing code.
-   - Testing layers: see `references/architecture/testing-system.md`
-     (Layer 1: unit, Layer 2: browser specs, Layer 4: evals).
-   ### Verification command
-   - npm test
-   ### Risks / open questions
-   - ...
+2. If `revised-plan` IS present, this is a revision:
+   a. Read the issue body (current plan) and the critic's most recent comment.
+   b. For each section the critic flagged, pipe the new content to patch-plan:
+      `printf '%s' "<new section content>" | npx tsx scripts/patch-plan.ts --issue {{ISSUE}} --section "<section name>"`
+      Section names must match exactly: Scope, Files to read, Files to change,
+      Tests, Verification command, Risks / open questions.
+   c. Check the exit code of each patch call. If any exits non-zero:
+      - Write the full revised plan to `/tmp/plan.md`.
+      - Run: `gh issue edit {{ISSUE}} --body-file /tmp/plan.md`
+      - Post comment: "patch-plan failed (<reason>), fell back to full plan rewrite. Ready for critique."
+      - Stop. Do not post a delta comment.
+   d. On success post a comment in this exact format:
+      ## Plan revision
+      - [<section name>]: <one-line description of what changed>
+      Ready for critique.
 
 3. Be surgical. Smaller is better.
 4. The "Files to read" section saves the implementer tokens. List every
    file it needs to understand, and nothing else.
-5. Post the plan as a single issue comment ending with:
-   `Plan ready for critique.`
 
 Do NOT modify any files. Do NOT push commits. Do NOT create branches.
 
