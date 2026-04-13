@@ -1,0 +1,132 @@
+name: evaluator
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  evaluate:
+    if: |
+      github.event.label.name == 'needs-eval' &&
+      github.event.sender.login == github.repository_owner &&
+      github.event.issue.user.login == github.repository_owner &&
+      !contains(github.event.issue.labels.*.name, 'blocked') &&
+      !contains(github.event.issue.labels.*.name, 'cancel') &&
+      !contains(github.event.issue.labels.*.name, 'pipeline-failed')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Post starting comment
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "Evaluator starting."
+
+      - name: Configure git author
+        run: |
+          git config user.email "6rashti5hah@gmail.com"
+          git config user.name  "Drashti Shah"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install RTK (git token compression)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/8a7106c8f2996ebc75b38a71c5f342f17811ce39/install.sh | sh || true
+          echo "$HOME/.rtk/bin" >> "$GITHUB_PATH"
+
+      - name: Record master HEAD for scope check
+        id: baseline
+        run: echo "master_sha=$(git rev-parse origin/master)" >> "$GITHUB_OUTPUT"
+
+      - name: Load evaluator prompt
+        id: setup
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          N=${{ github.event.issue.number }}
+          TODAY=$(date -u +%Y-%m-%d)
+          BASE="references/pipeline/evaluator.md"
+          TOOLS="Read,Glob,Grep,Write,Edit,Bash(git:*),Bash(rtk:*),Bash(which:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh issue create:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(rg:*),Bash(npx:*)"
+
+          {
+            echo 'prompt<<PROMPT_EOF'
+            sed -e "s/{{ISSUE}}/$N/g" -e "s/{{TODAY}}/$TODAY/g" "$BASE"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
+
+      - id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GH_PAT }}
+          claude_args: |
+            --model claude-opus-4-6
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["CREATED","UPDATED","NOOP"]},"summary":{"type":"string"},"files":{"type":"array","items":{"type":"string"}},"loop_detected":{"type":"boolean"},"eval_score":{"type":"number"}},"required":["verdict","summary","files","loop_detected","eval_score"]}'
+            --allowed-tools "${{ steps.setup.outputs.tools }}"
+          prompt: ${{ steps.setup.outputs.prompt }}
+
+      - name: Scope check (writes limited to learning/system-vault/)
+        env:
+          MASTER_SHA: ${{ steps.baseline.outputs.master_sha }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          git fetch origin
+          if ! git ls-remote --exit-code origin "refs/heads/eval/issue-$ISSUE" >/dev/null 2>&1; then
+            echo "No eval branch found; NOOP confirmed."
+            exit 0
+          fi
+          MERGE_BASE=$(git merge-base "$MASTER_SHA" "origin/eval/issue-$ISSUE")
+          CHANGED=$(git diff --name-only "$MERGE_BASE"..origin/eval/issue-$ISSUE)
+          if [ -z "$CHANGED" ]; then
+            echo "No vault commits; nothing to scope-check."
+            exit 0
+          fi
+          OUT_OF_SCOPE=$(echo "$CHANGED" | grep -v '^learning/system-vault/' || true)
+          if [ -n "$OUT_OF_SCOPE" ]; then
+            echo "FAIL: evaluator touched files outside learning/system-vault/:"
+            echo "$OUT_OF_SCOPE"
+            exit 1
+          fi
+
+      - name: Vault lint
+        run: npx tsx scripts/vault-lint.ts
+
+      - name: Remove needs-eval label
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-eval"
+
+      - name: Handle stage failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-eval" \
+            --add-label "pipeline-failed"
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "evaluator stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
