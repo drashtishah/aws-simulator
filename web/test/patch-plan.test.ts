@@ -58,14 +58,16 @@ describe('patchBody', () => {
 });
 
 describe('VALID_SECTIONS', () => {
-  it('contains all six template sections', () => {
+  it('contains all eight template sections', () => {
     const expected = [
       'Scope',
       'Files to read',
       'Files to change',
+      'Files NOT to touch',
       'Tests',
       'Verification command',
       'Risks / open questions',
+      'Decomposition (only if split occurred)',
     ];
     assert.deepEqual(VALID_SECTIONS, expected);
   });
