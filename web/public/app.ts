@@ -922,7 +922,7 @@ function initRecorder(): void {
       stream = await (navigator.mediaDevices as any).getDisplayMedia({
         preferCurrentTab: true,
         video: true,
-        audio: true
+        audio: false
       });
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       for (const track of micStream.getAudioTracks()) stream.addTrack(track);
