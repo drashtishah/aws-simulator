@@ -77,7 +77,7 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |   tracked in git)    |
 |                      |
 | Written by:          |
-|  reflector (GHA)     |
+|  evaluator (GHA)     |
 |                      |
 | Subdirs:             |
 |  problems/           |
@@ -150,7 +150,7 @@ test ----> run: executes node --test (unit tests)
 | `learning/sessions/*.json` | play, feedback | play, feedback | JSON: in-progress sim state |
 | `learning/logs/raw.jsonl` | hooks, web logger | fix | JSONL: unified event stream (session lifecycle, tool calls, warnings, errors). Legacy `activity.jsonl` and `system.jsonl` aliases via `web/lib/paths.ts`. |
 | `learning/logs/health-scores.jsonl` | fix | fix | JSONL: per-edit and final code health scores with source tags |
-| `learning/system-vault/` | reflector (GHA) | pipeline stages, local agents | Tracked in git, written by reflector (GHA), read by pipeline stages and local agents; 4 subdirs (problems, solutions, playbooks, patterns); `scripts/vault-lint.ts` enforces 80-line/3KB note cap and 120-line index cap. |
+| `learning/system-vault/` | evaluator (GHA) | pipeline stages, local agents | Tracked in git, written by evaluator (GHA), read by pipeline stages and local agents; 4 subdirs (problems, solutions, playbooks, patterns); `scripts/vault-lint.ts` enforces 80-line/3KB note cap and 120-line index cap. |
 | `scripts/metrics.config.json` | fix | `scripts/code-health.ts`, fix | JSON: health score weights and last_fix_analyzed timestamp |
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `test summary` | fix | JSON: aggregated test results across all layers |

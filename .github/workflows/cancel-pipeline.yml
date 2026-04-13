@@ -20,7 +20,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           cancelled=""
-          for wf in planner.yml critic.yml implementer.yml verifier.yml reflector.yml; do
+          for wf in planner.yml critic.yml implementer.yml verifier.yml evaluator.yml; do
             for status in in_progress queued; do
               ids=$(gh run list --workflow "$wf" --status "$status" \
                 --repo "$REPO" --json databaseId --jq '.[].databaseId')

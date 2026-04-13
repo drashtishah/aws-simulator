@@ -104,7 +104,7 @@ If a finding you are about to flag was already flagged by a prior verifier comme
 
 DECISION:
 - All checks and code review pass:
-  Set verdict to PASS. The reflector stage will merge master into the feature branch, create the PR, and queue auto-merge.
+  Set verdict to PASS. The evaluator stage will merge master into the feature branch, create the PR, and queue auto-merge.
 - Fixable issues (missing import, edge case, test gap):
   Set `verdict` to `FAIL_RETRY`.
 - Fundamental flaw (wrong approach, scope misunderstanding, architectural problem):
@@ -132,7 +132,7 @@ main output) containing ONLY:
     - [self-correction] <where your first approach was wrong and why>
 
 Use only tags that apply. Omit empty categories. Skip the entire section if
-nothing notable happened. Do not fabricate. The reflector stage will pick up
+nothing notable happened. Do not fabricate. The evaluator stage will pick up
 these comments after the issue closes. `[frustration]` is especially
 important: repeated frustration across issues is the signal that the
 pipeline is stuck in an inefficient loop.

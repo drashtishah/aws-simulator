@@ -91,7 +91,7 @@ main output) containing ONLY:
     - [self-correction] <where your first approach was wrong and why>
 
 Use only tags that apply. Omit empty categories. Skip the entire section if
-nothing notable happened. Do not fabricate. The reflector stage will pick up
+nothing notable happened. Do not fabricate. The evaluator stage will pick up
 these comments after the issue closes. `[frustration]` is especially
 important: repeated frustration across issues is the signal that the
 pipeline is stuck in an inefficient loop.

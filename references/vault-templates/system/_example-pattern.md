@@ -24,5 +24,5 @@ behind noise.
 
 ## Counter examples
 None recorded yet. A counter example would be a case where bundling
-unrelated cleanup saved effort net-net; file one via the reflector if
+unrelated cleanup saved effort net-net; file one via the evaluator if
 you hit it.
