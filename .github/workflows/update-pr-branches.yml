@@ -1,0 +1,17 @@
+name: Update PR branches
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update open PR branches
+        run: |
+          gh pr list --base master --json number --jq '.[].number' | \
+          xargs -I {} gh pr update-branch {}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
