@@ -921,8 +921,7 @@ function initRecorder(): void {
     try {
       stream = await (navigator.mediaDevices as any).getDisplayMedia({
         video: true,
-        audio: true,
-        preferCurrentTab: true
+        audio: true
       });
     } catch {
       btn.classList.remove('recording');
