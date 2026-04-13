@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
-updated: 2026-04-11
-note_count: 17
+updated: 2026-04-12
+note_count: 19
 ---
 # system-vault index
 
@@ -11,6 +11,7 @@ for the per-stage version of this protocol.
 
 ## problems
 - [[problem-floor-snap-deletion-race]] scope/code signal/regression: deleting tracked file then running health snaps the wrong floor and trips a bucket_floor advisory in the same commit
+- [[problem-patch-plan-assumes-template-structure]] scope/pipeline stage/planner: patch-plan fails on free-form issues lacking template section headers
 - [[problem-plan-old-string-master-drift]] scope/pipeline stage/planner signal/loop: copy-pasted old_string in a revised plan goes stale when a sibling PR merges mid-revision; match fails or silently reverts sibling work
 - [[problem-shell-bsd-gnu-drift]] scope/ci signal/regression: shell scripts using BSD-only flags pass on macOS, fail every Linux CI run
 - [[problem-sibling-issue-collision]] scope/skills signal/loop: ad-hoc commit duplicates work a live sibling worktree already owns, requires revert and burns trust
@@ -30,6 +31,7 @@ for the per-stage version of this protocol.
 ## playbooks
 
 ## patterns
+- [[pattern-pin-third-party-before-planning]] scope/pipeline stage/planner: plans installing third-party tools must pin exact commit SHA before writing the plan
 - [[pattern-question-the-tier-not-the-addition]] when a proposed addition's killer use case is already covered, question the whole tier
 - [[pattern-rules-in-duplicate-places-get-ignored]] a rule duplicated in two places gets ignored even by the agent that just read both copies
 - [[pattern-vault-read-write-asymmetry]] vault READ and vault WRITE are independently scoped permissions, never bundle them
