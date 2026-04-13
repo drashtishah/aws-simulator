@@ -14,4 +14,4 @@ jobs:
           gh pr list --base master --json number --jq '.[].number' | \
           xargs -I {} gh pr update-branch {}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
