@@ -920,6 +920,7 @@ function initRecorder(): void {
     let stream: MediaStream;
     try {
       stream = await (navigator.mediaDevices as any).getDisplayMedia({
+        preferCurrentTab: true,
         video: true,
         audio: true
       });
