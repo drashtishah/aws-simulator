@@ -1,3 +1,18 @@
+// YouTube Upload Script
+//
+// Usage:
+//   npm run upload -- --file <filename> --title "<title>" [--sim <simId>]
+//
+// Agent instructions:
+//   The user will provide:
+//     1. --file  (required): the .mp4 filename in learning/videos/ (e.g. session-2026-04-13T14-20-24-829Z.mp4)
+//     2. --title (required): the YouTube video title (e.g. "Debugging an unreachable EC2")
+//     3. --sim  (optional): the simulation ID (e.g. 001-ec2-unreachable)
+//   If --sim is provided, the script looks up the sim's summary from sims/registry.json for the YouTube description.
+//   If --sim is omitted, the video uploads with no description.
+//   Auth tokens are cached in .youtube-creds.json. If missing, the script opens a browser for OAuth.
+//   Videos upload as public.
+
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
@@ -8,8 +23,9 @@ import open from 'open';
 const ROOT = path.resolve(__dirname, '..');
 const CLIENT_SECRET_PATH = path.join(ROOT, 'client_secret.json');
 const CREDS_PATH = path.join(ROOT, '.youtube-creds.json');
-const VIDEOS_DIR = path.join(ROOT, 'learning', 'videos');
+const VIDEOS_DIR = process.env.AWS_SIMULATOR_VIDEOS_DIR ?? path.join(ROOT, 'learning', 'videos');
 const ENV_PATH = path.join(ROOT, '.env');
+const REGISTRY_PATH = path.join(ROOT, 'sims', 'registry.json');
 
 export function readEnvFlag(envPath: string): boolean {
   if (!fs.existsSync(envPath)) return false;
@@ -33,6 +49,41 @@ export function parseClientSecret(json: string): { client_id: string; client_sec
 export function discoverVideos(dir: string): string[] {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter(f => f.endsWith('.mp4'));
+}
+
+interface RegistrySim {
+  id: string;
+  title: string;
+  summary: string;
+}
+
+export function lookupSimSummary(registryPath: string, simId: string): string {
+  if (!fs.existsSync(registryPath)) {
+    throw new Error(`Registry not found: ${registryPath}`);
+  }
+  const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+  const sim = registry.sims.find((s: RegistrySim) => s.id === simId);
+  if (!sim) {
+    throw new Error(`Sim "${simId}" not found in registry. Available: ${registry.sims.map((s: RegistrySim) => s.id).join(', ')}`);
+  }
+  return sim.summary;
+}
+
+function parseArgs(argv: string[]): { file: string; title: string; sim: string | undefined } {
+  const args = argv.slice(2);
+  let file = '';
+  let title = '';
+  let sim: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--file' && args[i + 1]) file = args[++i];
+    else if (args[i] === '--title' && args[i + 1]) title = args[++i];
+    else if (args[i] === '--sim' && args[i + 1]) sim = args[++i];
+  }
+  if (!file || !title) {
+    console.error('Usage: npm run upload -- --file <filename> --title "<title>" [--sim <simId>]');
+    process.exit(1);
+  }
+  return { file, title, sim };
 }
 
 const REDIRECT_URI = 'http://localhost:3333';
@@ -75,8 +126,12 @@ async function getTokens(): Promise<OAuth2Client> {
   return oauth2Client;
 }
 
-async function uploadVideo(filePath: string, oauth2Client: OAuth2Client): Promise<void> {
-  const title = path.basename(filePath, path.extname(filePath));
+async function uploadVideo(
+  filePath: string,
+  title: string,
+  description: string,
+  oauth2Client: OAuth2Client,
+): Promise<void> {
   const stat = fs.statSync(filePath);
   const yt = youtube({ version: 'v3', auth: oauth2Client });
 
@@ -84,11 +139,8 @@ async function uploadVideo(filePath: string, oauth2Client: OAuth2Client): Promis
     {
       part: ['snippet', 'status'],
       requestBody: {
-        snippet: {
-          title,
-          description: 'AWS Incident Simulator session recording',
-        },
-        status: { privacyStatus: 'unlisted' },
+        snippet: { title, description },
+        status: { privacyStatus: 'public' },
       },
       media: { body: fs.createReadStream(filePath) },
     },
@@ -114,18 +166,25 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const { file, title, sim } = parseArgs(process.argv);
+  const filePath = path.join(VIDEOS_DIR, file);
+
+  if (!fs.existsSync(filePath)) {
+    const available = discoverVideos(VIDEOS_DIR);
+    console.error(`File not found: ${filePath}`);
+    if (available.length > 0) {
+      console.error(`Available videos: ${available.join(', ')}`);
+    }
+    process.exit(1);
+  }
+
+  const description = sim ? lookupSimSummary(REGISTRY_PATH, sim) : '';
+
   const oauth2Client = await getTokens();
 
-  const files = discoverVideos(VIDEOS_DIR);
-  if (files.length === 0) {
-    console.log('No .mp4 files in learning/videos/.');
-    return;
-  }
-
-  console.log(`Uploading ${files.length} video(s)...`);
-  for (const file of files) {
-    await uploadVideo(path.join(VIDEOS_DIR, file), oauth2Client);
-  }
+  console.log(`Uploading "${title}" (${file})...`);
+  if (description) console.log(`Description: ${description}`);
+  await uploadVideo(filePath, title, description, oauth2Client);
 }
 
 if (process.argv[1] === __filename) {

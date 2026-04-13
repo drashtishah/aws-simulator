@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
-import { readEnvFlag, parseClientSecret, discoverVideos } from '../../scripts/upload-youtube';
+import { readEnvFlag, parseClientSecret, discoverVideos, lookupSimSummary } from '../../scripts/upload-youtube';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'yt-upload-'));
 
@@ -77,5 +77,33 @@ describe('discoverVideos', () => {
     fs.mkdirSync(emptyDir, { recursive: true });
     fs.writeFileSync(path.join(emptyDir, 'readme.md'), '');
     assert.deepEqual(discoverVideos(emptyDir), []);
+  });
+});
+
+describe('lookupSimSummary', () => {
+  const registryPath = path.join(tmp, 'registry.json');
+  const registry = {
+    version: 1,
+    sims: [
+      { id: '001-ec2-unreachable', title: 'Test Sim', summary: 'A server went down.' },
+      { id: '002-s3-public', title: 'S3 Sim', summary: 'Bucket exposed.' },
+    ],
+  };
+
+  it('returns summary for a valid sim ID', () => {
+    fs.writeFileSync(registryPath, JSON.stringify(registry));
+    assert.equal(lookupSimSummary(registryPath, '001-ec2-unreachable'), 'A server went down.');
+  });
+
+  it('returns summary for second sim', () => {
+    assert.equal(lookupSimSummary(registryPath, '002-s3-public'), 'Bucket exposed.');
+  });
+
+  it('throws when sim ID not found', () => {
+    assert.throws(() => lookupSimSummary(registryPath, '999-nonexistent'), /not found in registry/);
+  });
+
+  it('throws when registry file missing', () => {
+    assert.throws(() => lookupSimSummary('/nonexistent/registry.json', '001'), /Registry not found/);
   });
 });
