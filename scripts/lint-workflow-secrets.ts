@@ -57,12 +57,13 @@ function scanWorkflows(): Violation[] {
     const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const line = lines[i] ?? '';
       SECRET_REF.lastIndex = 0;
       let match: RegExpExecArray | null;
 
       while ((match = SECRET_REF.exec(line)) !== null) {
-        const name = match[1];
+        const name = match[1] ?? '';
+        if (!name) continue;
 
         if (FORBIDDEN.has(name)) {
           violations.push({

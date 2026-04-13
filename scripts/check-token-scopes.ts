@@ -36,7 +36,7 @@ function getTokenScopes(): string[] | null {
 
     const match = headers.match(/^X-Oauth-Scopes:\s*(.*)$/im);
     if (!match) return []; // fine-grained PAT or no scopes header
-    return match[1].split(',').map(s => s.trim()).filter(Boolean);
+    return (match[1] ?? '').split(',').map(s => s.trim()).filter(Boolean);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`GitHub API call failed: ${msg}`);
