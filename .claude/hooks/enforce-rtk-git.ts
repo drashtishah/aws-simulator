@@ -2,6 +2,8 @@
 // PreToolUse hook for Bash: blocks plain git fetch/diff/log/status.
 // These commands must use `rtk git` instead.
 
+export {};
+
 interface HookInput {
   tool_name?: string;
   tool_input?: Record<string, unknown>;

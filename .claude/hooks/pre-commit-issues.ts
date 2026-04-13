@@ -1,6 +1,8 @@
 #!/usr/bin/env npx tsx
 // PreToolUse hook for Bash: blocks commits without issue references.
 
+export {};
+
 interface HookInput {
   tool_name?: string;
   tool_input?: Record<string, unknown>;
