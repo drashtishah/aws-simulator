@@ -23,7 +23,8 @@
     "check-budget": "./scripts/check-budget.sh",
     "postinstall": "tsx scripts/install-git-hooks.ts && python3 scripts/extract_paths.py && tsx scripts/audit-permissions.ts",
     "build-agent-index": "tsx scripts/build-agent-index.ts",
-    "agent-browser-summary": "tsx scripts/agent-browser-summarize.ts"
+    "agent-browser-summary": "tsx scripts/agent-browser-summarize.ts",
+    "upload": "tsx scripts/upload-youtube.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.91",
@@ -34,12 +35,14 @@
     "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.5.2",
+    "@googleapis/youtube": "31.0.0",
     "acorn": "^8.16.0",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
     "commander": "^12.1.0",
     "connect-livereload": "^0.6.1",
     "livereload": "^0.10.3",
+    "open": "8.4.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }
