@@ -13,10 +13,22 @@ function readFile(relPath) {
   return fs.readFileSync(path.join(ROOT, relPath), 'utf8');
 }
 
+// --- 0. rank-display.ts module structure ---
+
+describe('rank-display.ts exports expected symbols', () => {
+  const exists = fs.existsSync(path.resolve(__dirname, '../public/rank-display.ts'));
+  const src = exists ? readFile('web/public/rank-display.ts') : '';
+  for (const fn of ['renderPolygon', 'renderNextRank', 'renderRankProgression', 'formatRankId']) {
+    it('exports ' + fn, () => {
+      assert.ok(src.includes('export function ' + fn), 'rank-display.ts must export ' + fn);
+    });
+  }
+});
+
 // --- 1. CSS class coverage ---
 
 describe('CSS class coverage: app.ts classes exist in style.css', () => {
-  const appJs = readFile('web/public/app.ts');
+  const appJs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
   const styleCss = readFile('web/public/style.css');
 
   // Extract class selectors from CSS (e.g. .foo-bar)
@@ -203,7 +215,7 @@ describe('test CLI commands', () => {
 // --- 8. Dashboard rendering correctness ---
 
 describe('dashboard rendering correctness', () => {
-  const appJs = readFile('web/public/app.ts');
+  const appJs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
   const indexHtml = readFile('web/public/index.html');
 
   it('hexagon SVG viewBox has room for labels beyond the grid', () => {
@@ -380,7 +392,7 @@ describe('YAML browser spec selector drift', () => {
 
   const indexHtml = readFile('web/public/index.html');
   const styleCss = readFile('web/public/style.css');
-  const appTs = readFile('web/public/app.ts');
+  const appTs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
 
   // Allowlisted selectors (dynamic content, not in static HTML)
   const allowlist = [
