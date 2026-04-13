@@ -9,8 +9,8 @@ gh issue create (mobile or /fix)
   -> [needs-plan]       -> planner.yml    (Sonnet) -> [needs-critique]
   -> [needs-critique]   -> critic.yml     (Opus)   -> [needs-impl] | [needs-plan, revised-plan]
   -> [needs-impl]       -> implementer.yml(Sonnet) -> [needs-verify]
-  -> [needs-verify]     -> verifier.yml   (Sonnet) -> [needs-reflection]
-  -> [needs-reflection] -> reflector.yml  (Opus)   -> feature PR + optional vault PR merged to master, label removed
+  -> [needs-verify]     -> verifier.yml   (Sonnet) -> [needs-eval]
+  -> [needs-eval]       -> evaluator.yml  (Opus)   -> feature PR + optional vault PR + eval comment (X/32), label removed
 ```
 
 No hard revision caps. Critic and verifier can revise freely, but loop detection in the label swap step counts "Planner starting" or "Implementer starting" comments. At `MAX_ITERATIONS` attempts (see `.github/scripts/pipeline-iterations.sh`, currently 5), the issue is escalated to needs-human with both plan and implementation counts included. Verifier also posts the counts on PASS. Escape labels: blocked, cancel, needs-human.
@@ -77,7 +77,7 @@ Base prompts and context overlays live in `references/pipeline/`:
 | `critic.md` | Base Critic role prompt |
 | `implementer.md` | Base Implementer role prompt |
 | `verifier.md` | Base Verifier role prompt |
-| `reflector.md` | Base Reflector role prompt |
+| `evaluator.md` | Base Evaluator role prompt |
 | `context-text.md` | Overlay for text-only issues (Planner/Critic) |
 | `context-ui.md` | Overlay for ui issues (all roles) |
 | `context-sim.md` | Overlay for sim-content issues (Planner/Critic) |
@@ -97,6 +97,6 @@ Base prompts and context overlays live in `references/pipeline/`:
 - `.github/workflows/critic.yml`
 - `.github/workflows/implementer.yml`
 - `.github/workflows/verifier.yml`
-- `.github/workflows/reflector.yml`
+- `.github/workflows/evaluator.yml`
 - `.github/workflows/close-foreign-issues.yml`
 - `.github/workflows/poc-claude.yml` (one-time verification)

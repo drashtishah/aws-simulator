@@ -38,7 +38,7 @@ If unsure, omit the type label. The planner workflow auto-applies `ui` (when the
 
 | Label | When applied | Effect |
 |-------|--------------|--------|
-| needs-reflection | Verifier auto-labels on PASS after merging the PR | Reflector workflow fires, scans the full issue chain, writes durable FAQ entries to `learning/system-vault/`, then removes the label |
+| needs-eval | Verifier auto-labels on PASS | Evaluator workflow fires, reads full issue chain, writes vault entries, scores pipeline (X/32), optionally files needs-triage issue for systemic failures, then removes the label |
 
 ## Escape labels
 
