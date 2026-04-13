@@ -4,11 +4,11 @@ kind: problem
 title: patch-plan fails when issue body lacks plan-template section headers
 tags: [kind/problem, scope/pipeline, stage/planner]
 created: 2026-04-12
-updated: 2026-04-12
-source_issues: [#217]
+updated: 2026-04-13
+source_issues: [#217, #209]
 confidence: observed
 summary: patch-plan calls fail on free-form issue specs because they expect template section headers to already exist in the body
-triggers: [free-form issue body without plan-template headers, planner uses patch-plan on non-templated issue]
+triggers: [free-form issue body without plan-template headers, planner uses patch-plan on non-templated issue, plan contains non-standard section names like New files that patch-plan cannot match]
 severity: degraded
 solutions: []
 related_problems: []
