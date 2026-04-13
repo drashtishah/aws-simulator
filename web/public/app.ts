@@ -931,7 +931,7 @@ function initRecorder(): void {
       return;
     }
     recordedChunks = [];
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8,opus' });
     mediaRecorder.addEventListener('dataavailable', e => { if (e.data.size > 0) recordedChunks.push(e.data); });
     mediaRecorder.addEventListener('stop', async () => {
       btn.classList.remove('recording');
