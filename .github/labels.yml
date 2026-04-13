@@ -26,9 +26,9 @@
   color: "c0c0c0"
   description: "Verifier has sent the implementation back for revision"
 
-- name: needs-reflection
+- name: needs-eval
   color: "0e8a16"
-  description: "Reflector workflow picks this up"
+  description: "Evaluator workflow picks this up"
 
 - name: blocked
   color: "d73a4a"
