@@ -1,0 +1,8 @@
+{
+  "comment": "Required OAuth scopes for GH_PAT. Checked by scripts/check-token-scopes.ts.",
+  "required": ["repo", "workflow"],
+  "rationale": {
+    "repo": "PR creation, issue management, code pushes, secret list",
+    "workflow": "push changes to .github/workflows/ and trigger CI runs via commit push"
+  }
+}
