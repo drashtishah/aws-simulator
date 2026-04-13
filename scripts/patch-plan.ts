@@ -6,9 +6,11 @@ export const VALID_SECTIONS: string[] = [
   'Scope',
   'Files to read',
   'Files to change',
+  'Files NOT to touch',
   'Tests',
   'Verification command',
   'Risks / open questions',
+  'Decomposition (only if split occurred)',
 ];
 
 /**
