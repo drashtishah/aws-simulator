@@ -28,6 +28,8 @@ All agents (local Claude Code sessions and GitHub Actions workflows) must
 follow `references/guidelines/karpathy.md`: state assumptions, simplicity
 first, surgical changes, goal-driven execution.
 
+For git-heavy commands (fetch, diff, log, status), check RTK availability: `which rtk && RTK="rtk" || RTK=""`, then prefix those commands with `$RTK`. If RTK is not found, use plain git silently.
+
 ## Conventions
 
 - No emojis.
