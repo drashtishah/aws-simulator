@@ -919,11 +919,6 @@ function initRecorder(): void {
     }
     let stream: MediaStream;
     try {
-      stream = await (navigator.mediaDevices as any).getDisplayMedia({
-        preferCurrentTab: true,
-        video: true,
-        audio: false
-      });
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const micTrack = micStream.getAudioTracks()[0];
       if (micTrack) {
@@ -931,8 +926,14 @@ function initRecorder(): void {
           if (micTrack.readyState === 'live') resolve();
           else micTrack.addEventListener('unmute', () => resolve(), { once: true });
         });
-        stream.addTrack(micTrack);
       }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      stream = await (navigator.mediaDevices as any).getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: false
+      });
+      if (micTrack) stream.addTrack(micTrack);
     } catch {
       btn.classList.remove('recording');
       return;
