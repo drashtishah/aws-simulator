@@ -102,11 +102,16 @@ jobs:
           plan_count=$(count_plans ${{ github.event.issue.number }} ${{ github.repository }})
           impl_count=$(count_impls ${{ github.event.issue.number }} ${{ github.repository }})
           if [ "$verdict" = "APPROVED" ]; then
+            REMOVE="--remove-label needs-critique"
+            current=$(gh issue view ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --json labels --jq '[.labels[].name] | join(",")')
+            if echo "$current" | grep -q "revised-plan"; then
+              REMOVE="$REMOVE --remove-label revised-plan"
+            fi
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --remove-label "needs-critique" \
-              --remove-label "revised-plan" \
-              --add-label "needs-impl"
+              $REMOVE --add-label "needs-impl"
           elif [ "$verdict" = "DECOMPOSE" ]; then
             if [ "$plan_count" -ge "$MAX_ITERATIONS" ]; then
               gh issue edit ${{ github.event.issue.number }} \

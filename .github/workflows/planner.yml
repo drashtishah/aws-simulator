@@ -122,12 +122,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          gh issue edit ${{ github.event.issue.number }} \
-            --repo ${{ github.repository }} \
-            --remove-label "needs-plan" \
-            --remove-label "revised-plan" \
-            --remove-label "needs-decomposition" \
-            --add-label "needs-critique"
+          N=${{ github.event.issue.number }}
+          REPO=${{ github.repository }}
+          current=$(gh issue view "$N" --repo "$REPO" \
+            --json labels --jq '[.labels[].name] | join(",")')
+          REMOVE="--remove-label needs-plan"
+          for lbl in revised-plan needs-decomposition; do
+            if echo "$current" | grep -q "$lbl"; then
+              REMOVE="$REMOVE --remove-label $lbl"
+            fi
+          done
+          gh issue edit "$N" --repo "$REPO" $REMOVE --add-label "needs-critique"
 
       - name: Handle stage failure
         if: failure()

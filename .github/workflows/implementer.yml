@@ -117,18 +117,21 @@ jobs:
           STRUCTURED_OUTPUT: ${{ steps.claude.outputs.structured_output }}
         run: |
           status=$(echo "$STRUCTURED_OUTPUT" | jq -r '.status')
+          current=$(gh issue view ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '[.labels[].name] | join(",")')
+          REMOVE="--remove-label needs-impl"
+          if echo "$current" | grep -q "revised-impl"; then
+            REMOVE="$REMOVE --remove-label revised-impl"
+          fi
           if [ "$status" = "BLOCKED" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --remove-label "needs-impl" \
-              --remove-label "revised-impl" \
-              --add-label "needs-human"
+              $REMOVE --add-label "needs-human"
           else
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --remove-label "needs-impl" \
-              --remove-label "revised-impl" \
-              --add-label "needs-verify"
+              $REMOVE --add-label "needs-verify"
           fi
 
       - name: Handle stage failure

@@ -127,11 +127,16 @@ jobs:
             gh issue comment ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --body "Verifier PASS. plans=$plan_count, implementations=$impl_count. Handing off to evaluator for merge and PR."
+            REMOVE="--remove-label needs-verify"
+            v_current=$(gh issue view ${{ github.event.issue.number }} \
+              --repo ${{ github.repository }} \
+              --json labels --jq '[.labels[].name] | join(",")')
+            if echo "$v_current" | grep -q "revised-impl"; then
+              REMOVE="$REMOVE --remove-label revised-impl"
+            fi
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
-              --remove-label "needs-verify" \
-              --remove-label "revised-impl" \
-              --add-label "needs-eval"
+              $REMOVE --add-label "needs-eval"
           elif [ "$verdict" = "FAIL_RETRY" ]; then
             if [ "$impl_count" -ge "$MAX_ITERATIONS" ]; then
               gh issue edit ${{ github.event.issue.number }} \
