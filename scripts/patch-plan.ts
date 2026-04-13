@@ -16,24 +16,44 @@ export const VALID_SECTIONS: string[] = [
 /**
  * Replaces the content of one ### section in a plan body string.
  * Throws if the section header is not found.
+ * Uses a fence-aware line tokenizer so ### inside code fences are not
+ * treated as section anchors.
  */
 export function patchBody(body: string, section: string, newContent: string): string {
   const header = `### ${section}`;
-  const headerIndex = body.indexOf(header);
-  if (headerIndex === -1) {
+  const lines = body.split('\n');
+  let inFence = false;
+  let pos = 0;
+  let headerEnd = -1;   // byte position immediately after the header line text
+  let nextStart = -1;   // byte position of the next out-of-fence ### line
+
+  for (const line of lines) {
+    if (/^(`{3,}|~{3,})/.test(line)) {
+      inFence = !inFence;
+    }
+    if (!inFence) {
+      if (headerEnd === -1 && line === header) {
+        headerEnd = pos + line.length;
+      } else if (headerEnd !== -1 && line.startsWith('### ')) {
+        nextStart = pos;
+        break;
+      }
+    }
+    pos += line.length + 1; // +1 for the \n separator
+  }
+
+  if (headerEnd === -1) {
     throw new Error(`Section not found: "${header}"`);
   }
-  const afterHeader = headerIndex + header.length;
-  const nextHeaderIndex = body.indexOf('\n### ', afterHeader);
-  if (nextHeaderIndex === -1) {
-    return body.slice(0, afterHeader) + '\n' + newContent + '\n';
+  if (nextStart === -1) {
+    return body.slice(0, headerEnd) + '\n' + newContent + '\n';
   }
   return (
-    body.slice(0, afterHeader) +
+    body.slice(0, headerEnd) +
     '\n' +
     newContent +
     '\n' +
-    body.slice(nextHeaderIndex + 1)
+    body.slice(nextStart)
   );
 }
 
