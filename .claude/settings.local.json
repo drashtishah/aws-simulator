@@ -43,11 +43,24 @@
         "hooks": [
           {
             "type": "command",
+            "command": "npx tsx .claude/hooks/enforce-rtk-git.ts"
+          },
+          {
+            "type": "command",
             "command": "npx tsx .claude/hooks/pre-commit-issues.ts"
           },
           {
             "type": "command",
             "command": "npx tsx .claude/hooks/pre-commit-ui-tests.ts"
+          }
+        ]
+      },
+      {
+        "matcher": "ExitPlanMode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsx .claude/hooks/karpathy-reminder.ts"
           }
         ]
       }
