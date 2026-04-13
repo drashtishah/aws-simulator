@@ -38,20 +38,10 @@ app.post('/api/save-recording', (req: Request, res: Response) => {
   const webmPath = path.join(paths.VIDEOS_DIR, `${basename}.webm`);
   const mp4Path = path.join(paths.VIDEOS_DIR, `${basename}.mp4`);
   fs.writeFileSync(webmPath, req.body);
-  const wavPath = path.join(paths.VIDEOS_DIR, `${basename}.wav`);
-  const enhancedDir = path.join(paths.VIDEOS_DIR, 'enhanced');
-  const enhancedWav = path.join(enhancedDir, `${basename}.wav`);
-  // Extract audio -> enhance with DeepFilterNet -> mux back into mp4 -> cleanup
-  exec(
-    `ffmpeg -i "${webmPath}" -vn -ar 48000 "${wavPath}" && ` +
-    `deepFilter "${wavPath}" -o "${enhancedDir}" --no-suffix && ` +
-    `ffmpeg -i "${webmPath}" -i "${enhancedWav}" -c:v libx264 -c:a aac -map 0:v:0 -map 1:a:0 -movflags +faststart "${mp4Path}" && ` +
-    `rm -f "${webmPath}" "${wavPath}" "${enhancedWav}" && rmdir "${enhancedDir}" 2>/dev/null; true`,
-    (err) => {
-      if (err) console.error(`enhance failed for ${basename}:`, err.message);
-      else console.log(`Enhanced ${basename}.mp4`);
-    }
-  );
+  exec(`ffmpeg -i "${webmPath}" -c:v libx264 -c:a aac -movflags +faststart "${mp4Path}"`, (err) => {
+    if (err) console.error(`mp4 conversion failed for ${basename}:`, err.message);
+    else { fs.unlinkSync(webmPath); console.log(`Converted ${basename}.mp4`); }
+  });
   res.status(201).json({ filename: `${basename}.mp4` });
 });
 
