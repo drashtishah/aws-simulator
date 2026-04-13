@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
 import path from 'path';
+import fs from 'node:fs';
 'use strict';
 
 
@@ -53,5 +54,62 @@ describe('workflow-references sweep', () => {
 
   it('no inbound refs to commit-procedure.md remain in *.ts', () => {
     assert.equal(grepCount('commit-procedure.md', 'ts'), 0);
+  });
+});
+
+describe('evaluator rename sweep', () => {
+  it('no needs-reflection refs remain in *.yml', () => {
+    assert.equal(
+      grepCount('needs-reflection', 'yml'),
+      0,
+      'needs-reflection still referenced in yml files'
+    );
+  });
+
+  it('no needs-reflection refs remain in *.md', () => {
+    assert.equal(
+      grepCount('needs-reflection', 'md'),
+      0,
+      'needs-reflection still referenced in md files'
+    );
+  });
+
+  it('no reflector.yml refs remain in *.md', () => {
+    assert.equal(
+      grepCount('reflector.yml', 'md'),
+      0,
+      'reflector.yml still referenced in md files'
+    );
+  });
+
+  it('no reflector.md refs remain in *.md', () => {
+    assert.equal(
+      grepCount('reflector.md', 'md'),
+      0,
+      'reflector.md still referenced in md files'
+    );
+  });
+
+  it('evaluator.yml exists', () => {
+    assert.ok(
+      fs.existsSync(path.join(ROOT, '.github', 'workflows', 'evaluator.yml')),
+      '.github/workflows/evaluator.yml not found'
+    );
+  });
+
+  it('evaluator.md exists', () => {
+    assert.ok(
+      fs.existsSync(path.join(ROOT, 'references', 'pipeline', 'evaluator.md')),
+      'references/pipeline/evaluator.md not found'
+    );
+  });
+
+  it('evaluator.yml schema contains eval_score', () => {
+    const filePath = path.join(ROOT, '.github', 'workflows', 'evaluator.yml');
+    if (!fs.existsSync(filePath)) {
+      assert.fail('evaluator.yml not found');
+    }
+    const content = fs.readFileSync(filePath, 'utf8');
+    assert.ok(content.includes('eval_score'), 'evaluator.yml schema missing eval_score field');
   });
 });
