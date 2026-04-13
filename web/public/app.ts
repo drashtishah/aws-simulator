@@ -925,7 +925,14 @@ function initRecorder(): void {
         audio: false
       });
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      for (const track of micStream.getAudioTracks()) stream.addTrack(track);
+      const micTrack = micStream.getAudioTracks()[0];
+      if (micTrack) {
+        await new Promise<void>(resolve => {
+          if (micTrack.readyState === 'live') resolve();
+          else micTrack.addEventListener('unmute', () => resolve(), { once: true });
+        });
+        stream.addTrack(micTrack);
+      }
     } catch {
       btn.classList.remove('recording');
       return;
