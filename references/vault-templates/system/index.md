@@ -16,5 +16,3 @@ for the per-stage version of this protocol.
 ## playbooks
 
 ## patterns
-
-## prune queue

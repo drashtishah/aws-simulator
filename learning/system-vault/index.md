@@ -39,4 +39,3 @@ for the per-stage version of this protocol.
 - [[pattern-rules-in-duplicate-places-get-ignored]] a rule duplicated in two places gets ignored even by the agent that just read both copies
 - [[pattern-vault-read-write-asymmetry]] vault READ and vault WRITE are independently scoped permissions, never bundle them
 
-## prune queue

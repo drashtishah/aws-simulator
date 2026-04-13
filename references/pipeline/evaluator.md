@@ -72,6 +72,26 @@ rg "<top-3-keywords>" --glob "learning/system-vault/**/*.md" -l
 rg "^triggers:" -A 3 learning/system-vault/problems/ | rg <keyword>
 ```
 
+## Check for resolved problems
+
+For each vault problem note whose triggers matched in the grep step,
+check whether the current issue's diff fixes the problem:
+
+1. Grep the pending diff for deleted lines (`^-`) containing the
+   trigger keywords.
+2. If deletions found, verify the trigger no longer exists on the
+   feature branch: `git show origin/<branch>:<file> | rg <trigger>`.
+   If the trigger is gone, the problem is resolved.
+3. For each resolved problem, check its `solutions:` list. For each
+   linked solution, grep all remaining problem notes for references to
+   that solution ID. If no other problem references it, the solution
+   is orphaned.
+4. Record resolved note IDs and orphaned solution IDs for deletion in
+   the Write step. Deletions count toward the 3-file budget.
+
+Resolution is independent of the CREATE/UPDATE/NOOP decision. A single
+run can resolve a stale note AND create a new one from the same issue.
+
 ## Decide: CREATE, UPDATE, or NO-OP
 
 1. Existing match plus new info is a refinement (new trigger, better
@@ -91,6 +111,8 @@ rg "^triggers:" -A 3 learning/system-vault/problems/ | rg <keyword>
    CREATE a new problem or solution note using the atomic-note schema.
 5. No match AND no emotion signal AND no revision loop: NO-OP. Post a
    one-line comment `nothing novel emerged; no vault write`.
+6. A note marked for resolution in the staleness check is NOT eligible
+   for UPDATE in the same run. Skip it.
 
 ## Atomic note schema (every new note)
 
@@ -123,17 +145,19 @@ via `[[wiki-links]]` in prose. Only link when the relationship is real
 (same problem family, same tool, same fix approach). Do NOT invent
 links to satisfy a connectivity rule. Disconnected notes are fine.
 
-## Write (only if CREATE or UPDATE)
+## Write (only if CREATE, UPDATE, or RESOLVE)
 
 1. Use `Write` for new files under `learning/system-vault/{problems,
    solutions, playbooks, patterns}/`.
 2. Use `Edit` for existing files.
-3. Update `learning/system-vault/index.md` to add or refresh the row
-   under the correct kind section. Keep `index.md` <= 120 lines; move
-   stale entries to the prune queue if space is tight.
-4. Budget: at most 3 files created or updated per issue.
+3. Delete resolved notes and orphaned solutions identified in the
+   staleness check: `git rm learning/system-vault/<kind>/<note>.md`.
+4. Update `learning/system-vault/index.md`: add or refresh rows for
+   created/updated notes, remove rows for deleted notes. Keep
+   `index.md` <= 120 lines.
+5. Budget: at most 3 files created, updated, or deleted per issue.
 
-## Commit vault notes (only if CREATE or UPDATE)
+## Commit vault notes (only if CREATE, UPDATE, or RESOLVE)
 
 ```
 git checkout -b eval/issue-{{ISSUE}}
@@ -269,5 +293,7 @@ Do not create an issue for one-off failures.
    system-improvement signal.
 
 Post one short final comment summarizing vault action (`CREATED | UPDATED | NOOP`),
-eval score (X/32), and whether a loop was detected. The
-workflow removes the `needs-eval` label after your run completes.
+eval score (X/32), and whether a loop was detected. If notes were
+resolved, append: `Resolved: <note-id> (fixed by #{{ISSUE}}).` for
+each, plus any orphaned solutions deleted. The workflow removes the
+`needs-eval` label after your run completes.
