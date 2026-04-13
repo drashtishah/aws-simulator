@@ -5,7 +5,7 @@ title: Scope narrowing in plan revision leaves stale sections that burn critic r
 tags: [kind/problem, scope/pipeline, stage/planner, signal/loop]
 created: 2026-04-13
 updated: 2026-04-13
-source_issues: [#209]
+source_issues: [#209, #236]
 confidence: observed
 summary: Planner narrows scope mid-revision but retains duplicate sections from prior scope; critic blocks on contradictions each round
 triggers: [plan revised 3+ times, scope checkbox changed between revisions, duplicate section headers in plan body, plan contains content for deferred work]
