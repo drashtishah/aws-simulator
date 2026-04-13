@@ -47,11 +47,11 @@ Read:
 3. The critic's comment.
 4. The implementer's branch (find it from the implementer's comment).
 
-Check RTK: `which rtk && RTK="rtk" || RTK=""`
-If not found, post comment: `RTK not available; using plain git.`
+Use `rtk git fetch`, `rtk git diff`, `rtk git log`, `rtk git status` for heavy git output.
+If RTK is unavailable, fall back to plain git and post a comment: `RTK not available; using plain git.`
 
 Check out the implementer's branch and update with master:
-  $RTK git fetch origin
+  rtk git fetch origin
   git checkout feature/issue-{{ISSUE}}-<slug>
   git merge origin/master --no-edit
   git push
