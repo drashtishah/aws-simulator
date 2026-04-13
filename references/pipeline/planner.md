@@ -64,7 +64,7 @@ Read the full issue body and all comments.
            <paragraph: what this child covers>
 
            ### Scope hint
-           - Files likely involved: `path/a.ts`, `path/b.ts`
+           - Files likely involved: `{relevant}/file.ts`, `{relevant}/other.ts`
            - Concern: <what this child addresses>
            - Context from parent: <decisions from parent that constrain this>
 
