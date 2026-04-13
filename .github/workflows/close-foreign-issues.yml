@@ -11,7 +11,7 @@ jobs:
       issues: write
     steps:
       - env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh issue close ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \

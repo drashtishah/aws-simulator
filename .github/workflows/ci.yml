@@ -47,6 +47,8 @@ jobs:
         run: npm ci
 
       - name: npm test
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: npm test
 
       - name: npm run health
