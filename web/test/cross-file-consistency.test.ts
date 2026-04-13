@@ -16,7 +16,7 @@ function readFile(relPath) {
 // --- 0. rank-display.ts module structure ---
 
 describe('rank-display.ts exports expected symbols', () => {
-  const exists = fs.existsSync(path.resolve(__dirname, '../../public/rank-display.ts'));
+  const exists = fs.existsSync(path.resolve(__dirname, '../public/rank-display.ts'));
   const src = exists ? readFile('web/public/rank-display.ts') : '';
   for (const fn of ['renderPolygon', 'renderNextRank', 'renderRankProgression', 'formatRankId']) {
     it('exports ' + fn, () => {
