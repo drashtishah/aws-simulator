@@ -75,9 +75,9 @@ function parseArgs(argv: string[]): { file: string; title: string; sim: string |
   let title = '';
   let sim: string | undefined;
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--file' && args[i + 1]) file = args[++i];
-    else if (args[i] === '--title' && args[i + 1]) title = args[++i];
-    else if (args[i] === '--sim' && args[i + 1]) sim = args[++i];
+    if (args[i] === '--file' && args[i + 1]) file = args[++i]!;
+    else if (args[i] === '--title' && args[i + 1]) title = args[++i]!;
+    else if (args[i] === '--sim' && args[i + 1]) sim = args[++i]!;
   }
   if (!file || !title) {
     console.error('Usage: npm run upload -- --file <filename> --title "<title>" [--sim <simId>]');
