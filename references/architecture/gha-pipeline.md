@@ -47,7 +47,7 @@ Base tools per role. Additional tools are added by issue type label (see Label G
 | Stage | Base tools |
 |---|---|
 | Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment) |
-| Critic | Read, Glob, Grep, Bash(gh issue view/comment) |
+| Critic | Read, Glob, Grep, Bash(gh issue view/comment/edit) |
 | Implementer | Read, Glob, Grep, Edit, Write, Bash(git/rtk/which/npm/npx/tsx/python3/gh issue view/comment) |
 | Verifier | Read, Glob, Grep, Edit, Bash(git/rtk/which/npm/tsx/gh issue view/comment) |
 | Reflector | Read, Glob, Grep, Write, Edit, Bash(git/rtk/which/gh issue view/edit/comment/gh pr create/merge/rg/npx tsx scripts/vault-lint.ts) |

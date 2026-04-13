@@ -55,7 +55,7 @@ jobs:
 
           BASE="references/pipeline/critic.md"
           OVERLAY=""
-          TOOLS="Read,Glob,Grep,Bash(gh issue view:*),Bash(gh issue comment:*)"
+          TOOLS="Read,Glob,Grep,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh issue edit:*)"
           MCP_ARG=""
 
           if echo "$labels" | grep -q "text-only"; then

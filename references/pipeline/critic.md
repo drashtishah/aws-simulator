@@ -60,6 +60,13 @@ Read the issue body for the current plan. Attack it:
    `references/pipeline/plan-template.md`:
    Scope, Files to read, Files to change, Tests, Verification command,
    Risks / open questions.
+10. Does the issue's type label match the files in "Files to change"?
+   Read `references/pipeline/labels.md` for label definitions and routing
+   rules. If the label is wrong, correct it with
+   `gh issue edit {{ISSUE}} --remove-label <wrong> --add-label <correct>`.
+   If no type label should apply, just remove the wrong one. Note the
+   correction in your critique. A wrong label does not by itself require
+   REVISE; correct the label and continue.
 
 Post your critique as a single issue comment.
 

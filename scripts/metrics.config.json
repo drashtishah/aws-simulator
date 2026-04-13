@@ -30,10 +30,10 @@
     "command": 1,
     "hook": 11,
     "sim": 278,
-    "reference": 33,
+    "reference": 34,
     "registry": 4,
     "config": 26,
-    "memory_link": 23
+    "memory_link": 26
   },
   "budgets": {
     "game_session_usd": 2,

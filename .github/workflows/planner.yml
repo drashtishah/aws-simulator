@@ -104,11 +104,13 @@ jobs:
             exit 0
           fi
           body=$(gh issue view "$N" --repo "$REPO" --json body --jq '.body')
-          if echo "$body" | grep -qE 'web/'; then
-            echo "Detected web/ paths, adding ui label."
+          change_section=$(echo "$body" \
+            | awk '/^#{1,4} *[Ff]iles to change/{f=1; next} /^#{1,4} /{f=0} f')
+          if echo "$change_section" | grep -qE 'web/'; then
+            echo "Detected web/ paths in Files to change, adding ui label."
             gh issue edit "$N" --repo "$REPO" --add-label "ui"
-          elif echo "$body" | grep -qE 'sims/'; then
-            echo "Detected sims/ paths, adding sim-content label."
+          elif echo "$change_section" | grep -qE 'sims/'; then
+            echo "Detected sims/ paths in Files to change, adding sim-content label."
             gh issue edit "$N" --repo "$REPO" --add-label "sim-content"
           fi
 
