@@ -69,7 +69,7 @@ flowchart TB
     Critic[Critic]
     Implementer[Implementer]
     Verifier[Verifier]
-    Reflector[Reflector]
+    Evaluator[Evaluator]
   end
 
   Player --> Play
@@ -87,8 +87,8 @@ flowchart TB
   Critic --> Implementer
   Implementer --> Verifier
   Verifier -->|auto-merge| Issues
-  Verifier --> Reflector
-  Reflector --> SystemVault
+  Verifier --> Evaluator
+  Evaluator --> SystemVault
 
   style Player fill:#e8edf5,stroke:#7b8ba3,color:#2d3748
   style Issues fill:#d4dde8,stroke:#8494a7,color:#2d3748
@@ -109,7 +109,7 @@ flowchart TB
   style Critic fill:#c5d0de,stroke:#7385a0,color:#2d3748
   style Implementer fill:#bdc9d8,stroke:#6b7d94,color:#2d3748
   style Verifier fill:#b5c2d2,stroke:#63758a,color:#2d3748
-  style Reflector fill:#adb9d0,stroke:#5b6d80,color:#2d3748
+  style Evaluator fill:#adb9d0,stroke:#5b6d80,color:#2d3748
 ```
 
 ## The pieces
@@ -124,7 +124,7 @@ flowchart TB
 
 **Testing.** Deterministic unit tests run on every PR in CI. Agent-in-the-loop browser tests drive a real Chromium instance through Chrome DevTools MCP, so UI assertions land against the actual DOM. Sixty eval checks grade scoring integrity, coaching accuracy, hint delivery, and narrator quality.
 
-**Health score.** A composite across ten buckets that measures code quality. Floors only ever rise, so regressions are caught automatically.
+**Health score.** A composite code-quality metric. The `/doc` skill identifies high-value problems and files issues to keep it rising.
 
 **Sim authoring.** The `/create-sim` skill reads your player vault to find confusion patterns and weak dimensions, then generates scenarios targeting your specific gaps. Personalized learning, not random coverage.
 
