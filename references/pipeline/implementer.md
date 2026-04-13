@@ -50,14 +50,13 @@ the plan's "Files to read" section, then edit ONLY the files in
 
 ## RTK git compression
 
-Check availability: `which rtk && RTK="rtk" || RTK=""`
-If not found, post comment: `RTK not available; using plain git.`
-Prefix output-heavy git commands with `$RTK`: fetch, diff, log, status.
+Use `rtk git fetch`, `rtk git diff`, `rtk git log`, `rtk git status` for heavy git output.
+If RTK is unavailable, fall back to plain git and post a comment: `RTK not available; using plain git.`
 
 Setup:
 1. Branch (deterministic, same branch across retries):
    `BRANCH=feature/issue-{{ISSUE}}`
-   `$RTK git fetch origin`
+   `rtk git fetch origin`
    If `origin/$BRANCH` exists (this is a retry after `revised-impl`):
      `git checkout -B "$BRANCH" "origin/$BRANCH"`
      Read the most recent issue comment whose body begins with
