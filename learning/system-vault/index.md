@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-13
-note_count: 21
+note_count: 22
 ---
 # system-vault index
 
@@ -11,7 +11,7 @@ for the per-stage version of this protocol.
 
 ## problems
 - [[problem-floor-snap-deletion-race]] scope/code signal/regression: deleting tracked file then running health snaps the wrong floor and trips a bucket_floor advisory in the same commit
-- [[problem-patch-plan-assumes-template-structure]] scope/pipeline stage/planner: patch-plan fails on free-form issues lacking template section headers (#209: non-standard section name)
+- [[problem-patch-plan-assumes-template-structure]] scope/pipeline stage/planner signal/loop: patch-plan fails on free-form issues or when embedded headings create false section anchors
 - [[problem-plan-old-string-master-drift]] scope/pipeline stage/planner signal/loop: copy-pasted old_string in a revised plan goes stale when a sibling PR merges mid-revision; match fails or silently reverts sibling work
 - [[problem-shell-bsd-gnu-drift]] scope/ci signal/regression: shell scripts using BSD-only flags pass on macOS, fail every Linux CI run
 - [[problem-sibling-issue-collision]] scope/skills signal/loop: ad-hoc commit duplicates work a live sibling worktree already owns, requires revert and burns trust
@@ -21,6 +21,7 @@ for the per-stage version of this protocol.
 ## solutions
 - [[solution-baseline-via-worktree]] cost/trivial: git worktree add master to compare pre-existing test failures without leaving the main clone dirty
 - [[solution-doctor-skip-integration-on-ci]] cost/trivial: DOCTOR_SKIP_INTEGRATION=1 in ci.yml so the 12s web-server boot check does not flake on cold runners
+- [[solution-escape-headings-in-plan-fences]] cost/trivial: use four-backtick fences or escape ### when plan edits contain markdown headings to prevent patch-plan false anchors
 - [[solution-extract-cli-helpers-then-unit-test]] cost/moderate: pull per-file logic out of the CLI into a pure helper and unit-test the helper
 - [[solution-reread-master-before-plan-revision]] cost/trivial: re-read each edited file from master HEAD on every plan revision and regenerate old/new blocks from scratch
 - [[solution-revert-floor-config-pre-commit]] cost/trivial: revert metrics.config.json floors to post-deletion actuals before committing
