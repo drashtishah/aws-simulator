@@ -154,8 +154,10 @@ jobs:
         run: |
           gh issue edit ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
-            --remove-label "needs-critique" \
             --add-label "pipeline-failed"
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-critique" || true
           gh issue comment ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
             --body "critic stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

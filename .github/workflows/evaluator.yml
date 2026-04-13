@@ -125,8 +125,10 @@ jobs:
         run: |
           gh issue edit ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
-            --remove-label "needs-eval" \
             --add-label "pipeline-failed"
+          gh issue edit ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "needs-eval" || true
           gh issue comment ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
             --body "evaluator stage failed. Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
