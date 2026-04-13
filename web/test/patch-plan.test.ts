@@ -55,6 +55,33 @@ describe('patchBody', () => {
       /Section not found/
     );
   });
+
+  it('does not treat ### header inside a code fence as section anchor', () => {
+    const body = `## Plan
+### Scope
+Real scope content.
+
+### Files to read
+- real-file.ts
+
+\`\`\`typescript
+### Scope
+// fenced code
+\`\`\`
+
+- after-fence.ts
+
+### Files to change
+- foo.ts`;
+    const result = patchBody(body, 'Files to read', '- bar.ts');
+    // new content inserted
+    assert.ok(result.includes('- bar.ts'));
+    // unrelated sections preserved
+    assert.ok(result.includes('Real scope content.'));
+    assert.ok(result.includes('### Files to change'));
+    // content between fenced ### and real next section belongs to Files to read: must be replaced
+    assert.ok(!result.includes('- after-fence.ts'));
+  });
 });
 
 describe('VALID_SECTIONS', () => {
