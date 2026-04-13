@@ -924,6 +924,8 @@ function initRecorder(): void {
         video: true,
         audio: true
       });
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      for (const track of micStream.getAudioTracks()) stream.addTrack(track);
     } catch {
       btn.classList.remove('recording');
       return;
