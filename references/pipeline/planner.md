@@ -44,7 +44,43 @@ Your role: PLANNER
 
 Read the full issue body and all comments.
 
-1. Check issue labels. If `revised-plan` is NOT present, this is the first plan:
+0. DECOMPOSITION CHECK (first plan only; skip if `revised-plan` label is present
+   without `needs-decomposition`, or if `decomposed-from` label is present):
+   a. Read the issue body. Identify whether it contains two or more independent
+      concerns that touch disjoint file sets and would each produce a standalone PR.
+   b. If ONE concern, or scope is Focused/Text-docs-only: skip to step 1.
+   c. If TWO OR MORE independent concerns with disjoint file sets:
+      - Pick the most self-contained concern for THIS issue. Write its full plan (step 1).
+      - For each remaining concern, create a child issue:
+        1. Search first: `gh issue list --state all --search "<keywords>"`.
+           If a matching open issue exists, post a comment linking it instead of creating.
+        2. Create:
+           `gh issue create --title "<title>" --label needs-plan --label decomposed-from --body "$(cat /tmp/child-N.md)"`
+           Add type label (text-only, ui, sim-content) if determinable from file paths.
+        3. Child body format:
+           ```
+           Spawned from #{{ISSUE}}.
+
+           <paragraph: what this child covers>
+
+           ### Scope hint
+           - Files likely involved: `path/a.ts`, `path/b.ts`
+           - Concern: <what this child addresses>
+           - Context from parent: <decisions from parent that constrain this>
+
+           ### Out of scope
+           - <items belonging to parent or other siblings>
+           ```
+        4. Cap: at most 3 child issues per decomposition.
+      - Post comment on THIS issue:
+        "Decomposed. This issue covers <part>. Child issues: #X (<summary>), #Y (<summary>)."
+   d. If `needs-decomposition` label is present (critic requested decomposition):
+      treat the critic's most recent comment as guidance on how to split, then
+      follow (c). After creating children:
+      `gh issue edit {{ISSUE}} --remove-label needs-decomposition`
+
+1. Check issue labels. If `revised-plan` is NOT present, this is the first plan
+   (if decomposition happened in step 0, the plan below covers only the retained part):
    a. Read `references/pipeline/plan-template.md` for the section structure.
    b. Fill in all sections. Write to `/tmp/plan.md`.
    c. Run: `gh issue edit {{ISSUE}} --body-file /tmp/plan.md`
@@ -71,6 +107,10 @@ Read the full issue body and all comments.
    file it needs to understand, and nothing else.
 
 Do NOT modify any files. Do NOT push commits. Do NOT create branches.
+
+If this issue has the `decomposed-from` label, do NOT create child issues.
+Narrow scope by removing items instead. This issue is already a child of a
+prior decomposition.
 
 If an MCP tool call fails (server unreachable, timeout), continue without
 it. Fall back to training knowledge or WebFetch for AWS documentation.

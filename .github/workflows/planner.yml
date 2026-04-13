@@ -57,6 +57,10 @@ jobs:
           BASE="references/pipeline/planner.md"
           OVERLAY=""
           TOOLS="Read,Glob,Grep,WebFetch,Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue comment:*),Bash(gh issue edit:*)"
+          # Allow issue creation only for non-child issues (anti-recursion)
+          if ! echo "$labels" | grep -q "decomposed-from"; then
+            TOOLS="$TOOLS,Bash(gh issue create:*)"
+          fi
           MCP_ARG=""
 
           if echo "$labels" | grep -q "text-only"; then
@@ -122,6 +126,7 @@ jobs:
             --repo ${{ github.repository }} \
             --remove-label "needs-plan" \
             --remove-label "revised-plan" \
+            --remove-label "needs-decomposition" \
             --add-label "needs-critique"
 
       - name: Handle stage failure

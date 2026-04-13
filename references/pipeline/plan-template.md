@@ -20,3 +20,7 @@ If text/docs only, the implementer skips TDD and commits directly.
 - npm test
 ### Risks / open questions
 - ...
+### Decomposition (only if split occurred)
+- [ ] Decomposed: child issues created for remaining concerns
+- Retained concern: <what this issue now covers>
+- Child issues: #N (summary), #M (summary)

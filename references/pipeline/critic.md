@@ -67,12 +67,21 @@ Read the issue body for the current plan. Attack it:
    If no type label should apply, just remove the wrong one. Note the
    correction in your critique. A wrong label does not by itself require
    REVISE; correct the label and continue.
+11. Does this plan cover multiple independent concerns that could each be a
+    standalone PR with no merge conflicts between them? If so, and the issue
+    does NOT have the `decomposed-from` label, use DECOMPOSE. If it does have
+    `decomposed-from`, use REVISE to narrow instead.
 
 Post your critique as a single issue comment.
 
 DECISION:
 - If the plan is acceptable: set `verdict` to `APPROVED`.
-- Otherwise: set `verdict` to `REVISE`.
+- If the plan needs section-level fixes: set `verdict` to `REVISE`.
+- If the plan covers multiple independent concerns with disjoint file sets
+  and should be split into separate issues: set `verdict` to `DECOMPOSE`.
+  Name the concerns and their file-set partitions in your critique.
+  Do NOT use DECOMPOSE if the issue has the `decomposed-from` label.
+  Do NOT use DECOMPOSE for single-concern plans that touch many files.
 
 Post a readable comment explaining your critique. The comment does not
 need to end with any magic string; the verdict is captured via structured

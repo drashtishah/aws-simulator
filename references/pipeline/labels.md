@@ -32,6 +32,8 @@ If unsure, omit the type label. The planner workflow auto-applies `ui` (when the
 |-------|---------|----------|
 | revised-plan | Critic sent the plan back for revision | Planner revises and resubmits |
 | revised-impl | Verifier sent the implementation back | Implementer continues on the existing `feature/issue-N` branch and resubmits |
+| needs-decomposition | Critic requested decomposition; planner splits on next pass | Planner decomposes and removes this label |
+| decomposed-from | Issue was created by planner decomposition of a parent | Prevents recursive decomposition; never removed |
 | pipeline-failed | A pipeline stage failed; trigger label removed, run link posted | Re-add the appropriate needs-* label after investigation |
 
 ## Reflection labels

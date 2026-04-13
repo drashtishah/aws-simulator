@@ -7,7 +7,7 @@ Label-driven GitHub Actions pipeline for autonomous issue resolution.
 ```
 gh issue create (mobile or /fix)
   -> [needs-plan]       -> planner.yml    (Sonnet) -> [needs-critique]
-  -> [needs-critique]   -> critic.yml     (Opus)   -> [needs-impl] | [needs-plan, revised-plan]
+  -> [needs-critique]   -> critic.yml     (Opus)   -> [needs-impl] | [needs-plan, revised-plan] | [needs-plan, revised-plan, needs-decomposition]
   -> [needs-impl]       -> implementer.yml(Sonnet) -> [needs-verify]
   -> [needs-verify]     -> verifier.yml   (Sonnet) -> [needs-eval]
   -> [needs-eval]       -> evaluator.yml  (Opus)   -> feature PR + optional vault PR + eval comment (X/32), label removed
@@ -30,6 +30,18 @@ Each workflow has a `Handle stage failure` step with `if: failure()`. On any ste
 2. Adds `pipeline-failed`.
 3. Posts a comment with the workflow run URL.
 
+## Decomposition
+
+When an issue covers multiple independent concerns (disjoint file sets, standalone PRs),
+the planner splits it: keeps one concern in the current issue, creates child issues for the rest.
+
+- Child issues get `needs-plan` + `decomposed-from` labels and enter the pipeline.
+- `decomposed-from` prevents recursive decomposition (depth limit = 1).
+- Planner tool allowlist omits `gh issue create` when `decomposed-from` is present.
+- Critic can request decomposition via verdict `DECOMPOSE`, routed through `needs-decomposition`.
+- Before creating children, planner searches for existing issues per vault pattern.
+- Cap: at most 3 child issues per decomposition.
+
 ## Models per stage
 
 | Stage | Model | Max turns |
@@ -46,13 +58,15 @@ Base tools per role. Additional tools are added by issue type label (see Label G
 
 | Stage | Base tools |
 |---|---|
-| Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment) |
+| Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment/edit/create*) |
 | Critic | Read, Glob, Grep, Bash(gh issue view/comment/edit) |
 | Implementer | Read, Glob, Grep, Edit, Write, Bash(git/rtk/which/npm/npx/tsx/python3/gh issue view/comment) |
 | Verifier | Read, Glob, Grep, Edit, Bash(git/rtk/which/npm/tsx/gh issue view/comment) |
 | Reflector | Read, Glob, Grep, Write, Edit, Bash(git/rtk/which/gh issue view/edit/comment/gh pr create/merge/rg/npx tsx scripts/vault-lint.ts) |
 
 Verifier also has `actions: read` permission for CI check-run access.
+
+\* `gh issue create` only available when `decomposed-from` label is absent.
 
 ## Label groups
 

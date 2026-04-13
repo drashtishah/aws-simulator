@@ -87,7 +87,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
             --model claude-opus-4-6
-            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["APPROVED","REVISE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
+            --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["APPROVED","REVISE","DECOMPOSE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
@@ -98,16 +98,33 @@ jobs:
           STRUCTURED_OUTPUT: ${{ steps.claude.outputs.structured_output }}
         run: |
           verdict=$(echo "$STRUCTURED_OUTPUT" | jq -r '.verdict')
+          source .github/scripts/pipeline-iterations.sh
+          plan_count=$(count_plans ${{ github.event.issue.number }} ${{ github.repository }})
+          impl_count=$(count_impls ${{ github.event.issue.number }} ${{ github.repository }})
           if [ "$verdict" = "APPROVED" ]; then
             gh issue edit ${{ github.event.issue.number }} \
               --repo ${{ github.repository }} \
               --remove-label "needs-critique" \
               --remove-label "revised-plan" \
               --add-label "needs-impl"
+          elif [ "$verdict" = "DECOMPOSE" ]; then
+            if [ "$plan_count" -ge "$MAX_ITERATIONS" ]; then
+              gh issue edit ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --remove-label "needs-critique" \
+                --add-label "needs-human"
+              gh issue comment ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --body "Decomposition requested but plan revised $plan_count times (max $MAX_ITERATIONS). plans=$plan_count, implementations=$impl_count. Escalating."
+            else
+              gh issue edit ${{ github.event.issue.number }} \
+                --repo ${{ github.repository }} \
+                --remove-label "needs-critique" \
+                --add-label "needs-plan" \
+                --add-label "revised-plan" \
+                --add-label "needs-decomposition"
+            fi
           else
-            source .github/scripts/pipeline-iterations.sh
-            plan_count=$(count_plans ${{ github.event.issue.number }} ${{ github.repository }})
-            impl_count=$(count_impls ${{ github.event.issue.number }} ${{ github.repository }})
             if [ "$plan_count" -ge "$MAX_ITERATIONS" ]; then
               gh issue edit ${{ github.event.issue.number }} \
                 --repo ${{ github.repository }} \
