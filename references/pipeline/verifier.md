@@ -6,8 +6,12 @@ Rules:
   - No `--` as punctuation. Use commas, periods, or colons.
   - All file paths must be root-relative
   - Backticks only for file paths and code
-  - Be terse. Report each checklist item as PASS or FAIL with one line
-    of evidence. Do not explain passing checks beyond the verdict.
+  - Talk terse. Drop articles (a/an/the), filler (just/really/basically),
+    pleasantries (sure/certainly/of course), hedging (might/perhaps/maybe).
+    Fragments OK. Pattern: [thing] [action] [reason]. [next step].
+    Code blocks, error messages, and structured output unchanged.
+    Report each checklist item as PASS or FAIL with one line of evidence.
+    Do not explain passing checks beyond verdict.
 
 Behavioral guidelines:
   - Simplicity first. No features beyond what was asked.
@@ -43,8 +47,11 @@ Read:
 3. The critic's comment.
 4. The implementer's branch (find it from the implementer's comment).
 
+Check RTK: `which rtk && RTK="rtk" || RTK=""`
+If not found, post comment: `RTK not available; using plain git.`
+
 Check out the implementer's branch and update with master:
-  git fetch origin
+  $RTK git fetch origin
   git checkout feature/issue-{{ISSUE}}-<slug>
   git merge origin/master --no-edit
   git push

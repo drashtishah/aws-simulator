@@ -45,6 +45,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Install RTK (git token compression)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/8a7106c8f2996ebc75b38a71c5f342f17811ce39/install.sh | sh || true
+          echo "$HOME/.rtk/bin" >> "$GITHUB_PATH"
+
       - name: Record master HEAD for scope check
         id: baseline
         run: echo "master_sha=$(git rev-parse origin/master)" >> "$GITHUB_OUTPUT"
@@ -57,7 +62,7 @@ jobs:
           N=${{ github.event.issue.number }}
           TODAY=$(date -u +%Y-%m-%d)
           BASE="references/pipeline/reflector.md"
-          TOOLS="Read,Glob,Grep,Write,Edit,Bash(git:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(rg:*),Bash(npx tsx scripts/vault-lint.ts:*)"
+          TOOLS="Read,Glob,Grep,Write,Edit,Bash(git:*),Bash(rtk:*),Bash(which:*),Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(rg:*),Bash(npx tsx scripts/vault-lint.ts:*)"
 
           {
             echo 'prompt<<PROMPT_EOF'

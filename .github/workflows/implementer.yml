@@ -47,6 +47,11 @@ jobs:
 
       - run: npm ci
 
+      - name: Install RTK (git token compression)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/8a7106c8f2996ebc75b38a71c5f342f17811ce39/install.sh | sh || true
+          echo "$HOME/.rtk/bin" >> "$GITHUB_PATH"
+
       - name: Classify issue and load prompt
         id: setup
         env:
@@ -68,7 +73,7 @@ jobs:
 
           BASE="references/pipeline/implementer.md"
           OVERLAY=""
-          TOOLS="Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(npm:*),Bash(npx:*),Bash(tsx:*),Bash(python3:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
+          TOOLS="Read,Glob,Grep,Edit,Write,Bash(git:*),Bash(rtk:*),Bash(which:*),Bash(npm:*),Bash(npx:*),Bash(tsx:*),Bash(python3:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
           MCP_ARG=""
 
           if echo "$labels" | grep -q "text-only"; then
