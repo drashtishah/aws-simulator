@@ -18,6 +18,10 @@ function eachManifest(): Array<{ id: string; manifest: Record<string, unknown> }
 describe('manifest shape (new schema)', () => {
   const manifests = eachManifest();
 
+  it('discovers all sim manifests', () => {
+    assert.ok(manifests.length > 0, 'no manifests discovered under sims/');
+  });
+
   it('every manifest has glossary at top level', () => {
     for (const { id, manifest } of manifests) {
       assert.ok(manifest.glossary, `${id} missing glossary`);
