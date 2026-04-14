@@ -157,7 +157,7 @@ test ----> run: executes node --test (unit tests)
 
 ### Model split
 
-Play runs on `claude-sonnet-4-6` and post-session on `claude-opus-4-6` via `scripts/model-config.json`. Play uses a persona-driven prompt (free narration, nudging, ending); post-session does cross-file scoring and Obsidian vault writes. Adjust per-stage `effort` before swapping models.
+Both play and post-session run on `claude-opus-4-6` via `scripts/model-config.json`. Play uses a persona-driven prompt (free narration, nudging, ending) and needs the deeper reasoning to hold the full sim folder and withhold root cause across turns; post-session does cross-file scoring and Obsidian vault writes. Adjust per-stage `effort` before swapping models.
 
 ## Hooks
 

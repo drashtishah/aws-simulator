@@ -10,9 +10,10 @@ import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 
-// Model choice: Sonnet for interactive play (fast, cheap enough for narrator
-// + investigation reasoning under the persona prompt), Opus for post-session
-// cross-file scoring and vault writes. Per-stage effort lives in
+// Model choice: Opus for both play and post-session. The play agent has to
+// hold the full sim folder in context (manifest, story, resolution, artifacts)
+// and reason about what to reveal vs. withhold across turns; Sonnet leaked
+// root cause under the same prompt. Per-stage effort lives in
 // scripts/model-config.json. Tune effort before changing models.
 export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
 export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;
