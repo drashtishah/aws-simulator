@@ -51,6 +51,8 @@ export interface ParsedMessages {
 export interface ParsedEvent {
   type: string;
   content: string;
+  label?: string;
+  open?: boolean;
 }
 
 export interface ParsedEvents {
@@ -116,54 +118,35 @@ export function parseAgentMessages(messages: SDKMsg[]): ParsedMessages {
 
 export function parseEvents(fullText: string): ParsedEvents {
   const events: ParsedEvent[] = [];
-
-  const consoleRegex = /\[CONSOLE_START\]([\s\S]*?)\[CONSOLE_END\]/g;
+  const dropdownRegex = /\[DROPDOWN(?:\s+([^\]]*))?\]([\s\S]*?)\[\/DROPDOWN\]/g;
   let match: RegExpExecArray | null;
   let lastIndex = 0;
-  const segments: Array<{ type: string; content: string }> = [];
 
-  while ((match = consoleRegex.exec(fullText)) !== null) {
+  while ((match = dropdownRegex.exec(fullText)) !== null) {
     if (match.index > lastIndex) {
-      segments.push({ type: 'text', content: fullText.slice(lastIndex, match.index) });
+      const text = fullText.slice(lastIndex, match.index);
+      if (text.trim()) events.push({ type: 'text', content: text });
     }
-    segments.push({ type: 'console', content: (match[1] ?? '').trim() });
+    const attrs = parseAttrs(match[1] ?? '');
+    events.push({
+      type: 'dropdown',
+      content: (match[2] ?? '').trim(),
+      label: attrs.label ?? 'Details',
+      open: attrs.open === 'true'
+    });
     lastIndex = match.index + match[0].length;
   }
+
   if (lastIndex < fullText.length) {
-    segments.push({ type: 'text', content: fullText.slice(lastIndex) });
+    const rest = fullText.slice(lastIndex);
+    if (rest.trim()) events.push({ type: 'text', content: rest });
   }
 
-  if (segments.length === 0) {
-    segments.push({ type: 'text', content: fullText });
-  }
-
-  for (const seg of segments) {
-    if (seg.type === 'console') {
-      events.push({ type: 'console', content: seg.content });
-      continue;
-    }
-
-    const text = seg.content;
-    const coachingRegex = /\[COACHING_START\]([\s\S]*?)\[COACHING_END\]/g;
-    let cLastIndex = 0;
-    let cMatch: RegExpExecArray | null;
-
-    while ((cMatch = coachingRegex.exec(text)) !== null) {
-      if (cMatch.index > cLastIndex) {
-        const before = text.slice(cLastIndex, cMatch.index).trim();
-        if (before) events.push({ type: 'text', content: before });
-      }
-      events.push({ type: 'coaching', content: (cMatch[1] ?? '').trim() });
-      cLastIndex = cMatch.index + cMatch[0].length;
-    }
-    if (cLastIndex < text.length) {
-      const after = text.slice(cLastIndex).trim();
-      if (after) events.push({ type: 'text', content: after });
-    }
+  if (events.length === 0) {
+    events.push({ type: 'text', content: fullText });
   }
 
   const sessionComplete = fullText.includes('[SESSION_COMPLETE]');
-
   if (sessionComplete) {
     for (const event of events) {
       if (event.content) {
@@ -173,6 +156,16 @@ export function parseEvents(fullText: string): ParsedEvents {
   }
 
   return { events, sessionComplete };
+}
+
+function parseAttrs(raw: string): Record<string, string> {
+  const attrs: Record<string, string> = {};
+  const re = /(\w+)="([^"]*)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    attrs[m[1]!] = m[2]!;
+  }
+  return attrs;
 }
 
 export function logTurn(simId: string, turn: number, playerMessage: string, assistantMessage: string, usage?: Usage | null): void {

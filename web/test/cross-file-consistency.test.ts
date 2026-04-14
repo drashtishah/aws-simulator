@@ -133,29 +133,20 @@ describe('no stale theme references', () => {
   }
 });
 
-// --- 4. Session state question_profile axes match progression.yaml ---
+// --- 4. Question-type axis names in the play prompt match progression.yaml ---
 
-describe('session state template axes match progression.yaml', () => {
+describe('play prompt question-type axes match progression.yaml', () => {
   const config = loadConfig(CONFIG_PATH);
   const configAxes = axisNames(config).sort();
 
-  it('agent-prompts.md question_profile keys match config axes', () => {
+  it('agent-prompts.md names every progression axis as a question type', () => {
     const agentPrompts = readFile('.claude/skills/play/references/agent-prompts.md');
-
-    // Find first question_profile block and extract axis keys.
-    // Axes are keys whose values are objects with count/effective: "gather": { "count": 0, ...
-    const profileAxes = [];
-    const axisPattern = /"([a-z_]+)"\s*:\s*\{\s*"count"/g;
-    for (const match of agentPrompts.matchAll(axisPattern)) {
-      if (!profileAxes.includes(match[1])) {
-        profileAxes.push(match[1]);
-      }
+    for (const axis of configAxes) {
+      assert.ok(
+        agentPrompts.includes(axis),
+        `agent-prompts.md must mention question type "${axis}" from progression.yaml`
+      );
     }
-    profileAxes.sort();
-
-    assert.ok(profileAxes.length > 0, 'agent-prompts.md must contain question_profile axis entries');
-    assert.deepEqual(profileAxes, configAxes,
-      'question_profile axes in agent-prompts.md must match progression.yaml axes');
   });
 });
 

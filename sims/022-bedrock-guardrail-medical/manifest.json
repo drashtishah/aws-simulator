@@ -29,228 +29,6 @@
     "industry": "digital health",
     "size": "Series C startup, 74 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "clinical operations lead",
-        "demeanor": "precise, counts affected patients not tickets",
-        "recurring_concern": "patients unable to complete triage, two already diverted to urgent care"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "342 patients received the generic blocked response in the last four hours",
-            "eight called the support line",
-            "two gave up and went to urgent care instead of completing triage"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "clinical team tested twenty sample queries",
-            "anything mentioning chest pain, shortness of breath, or medication names triggers the block",
-            "those are the three most common triage categories"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "Chief Medical Officer is on the call",
-            "she says the triage assistant is doing more harm than good if it blocks patients from describing symptoms"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "the model itself is working correctly",
-            "blocked responses are not coming from the foundation model -- they are intercepted before the model sees them",
-            "check what sits between the user input and the model"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "Bedrock Guardrail": "A set of configurable safety filters that sit between the user and a foundation model. Guardrails evaluate text and can block requests or responses that match rules you define.",
-        "Denied Topic": "A subject you tell the guardrail to reject. You provide a name, a short definition, and optional example phrases. If the guardrail detects the topic in text, it blocks that text.",
-        "Foundation Model": "A large pre-trained AI model hosted by Amazon Bedrock. Your application sends prompts to it and receives generated text back. The model itself does not enforce safety rules -- the guardrail does.",
-        "Input Filtering": "Evaluating the user's message before it reaches the foundation model. If the guardrail blocks at this stage, the model never sees the request at all.",
-        "Output Filtering": "Evaluating the model's response before it reaches the user. The model processes the request, but the guardrail can still block the response if it violates policy.",
-        "Guardrail Trace": "A diagnostic record that shows which filters evaluated the text, what was detected, and whether the guardrail intervened. Useful for understanding why a request was blocked.",
-        "Content Filter": "A guardrail component that detects harmful content in categories like hate, violence, or sexual content. Each category has a configurable strength level from NONE to HIGH.",
-        "SNS Topic": "Simple Notification Service topic. A messaging channel that can send alerts to email, SMS, or other endpoints. It only works if at least one endpoint is subscribed.",
-        "CloudWatch Metric": "A time-series data point published by an AWS service. You can set alarms on metrics to get notified when values cross a threshold.",
-        "GuardrailInterventions": "A CloudWatch metric that counts how many times a Bedrock Guardrail blocked a request or response. A sudden spike usually means a configuration change is catching unintended content."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening -- triage assistant blocking patients who describe symptoms, 440 out of 1,100 daily queries returning blocked response",
-        "threshold": "player enters investigation, SNS alert topic has zero subscribers, nobody was notified of guardrail intervention spike for two days",
-        "trials": "clinical team tested twenty sample queries -- chest pain, shortness of breath, medication names all trigger block, these are the three most common triage categories, model itself working correctly, requests never reach it",
-        "revelation": "denied topic 'Medical Advice and Diagnosis' defined with example phrases matching patient symptom descriptions, guardrail evaluates user input not model output, blocks the exact language the triage assistant is designed to collect",
-        "return": "denied topic narrowed to target model output only, example phrases updated to output patterns, operations team subscribed to SNS alert topic, CloudWatch alarm set on GuardrailInterventions"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "Patient Mobile App",
-            "role": "Frontend interface where patients type symptom descriptions to begin triage",
-            "connections": [
-              "API Gateway"
-            ],
-            "failure_impact": "None -- the app is functioning correctly"
-          },
-          {
-            "name": "API Gateway",
-            "role": "Routes HTTPS requests from the patient app to the Lambda function",
-            "connections": [
-              "Lambda Function"
-            ],
-            "failure_impact": "None -- requests are arriving at the backend"
-          },
-          {
-            "name": "Lambda Function (patchwork-triage-handler)",
-            "role": "Receives patient queries, formats prompts, and calls Bedrock InvokeModel with the guardrail attached",
-            "connections": [
-              "Bedrock Guardrail",
-              "SNS Topic"
-            ],
-            "failure_impact": "None -- the function executes correctly and passes the query to Bedrock"
-          },
-          {
-            "name": "Bedrock Guardrail (patchwork-clinical-safety v3)",
-            "role": "Evaluates text against content filters and denied topics before and after model invocation",
-            "connections": [
-              "Foundation Model"
-            ],
-            "failure_impact": "The denied topic 'Medical Advice and Diagnosis' blocks 40% of patient queries at the input stage. The foundation model never sees these requests. Patients receive a generic blocked message."
-          },
-          {
-            "name": "Foundation Model (Claude 3 Haiku)",
-            "role": "Generates triage categorizations from patient symptom descriptions",
-            "connections": [
-              "Lambda Function"
-            ],
-            "failure_impact": "None -- the model works correctly for the 60% of queries that reach it"
-          },
-          {
-            "name": "SNS Topic (patchwork-guardrail-alerts)",
-            "role": "Intended to deliver alerts when guardrail intervention rates spike",
-            "connections": [],
-            "failure_impact": "Zero subscribers. The spike in interventions went unnoticed for two days because nobody receives notifications from this topic."
-          },
-          {
-            "name": "CloudWatch Metrics",
-            "role": "Records GuardrailInterventions count and other operational metrics",
-            "connections": [
-              "SNS Topic"
-            ],
-            "failure_impact": "Metrics are recording correctly but no alarm is configured to act on the GuardrailInterventions spike"
-          }
-        ],
-        "data_flow": "Patient types a symptom description in the mobile app. The request goes through API Gateway to the Lambda function. Lambda calls Bedrock InvokeModel with the guardrail. The guardrail evaluates the user input against denied topics first. If the denied topic matches, the request is blocked before the foundation model sees it and the patient receives 'I'm sorry, I can't help with that request.' If no topic matches, the foundation model generates a triage categorization and returns it through Lambda to the patient.",
-        "what_broke": "The guardrail's denied topic 'Medical Advice and Diagnosis' was configured with a broad definition and example phrases like 'chest pain,' 'shortness of breath,' and 'medication for.' These phrases appear in virtually every legitimate triage query. The topic was set to evaluate user input with inputAction BLOCK and outputAction NONE. This means patient symptom descriptions were blocked before reaching the model. The guardrail was doing exactly what it was configured to do -- the configuration was wrong for the use case. The SNS topic had zero subscribers, so the 200x spike in GuardrailInterventions (from ~2/day to ~440/day) went unnoticed for two days."
-      },
-      "hints": [
-        {
-          "hint": "responses say the request was blocked, not that the model could not answer -- something is intercepting requests before the model sees them",
-          "relevant_services": [
-            "bedrock"
-          ],
-          "skip_if_queried": [
-            "get_guardrail",
-            "apply_guardrail"
-          ]
-        },
-        {
-          "hint": "bedrock guardrails evaluate input before it reaches the model -- has the guardrail configuration changed recently? check the version history",
-          "relevant_services": [
-            "bedrock"
-          ],
-          "skip_if_queried": [
-            "get_guardrail_version"
-          ]
-        },
-        {
-          "hint": "look at the denied topics in the guardrail -- is there one whose example phrases might match legitimate medical triage queries like symptom descriptions?",
-          "relevant_services": [
-            "bedrock"
-          ],
-          "skip_if_queried": [
-            "get_guardrail"
-          ]
-        },
-        {
-          "hint": "the denied topic 'Medical Advice and Diagnosis' is defined too broadly -- its example phrases match any symptom description, which is exactly what the triage assistant collects. fix is to narrow the topic and move it to output filtering",
-          "relevant_services": [
-            "bedrock"
-          ],
-          "skip_if_queried": [
-            "get_guardrail",
-            "apply_guardrail"
-          ]
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "bedrock",
-        "artifacts": [
-          "artifacts/guardrail-config.json",
-          "artifacts/guardrail-trace.json",
-          "artifacts/model-config.json"
-        ],
-        "capabilities": [
-          "get_guardrail",
-          "list_guardrails",
-          "get_guardrail_version",
-          "invoke_model",
-          "apply_guardrail"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/metrics.csv",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_metric_data",
-          "list_metrics",
-          "describe_alarms"
-        ]
-      },
-      {
-        "service": "lambda",
-        "artifacts": [
-          "artifacts/lambda-config.json"
-        ],
-        "capabilities": [
-          "get_function",
-          "get_function_configuration",
-          "list_functions"
-        ]
-      },
-      {
-        "service": "sns",
-        "artifacts": [
-          "artifacts/sns-topic.json"
-        ],
-        "capabilities": [
-          "get_topic_attributes",
-          "list_subscriptions_by_topic",
-          "list_topics"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "A Bedrock Guardrail's denied topic 'Medical Advice and Diagnosis' was configured with overly broad definition and example phrases that match any mention of medical symptoms, conditions, or procedures. Since the triage assistant's purpose is symptom collection, 40% of legitimate patient queries trigger the guardrail and receive a blocked response instead of reaching the foundation model.",
     "fix_criteria": [
@@ -317,5 +95,135 @@
       "Whenever you create an SNS alert topic (a notification channel in AWS's Simple Notification Service), subscribe at least one person or team to it right away. An alert topic with zero subscribers is the same as having no alerting at all -- events fire into the void and nobody finds out.",
       "Set up a CloudWatch alarm (an automated alert rule) on the GuardrailInterventions metric, which counts how many requests the guardrail blocks. Base the threshold on your normal block rate. A sudden spike means a configuration change is catching content it should not be catching."
     ]
-  }
+  },
+  "glossary": {
+    "Bedrock Guardrail": "A set of configurable safety filters that sit between the user and a foundation model. Guardrails evaluate text and can block requests or responses that match rules you define.",
+    "Denied Topic": "A subject you tell the guardrail to reject. You provide a name, a short definition, and optional example phrases. If the guardrail detects the topic in text, it blocks that text.",
+    "Foundation Model": "A large pre-trained AI model hosted by Amazon Bedrock. Your application sends prompts to it and receives generated text back. The model itself does not enforce safety rules -- the guardrail does.",
+    "Input Filtering": "Evaluating the user's message before it reaches the foundation model. If the guardrail blocks at this stage, the model never sees the request at all.",
+    "Output Filtering": "Evaluating the model's response before it reaches the user. The model processes the request, but the guardrail can still block the response if it violates policy.",
+    "Guardrail Trace": "A diagnostic record that shows which filters evaluated the text, what was detected, and whether the guardrail intervened. Useful for understanding why a request was blocked.",
+    "Content Filter": "A guardrail component that detects harmful content in categories like hate, violence, or sexual content. Each category has a configurable strength level from NONE to HIGH.",
+    "SNS Topic": "Simple Notification Service topic. A messaging channel that can send alerts to email, SMS, or other endpoints. It only works if at least one endpoint is subscribed.",
+    "CloudWatch Metric": "A time-series data point published by an AWS service. You can set alarms on metrics to get notified when values cross a threshold.",
+    "GuardrailInterventions": "A CloudWatch metric that counts how many times a Bedrock Guardrail blocked a request or response. A sudden spike usually means a configuration change is catching unintended content."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "Patient Mobile App",
+        "role": "Frontend interface where patients type symptom descriptions to begin triage",
+        "connections": [
+          "API Gateway"
+        ],
+        "failure_impact": "None -- the app is functioning correctly"
+      },
+      {
+        "name": "API Gateway",
+        "role": "Routes HTTPS requests from the patient app to the Lambda function",
+        "connections": [
+          "Lambda Function"
+        ],
+        "failure_impact": "None -- requests are arriving at the backend"
+      },
+      {
+        "name": "Lambda Function (patchwork-triage-handler)",
+        "role": "Receives patient queries, formats prompts, and calls Bedrock InvokeModel with the guardrail attached",
+        "connections": [
+          "Bedrock Guardrail",
+          "SNS Topic"
+        ],
+        "failure_impact": "None -- the function executes correctly and passes the query to Bedrock"
+      },
+      {
+        "name": "Bedrock Guardrail (patchwork-clinical-safety v3)",
+        "role": "Evaluates text against content filters and denied topics before and after model invocation",
+        "connections": [
+          "Foundation Model"
+        ],
+        "failure_impact": "The denied topic 'Medical Advice and Diagnosis' blocks 40% of patient queries at the input stage. The foundation model never sees these requests. Patients receive a generic blocked message."
+      },
+      {
+        "name": "Foundation Model (Claude 3 Haiku)",
+        "role": "Generates triage categorizations from patient symptom descriptions",
+        "connections": [
+          "Lambda Function"
+        ],
+        "failure_impact": "None -- the model works correctly for the 60% of queries that reach it"
+      },
+      {
+        "name": "SNS Topic (patchwork-guardrail-alerts)",
+        "role": "Intended to deliver alerts when guardrail intervention rates spike",
+        "connections": [],
+        "failure_impact": "Zero subscribers. The spike in interventions went unnoticed for two days because nobody receives notifications from this topic."
+      },
+      {
+        "name": "CloudWatch Metrics",
+        "role": "Records GuardrailInterventions count and other operational metrics",
+        "connections": [
+          "SNS Topic"
+        ],
+        "failure_impact": "Metrics are recording correctly but no alarm is configured to act on the GuardrailInterventions spike"
+      }
+    ],
+    "data_flow": "Patient types a symptom description in the mobile app. The request goes through API Gateway to the Lambda function. Lambda calls Bedrock InvokeModel with the guardrail. The guardrail evaluates the user input against denied topics first. If the denied topic matches, the request is blocked before the foundation model sees it and the patient receives 'I'm sorry, I can't help with that request.' If no topic matches, the foundation model generates a triage categorization and returns it through Lambda to the patient.",
+    "what_broke": "The guardrail's denied topic 'Medical Advice and Diagnosis' was configured with a broad definition and example phrases like 'chest pain,' 'shortness of breath,' and 'medication for.' These phrases appear in virtually every legitimate triage query. The topic was set to evaluate user input with inputAction BLOCK and outputAction NONE. This means patient symptom descriptions were blocked before reaching the model. The guardrail was doing exactly what it was configured to do -- the configuration was wrong for the use case. The SNS topic had zero subscribers, so the 200x spike in GuardrailInterventions (from ~2/day to ~440/day) went unnoticed for two days."
+  },
+  "progressive_clues": [
+    "responses say the request was blocked, not that the model could not answer -- something is intercepting requests before the model sees them",
+    "bedrock guardrails evaluate input before it reaches the model -- has the guardrail configuration changed recently? check the version history",
+    "look at the denied topics in the guardrail -- is there one whose example phrases might match legitimate medical triage queries like symptom descriptions?",
+    "the denied topic 'Medical Advice and Diagnosis' is defined too broadly -- its example phrases match any symptom description, which is exactly what the triage assistant collects. fix is to narrow the topic and move it to output filtering"
+  ],
+  "consoles": [
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/guardrail-config.json",
+        "artifacts/guardrail-trace.json",
+        "artifacts/model-config.json"
+      ],
+      "capabilities": [
+        "get_guardrail",
+        "list_guardrails",
+        "get_guardrail_version",
+        "invoke_model",
+        "apply_guardrail"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/metrics.csv",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_functions"
+      ]
+    },
+    {
+      "service": "sns",
+      "artifacts": [
+        "artifacts/sns-topic.json"
+      ],
+      "capabilities": [
+        "get_topic_attributes",
+        "list_subscriptions_by_topic",
+        "list_topics"
+      ]
+    }
+  ]
 }

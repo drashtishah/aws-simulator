@@ -157,7 +157,7 @@ test ----> run: executes node --test (unit tests)
 
 ### Model split
 
-The Sonnet/Opus split is hardcoded via two named constants in `web/lib/claude-process.ts`: `PLAY_SESSION_MODEL` (claude-sonnet-4-6) drives interactive play, and `POST_SESSION_MODEL` (claude-opus-4-6) drives post-session scoring. Sonnet is fast and cheap enough for narrator plus investigation reasoning; Opus runs cross-file analysis (session.json, manifest, coaching-patterns, progression) where deeper reasoning matters. Do not flip these without an A/B test on quality. See Issue #107.
+Both play and post-session run on `claude-opus-4-6` via `scripts/model-config.json`. Play uses a persona-driven prompt (free narration, nudging, ending) and needs the deeper reasoning to hold the full sim folder and withhold root cause across turns; post-session does cross-file scoring and Obsidian vault writes. Adjust per-stage `effort` before swapping models.
 
 ## Hooks
 

@@ -33,7 +33,7 @@
     "reference": 34,
     "registry": 4,
     "config": 26,
-    "memory_link": 29
+    "memory_link": 31
   },
   "budgets": {
     "game_session_usd": 2,

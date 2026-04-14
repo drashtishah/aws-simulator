@@ -46,8 +46,7 @@ type StreamEvent =
   | { type: 'session_init'; claudeSessionId: string | null; claudeModel: string | null }
   | { type: 'session'; sessionId: string }
   | { type: 'text'; content: string }
-  | { type: 'console'; content: string }
-  | { type: 'coaching'; content: string }
+  | { type: 'dropdown'; content: string; label: string; open: boolean }
   | { type: 'complete' }
   | { type: 'done'; sessionComplete?: boolean }
   | { type: '_metadata'; claudeSessionId: string | null; claudeModel: string | null; fullText: string; toolCalls: ToolCall[]; usage: Usage | null; resultError: { subtype?: string; error: unknown } | null; sessionComplete: boolean };
@@ -83,7 +82,6 @@ export async function* streamQuery(
   let claudeSessionId: string | null = null;
   let claudeModel: string | null = null;
   let fullText = '';
-  let lastEventIndex = 0;
   let usage: Usage | null = null;
   let resultError: { subtype?: string; error: unknown } | null = null;
   const toolCalls: ToolCall[] = [];
@@ -114,16 +112,6 @@ export async function* streamQuery(
             toolCalls.push({ name: block.name!, input: block.input, id: block.id! });
           }
         }
-
-        const { events, sessionComplete } = parseEvents(fullText);
-        for (let i = lastEventIndex; i < events.length; i++) {
-          yield events[i]!;
-        }
-        lastEventIndex = events.length;
-
-        if (sessionComplete) {
-          yield { type: 'complete' };
-        }
       } else if (m.type === 'result') {
         const u = m.usage ?? {};
         usage = { input_tokens: u.input_tokens ?? 0, output_tokens: u.output_tokens ?? 0 };
@@ -135,6 +123,19 @@ export async function* streamQuery(
     }
   } finally {
     clearTimeout(timeoutId!);
+  }
+
+  // Parse and yield the complete response after the stream ends. Incremental
+  // yielding during tool-using turns was broken because empty text events
+  // emitted alongside tool_use blocks advanced an internal cursor past the
+  // point where real text later arrived. Client-side reveal animation
+  // preserves the typing feel.
+  const { events, sessionComplete } = parseEvents(fullText);
+  for (const ev of events) {
+    if (ev.content && ev.content.trim()) yield ev;
+  }
+  if (sessionComplete) {
+    yield { type: 'complete' };
   }
 
   yield {
@@ -165,8 +166,8 @@ export async function* streamSession(
   const abortController = new AbortController();
 
   const stdinMessage = options.resume
-    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
-    : 'Begin the simulation. Deliver the Opening and Briefing Card.';
+    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`)
+    : 'Begin. Open the incident in your voice: set the scene, establish the stakes, then hand the floor to the player.';
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,

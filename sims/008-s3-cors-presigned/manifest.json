@@ -27,208 +27,6 @@
     "industry": "document management",
     "size": "Series A startup, 17 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "backend engineer, joined the debugging thread late",
-        "demeanor": "patient, has seen this before, states facts without judgment",
-        "recurring_concern": "upload feature is core product, law firm customers depending on it"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:8",
-          "facts": [
-            "frontend developer Rina sent another Slack message confirming presigned URL is valid (tested with curl, attached output)",
-            "she is re-reading the IAM policy JSON for the third time"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "backend engineer Tomas joined the thread",
-            "API Gateway logs show presigned URL generated correctly",
-            "S3 bucket policy checked, everything looks fine from server side",
-            "Tomas asked if anyone has checked the browser console"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "IAM policy and presigned URL are both correct",
-            "upload works from non-browser clients",
-            "the difference is in how the browser makes the request, not in the permissions"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "CORS": "Cross-Origin Resource Sharing. A browser security feature that blocks web pages from making requests to a different domain unless the server explicitly allows it.",
-        "preflight request": "An automatic OPTIONS request the browser sends before certain cross-origin requests (like PUT) to ask the server if the real request is allowed.",
-        "presigned URL": "A temporary URL that includes authentication information in its query string, allowing anyone with the URL to perform a specific S3 operation without AWS credentials.",
-        "origin": "A combination of protocol, domain, and port (e.g., https://app.pollen.io). Two URLs with different origins are considered cross-origin by the browser.",
-        "same-origin policy": "A browser security rule that prevents JavaScript on one origin from reading responses from a different origin, unless the server opts in via CORS headers.",
-        "origin request policy": "A CloudFront configuration that controls which headers, cookies, and query strings CloudFront forwards from the viewer to the origin server.",
-        "cache invalidation": "A CloudFront operation that removes cached objects from edge locations before they expire, forcing CloudFront to fetch fresh copies from the origin.",
-        "OPTIONS method": "An HTTP method used by browsers for preflight requests. It asks the server what methods and headers are allowed for cross-origin requests."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player enters investigation, upload works from non-browser clients but fails in browser, developer has been reading IAM policies for two hours",
-        "trials": "browser console shows CORS error, S3 bucket has no CORS configuration, after adding CORS config upload still fails because CloudFront strips Origin header before it reaches S3",
-        "revelation": "two-layer problem -- S3 needs CORS rules, CloudFront needs origin request policy forwarding Origin, Access-Control-Request-Headers, and Access-Control-Request-Method headers, both must be fixed together",
-        "return": "both changes applied, upload works, cache invalidation clears stale responses, team wiki updated with CORS-first debugging note"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "Browser at app.pollen.io",
-            "role": "Sends preflight OPTIONS requests and enforces same-origin policy before cross-origin PUT uploads",
-            "connections": [
-              "API Gateway at api.pollen.io",
-              "CloudFront distribution d-EDFDVBD6EXAMPLE"
-            ],
-            "failure_impact": "If the browser receives no CORS headers, it blocks the upload silently with no user-facing error message"
-          },
-          {
-            "name": "API Gateway at api.pollen.io",
-            "role": "Generates presigned URLs via Lambda for browser-based document uploads to S3",
-            "connections": [
-              "Browser at app.pollen.io"
-            ],
-            "failure_impact": "If the API Gateway fails, the browser cannot obtain a presigned URL to upload documents"
-          },
-          {
-            "name": "CloudFront distribution d-EDFDVBD6EXAMPLE",
-            "role": "Caches responses and forwards requests to S3, but strips Origin header without a CORS origin request policy",
-            "connections": [
-              "Browser at app.pollen.io",
-              "S3 bucket pollen-docs-prod"
-            ],
-            "failure_impact": "If CloudFront strips CORS headers, S3 cannot respond to preflight requests and browser uploads fail"
-          },
-          {
-            "name": "S3 bucket pollen-docs-prod",
-            "role": "Stores uploaded documents and receives PUT requests via presigned URLs",
-            "connections": [
-              "CloudFront distribution d-EDFDVBD6EXAMPLE"
-            ],
-            "failure_impact": "Without CORS configuration, S3 returns 403 on OPTIONS preflight requests from browsers"
-          }
-        ],
-        "data_flow": "Browser requests a presigned URL from API Gateway. Lambda generates the URL and returns it. Browser uses the URL to PUT a file to S3 through CloudFront. Before the PUT, the browser sends an OPTIONS preflight to CloudFront. CloudFront forwards the request to S3 but strips the Origin header. S3 has no CORS configuration and returns 403 on the OPTIONS. The browser blocks the PUT.",
-        "what_broke": "Two things broke. First, the S3 bucket had no CORS configuration, so it could not respond to preflight requests with the required Access-Control-Allow-Origin header. Second, CloudFront used the default CachingOptimized policy with no origin request policy, so it did not forward the Origin, Access-Control-Request-Headers, or Access-Control-Request-Method headers to S3. Even after fixing S3, CloudFront would cache non-CORS responses and serve them to browsers."
-      },
-      "hints": [
-        {
-          "hint": "the upload works outside the browser -- what is different about browser HTTP requests?",
-          "relevant_services": [
-            "s3"
-          ],
-          "skip_if_queried": [
-            "what is CORS",
-            "same-origin policy",
-            "preflight"
-          ]
-        },
-        {
-          "hint": "check the browser developer tools Network tab and look at the request headers",
-          "relevant_services": [
-            "s3"
-          ],
-          "skip_if_queried": [
-            "browser console",
-            "network tab",
-            "OPTIONS request"
-          ]
-        },
-        {
-          "hint": "browsers send preflight OPTIONS requests for cross-origin PUT requests",
-          "relevant_services": [
-            "s3"
-          ],
-          "skip_if_queried": [
-            "preflight",
-            "OPTIONS",
-            "CORS error"
-          ]
-        },
-        {
-          "hint": "the S3 bucket has no CORS configuration -- run aws s3api get-bucket-cors",
-          "relevant_services": [
-            "s3"
-          ],
-          "skip_if_queried": [
-            "get-bucket-cors",
-            "CORS configuration",
-            "CORSRules"
-          ]
-        },
-        {
-          "hint": "CloudFront is also stripping the Origin header -- check the cache behavior's origin request policy",
-          "relevant_services": [
-            "cloudfront"
-          ],
-          "skip_if_queried": [
-            "origin request policy",
-            "CORS-S3Origin",
-            "CloudFront headers"
-          ]
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "s3",
-        "artifacts": [
-          "artifacts/s3-cors-config.json",
-          "artifacts/curl-output.txt",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_bucket_cors",
-          "put_bucket_cors",
-          "get_bucket_policy",
-          "list_objects_v2",
-          "head_object"
-        ]
-      },
-      {
-        "service": "cloudfront",
-        "artifacts": [
-          "artifacts/cloudfront-config.json",
-          "artifacts/architecture-hint.txt"
-        ],
-        "capabilities": [
-          "get_distribution",
-          "get_distribution_config",
-          "list_distributions",
-          "get_origin_request_policy",
-          "create_invalidation"
-        ]
-      },
-      {
-        "service": "api-gateway",
-        "artifacts": [
-          "artifacts/cloudwatch-logs.txt",
-          "artifacts/browser-console-log.txt"
-        ],
-        "capabilities": [
-          "get_rest_apis",
-          "get_stages",
-          "get_method",
-          "get_integration"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "The S3 bucket pollen-docs-prod has no CORS configuration, causing browsers to block cross-origin PUT requests via presigned URLs. Additionally, the CloudFront distribution d-EDFDVBD6EXAMPLE is configured with a cache policy that does not forward the Origin, Access-Control-Request-Headers, or Access-Control-Request-Method headers to S3, so even after adding CORS config to S3, CloudFront would strip the headers needed for CORS negotiation.",
     "fix_criteria": [
@@ -300,5 +98,106 @@
       "After changing CORS rules or CloudFront policies, clear the CloudFront cache (called a cache invalidation) for all paths (/*). Stale cached responses without CORS headers will otherwise keep being served to browsers until they expire naturally.",
       "Add CORS verification to the team's deployment checklist for any feature where a browser talks directly to S3 -- including presigned URL uploads and static website hosting."
     ]
-  }
+  },
+  "glossary": {
+    "CORS": "Cross-Origin Resource Sharing. A browser security feature that blocks web pages from making requests to a different domain unless the server explicitly allows it.",
+    "preflight request": "An automatic OPTIONS request the browser sends before certain cross-origin requests (like PUT) to ask the server if the real request is allowed.",
+    "presigned URL": "A temporary URL that includes authentication information in its query string, allowing anyone with the URL to perform a specific S3 operation without AWS credentials.",
+    "origin": "A combination of protocol, domain, and port (e.g., https://app.pollen.io). Two URLs with different origins are considered cross-origin by the browser.",
+    "same-origin policy": "A browser security rule that prevents JavaScript on one origin from reading responses from a different origin, unless the server opts in via CORS headers.",
+    "origin request policy": "A CloudFront configuration that controls which headers, cookies, and query strings CloudFront forwards from the viewer to the origin server.",
+    "cache invalidation": "A CloudFront operation that removes cached objects from edge locations before they expire, forcing CloudFront to fetch fresh copies from the origin.",
+    "OPTIONS method": "An HTTP method used by browsers for preflight requests. It asks the server what methods and headers are allowed for cross-origin requests."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "Browser at app.pollen.io",
+        "role": "Sends preflight OPTIONS requests and enforces same-origin policy before cross-origin PUT uploads",
+        "connections": [
+          "API Gateway at api.pollen.io",
+          "CloudFront distribution d-EDFDVBD6EXAMPLE"
+        ],
+        "failure_impact": "If the browser receives no CORS headers, it blocks the upload silently with no user-facing error message"
+      },
+      {
+        "name": "API Gateway at api.pollen.io",
+        "role": "Generates presigned URLs via Lambda for browser-based document uploads to S3",
+        "connections": [
+          "Browser at app.pollen.io"
+        ],
+        "failure_impact": "If the API Gateway fails, the browser cannot obtain a presigned URL to upload documents"
+      },
+      {
+        "name": "CloudFront distribution d-EDFDVBD6EXAMPLE",
+        "role": "Caches responses and forwards requests to S3, but strips Origin header without a CORS origin request policy",
+        "connections": [
+          "Browser at app.pollen.io",
+          "S3 bucket pollen-docs-prod"
+        ],
+        "failure_impact": "If CloudFront strips CORS headers, S3 cannot respond to preflight requests and browser uploads fail"
+      },
+      {
+        "name": "S3 bucket pollen-docs-prod",
+        "role": "Stores uploaded documents and receives PUT requests via presigned URLs",
+        "connections": [
+          "CloudFront distribution d-EDFDVBD6EXAMPLE"
+        ],
+        "failure_impact": "Without CORS configuration, S3 returns 403 on OPTIONS preflight requests from browsers"
+      }
+    ],
+    "data_flow": "Browser requests a presigned URL from API Gateway. Lambda generates the URL and returns it. Browser uses the URL to PUT a file to S3 through CloudFront. Before the PUT, the browser sends an OPTIONS preflight to CloudFront. CloudFront forwards the request to S3 but strips the Origin header. S3 has no CORS configuration and returns 403 on the OPTIONS. The browser blocks the PUT.",
+    "what_broke": "Two things broke. First, the S3 bucket had no CORS configuration, so it could not respond to preflight requests with the required Access-Control-Allow-Origin header. Second, CloudFront used the default CachingOptimized policy with no origin request policy, so it did not forward the Origin, Access-Control-Request-Headers, or Access-Control-Request-Method headers to S3. Even after fixing S3, CloudFront would cache non-CORS responses and serve them to browsers."
+  },
+  "progressive_clues": [
+    "the upload works outside the browser -- what is different about browser HTTP requests?",
+    "check the browser developer tools Network tab and look at the request headers",
+    "browsers send preflight OPTIONS requests for cross-origin PUT requests",
+    "the S3 bucket has no CORS configuration -- run aws s3api get-bucket-cors",
+    "CloudFront is also stripping the Origin header -- check the cache behavior's origin request policy"
+  ],
+  "consoles": [
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/s3-cors-config.json",
+        "artifacts/curl-output.txt",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_bucket_cors",
+        "put_bucket_cors",
+        "get_bucket_policy",
+        "list_objects_v2",
+        "head_object"
+      ]
+    },
+    {
+      "service": "cloudfront",
+      "artifacts": [
+        "artifacts/cloudfront-config.json",
+        "artifacts/architecture-hint.txt"
+      ],
+      "capabilities": [
+        "get_distribution",
+        "get_distribution_config",
+        "list_distributions",
+        "get_origin_request_policy",
+        "create_invalidation"
+      ]
+    },
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/cloudwatch-logs.txt",
+        "artifacts/browser-console-log.txt"
+      ],
+      "capabilities": [
+        "get_rest_apis",
+        "get_stages",
+        "get_method",
+        "get_integration"
+      ]
+    }
+  ]
 }

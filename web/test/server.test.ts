@@ -421,7 +421,7 @@ describe('GET /api/sims/:id/manifest', () => {
     const res = await request(app, 'GET', `/api/sims/${simId}/manifest`);
     assert.equal(res.status, 200);
     assert.ok(res.body.id);
-    assert.ok(res.body.team);
+    assert.ok(Array.isArray(res.body.consoles));
     assert.ok(res.body.resolution);
   });
 

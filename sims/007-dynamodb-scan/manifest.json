@@ -29,237 +29,6 @@
     "industry": "e-commerce",
     "size": "Series A startup, 18 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "backend engineer, on-call this week",
-        "demeanor": "quiet, methodical, reports numbers the way someone reads a weather report",
-        "recurring_concern": "order backlog growing, dead-letter queue filling up"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "order processing Lambda has failed 312 times in the last five minutes",
-            "dead-letter queue has 287 messages",
-            "customer service has six open chats",
-            "nobody is asking about the search feature"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "senior engineer suggests Lambda timeout might be set too low",
-            "timeout was raised from 15 seconds to 30 seconds last week and that fixed a similar-looking issue",
-            "order backlog is at 1,400"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "order backlog is at 2,100",
-            "someone in incident channel asks if they should increase provisioned capacity on the table",
-            "someone else asks if the search Lambda is still running"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "Lambda timeout is a symptom, not the cause",
-            "function is waiting on DynamoDB reads that never complete because the table is throttled",
-            "something is consuming all the read capacity"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "hints": [
-        {
-          "hint": "order processing was fine until 10:00 AM -- something else started hitting the table around that time",
-          "relevant_services": [
-            "dynamodb",
-            "cloudwatch"
-          ],
-          "skip_if_queried": [
-            "ConsumedReadCapacityUnits",
-            "metrics.csv"
-          ]
-        },
-        {
-          "hint": "check CloudWatch for ConsumedReadCapacityUnits -- something is reading far more than the order pipeline ever would",
-          "relevant_services": [
-            "cloudwatch",
-            "dynamodb"
-          ],
-          "skip_if_queried": [
-            "get_metric_data",
-            "ConsumedReadCapacityUnits"
-          ]
-        },
-        {
-          "hint": "the product-search Lambda was deployed at 9:58 AM -- look at how it reads from the table",
-          "relevant_services": [
-            "lambda",
-            "dynamodb"
-          ],
-          "skip_if_queried": [
-            "tidepool-product-search",
-            "lambda-code-snippet"
-          ]
-        },
-        {
-          "hint": "there is a difference between a DynamoDB Scan and a Query -- one reads every item in the table, the other uses an index",
-          "relevant_services": [
-            "dynamodb"
-          ],
-          "skip_if_queried": [
-            "Scan",
-            "Query",
-            "scan",
-            "query"
-          ]
-        },
-        {
-          "hint": "the search Lambda runs a Scan with a FilterExpression on the category attribute -- there is no GSI on category, so every invocation reads all four million items",
-          "relevant_services": [
-            "dynamodb",
-            "lambda"
-          ],
-          "skip_if_queried": [
-            "FilterExpression",
-            "GlobalSecondaryIndexes",
-            "GSI"
-          ]
-        }
-      ],
-      "max_hints_before_nudge": 3,
-      "glossary": {
-        "Scan": "A DynamoDB operation that reads every item in a table from start to finish. It always touches every row, even if you only want a few. Expensive on large tables.",
-        "Query": "A DynamoDB operation that reads only the items matching a specific partition key. Much faster and cheaper than a Scan because it skips everything that does not match.",
-        "Global Secondary Index (GSI)": "A separate lookup structure on a DynamoDB table that lets you query by a different attribute than the table's main key. For example, querying products by category instead of by product ID.",
-        "Read Capacity Unit (RCU)": "A unit of read throughput for a DynamoDB table. One RCU gives you one strongly consistent read per second for an item up to 4 KB. When you run out, reads get throttled.",
-        "Provisioned Throughput": "A capacity mode where you set a fixed number of reads and writes per second in advance. If traffic exceeds what you provisioned, DynamoDB rejects the extra requests.",
-        "FilterExpression": "A setting on a Scan or Query that removes items from the results after they have already been read. It does not reduce the amount of data DynamoDB reads or the capacity consumed.",
-        "ProvisionedThroughputExceededException": "The error DynamoDB returns when a request tries to read or write but there is no remaining capacity. It means the table is throttled.",
-        "Dead-Letter Queue (DLQ)": "A queue where messages go when they fail processing after all retries. In this sim, failed orders land in the DLQ because the Lambda cannot write to the throttled table.",
-        "Partition Key": "The primary attribute DynamoDB uses to decide which internal partition stores an item. A good partition key distributes data evenly across partitions."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player enters investigation, ConsumedReadCapacityUnits at 100 RCU ceiling, order-writer Lambda failing, dead-letter queue filling -- two events appear unrelated",
-        "trials": "senior engineer raises Lambda timeout (no effect), someone suggests increasing provisioned capacity, backlog keeps climbing, search feature returns results slowly making it look functional not culpable",
-        "revelation": "product-search Lambda performs full table Scan on every invocation -- 4 million items read cover to cover per search, FilterExpression discards after read, capacity consumed before filter runs",
-        "return": "search Lambda disabled, throttling stops within 60 seconds, lasting fix is GSI on category attribute and Query operation instead of Scan"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "API Gateway (tidepool-api)",
-            "role": "Routes /search and /orders requests to their respective Lambda functions",
-            "connections": [
-              "Lambda: tidepool-product-search",
-              "Lambda: tidepool-order-writer"
-            ],
-            "failure_impact": "If the API Gateway fails, both search and order operations are unavailable"
-          },
-          {
-            "name": "Lambda: tidepool-product-search (v14)",
-            "role": "Newly deployed search function that performs full table Scans with FilterExpression on the category attribute",
-            "connections": [
-              "API Gateway (tidepool-api)",
-              "DynamoDB table: tidepool-products"
-            ],
-            "failure_impact": "Each invocation consumes all provisioned RCUs by scanning 4 million items, starving other consumers"
-          },
-          {
-            "name": "Lambda: tidepool-order-writer (v9)",
-            "role": "Existing order pipeline function that writes confirmed orders via PutItem",
-            "connections": [
-              "API Gateway (tidepool-api)",
-              "DynamoDB table: tidepool-products",
-              "SQS DLQ: tidepool-orders-dlq"
-            ],
-            "failure_impact": "When throttled by RCU exhaustion, orders fail and are sent to the dead-letter queue"
-          },
-          {
-            "name": "DynamoDB table: tidepool-products",
-            "role": "Stores 4,012,387 product items, provisioned at 100 RCU / 100 WCU, no Global Secondary Indexes",
-            "connections": [
-              "Lambda: tidepool-product-search",
-              "Lambda: tidepool-order-writer"
-            ],
-            "failure_impact": "When all RCUs are consumed, every reader and writer receives ProvisionedThroughputExceededException"
-          },
-          {
-            "name": "SQS dead-letter queue: tidepool-orders-dlq",
-            "role": "Receives order messages that fail processing after all retries",
-            "connections": [
-              "Lambda: tidepool-order-writer"
-            ],
-            "failure_impact": "Messages in the DLQ represent lost orders that require manual reprocessing"
-          },
-          {
-            "name": "CloudWatch alarm",
-            "role": "Fires when ThrottledRequests exceeds 10 for 5 consecutive minutes",
-            "connections": [
-              "DynamoDB table: tidepool-products"
-            ],
-            "failure_impact": "If the alarm is not acted on, throttling continues and the order backlog grows"
-          }
-        ],
-        "data_flow": "Customer search request arrives at API Gateway, routes to tidepool-product-search Lambda, which runs a Scan on tidepool-products with a FilterExpression. The Scan paginates through all 4 million items in 1 MB pages, consuming RCUs proportional to total table size. Simultaneously, order requests route to tidepool-order-writer, which attempts PutItem and Query operations on the same table. When the Scan exhausts all 100 provisioned RCUs, the order-writer receives ProvisionedThroughputExceededException, retries three times, then sends the order to the dead-letter queue.",
-        "what_broke": "The product-search Lambda uses Scan + FilterExpression instead of Query + GSI. A Scan reads every item regardless of the filter. On a 4-million-item table with 100 provisioned RCUs, a single paginated Scan consumes the entire read budget. Multiple concurrent searches compound the problem. Every other reader of the table -- including the order pipeline -- is starved of capacity."
-      }
-    },
-    "consoles": [
-      {
-        "service": "dynamodb",
-        "artifacts": [
-          "artifacts/table-description.json",
-          "artifacts/architecture-hint.txt"
-        ],
-        "capabilities": [
-          "describe_table",
-          "query",
-          "scan",
-          "describe_time_to_live",
-          "list_global_secondary_indexes"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/metrics.csv",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_metric_data",
-          "describe_alarms",
-          "get_log_events",
-          "get_metric_statistics"
-        ]
-      },
-      {
-        "service": "lambda",
-        "artifacts": [
-          "artifacts/lambda-code-snippet.txt",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_function",
-          "get_function_configuration",
-          "list_event_source_mappings",
-          "get_policy"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "Lambda function uses DynamoDB Scan with a FilterExpression instead of Query with a proper partition key or GSI, consuming all provisioned RCUs on a 4-million-item table.",
     "fix_criteria": [
@@ -331,5 +100,124 @@
       "Set up CloudWatch alarms on ConsumedReadCapacityUnits (how much of your read budget is being used) and ThrottledRequests (how many reads are being rejected). You want to know about capacity problems within minutes, not after customers start complaining.",
       "During code reviews, watch for FilterExpression used with Scan. A FilterExpression only filters results after the entire table has already been read -- it does not save any read capacity. If you see this pattern, it almost always means the code needs a Global Secondary Index (a secondary lookup structure) and a Query instead."
     ]
-  }
+  },
+  "glossary": {
+    "Scan": "A DynamoDB operation that reads every item in a table from start to finish. It always touches every row, even if you only want a few. Expensive on large tables.",
+    "Query": "A DynamoDB operation that reads only the items matching a specific partition key. Much faster and cheaper than a Scan because it skips everything that does not match.",
+    "Global Secondary Index (GSI)": "A separate lookup structure on a DynamoDB table that lets you query by a different attribute than the table's main key. For example, querying products by category instead of by product ID.",
+    "Read Capacity Unit (RCU)": "A unit of read throughput for a DynamoDB table. One RCU gives you one strongly consistent read per second for an item up to 4 KB. When you run out, reads get throttled.",
+    "Provisioned Throughput": "A capacity mode where you set a fixed number of reads and writes per second in advance. If traffic exceeds what you provisioned, DynamoDB rejects the extra requests.",
+    "FilterExpression": "A setting on a Scan or Query that removes items from the results after they have already been read. It does not reduce the amount of data DynamoDB reads or the capacity consumed.",
+    "ProvisionedThroughputExceededException": "The error DynamoDB returns when a request tries to read or write but there is no remaining capacity. It means the table is throttled.",
+    "Dead-Letter Queue (DLQ)": "A queue where messages go when they fail processing after all retries. In this sim, failed orders land in the DLQ because the Lambda cannot write to the throttled table.",
+    "Partition Key": "The primary attribute DynamoDB uses to decide which internal partition stores an item. A good partition key distributes data evenly across partitions."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "API Gateway (tidepool-api)",
+        "role": "Routes /search and /orders requests to their respective Lambda functions",
+        "connections": [
+          "Lambda: tidepool-product-search",
+          "Lambda: tidepool-order-writer"
+        ],
+        "failure_impact": "If the API Gateway fails, both search and order operations are unavailable"
+      },
+      {
+        "name": "Lambda: tidepool-product-search (v14)",
+        "role": "Newly deployed search function that performs full table Scans with FilterExpression on the category attribute",
+        "connections": [
+          "API Gateway (tidepool-api)",
+          "DynamoDB table: tidepool-products"
+        ],
+        "failure_impact": "Each invocation consumes all provisioned RCUs by scanning 4 million items, starving other consumers"
+      },
+      {
+        "name": "Lambda: tidepool-order-writer (v9)",
+        "role": "Existing order pipeline function that writes confirmed orders via PutItem",
+        "connections": [
+          "API Gateway (tidepool-api)",
+          "DynamoDB table: tidepool-products",
+          "SQS DLQ: tidepool-orders-dlq"
+        ],
+        "failure_impact": "When throttled by RCU exhaustion, orders fail and are sent to the dead-letter queue"
+      },
+      {
+        "name": "DynamoDB table: tidepool-products",
+        "role": "Stores 4,012,387 product items, provisioned at 100 RCU / 100 WCU, no Global Secondary Indexes",
+        "connections": [
+          "Lambda: tidepool-product-search",
+          "Lambda: tidepool-order-writer"
+        ],
+        "failure_impact": "When all RCUs are consumed, every reader and writer receives ProvisionedThroughputExceededException"
+      },
+      {
+        "name": "SQS dead-letter queue: tidepool-orders-dlq",
+        "role": "Receives order messages that fail processing after all retries",
+        "connections": [
+          "Lambda: tidepool-order-writer"
+        ],
+        "failure_impact": "Messages in the DLQ represent lost orders that require manual reprocessing"
+      },
+      {
+        "name": "CloudWatch alarm",
+        "role": "Fires when ThrottledRequests exceeds 10 for 5 consecutive minutes",
+        "connections": [
+          "DynamoDB table: tidepool-products"
+        ],
+        "failure_impact": "If the alarm is not acted on, throttling continues and the order backlog grows"
+      }
+    ],
+    "data_flow": "Customer search request arrives at API Gateway, routes to tidepool-product-search Lambda, which runs a Scan on tidepool-products with a FilterExpression. The Scan paginates through all 4 million items in 1 MB pages, consuming RCUs proportional to total table size. Simultaneously, order requests route to tidepool-order-writer, which attempts PutItem and Query operations on the same table. When the Scan exhausts all 100 provisioned RCUs, the order-writer receives ProvisionedThroughputExceededException, retries three times, then sends the order to the dead-letter queue.",
+    "what_broke": "The product-search Lambda uses Scan + FilterExpression instead of Query + GSI. A Scan reads every item regardless of the filter. On a 4-million-item table with 100 provisioned RCUs, a single paginated Scan consumes the entire read budget. Multiple concurrent searches compound the problem. Every other reader of the table -- including the order pipeline -- is starved of capacity."
+  },
+  "progressive_clues": [
+    "order processing was fine until 10:00 AM -- something else started hitting the table around that time",
+    "check CloudWatch for ConsumedReadCapacityUnits -- something is reading far more than the order pipeline ever would",
+    "the product-search Lambda was deployed at 9:58 AM -- look at how it reads from the table",
+    "there is a difference between a DynamoDB Scan and a Query -- one reads every item in the table, the other uses an index",
+    "the search Lambda runs a Scan with a FilterExpression on the category attribute -- there is no GSI on category, so every invocation reads all four million items"
+  ],
+  "consoles": [
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/table-description.json",
+        "artifacts/architecture-hint.txt"
+      ],
+      "capabilities": [
+        "describe_table",
+        "query",
+        "scan",
+        "describe_time_to_live",
+        "list_global_secondary_indexes"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/metrics.csv",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "describe_alarms",
+        "get_log_events",
+        "get_metric_statistics"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-code-snippet.txt",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_event_source_mappings",
+        "get_policy"
+      ]
+    }
+  ]
 }

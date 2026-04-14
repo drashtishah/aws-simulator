@@ -15,7 +15,10 @@
     "estimated_minutes",
     "exam_topics",
     "company",
-    "team",
+    "glossary",
+    "system",
+    "consoles",
+    "progressive_clues",
     "resolution"
   ],
   "properties": {
@@ -113,190 +116,92 @@
       },
       "additionalProperties": false
     },
-    "team": {
+    "glossary": {
       "type": "object",
-      "required": ["narrator", "consoles"],
+      "additionalProperties": { "type": "string" },
+      "description": "AWS jargon definitions keyed by term. 5-10 entries per sim, 1-2 sentence definitions pitched at a beginner."
+    },
+    "system": {
+      "type": "object",
+      "required": ["what_broke"],
       "properties": {
-        "narrator": {
-          "type": "object",
-          "required": ["personality", "story_beats", "hints", "max_hints_before_nudge", "glossary", "narrative_arc", "system_narration"],
-          "properties": {
-            "personality": {
-              "type": "string",
-              "description": "Narrator persona. Sets tone for the simulation. Example: On-call SRE team lead. Terse, 3am energy."
-            },
-            "story_beats": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["trigger"],
-                "properties": {
-                  "trigger": {
-                    "type": "string",
-                    "description": "Event that fires this beat. Values: start, elapsed_minutes:N, fix_validated, hint_requested:N, wrong_diagnosis."
-                  },
-                  "section": {
-                    "type": "string",
-                    "description": "Section of story.md to read. Used for start and fix_validated triggers."
-                  },
-                  "message": {
-                    "type": "string",
-                    "description": "Inline message for time-based or event-based beats."
-                  }
-                },
-                "additionalProperties": false
-              },
-              "minItems": 2,
-              "description": "Narrative beats triggered during the simulation."
-            },
-            "hints": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["text", "relevant_services"],
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "description": "The hint text, progressing from vague to specific."
-                  },
-                  "relevant_services": {
-                    "type": "array",
-                    "items": { "type": "string" },
-                    "description": "Service slugs this hint relates to."
-                  },
-                  "skip_if_queried": {
-                    "type": "array",
-                    "items": { "type": "string" },
-                    "default": [],
-                    "description": "Skip this hint if the player has already queried all of these services."
-                  }
-                },
-                "additionalProperties": false
-              },
-              "minItems": 2,
-              "description": "Progressive hints from least to most specific. Tagged with service relevance for adaptive delivery."
-            },
-            "glossary": {
-              "type": "object",
-              "additionalProperties": { "type": "string" },
-              "description": "AWS jargon definitions keyed by term. 5-10 entries per sim, 1-2 sentence definitions pitched at a beginner."
-            },
-            "narrative_arc": {
-              "type": "object",
-              "required": ["call", "threshold", "trials", "revelation", "return"],
-              "properties": {
-                "call": {
-                  "type": "string",
-                  "description": "The inciting incident -- the alert, symptom, or first sign of trouble."
-                },
-                "threshold": {
-                  "type": "string",
-                  "description": "The moment the player crosses into investigation -- what they see first."
-                },
-                "trials": {
-                  "type": "string",
-                  "description": "The red herrings, partial truths, and misleading evidence."
-                },
-                "revelation": {
-                  "type": "string",
-                  "description": "The root cause discovery moment."
-                },
-                "return": {
-                  "type": "string",
-                  "description": "The lesson, the prevention, what changes."
-                }
-              },
-              "additionalProperties": false,
-              "description": "Campbell monomyth mapping for this sim. Guides narrator pacing and improvisation."
-            },
-            "system_narration": {
-              "type": "object",
-              "required": ["components", "data_flow", "what_broke"],
-              "properties": {
-                "components": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "required": ["name", "role", "connections", "failure_impact"],
-                    "properties": {
-                      "name": {
-                        "type": "string",
-                        "description": "Component name including resource name. Example: novapay-txn-rpts (S3 bucket)"
-                      },
-                      "role": {
-                        "type": "string",
-                        "description": "What this component does in the system."
-                      },
-                      "connections": {
-                        "type": "array",
-                        "items": { "type": "string" },
-                        "description": "How this component connects to others. Example: novapay-ecs-task-role writes via PutObject"
-                      },
-                      "failure_impact": {
-                        "type": "string",
-                        "description": "What happens if this component fails or is misconfigured."
-                      }
-                    },
-                    "additionalProperties": false
-                  },
-                  "minItems": 2,
-                  "description": "Major system components with roles, connections, and failure impacts."
-                },
-                "data_flow": {
-                  "type": "string",
-                  "description": "Normal data flow through the system. Example: RDS -> ECS task -> S3 bucket -> Analytics vendor"
-                },
-                "what_broke": {
-                  "type": "string",
-                  "description": "What specifically broke in this sim. RESOLUTION ONLY -- not shown during investigation."
-                }
-              },
-              "additionalProperties": false,
-              "description": "System context for narrator visualization. Helps player build mental model during investigation."
-            },
-            "max_hints_before_nudge": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 10,
-              "description": "Number of hints before narrator gives a strong nudge toward the answer."
-            }
-          },
-          "additionalProperties": false
+        "what_broke": {
+          "type": "string",
+          "description": "One sentence summary of the failure mode. Shown only during resolution."
         },
-        "consoles": {
+        "data_flow": {
+          "type": "string",
+          "description": "Normal data flow through the system. Example: RDS -> ECS task -> S3 bucket -> Analytics vendor"
+        },
+        "components": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["service", "artifacts", "capabilities"],
+            "required": ["name", "role", "connections", "failure_impact"],
             "properties": {
-              "service": {
+              "name": {
                 "type": "string",
-                "description": "AWS service slug this console represents."
+                "description": "Component name including resource name. Example: novapay-txn-rpts (S3 bucket)"
               },
-              "artifacts": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1,
-                "description": "Relative paths to artifact files this console can serve."
+              "role": {
+                "type": "string",
+                "description": "What this component does in the system."
               },
-              "capabilities": {
+              "connections": {
                 "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1,
-                "description": "Simulated API actions this console supports. Use snake_case AWS action names."
+                "items": { "type": "string" },
+                "description": "How this component connects to others. Example: novapay-ecs-task-role writes via PutObject."
+              },
+              "failure_impact": {
+                "type": "string",
+                "description": "What happens if this component fails or is misconfigured."
               }
             },
             "additionalProperties": false
           },
-          "minItems": 2,
-          "description": "Service consoles the player can query. Minimum 2 per sim."
+          "description": "Major system components with roles, connections, and failure impacts."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "System context for the play agent. Helps the player build a mental model of the infrastructure."
+    },
+    "consoles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["service", "artifacts", "capabilities"],
+        "properties": {
+          "service": {
+            "type": "string",
+            "description": "AWS service slug this console represents."
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Relative paths to artifact files this console can serve."
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Simulated API actions this console supports. Keeps the play agent grounded in real AWS capabilities."
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 2,
+      "description": "Service consoles the play agent can reference. Minimum 2 per sim. Every service in the top-level services array must have a matching console entry."
+    },
+    "progressive_clues": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "description": "Progressive clues from vaguest to most specific. Plain strings. The play agent reads them in order and decides when, if ever, to surface them based on the player's progress."
     },
     "resolution": {
       "type": "object",

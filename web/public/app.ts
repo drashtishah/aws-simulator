@@ -1,6 +1,7 @@
 /* AWS Incident Simulator - Frontend Application */
 
 import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal.js';
+import { filterAvailableSims } from './sim-picker-filter.js';
 
 // --- Types ---
 
@@ -82,6 +83,8 @@ interface StreamEvent {
   sessionId?: string;
   content?: string;
   message?: string;
+  label?: string;
+  open?: boolean;
 }
 
 type StreamHandlers = Record<string, (data: StreamEvent) => void>;
@@ -308,12 +311,16 @@ async function loadSimPicker(): Promise<void> {
   }
 
   let inProgressIds: string[] = [];
+  let sessions: Array<{ status: string; sim_id: string }> = [];
   try {
-    const sessions: Array<{ status: string; sim_id: string }> = await fetchJSON('/api/sessions');
+    sessions = await fetchJSON('/api/sessions');
     inProgressIds = sessions.filter(s => s.status === 'in_progress').map(s => s.sim_id);
   } catch {
     // ignore
   }
+
+  // Hide sims that have a completed session
+  registry.sims = filterAvailableSims(registry.sims, sessions);
 
   const grid = $('sim-grid');
   const empty = $('sim-empty');
@@ -440,16 +447,14 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
       },
-      console: (data: StreamEvent) => {
-        appendMessage('console', data.content || '');
-      },
-      coaching: (data: StreamEvent) => {
-        appendMessage('coaching', data.content || '');
+      dropdown: (data: StreamEvent) => {
+        appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
+        scheduleReturnToDashboard();
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -507,16 +512,14 @@ async function sendMessage(): Promise<void> {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
       },
-      console: (data: StreamEvent) => {
-        appendMessage('console', data.content || '');
-      },
-      coaching: (data: StreamEvent) => {
-        appendMessage('coaching', data.content || '');
+      dropdown: (data: StreamEvent) => {
+        appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
+        scheduleReturnToDashboard();
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -555,9 +558,13 @@ async function sendMessage(): Promise<void> {
       });
       await streamResponse(retryResponse, {
         text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
-        console: (data: StreamEvent) => appendMessage('console', data.content || ''),
-        coaching: (data: StreamEvent) => appendMessage('coaching', data.content || ''),
-        complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
+        dropdown: (data: StreamEvent) => appendMessage('dropdown', data.content || '', { label: data.label, open: data.open }),
+        complete: () => {
+          sessionCompleted = true;
+          setInputEnabled(false);
+          appendMessage('system', 'Simulation complete.');
+          scheduleReturnToDashboard();
+        },
         profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
         profile_updated: () => handleSessionComplete('updated'),
         profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
@@ -664,7 +671,7 @@ function hideConfirmModal(): void {
 
 // --- Chat UI Helpers ---
 
-function appendMessage(type: string, content: string): void {
+function appendMessage(type: string, content: string, event?: { label?: string; open?: boolean }): void {
   if (!content || !content.trim()) return;
   const messages = $('chat-messages');
   const div = document.createElement('div');
@@ -682,17 +689,13 @@ function appendMessage(type: string, content: string): void {
 
   div.className = 'chat-message ' + type + ' msg-enter';
 
-  if (type === 'console') {
+  if (type === 'dropdown') {
+    const label = event?.label ?? 'Details';
+    const open = event?.open ?? false;
     div.appendChild(CollapsibleBlock({
-      title: 'Console',
-      bodyHtml: '<pre>' + escapeHtml(content) + '</pre>',
-      defaultOpen: false,
-    }));
-  } else if (type === 'coaching') {
-    div.appendChild(CollapsibleBlock({
-      title: 'Coaching',
+      title: label,
       bodyHtml: renderMarkdown(content),
-      defaultOpen: true,
+      defaultOpen: open,
     }));
     renderMermaidIn(div);
   } else {
@@ -706,6 +709,15 @@ function appendMessage(type: string, content: string): void {
   } else {
     $('new-messages-pill').classList.add('visible');
   }
+}
+
+// Delay so the "Simulation complete." system message renders before navigating away.
+const COMPLETE_TO_DASHBOARD_MS = 1500;
+
+function scheduleReturnToDashboard(): void {
+  setTimeout(() => {
+    document.getElementById('tab-dashboard')?.click();
+  }, COMPLETE_TO_DASHBOARD_MS);
 }
 
 function showTyping(show: boolean): void {

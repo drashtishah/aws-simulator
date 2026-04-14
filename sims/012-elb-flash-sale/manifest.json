@@ -27,245 +27,6 @@
     "industry": "e-commerce",
     "size": "Series A startup, 22 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "backend lead, awake because the sale was her idea",
-        "demeanor": "quiet, self-blaming",
-        "recurring_concern": "customer drop-off and the collaboration partner's reputation"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "checkout error rate at 68%",
-            "social media mentions turning negative",
-            "collaboration partner's marketing team asking what happened"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "traffic dropping because customers gave up, not because site recovered",
-            "sale items still in stock",
-            "nobody could add items to cart"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "CEO forwarded a tweet thread with 38 tweets about the site being down during the drop",
-            "collaboration partner wants a call in the morning"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "metrics do not support that diagnosis",
-            "look at the load balancer and scaling activity, not the application code"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "ALB": "Application Load Balancer. A service that distributes incoming web traffic across multiple servers so no single server gets overwhelmed.",
-        "Target Group": "A set of EC2 instances that the load balancer sends traffic to. The ALB checks each target's health before routing requests to it.",
-        "Auto Scaling Group": "A collection of EC2 instances that can grow or shrink automatically based on rules you define, like CPU usage or request count.",
-        "Cooldown Period": "A pause after a scaling event during which Auto Scaling will not launch or terminate more instances. Prevents overreacting to temporary spikes.",
-        "Pre-warming": "Asking AWS Support to increase a load balancer's internal capacity before a known traffic event. Required because ALBs scale gradually on their own.",
-        "LCU Reservation": "Load Balancer Capacity Unit reservation. A self-service way to guarantee a minimum capacity baseline for your ALB without opening a support ticket.",
-        "Target Tracking Policy": "A scaling policy that adjusts the number of instances to keep a chosen metric at a target value, like keeping request count per instance below 300.",
-        "ALBRequestCountPerTarget": "A CloudWatch metric that counts how many requests each instance behind the ALB is handling. Reacts to traffic changes faster than CPU metrics.",
-        "503 Error": "An HTTP status code meaning the server is too busy to handle the request. In ALB terms, it means the load balancer itself ran out of capacity.",
-        "TargetResponseTime": "A CloudWatch metric that measures how long it takes for a target instance to respond to a request routed by the ALB. High values indicate overload."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player enters investigation, ALB returning 503s, both instances at 98% CPU, checkout error rate 68%, load balancer rejecting connections",
-        "trials": "scaling group launched a third instance at 12:03 AM but health check did not pass until 12:07 AM, cooldown blocked fourth instance until 12:08 AM, traffic falling because customers leaving not because system recovering",
-        "revelation": "ALB was never pre-warmed, can only absorb ~2x over five minutes, scaling policy watches CPU with 300-second cooldown -- lagging indicator for a scheduled public traffic event",
-        "return": "pre-warm ALB or use LCU reservation, replace CPU policy with ALBRequestCountPerTarget target tracking, reduce cooldown to 60 seconds, post-incident review"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "Internet Gateway",
-            "role": "Public traffic entry point for all inbound HTTPS requests to the VPC",
-            "connections": [
-              "Application Load Balancer: vellora-prod-alb"
-            ],
-            "failure_impact": "If the Internet Gateway is unavailable, no external traffic reaches the ALB"
-          },
-          {
-            "name": "Application Load Balancer: vellora-prod-alb",
-            "role": "Internet-facing ALB across 2 AZs that distributes traffic to the target group, not pre-warmed for the flash sale",
-            "connections": [
-              "Internet Gateway",
-              "Target Group: vellora-web-tg"
-            ],
-            "failure_impact": "Without pre-warming, the ALB cannot absorb a 10x traffic spike in under a minute, returning 503 errors"
-          },
-          {
-            "name": "Target Group: vellora-web-tg",
-            "role": "Routes HTTP traffic on port 8080 to registered EC2 instances, health check on /health every 30 seconds",
-            "connections": [
-              "Application Load Balancer: vellora-prod-alb",
-              "EC2 instances"
-            ],
-            "failure_impact": "If health checks fail or instances are overloaded, the ALB has no healthy targets to forward requests to"
-          },
-          {
-            "name": "Auto Scaling Group: vellora-web-asg",
-            "role": "Manages EC2 fleet with min 2, max 20, desired 2, and a 300-second cooldown between scaling actions",
-            "connections": [
-              "EC2 instances",
-              "CloudWatch alarm: vellora-cpu-high",
-              "Simple scaling policy: vellora-cpu-scale-out"
-            ],
-            "failure_impact": "The 300-second cooldown and CPU-based trigger delay scaling by minutes during a sudden traffic spike"
-          },
-          {
-            "name": "EC2 instances: 2x t3.large (vellora-web-01, vellora-web-02)",
-            "role": "Run the web storefront application, handling product browsing, cart, and checkout",
-            "connections": [
-              "Target Group: vellora-web-tg",
-              "RDS: vellora-prod-db"
-            ],
-            "failure_impact": "With only 2 instances at sale start, both hit 98% CPU within seconds of the traffic spike"
-          },
-          {
-            "name": "CloudWatch alarm: vellora-cpu-high",
-            "role": "Fires when CPUUtilization exceeds 70% for 2 consecutive 60-second evaluation periods",
-            "connections": [
-              "Auto Scaling Group: vellora-web-asg"
-            ],
-            "failure_impact": "The 2-minute detection delay means the alarm fires after the damage is already done"
-          },
-          {
-            "name": "Simple scaling policy: vellora-cpu-scale-out",
-            "role": "Adds 1 instance per alarm breach, subject to the ASG cooldown period",
-            "connections": [
-              "Auto Scaling Group: vellora-web-asg"
-            ],
-            "failure_impact": "Adding only 1 instance at a time with a 300-second cooldown cannot match a 10x traffic surge"
-          },
-          {
-            "name": "RDS: vellora-prod-db (db.r5.large, PostgreSQL 15.4, Multi-AZ)",
-            "role": "Backend database for product catalog, inventory, and order data",
-            "connections": [
-              "EC2 instances"
-            ],
-            "failure_impact": "If the database becomes a bottleneck, even scaled-out instances cannot serve requests"
-          }
-        ],
-        "data_flow": "Customer HTTPS request enters through the Internet Gateway, hits the ALB on port 443, which forwards to the target group on port 8080. The ALB distributes requests across healthy EC2 instances in the ASG. Instances connect to the RDS database. CloudWatch monitors CPU on the ASG and triggers the simple scaling policy when the alarm fires.",
-        "what_broke": "The ALB's internal capacity scales gradually -- roughly 2x over five minutes. A 10x spike in 45 seconds exceeded what it could absorb. The ALB started returning 503 errors and rejecting connections. Simultaneously, the only scaling policy used CPUUtilization with a 300-second cooldown. The alarm took two 60-second evaluation periods to fire. The first new instance did not pass health checks for four minutes. The cooldown blocked further scaling for five minutes. By the time capacity caught up, customers had already abandoned the site."
-      },
-      "hints": [
-        {
-          "hint": "check the ALB metrics dashboard around midnight -- what do RequestCount, 5XX errors, and TargetResponseTime show?",
-          "relevant_services": [
-            "elb",
-            "cloudwatch"
-          ],
-          "skip_if_queried": [
-            "describe_load_balancers",
-            "get_metric_data"
-          ]
-        },
-        {
-          "hint": "ALBs scale internal capacity gradually -- how quickly can one absorb a traffic increase without intervention?",
-          "relevant_services": [
-            "elb"
-          ],
-          "skip_if_queried": [
-            "describe_target_health"
-          ]
-        },
-        {
-          "hint": "check the auto scaling group configuration -- what metric triggers scale-out and what is the cooldown period?",
-          "relevant_services": [
-            "auto-scaling"
-          ],
-          "skip_if_queried": [
-            "describe_auto_scaling_groups",
-            "describe_policies"
-          ]
-        },
-        {
-          "hint": "the ALB was never pre-warmed before the sale, and the scaling policy uses only CPU -- ALBRequestCountPerTarget reacts faster to traffic spikes",
-          "relevant_services": [
-            "elb",
-            "auto-scaling",
-            "cloudwatch"
-          ],
-          "skip_if_queried": [
-            "describe_scaling_activities"
-          ]
-        },
-        {
-          "hint": "two fixes: contact AWS Support to pre-warm the ALB or use LCU reservation, and add a target tracking policy on ALBRequestCountPerTarget with a 60-second cooldown",
-          "relevant_services": [
-            "elb",
-            "auto-scaling"
-          ],
-          "skip_if_queried": []
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "elb",
-        "artifacts": [
-          "artifacts/alb-config.json",
-          "artifacts/target-group-health.json",
-          "artifacts/metrics.csv"
-        ],
-        "capabilities": [
-          "describe_load_balancers",
-          "describe_target_groups",
-          "describe_target_health",
-          "describe_listeners",
-          "describe_rules"
-        ]
-      },
-      {
-        "service": "auto-scaling",
-        "artifacts": [
-          "artifacts/asg-config.json",
-          "artifacts/scaling-activities.json"
-        ],
-        "capabilities": [
-          "describe_auto_scaling_groups",
-          "describe_scaling_activities",
-          "describe_policies",
-          "describe_launch_template"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/metrics.csv",
-          "artifacts/alarms.json",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_metric_data",
-          "describe_alarms",
-          "get_log_events",
-          "list_metrics"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "The Application Load Balancer was not pre-warmed before a predictable 10x traffic spike, and the Auto Scaling group used only CPUUtilization with a 300-second cooldown -- too slow to respond to a request-count-driven surge that saturated the existing two instances in under 60 seconds.",
     "fix_criteria": [
@@ -334,5 +95,143 @@
       "Set the cooldown period -- the pause between scaling actions -- based on your traffic pattern. For bursty or spiky traffic, use 60 to 120 seconds. The default 300 seconds is only appropriate for gradual, organic growth. Target tracking and step scaling policies manage their own cooldowns, which is another reason to prefer them over simple scaling.",
       "Create CloudWatch alarms on HTTPCode_ELB_5XX_Count (server errors from the load balancer), RejectedConnectionCount (connections refused), and TargetResponseTime (how long servers take to respond) -- not just CPU. These metrics detect load balancer capacity problems that CPU alarms miss entirely."
     ]
-  }
+  },
+  "glossary": {
+    "ALB": "Application Load Balancer. A service that distributes incoming web traffic across multiple servers so no single server gets overwhelmed.",
+    "Target Group": "A set of EC2 instances that the load balancer sends traffic to. The ALB checks each target's health before routing requests to it.",
+    "Auto Scaling Group": "A collection of EC2 instances that can grow or shrink automatically based on rules you define, like CPU usage or request count.",
+    "Cooldown Period": "A pause after a scaling event during which Auto Scaling will not launch or terminate more instances. Prevents overreacting to temporary spikes.",
+    "Pre-warming": "Asking AWS Support to increase a load balancer's internal capacity before a known traffic event. Required because ALBs scale gradually on their own.",
+    "LCU Reservation": "Load Balancer Capacity Unit reservation. A self-service way to guarantee a minimum capacity baseline for your ALB without opening a support ticket.",
+    "Target Tracking Policy": "A scaling policy that adjusts the number of instances to keep a chosen metric at a target value, like keeping request count per instance below 300.",
+    "ALBRequestCountPerTarget": "A CloudWatch metric that counts how many requests each instance behind the ALB is handling. Reacts to traffic changes faster than CPU metrics.",
+    "503 Error": "An HTTP status code meaning the server is too busy to handle the request. In ALB terms, it means the load balancer itself ran out of capacity.",
+    "TargetResponseTime": "A CloudWatch metric that measures how long it takes for a target instance to respond to a request routed by the ALB. High values indicate overload."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "Internet Gateway",
+        "role": "Public traffic entry point for all inbound HTTPS requests to the VPC",
+        "connections": [
+          "Application Load Balancer: vellora-prod-alb"
+        ],
+        "failure_impact": "If the Internet Gateway is unavailable, no external traffic reaches the ALB"
+      },
+      {
+        "name": "Application Load Balancer: vellora-prod-alb",
+        "role": "Internet-facing ALB across 2 AZs that distributes traffic to the target group, not pre-warmed for the flash sale",
+        "connections": [
+          "Internet Gateway",
+          "Target Group: vellora-web-tg"
+        ],
+        "failure_impact": "Without pre-warming, the ALB cannot absorb a 10x traffic spike in under a minute, returning 503 errors"
+      },
+      {
+        "name": "Target Group: vellora-web-tg",
+        "role": "Routes HTTP traffic on port 8080 to registered EC2 instances, health check on /health every 30 seconds",
+        "connections": [
+          "Application Load Balancer: vellora-prod-alb",
+          "EC2 instances"
+        ],
+        "failure_impact": "If health checks fail or instances are overloaded, the ALB has no healthy targets to forward requests to"
+      },
+      {
+        "name": "Auto Scaling Group: vellora-web-asg",
+        "role": "Manages EC2 fleet with min 2, max 20, desired 2, and a 300-second cooldown between scaling actions",
+        "connections": [
+          "EC2 instances",
+          "CloudWatch alarm: vellora-cpu-high",
+          "Simple scaling policy: vellora-cpu-scale-out"
+        ],
+        "failure_impact": "The 300-second cooldown and CPU-based trigger delay scaling by minutes during a sudden traffic spike"
+      },
+      {
+        "name": "EC2 instances: 2x t3.large (vellora-web-01, vellora-web-02)",
+        "role": "Run the web storefront application, handling product browsing, cart, and checkout",
+        "connections": [
+          "Target Group: vellora-web-tg",
+          "RDS: vellora-prod-db"
+        ],
+        "failure_impact": "With only 2 instances at sale start, both hit 98% CPU within seconds of the traffic spike"
+      },
+      {
+        "name": "CloudWatch alarm: vellora-cpu-high",
+        "role": "Fires when CPUUtilization exceeds 70% for 2 consecutive 60-second evaluation periods",
+        "connections": [
+          "Auto Scaling Group: vellora-web-asg"
+        ],
+        "failure_impact": "The 2-minute detection delay means the alarm fires after the damage is already done"
+      },
+      {
+        "name": "Simple scaling policy: vellora-cpu-scale-out",
+        "role": "Adds 1 instance per alarm breach, subject to the ASG cooldown period",
+        "connections": [
+          "Auto Scaling Group: vellora-web-asg"
+        ],
+        "failure_impact": "Adding only 1 instance at a time with a 300-second cooldown cannot match a 10x traffic surge"
+      },
+      {
+        "name": "RDS: vellora-prod-db (db.r5.large, PostgreSQL 15.4, Multi-AZ)",
+        "role": "Backend database for product catalog, inventory, and order data",
+        "connections": [
+          "EC2 instances"
+        ],
+        "failure_impact": "If the database becomes a bottleneck, even scaled-out instances cannot serve requests"
+      }
+    ],
+    "data_flow": "Customer HTTPS request enters through the Internet Gateway, hits the ALB on port 443, which forwards to the target group on port 8080. The ALB distributes requests across healthy EC2 instances in the ASG. Instances connect to the RDS database. CloudWatch monitors CPU on the ASG and triggers the simple scaling policy when the alarm fires.",
+    "what_broke": "The ALB's internal capacity scales gradually -- roughly 2x over five minutes. A 10x spike in 45 seconds exceeded what it could absorb. The ALB started returning 503 errors and rejecting connections. Simultaneously, the only scaling policy used CPUUtilization with a 300-second cooldown. The alarm took two 60-second evaluation periods to fire. The first new instance did not pass health checks for four minutes. The cooldown blocked further scaling for five minutes. By the time capacity caught up, customers had already abandoned the site."
+  },
+  "progressive_clues": [
+    "check the ALB metrics dashboard around midnight -- what do RequestCount, 5XX errors, and TargetResponseTime show?",
+    "ALBs scale internal capacity gradually -- how quickly can one absorb a traffic increase without intervention?",
+    "check the auto scaling group configuration -- what metric triggers scale-out and what is the cooldown period?",
+    "the ALB was never pre-warmed before the sale, and the scaling policy uses only CPU -- ALBRequestCountPerTarget reacts faster to traffic spikes",
+    "two fixes: contact AWS Support to pre-warm the ALB or use LCU reservation, and add a target tracking policy on ALBRequestCountPerTarget with a 60-second cooldown"
+  ],
+  "consoles": [
+    {
+      "service": "elb",
+      "artifacts": [
+        "artifacts/alb-config.json",
+        "artifacts/target-group-health.json",
+        "artifacts/metrics.csv"
+      ],
+      "capabilities": [
+        "describe_load_balancers",
+        "describe_target_groups",
+        "describe_target_health",
+        "describe_listeners",
+        "describe_rules"
+      ]
+    },
+    {
+      "service": "auto-scaling",
+      "artifacts": [
+        "artifacts/asg-config.json",
+        "artifacts/scaling-activities.json"
+      ],
+      "capabilities": [
+        "describe_auto_scaling_groups",
+        "describe_scaling_activities",
+        "describe_policies",
+        "describe_launch_template"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/metrics.csv",
+        "artifacts/alarms.json",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "describe_alarms",
+        "get_log_events",
+        "list_metrics"
+      ]
+    }
+  ]
 }

@@ -40,6 +40,7 @@ The manifest is the machine-readable definition of the simulation. The play skil
 {
   "id": "001-s3-bucket-breach",
   "title": "Someone Else's Keys",
+  "summary": "A fintech's transaction reports are downloadable by anyone with the URL. The bucket policy change happened six days ago.",
   "difficulty": 2,
   "category": "security",
   "services": ["s3", "iam", "cloudtrail"],
@@ -56,140 +57,85 @@ The manifest is the machine-readable definition of the simulation. The play skil
     "industry": "fintech",
     "size": "Series B startup, 45 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": "On-call SRE team lead. Terse, 3am energy. Customer-obsessed. Drops context about merchant impact between technical details.",
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "message": "Customer complaints climbing. VP of Engineering just joined the bridge call. Three merchants have emailed support about exposed transaction records."
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "message": "Security team confirmed: a researcher posted about the exposure on Twitter 20 minutes ago. Clock is ticking on public disclosure."
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "message": "Legal is asking for a timeline. We need root cause and remediation in the next 10 minutes or we escalate to the CEO."
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "message": "That does not match what the evidence shows. Take another look at the artifacts -- the issue is in the access controls, not the application code."
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "hints": [
-        {
-          "text": "Have you looked at who can access that bucket?",
-          "relevant_services": ["s3"],
-          "skip_if_queried": []
-        },
-        {
-          "text": "CloudTrail keeps a record of every API call. When was the bucket policy last modified?",
-          "relevant_services": ["cloudtrail"],
-          "skip_if_queried": ["cloudtrail"]
-        },
-        {
-          "text": "Look at the bucket policy document carefully -- who is the Principal?",
-          "relevant_services": ["s3"],
-          "skip_if_queried": []
-        },
-        {
-          "text": "The Principal field is set to * -- that means anyone on the internet can read objects from this bucket.",
-          "relevant_services": ["s3"],
-          "skip_if_queried": []
-        }
-      ],
-      "glossary": {
-        "S3 bucket policy": "A JSON document attached directly to an S3 bucket that defines who can access it and what actions they can perform. Unlike IAM policies (which attach to users/roles), bucket policies attach to the resource itself.",
-        "Principal": "The entity (user, account, service, or anonymous) that is allowed or denied access in a policy statement. Principal: * means anyone, including unauthenticated users on the internet.",
-        "CloudTrail": "An AWS service that logs every API call made in your account -- who did what, when, and from where. Think of it as a security camera for your AWS account.",
-        "S3 Block Public Access": "A set of four account-level and bucket-level controls that override bucket policies and ACLs to prevent public access. Acts as a safety net even if a policy is misconfigured.",
-        "IAM policy": "A JSON document that defines permissions for an AWS identity (user, group, or role). Unlike bucket policies, IAM policies travel with the identity, not the resource.",
-        "GetObject": "The S3 API action for reading/downloading an object from a bucket. If a bucket policy allows s3:GetObject to Principal: *, anyone can download any file.",
-        "PutBucketPolicy": "The S3 API action for setting a bucket's access policy. CloudTrail logs this call, so you can see exactly who changed a policy and when."
-      },
-      "narrative_arc": {
-        "call": "PagerDuty fires at 3:14 AM -- a security researcher has posted a direct link to transaction files.",
-        "threshold": "The player opens the S3 console and sees the bucket policy. The IAM policy sits beside it, looking equally suspicious.",
-        "trials": "The IAM policy is a red herring -- it only grants write access. CloudTrail shows the policy change but the player must connect the dots between the timestamp and the junior engineer's intent.",
-        "revelation": "Principal: * in the bucket policy. One character that made 14,847 files public for six days.",
-        "return": "Block Public Access as a guardrail. Config rules for detection. Peer review for policy changes. The fix is small; the lesson is systemic."
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "novapay-txn-rpts (S3 bucket)",
-            "role": "Stores daily merchant transaction report CSV files generated by the ECS task.",
-            "connections": ["novapay-ecs-task-role writes via PutObject", "Analytics vendor reads via GetObject", "CloudTrail logs all access"],
-            "failure_impact": "If misconfigured, transaction data is exposed to the public internet."
-          },
-          {
-            "name": "novapay-ecs-task-role (IAM role)",
-            "role": "Identity assumed by the ECS transaction service. Grants write access to the S3 bucket and read access to RDS.",
-            "connections": ["Assumed by ECS task novapay-txn-service", "Writes to novapay-txn-rpts bucket"],
-            "failure_impact": "If over-permissioned, the task could modify or delete objects beyond its scope."
-          },
-          {
-            "name": "novapay-prod-trail (CloudTrail)",
-            "role": "Logs all management API calls and S3 data events for the account.",
-            "connections": ["Records PutBucketPolicy calls on novapay-txn-rpts", "Records GetObject data events"],
-            "failure_impact": "If disabled, no forensic record of who changed the policy or accessed the data."
-          }
-        ],
-        "data_flow": "ECS task queries RDS for transaction data, generates CSV reports, uploads to S3 via PutObject. Analytics vendor reads reports via GetObject. CloudTrail records all API calls.",
-        "what_broke": "The bucket policy was changed to grant s3:GetObject to Principal: * -- making every object publicly readable. The intent was vendor-specific access; the result was internet-wide access."
-      },
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
+  "glossary": {
+    "S3 bucket policy": "A JSON document attached directly to an S3 bucket that defines who can access it and what actions they can perform. Unlike IAM policies (which attach to users/roles), bucket policies attach to the resource itself.",
+    "Principal": "The entity (user, account, service, or anonymous) that is allowed or denied access in a policy statement. Principal: * means anyone, including unauthenticated users on the internet.",
+    "CloudTrail": "An AWS service that logs every API call made in your account. Who did what, when, and from where. Think of it as a security camera for your AWS account.",
+    "S3 Block Public Access": "A set of four account-level and bucket-level controls that override bucket policies and ACLs to prevent public access. Acts as a safety net even if a policy is misconfigured.",
+    "IAM policy": "A JSON document that defines permissions for an AWS identity (user, group, or role). Unlike bucket policies, IAM policies travel with the identity, not the resource.",
+    "GetObject": "The S3 API action for reading or downloading an object from a bucket. If a bucket policy allows s3:GetObject to Principal: *, anyone can download any file.",
+    "PutBucketPolicy": "The S3 API action for setting a bucket's access policy. CloudTrail logs this call, so you can see exactly who changed a policy and when."
+  },
+  "system": {
+    "what_broke": "The bucket policy was changed to grant s3:GetObject to Principal: *, making every object publicly readable. The intent was vendor-specific access; the result was internet-wide access.",
+    "data_flow": "ECS task queries RDS for transaction data, generates CSV reports, uploads to S3 via PutObject. Analytics vendor reads reports via GetObject. CloudTrail records all API calls.",
+    "components": [
       {
-        "service": "s3",
-        "artifacts": [
-          "artifacts/bucket-policy.json",
-          "artifacts/s3-access-logs.txt",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "describe_bucket",
-          "get_bucket_policy",
-          "list_objects",
-          "get_bucket_acl",
-          "get_public_access_block"
-        ]
+        "name": "novapay-txn-rpts (S3 bucket)",
+        "role": "Stores daily merchant transaction report CSV files generated by the ECS task.",
+        "connections": ["novapay-ecs-task-role writes via PutObject", "Analytics vendor reads via GetObject", "CloudTrail logs all access"],
+        "failure_impact": "If misconfigured, transaction data is exposed to the public internet."
       },
       {
-        "service": "iam",
-        "artifacts": [
-          "artifacts/iam-policy.json"
-        ],
-        "capabilities": [
-          "list_roles",
-          "get_role_policy",
-          "simulate_policy",
-          "list_attached_policies"
-        ]
+        "name": "novapay-ecs-task-role (IAM role)",
+        "role": "Identity assumed by the ECS transaction service. Grants write access to the S3 bucket and read access to RDS.",
+        "connections": ["Assumed by ECS task novapay-txn-service", "Writes to novapay-txn-rpts bucket"],
+        "failure_impact": "If over-permissioned, the task could modify or delete objects beyond its scope."
       },
       {
-        "service": "cloudtrail",
-        "artifacts": [
-          "artifacts/cloudtrail-events.json"
-        ],
-        "capabilities": [
-          "lookup_events",
-          "get_trail_status",
-          "get_event_selectors"
-        ]
+        "name": "novapay-prod-trail (CloudTrail)",
+        "role": "Logs all management API calls and S3 data events for the account.",
+        "connections": ["Records PutBucketPolicy calls on novapay-txn-rpts", "Records GetObject data events"],
+        "failure_impact": "If disabled, no forensic record of who changed the policy or accessed the data."
       }
     ]
   },
+  "consoles": [
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/bucket-policy.json",
+        "artifacts/s3-access-logs.txt",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "describe_bucket",
+        "get_bucket_policy",
+        "list_objects",
+        "get_bucket_acl",
+        "get_public_access_block"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/iam-policy.json"
+      ],
+      "capabilities": [
+        "list_roles",
+        "get_role_policy",
+        "simulate_policy",
+        "list_attached_policies"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status",
+        "get_event_selectors"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Have you looked at who can access that bucket?",
+    "CloudTrail keeps a record of every API call. When was the bucket policy last modified?",
+    "Look at the bucket policy document carefully. Who is the Principal?",
+    "The Principal field is set to *. That means anyone on the internet can read objects from this bucket."
+  ],
   "resolution": {
     "root_cause": "S3 bucket policy grants s3:GetObject to Principal: * -- the novapay-transaction-reports bucket is publicly readable, exposing merchant transaction data to the internet.",
     "fix_criteria": [
@@ -259,17 +205,18 @@ The manifest is the machine-readable definition of the simulation. The play skil
 > [!tip] Manifest Quality Checklist
 > - `id` matches the directory name exactly
 > - `services` array uses slugs from `learning/catalog.csv`
-> - Every service in `services` has a corresponding console entry in `team.consoles`
-> - `story_beats` includes at minimum `start` and `fix_validated` triggers
-> - `hints` are objects with `text`, `relevant_services`, and `skip_if_queried` -- progressing from vague to specific
+> - Every service in `services` has a corresponding entry in top-level `consoles[]`
+> - `consoles[]` entries keep `service`, `artifacts`, and `capabilities` so the play agent stays grounded in real AWS actions
 > - `glossary` has 5-10 AWS terms pitched at a beginner, no common English words
-> - `narrative_arc` maps the sim to the Campbell monomyth (call, threshold, trials, revelation, return)
-> - `system_narration` has components with roles/connections/failure_impact, plus data_flow and what_broke
+> - `system` has `what_broke` (required), plus optional `data_flow` and `components` with roles, connections, and failure_impact
+> - `progressive_clues` is a string array ordered from vaguest to most specific. The play agent reads them in order and decides when, if ever, to surface them
 > - `fix_criteria` has at least one `required: true` criterion
 > - `exam_topics` reference real domains from `exam-topics.md`
 > - `sop_steps` has numbered remediation steps adapted to this sim's resources, written in beginner-friendly language (plain English first, AWS terms second)
 > - `related_failure_modes` has 2-4 alternative failure scenarios for the same services, written in beginner-friendly language
 > - `sop_practices` has 2-4 best-practice takeaways beyond the immediate fix, written in beginner-friendly language
+>
+> The play agent receives the full manifest, `story.md`, `resolution.md`, and the player's theme at session start. It picks a voice and decides pacing. Sim authors do not script narrator personality, story beats, or hint delivery.
 
 ---
 
@@ -508,9 +455,9 @@ ASCII diagram of the infrastructure. Same detail as the resolution version but w
 ```
 
 > [!tip] Architecture Hint Rules
-> - Use ASCII box-drawing characters (`+`, `-`, `|`, `>`, `v`, `^`)
+> - Authors may use either ASCII (in a `text`-fenced block) or Mermaid (in a `mermaid`-fenced block) for these architecture artifacts. Pick whichever fits the diagram.
 > - Label every component with its actual resource name
-> - Do NOT include problem markers -- no `[PUBLIC ACCESS]`, `[DELETED]`, `[WRONG REGION]` etc.
+> - Do NOT include problem markers. No `[PUBLIC ACCESS]`, `[DELETED]`, `[WRONG REGION]`, etc.
 > - Include IAM roles and permissions as annotations (these are factual)
 > - Show data flow direction with arrows
 

@@ -15,7 +15,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] `sims/registry.json` existence check runs on startup
 - [ ] Claude subprocess uses `--append-system-prompt-file`, not `--system-prompt`
 - [ ] Claude subprocess uses `--dangerously-skip-permissions` and `--allowedTools "Read,Write"`
-- [ ] Claude subprocess uses `--model sonnet`
+- [ ] Claude subprocess uses `--model opus` for play (per scripts/model-config.json)
 - [ ] Environment variables CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION, CLAUDE_CODE_PARENT_SESSION are stripped from subprocess env
 - [ ] Only one active session at a time (startSession ends previous)
 - [ ] `--resume` uses the Claude session ID, not our session ID
@@ -30,29 +30,12 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 
 ## Prompt Builder
 
-- [ ] Template extracted from triple-backtick fence in agent-prompts.md
-- [ ] `{narrator.personality}` replaced with JSON.stringify of personality object
-- [ ] `{company.name}`, `{company.industry}`, `{company.size}` replaced
-- [ ] `{story.md contents}` placeholder replaced with full story.md
-- [ ] `{artifacts/context.txt contents}` replaced
-- [ ] `{artifacts/architecture-hint.txt contents}` replaced
-- [ ] `{artifacts/architecture-resolution.txt contents}` replaced
-- [ ] Fix criteria loop expanded from manifest.resolution.fix_criteria
-- [ ] Hints loop expanded with text, relevant_services, skip_if_queried
-- [ ] `{narrator.max_hints_before_nudge}` replaced (appears twice in template)
-- [ ] Story beats loop expanded with trigger and section/facts/message
-- [ ] Narrative arc fields expanded (call, threshold, trials, revelation, return)
-- [ ] `{theme.base}` replaced with _base.md content (frontmatter stripped)
-- [ ] `{theme.voice}` replaced with theme file content (frontmatter stripped)
-- [ ] Glossary loop expanded as term/definition pairs
-- [ ] System narration: data_flow, components loop, what_broke
-- [ ] Console data: service name, capabilities, artifact contents inline
-- [ ] `{sim_id}` replaced globally (appears in session file paths)
-- [ ] Web session rules appended at end
-- [ ] Unresolved `{...}` placeholders logged as PROMPT_PLACEHOLDER_UNRESOLVED
-- [ ] Missing artifact files logged as ARTIFACT_MISSING with fallback text
-- [ ] Null/undefined manifest fields handled without crashing
-- [ ] Hints use `hint.hint` field (not `hint.text`) per manifest schema
+- [ ] Template extracted from `## Template` fenced block in agent-prompts.md
+- [ ] `manifest.json`, `story.md`, `resolution.md` (optional) injected verbatim under their `### {file}` headings
+- [ ] `themes/_base.md` injected verbatim; `themes/{theme_id}.md` injected with frontmatter stripped
+- [ ] Each file in `sims/{id}/artifacts/` injected under its own `### artifacts/{name}` heading
+- [ ] Block placeholders replaced before `{sim_id}` / `{theme_id}` global substitution (block strings contain literal `{sim_id}`)
+- [ ] Throws `Sim "{id}" not found` and `Theme "{id}" not found` with the path
 
 ## File I/O
 
@@ -78,8 +61,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] `type: complete` sent when [SESSION_COMPLETE] detected
 - [ ] `type: error` sent on subprocess failure
 - [ ] Response stream ended with res.end() after done
-- [ ] `[CONSOLE_START]`/`[CONSOLE_END]` markers parsed into `type: console` events
-- [ ] `[COACHING_START]`/`[COACHING_END]` markers parsed into `type: coaching` events
+- [ ] `[DROPDOWN label="..." open="..."]...[/DROPDOWN]` markers parsed into `type: dropdown` events with `label` and `open` fields
 
 ## Frontend
 
@@ -104,7 +86,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] session state: sim_id, status, criteria_met, criteria_remaining, last_active, investigation_summary, hints_used, questions_asked, story_beats_fired, services_queried
 - [ ] journal.md: entries split by `## ` headers, Date and Key Takeaway fields
 - [ ] registry.json: version, sims array with id, title, difficulty, category, services, estimated_minutes
-- [ ] manifest.json: id, title, company, team.narrator, team.consoles, resolution
+- [ ] manifest.json: id, title, company, glossary, system, consoles, progressive_clues, resolution
 - [ ] catalog.csv: service, full_name, category, cert_relevance, knowledge_score, sims_completed, last_practiced, notes
 
 ## Observability
