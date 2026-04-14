@@ -10,11 +10,11 @@ import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 
-// Model choice: Opus for both play and post-session. The play agent has to
-// hold the full sim folder in context (manifest, story, resolution, artifacts)
-// and reason about what to reveal vs. withhold across turns; Sonnet leaked
-// root cause under the same prompt. Per-stage effort lives in
-// scripts/model-config.json. Tune effort before changing models.
+// Play uses Sonnet-medium with progressive disclosure of artifacts (see
+// prompt-builder). Manifest, story, and resolution stay in context so the
+// narrator can guide and verify the player's fix without leaking. Rollback
+// to Opus is a one-line change in scripts/model-config.json; no code revert
+// needed. Per-stage effort lives in scripts/model-config.json.
 export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
 export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;
 
@@ -58,9 +58,42 @@ export async function startSession(simId: string, themeId: string, options: Star
 
   const promptText = buildPrompt(simId, themeId);
 
-  const stdinMessage = options.resume
-    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`)
-    : 'Begin. Open the incident in your voice: set the scene, establish the stakes, then hand the floor to the player.';
+  const sessionData = {
+    claudeSessionId: null as string | null,
+    simId,
+    themeId,
+    model: modelKey,
+    modelId,
+    startedAt: new Date(),
+    turnCount: 0,
+    systemPrompt: promptText
+  };
+  sessions.set(sessionId, sessionData);
+  persistSession(sessionId, sessionData);
+  createGameSession(simId);
+
+  logEvent(sessionId, {
+    level: 'info',
+    event: 'session_start',
+    sim_id: simId,
+    theme: themeId,
+    model_requested: modelKey
+  });
+
+  // Fresh start: render the author-written opening.md instantly and defer
+  // the Claude session to the first sendMessage. Mirrors streamSession.
+  if (!options.resume) {
+    const opening = fs.readFileSync(paths.opening(simId), 'utf8').trim();
+    return {
+      sessionId,
+      events: [{ type: 'text', content: opening }],
+      sessionComplete: false
+    };
+  }
+
+  // Resume path: ask Claude to re-orient from narrator-notes.md.
+  const stdinMessage = options.resumeMessage
+    ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`;
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
@@ -80,29 +113,8 @@ export async function startSession(simId: string, themeId: string, options: Star
   const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
   const { events, sessionComplete } = parseEvents(parsed.fullText);
 
-  const sessionData = {
-    claudeSessionId: parsed.claudeSessionId,
-    simId,
-    themeId,
-    model: modelKey,
-    modelId,
-    startedAt: new Date(),
-    turnCount: 0,
-    systemPrompt: promptText
-  };
-  sessions.set(sessionId, sessionData);
+  sessionData.claudeSessionId = parsed.claudeSessionId;
   persistSession(sessionId, sessionData);
-  createGameSession(simId);
-
-  logEvent(sessionId, {
-    level: 'info',
-    event: 'session_start',
-    sim_id: simId,
-    theme: themeId,
-    model_requested: modelKey,
-    model_actual: parsed.claudeModel ?? 'unknown',
-    claude_session_id: parsed.claudeSessionId
-  });
 
   if (parsed.claudeModel && parsed.claudeModel !== modelKey && !parsed.claudeModel.includes(modelKey)) {
     logEvent(sessionId, {
