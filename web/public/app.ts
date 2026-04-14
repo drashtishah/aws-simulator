@@ -1,5 +1,6 @@
 /* AWS Incident Simulator - Frontend Application */
 
+import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal';
 
 // --- Types ---
 
@@ -142,6 +143,11 @@ function setSetting(key: string, value: string): void {
   } catch {
     // Private browsing or quota exceeded
   }
+}
+
+function getRevealSpeed(): number {
+  const map: Record<'slow' | 'normal' | 'instant', number> = { slow: 80, normal: 40, instant: 0 };
+  return map[getSetting('revealSpeed', 'normal') as keyof typeof map] ?? 40;
 }
 
 // --- Theme Loading ---
@@ -662,27 +668,37 @@ function appendMessage(type: string, content: string): void {
   if (!content || !content.trim()) return;
   const messages = $('chat-messages');
   const div = document.createElement('div');
+
+  if (type === 'narrator') {
+    // No msg-enter on wrapper when reveal is active; per-unit .reveal-unit animates instead.
+    div.className = 'chat-message narrator';
+    messages.appendChild(div);
+    revealMarkdownInto(div, content, getRevealSpeed()).then(() => {
+      if (isScrollPinned) scrollToBottom();
+    });
+    // Return early: scroll handled inside revealMarkdownInto per unit.
+    return;
+  }
+
   div.className = 'chat-message ' + type + ' msg-enter';
-  if (type === 'narrator' || type === 'coaching') {
-    div.innerHTML = renderMarkdown(content);
-    // Render any Mermaid diagrams in the message
-    if (typeof mermaid !== 'undefined') {
-      const codeBlocks = div.querySelectorAll('pre code.language-mermaid');
-      codeBlocks.forEach(async (block: Element, idx: number) => {
-        const pre = block.parentElement;
-        const id = 'mermaid-' + Date.now() + '-' + idx;
-        try {
-          const { svg } = await mermaid.render(id, block.textContent || '');
-          const wrapper = document.createElement('div');
-          wrapper.className = 'mermaid-diagram';
-          wrapper.innerHTML = svg;
-          pre?.replaceWith(wrapper);
-        } catch { /* leave as code block if mermaid fails */ }
-      });
-    }
+
+  if (type === 'console') {
+    div.appendChild(CollapsibleBlock({
+      title: 'Console',
+      bodyHtml: '<pre>' + escapeHtml(content) + '</pre>',
+      defaultOpen: false,
+    }));
+  } else if (type === 'coaching') {
+    div.appendChild(CollapsibleBlock({
+      title: 'Coaching',
+      bodyHtml: renderMarkdown(content),
+      defaultOpen: true,
+    }));
+    renderMermaidIn(div);
   } else {
     div.textContent = content;
   }
+
   messages.appendChild(div);
 
   if (isScrollPinned) {
@@ -802,7 +818,16 @@ async function loadSettings(): Promise<void> {
     // ignore
   }
 
-
+  initCustomSelect(
+    $('select-reveal-speed'),
+    [
+      { value: 'slow', label: 'Slow' },
+      { value: 'normal', label: 'Normal' },
+      { value: 'instant', label: 'Instant' },
+    ],
+    getSetting('revealSpeed', 'normal'),
+    (val: string) => setSetting('revealSpeed', val)
+  );
 }
 
 function formatThemeName(id: string): string {

@@ -1246,3 +1246,69 @@ a:hover {
   white-space: nowrap;
   border: 0;
 }
+
+/* === Progressive Reveal === */
+
+@keyframes revealUnit {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-unit {
+  animation: revealUnit 160ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-unit {
+    animation: none;
+  }
+}
+
+/* === Collapsible Blocks === */
+
+.collapsible-block {
+  margin: 0.25rem 0;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.collapsible-block summary {
+  cursor: pointer;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  user-select: none;
+  list-style: none;
+}
+
+.collapsible-block summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible-block summary::before {
+  content: '+ ';
+}
+
+.collapsible-block[open] summary::before {
+  content: '- ';
+}
+
+.collapsible-body {
+  padding: 0.5rem 0.75rem;
+}
+
+.collapsible-console pre {
+  white-space: pre-wrap;
+  margin: 0;
+}
