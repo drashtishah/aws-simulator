@@ -133,18 +133,14 @@ Tracked in `learning/player-vault/patterns/behavioral-profile.md`, updated after
 
 ---
 
-## Hint System
+## Progressive Clues
 
-Progressive, adaptive hint delivery during investigation:
+Author-supplied clues the play agent reaches for when the player stalls:
 
-- Hints are pre-authored per sim in `manifest.team.narrator.hints`, ordered vague-to-specific
-- Each hint has: `text`, `relevant_services`, `skip_if_queried`
-- Trigger: 2+ consecutive unproductive questions
-- One hint at a time, delivered in order
-- Adaptive filtering: skip hints when the player has already queried the relevant services
-- After max hints without progress, offer a clean architecture diagram as final aid
-- Hints are narrated in the active theme's voice
-- No scoring penalty for hints, but hint-prompted questions score lower on the "building" dimension
+- Clues are pre-authored per sim in `manifest.progressive_clues`, a string array ordered vague-to-specific
+- The play agent receives the full sim package (manifest, story, resolution, artifacts) at session start and decides if and when to surface a clue
+- No scheduling triggers, no skip-if-queried logic; the agent reads the room
+- Hint-prompted questions still count for question-quality scoring, no separate penalty
 
 ---
 
