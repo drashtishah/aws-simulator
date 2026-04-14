@@ -211,7 +211,7 @@ app.get('/api/ui-themes', (_req: Request, res: Response) => {
 
 interface ProfileData {
   skill_polygon?: Record<string, number>;
-  completed_sims?: string[];
+  completed_sims?: Array<string | { sim_id: string }>;
   polygon_last_advanced?: Record<string, string>;
   rank_history?: unknown[];
   challenge_runs?: unknown[];
@@ -239,7 +239,10 @@ app.get('/api/progress', (_req: Request, res: Response) => {
   });
 
   const polygon = progression.initPolygon(profile.skill_polygon ?? {}, config);
-  const rank = progression.currentRank(polygon, config);
+  // Pass profile so evaluateQualityGate runs (min_sessions_at_rank,
+  // avg_question_quality). Without it, rank advances on axes alone and
+  // the harder progression gates silently skip.
+  const rank = progression.currentRank(polygon, config, profile as Parameters<typeof progression.currentRank>[2]);
   const normalized = progression.normalizePolygon(polygon, config);
   const axes = progression.axisNames(config);
   const axisLabels: Record<string, string> = {};
@@ -260,7 +263,12 @@ app.get('/api/progress', (_req: Request, res: Response) => {
     // catalog may not exist yet
   }
 
-  const completedSimIds = profile.completed_sims ?? [];
+  // completed_sims may be string[] (legacy) or Array<{sim_id, ...}> (what the
+  // post-session agent writes today with session metadata). Normalize here.
+  const completedSimEntries = profile.completed_sims ?? [];
+  const completedSimIds = completedSimEntries.map(entry =>
+    typeof entry === 'string' ? entry : (entry as { sim_id: string }).sim_id
+  );
   const registry = readJSON<RegistryData>(paths.REGISTRY, { sims: [] });
   const completedSims = completedSimIds.map(id => {
     const sim = registry.sims.find(s => s.id === id);
@@ -373,6 +381,28 @@ app.post('/api/game/message', async (req: Request, res: Response) => {
   try {
     if (truncated) {
       res.write(`data: ${JSON.stringify({ type: 'warning', message: 'Message truncated to 2000 characters.' })}\n\n`);
+    }
+
+    // Player-typed safe word: short-circuit the narrator and run post-session
+    // directly. Removes reliance on agent emission of [SESSION_COMPLETE].
+    // "masala" is a safe word: zero chance of appearing mid-AWS-incident,
+    // memorable, not a slash command, and the agent has no knowledge of it.
+    if (msg.trim().toLowerCase() === 'masala') {
+      const session = claudeSession.sessions.get(sessionId);
+      const simId = session ? session.simId : null;
+      if (simId) {
+        res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
+        try {
+          await claudeProcess.runPostSessionAgent(simId);
+          res.write(`data: ${JSON.stringify({ type: 'profile_updated' })}\n\n`);
+        } catch (postErr: unknown) {
+          const postMessage = postErr instanceof Error ? postErr.message : String(postErr);
+          console.error(`POST /api/game/message: post-session agent failed: ${postMessage}`);
+          res.write(`data: ${JSON.stringify({ type: 'profile_update_failed', message: postMessage })}\n\n`);
+        }
+      }
+      if (!res.writableEnded) res.end();
+      return;
     }
 
     let sessionComplete = false;

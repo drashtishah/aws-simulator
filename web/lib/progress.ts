@@ -16,8 +16,12 @@ function getQuestionTypes(): string[] {
   return progression.axisNames(getConfig());
 }
 
-function currentRank(polygon: Polygon | undefined): string {
-  return progression.currentRank(polygon ?? {}, getConfig()).title;
+// profile is optional so legacy callers keep working, but passing it in
+// activates the quality_gate check (min_sessions_at_rank, avg_question_quality).
+// Without the profile, polygon-only gates pass and the UI may show a higher
+// rank than the post-session agent agrees with.
+function currentRank(polygon: Polygon | undefined, profile?: Parameters<typeof progression.currentRank>[2]): string {
+  return progression.currentRank(polygon ?? {}, getConfig(), profile).title;
 }
 
 function normalizeHexagon(polygon: Polygon | undefined, maxScale?: number): Polygon {
