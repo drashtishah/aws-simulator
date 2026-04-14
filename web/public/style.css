@@ -1255,34 +1255,6 @@ a:hover {
   border: 0;
 }
 
-/* === Progressive Reveal === */
-
-@keyframes revealUnit {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.reveal-unit {
-  animation: revealUnit 160ms ease-out both;
-  margin-bottom: 0.6em;
-}
-
-.reveal-unit:last-child {
-  margin-bottom: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal-unit {
-    animation: none;
-  }
-}
-
 /* === Collapsible Blocks === */
 
 .collapsible-block {
