@@ -50,5 +50,9 @@ describe('paths', () => {
     it('sessionDir returns sessions/{id}', () => {
       assert.ok(paths.sessionDir('abc').endsWith(path.join('sessions', 'abc')));
     });
+
+    it('opening returns sims/{id}/opening.md', () => {
+      assert.ok(paths.opening('017-elasticache-eviction').endsWith(path.join('sims', '017-elasticache-eviction', 'opening.md')));
+    });
   });
 });
