@@ -1,6 +1,7 @@
 /* AWS Incident Simulator - Frontend Application */
 
-import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal.js';
+import { CollapsibleBlock, renderMermaidIn } from './reveal.js';
+import { stripNarratorMarkers } from './narrator-markers.js';
 import { filterAvailableSims } from './sim-picker-filter.js';
 
 // --- Types ---
@@ -129,6 +130,8 @@ let profile: Profile = { completed_sims: [] };
 let progressData: ProgressData | null = null;
 let isScrollPinned = true;
 let sessionCompleted = false;
+let currentNarratorDiv: HTMLElement | null = null;
+let narratorBuffer = '';
 
 // --- Settings (localStorage with fallback) ---
 
@@ -146,11 +149,6 @@ function setSetting(key: string, value: string): void {
   } catch {
     // Private browsing or quota exceeded
   }
-}
-
-function getRevealSpeed(): number {
-  const map: Record<'slow' | 'normal' | 'instant', number> = { slow: 80, normal: 40, instant: 0 };
-  return map[getSetting('revealSpeed', 'normal') as keyof typeof map] ?? 40;
 }
 
 // --- Theme Loading ---
@@ -440,12 +438,17 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
       body: JSON.stringify({ simId, themeId })
     });
 
+    currentNarratorDiv = null;
+    narratorBuffer = '';
     await streamResponse(response, {
       session: (data: StreamEvent) => {
         currentSessionId = data.sessionId || null;
       },
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
+      },
+      text_delta: (data: StreamEvent) => {
+        appendNarratorDelta(data.content || '');
       },
       dropdown: (data: StreamEvent) => {
         appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
@@ -473,6 +476,14 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         appendMessage('system', data.message || '');
       },
       done: () => {
+        const cleaned = stripNarratorMarkers(narratorBuffer).trim();
+        if (currentNarratorDiv !== null && cleaned === '') {
+          currentNarratorDiv.remove();
+          currentNarratorDiv = null;
+        } else if (currentNarratorDiv !== null) {
+          currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
+          renderMermaidIn(currentNarratorDiv);
+        }
         showTyping(false);
         if (!sessionCompleted) {
           setInputEnabled(true);
@@ -508,9 +519,14 @@ async function sendMessage(): Promise<void> {
       body: JSON.stringify({ sessionId: currentSessionId, message })
     });
 
+    currentNarratorDiv = null;
+    narratorBuffer = '';
     await streamResponse(response, {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
+      },
+      text_delta: (data: StreamEvent) => {
+        appendNarratorDelta(data.content || '');
       },
       dropdown: (data: StreamEvent) => {
         appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
@@ -538,6 +554,14 @@ async function sendMessage(): Promise<void> {
         appendMessage('system', data.message || '');
       },
       done: () => {
+        const cleaned = stripNarratorMarkers(narratorBuffer).trim();
+        if (currentNarratorDiv !== null && cleaned === '') {
+          currentNarratorDiv.remove();
+          currentNarratorDiv = null;
+        } else if (currentNarratorDiv !== null) {
+          currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
+          renderMermaidIn(currentNarratorDiv);
+        }
         showTyping(false);
         if (!sessionCompleted) {
           setInputEnabled(true);
@@ -556,8 +580,11 @@ async function sendMessage(): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: currentSessionId, message })
       });
+      currentNarratorDiv = null;
+      narratorBuffer = '';
       await streamResponse(retryResponse, {
         text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
+        text_delta: (data: StreamEvent) => appendNarratorDelta(data.content || ''),
         dropdown: (data: StreamEvent) => appendMessage('dropdown', data.content || '', { label: data.label, open: data.open }),
         complete: () => {
           sessionCompleted = true;
@@ -570,6 +597,14 @@ async function sendMessage(): Promise<void> {
         profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
         error: (data: StreamEvent) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
         done: () => {
+          const cleaned = stripNarratorMarkers(narratorBuffer).trim();
+          if (currentNarratorDiv !== null && cleaned === '') {
+            currentNarratorDiv.remove();
+            currentNarratorDiv = null;
+          } else if (currentNarratorDiv !== null) {
+            currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
+            renderMermaidIn(currentNarratorDiv);
+          }
           showTyping(false);
           if (!sessionCompleted) {
             setInputEnabled(true);
@@ -671,19 +706,32 @@ function hideConfirmModal(): void {
 
 // --- Chat UI Helpers ---
 
+function appendNarratorDelta(delta: string): void {
+  if (currentNarratorDiv === null) {
+    const div = document.createElement('div');
+    div.className = 'chat-message narrator';
+    $('chat-messages').appendChild(div);
+    currentNarratorDiv = div;
+  }
+  narratorBuffer += delta;
+  currentNarratorDiv.innerHTML = renderMarkdown(narratorBuffer);
+  if (isScrollPinned) scrollToBottom();
+}
+
 function appendMessage(type: string, content: string, event?: { label?: string; open?: boolean }): void {
   if (!content || !content.trim()) return;
   const messages = $('chat-messages');
   const div = document.createElement('div');
 
   if (type === 'narrator') {
-    // No msg-enter on wrapper when reveal is active; per-unit .reveal-unit animates instead.
+    if (currentNarratorDiv !== null) {
+      // Content already streamed via text_delta; skip.
+      return;
+    }
     div.className = 'chat-message narrator';
+    div.innerHTML = renderMarkdown(content);
     messages.appendChild(div);
-    revealMarkdownInto(div, content, getRevealSpeed()).then(() => {
-      if (isScrollPinned) scrollToBottom();
-    });
-    // Return early: scroll handled inside revealMarkdownInto per unit.
+    if (isScrollPinned) scrollToBottom();
     return;
   }
 
@@ -830,16 +878,6 @@ async function loadSettings(): Promise<void> {
     // ignore
   }
 
-  initCustomSelect(
-    $('select-reveal-speed'),
-    [
-      { value: 'slow', label: 'Slow' },
-      { value: 'normal', label: 'Normal' },
-      { value: 'instant', label: 'Instant' },
-    ],
-    getSetting('revealSpeed', 'normal'),
-    (val: string) => setSetting('revealSpeed', val)
-  );
 }
 
 function formatThemeName(id: string): string {
