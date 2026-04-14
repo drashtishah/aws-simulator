@@ -6,6 +6,6 @@ Four pull requests are queued. One of them patches a billing miscalculation that
 
 Your engineering lead, Priya, pinged you ten minutes ago: "I've restarted the pipeline three times. It rejects immediately every time. I need this unblocked today."
 
-The CloudWatch deployment-failures metric is at 7 and climbing. The team's working theory is that last month's IAM permission changes broke something.
+The CloudWatch deployment-failures metric is at 7 and climbing.
 
 Where do you start?
