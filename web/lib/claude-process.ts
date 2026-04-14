@@ -10,12 +10,11 @@ import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 
-// Model split rationale: Sonnet handles interactive play (faster, cheaper,
-// already strong enough for narrator + investigation reasoning). Opus handles
-// post-session scoring because it does cross-file analysis (session.json +
-// manifest + coaching-patterns + progression) and benefits from the deeper
-// reasoning. Per-stage model and effort live in scripts/model-config.json.
-// Do not flip these without an A/B test on quality. See Issue #107.
+// Model choice: Opus for both play and post-session. Play is persona-driven
+// with free-form narration, ending, and nudge decisions that benefit from
+// deeper reasoning. Post-session does cross-file scoring and vault writes.
+// Per-stage effort lives in scripts/model-config.json. Tune effort before
+// changing models.
 export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
 export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;
 

@@ -15,7 +15,7 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] `sims/registry.json` existence check runs on startup
 - [ ] Claude subprocess uses `--append-system-prompt-file`, not `--system-prompt`
 - [ ] Claude subprocess uses `--dangerously-skip-permissions` and `--allowedTools "Read,Write"`
-- [ ] Claude subprocess uses `--model sonnet`
+- [ ] Claude subprocess uses `--model opus` for play (per scripts/model-config.json)
 - [ ] Environment variables CLAUDECODE, CLAUDE_CODE_ENTRYPOINT, CLAUDE_CODE_SESSION, CLAUDE_CODE_PARENT_SESSION are stripped from subprocess env
 - [ ] Only one active session at a time (startSession ends previous)
 - [ ] `--resume` uses the Claude session ID, not our session ID
