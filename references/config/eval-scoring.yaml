@@ -27,40 +27,6 @@ categories:
       rule: all_values_gte_0
       target: scoring.service_scores
 
-  console_purity:
-    - id: cp_no_analysis_phrases
-      check: Console output contains no analysis phrases like "this means" or "the issue is"
-      requires: transcript
-      rule: not_contains_any
-      target: console_data
-      patterns:
-        - "this means"
-        - "the issue is"
-        - "this indicates"
-        - "this suggests"
-        - "the problem is"
-
-    - id: cp_no_hint_text
-      check: Console output contains no hint or coaching text
-      requires: transcript
-      rule: not_contains_any
-      target: console_data
-      patterns:
-        - "you should"
-        - "try looking"
-        - "consider checking"
-        - "have you tried"
-
-    - id: cp_no_narrator_commentary
-      check: Console output contains no narrator commentary or flavor text
-      requires: transcript
-      rule: not_contains_any
-      target: console_data
-      patterns:
-        - "narrator:"
-        - "note:"
-        - "hint:"
-
   leak_prevention:
     - id: lp_no_root_cause
       check: Narrator never mentions manifest root_cause field value

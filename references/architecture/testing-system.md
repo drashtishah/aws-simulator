@@ -52,7 +52,7 @@ test agent --dry-run      # print prompts without executing
 test evals                        # score a random completed session
 test evals --sim <id>             # score a specific session
 test evals --llm                  # include LLM judgment checks
-test evals --dry-run              # list all 60 checks by category
+test evals --dry-run              # list all 55 checks by category
 test evals --json                 # structured output
 ```
 
@@ -87,7 +87,7 @@ web/test-results/              Writable by test skill (gitignored)
   summary.json             Aggregated by test summary
 
 references/
-  eval-scoring.yaml           Layer 4: 60-check eval scorecard
+  eval-scoring.yaml           Layer 4: 55-check eval scorecard
 ```
 
 ## File Format Schemas
@@ -140,7 +140,7 @@ Each line in `learning/sessions/{sim_id}/turns.jsonl` is a JSON object:
 
 1. **Layer 1 (Deterministic):** `test run` executes unit tests. No browser needed.
 2. **Layer 2 (Agent Browser):** `test agent` loads YAML specs and prints prompts. The agent uses Chrome DevTools MCP to interact with the browser.
-3. **Layer 4 (Evals):** `test evals` runs a 60-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 11 categories: scoring integrity, console purity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
+3. **Layer 4 (Evals):** `test evals` runs a 55-check scorecard against completed play sessions. Checks are in `references/config/eval-scoring.yaml` across 10 categories: scoring integrity, leak prevention, coaching accuracy, hint delivery, question classification, session integrity, debrief quality, narrator behavior, progression, and narrator quality.
    - **Deterministic checks:** Run against session.json and turns.jsonl data. Instant, no LLM needed.
    - **LLM judgment checks:** Optional, evaluate narrator quality with an LLM judge. Triggered with `--llm` flag.
 

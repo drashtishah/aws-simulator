@@ -19,7 +19,7 @@ describe('eval scoring spec', () => {
   it('has 60 checks total', () => {
     const spec = yaml.load(fs.readFileSync(specPath, 'utf8'));
     const total = Object.values(spec.categories).flat().length;
-    assert.equal(total, 58, 'should have exactly 58 checks');
+    assert.equal(total, 55, 'should have exactly 55 checks');
   });
 
   it('every check has id, check, requires, and rule or prompt', () => {
@@ -66,7 +66,7 @@ describe('eval scoring spec', () => {
     const spec = yaml.load(fs.readFileSync(specPath, 'utf8'));
     const cats = Object.keys(spec.categories);
     const expected = [
-      'scoring_integrity', 'console_purity', 'leak_prevention',
+      'scoring_integrity', 'leak_prevention',
       'coaching_accuracy', 'hint_delivery', 'question_classification',
       'session_integrity', 'debrief_quality', 'narrator_behavior',
       'progression', 'narrator_quality'
@@ -94,7 +94,7 @@ describe('eval runner: allChecks', () => {
   it('returns flat array with category field added', () => {
     const spec = evalRunner.loadScoringSpec();
     const checks = evalRunner.allChecks(spec);
-    assert.equal(checks.length, 58);
+    assert.equal(checks.length, 55);
     assert.ok(checks[0].category, 'each check should have category');
   });
 });
