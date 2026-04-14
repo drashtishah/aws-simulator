@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-14
-note_count: 24
+note_count: 25
 ---
 # system-vault index
 
@@ -16,9 +16,10 @@ for the per-stage version of this protocol.
 - [[problem-plan-old-string-master-drift]] scope/pipeline stage/planner signal/loop: copy-pasted old_string in a revised plan goes stale when a sibling PR merges mid-revision; match fails or silently reverts sibling work
 - [[problem-shell-bsd-gnu-drift]] scope/ci signal/regression: shell scripts using BSD-only flags pass on macOS, fail every Linux CI run
 - [[problem-sibling-issue-collision]] scope/skills signal/loop: ad-hoc commit duplicates work a live sibling worktree already owns, requires revert and burns trust
-- [[problem-misapplied-label-persists-through-pipeline]] scope/pipeline signal/waste: wrong label persists through all stages because no stage can remove or correct labels
+- [[problem-misapplied-label-persists-through-pipeline]] scope/pipeline signal/waste signal/loop: wrong label persists because dispatcher re-applies after critic removal
 - [[problem-tsx-test-recursion]] scope/testing tool/tsx: tsx --test refuses to run itself recursively; outer integration test silently passes while inner suite skips
 - [[problem-plan-scope-change-stale-residue]] scope/pipeline stage/planner signal/loop: scope narrowing in revision leaves stale sections that burn critic rounds
+- [[problem-orphaned-rule-targets-absent-field]] scope/pipeline stage/implementer signal/regression tool/eval-runner: removing fieldMap entry without grepping eval-scoring.yaml leaves orphan rules that silently pass
 ## solutions
 - [[solution-baseline-via-worktree]] cost/trivial: git worktree add master to compare pre-existing test failures without leaving the main clone dirty
 - [[solution-doctor-skip-integration-on-ci]] cost/trivial: DOCTOR_SKIP_INTEGRATION=1 in ci.yml so the 12s web-server boot check does not flake on cold runners
