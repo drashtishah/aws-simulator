@@ -5,9 +5,9 @@ name: test-effort-dispatch
 # To be deleted after one successful run. See Issue #251.
 
 on:
-  push:
-    branches: [issue-251-centralize-model-config]
-    paths: ['.github/workflows/test-effort-dispatch.yml']
+  pull_request:
+    types: [synchronize]
+    branches: [master]
 
 permissions:
   contents: read
