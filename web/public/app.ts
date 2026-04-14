@@ -1,6 +1,7 @@
 /* AWS Incident Simulator - Frontend Application */
 
 import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal.js';
+import { filterAvailableSims } from './sim-picker-filter.js';
 
 // --- Types ---
 
@@ -310,12 +311,16 @@ async function loadSimPicker(): Promise<void> {
   }
 
   let inProgressIds: string[] = [];
+  let sessions: Array<{ status: string; sim_id: string }> = [];
   try {
-    const sessions: Array<{ status: string; sim_id: string }> = await fetchJSON('/api/sessions');
+    sessions = await fetchJSON('/api/sessions');
     inProgressIds = sessions.filter(s => s.status === 'in_progress').map(s => s.sim_id);
   } catch {
     // ignore
   }
+
+  // Hide sims that have a completed session
+  registry.sims = filterAvailableSims(registry.sims, sessions);
 
   const grid = $('sim-grid');
   const empty = $('sim-empty');
@@ -449,6 +454,10 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
+        setTimeout(() => {
+          const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
+          tabDashboard?.click();
+        }, 1500);
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -513,6 +522,10 @@ async function sendMessage(): Promise<void> {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
+        setTimeout(() => {
+          const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
+          tabDashboard?.click();
+        }, 1500);
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -552,7 +565,15 @@ async function sendMessage(): Promise<void> {
       await streamResponse(retryResponse, {
         text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
         dropdown: (data: StreamEvent) => appendMessage('dropdown', data.content || '', { label: data.label, open: data.open }),
-        complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
+        complete: () => {
+          sessionCompleted = true;
+          setInputEnabled(false);
+          appendMessage('system', 'Simulation complete.');
+          setTimeout(() => {
+            const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
+            tabDashboard?.click();
+          }, 1500);
+        },
         profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
         profile_updated: () => handleSessionComplete('updated'),
         profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
