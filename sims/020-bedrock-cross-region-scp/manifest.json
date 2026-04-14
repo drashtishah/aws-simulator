@@ -29,226 +29,6 @@
     "industry": "insurance technology",
     "size": "Enterprise, 180 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "senior SRE",
-        "demeanor": "dry, precise, states error rates to two decimal places",
-        "recurring_concern": "847 claims queued, SLA breach imminent, adjusters falling back to manual processing"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "error rate holding at 31.2% for the last 6 hours",
-            "no pattern by time of day or request payload",
-            "same request succeeds, then fails, then succeeds again"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "claims processing SLA breach in 45 minutes",
-            "847 claims queued behind the failures",
-            "adjusters processing manually as backup"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "governance team confirmed SCP change went in last Tuesday",
-            "governance team says it should not affect Bedrock"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "IAM role permissions are correct",
-            "Bedrock model access is enabled",
-            "intermittent pattern is the key -- what causes a service call to succeed sometimes and fail others with the same inputs?"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "Cross-Region Inference Profile": "A Bedrock configuration that routes model requests across multiple AWS regions for load balancing and higher throughput. System-defined profiles use a fixed set of regions. The caller does not choose which region handles a given request -- Bedrock's internal load balancer decides.",
-        "Service Control Policy (SCP)": "A policy set at the AWS Organizations level that defines the maximum permissions for all accounts in an organizational unit. SCPs cannot grant access -- they can only restrict it. If an SCP denies an action, no IAM policy in the child account can override it.",
-        "aws:RequestedRegion": "A global IAM condition key that evaluates to the AWS region where an API call is being made. SCPs commonly use this key with StringNotEquals to deny actions in unapproved regions.",
-        "Organizational Unit (OU)": "A grouping of AWS accounts within AWS Organizations. Policies like SCPs can be attached to an OU, and every account inside that OU inherits those restrictions.",
-        "AccessDeniedException": "An error returned when an AWS API call is blocked by IAM, SCP, or resource policies. The error message sometimes specifies 'explicit deny in a service control policy,' which means an SCP is the source of the block.",
-        "Application Inference Profile": "A user-created Bedrock inference profile that allows custom region selection. Unlike system-defined profiles, you control exactly which regions are included, so you can exclude regions blocked by organizational policies.",
-        "InvokeModel": "The Bedrock API action used to send a prompt to a foundation model and receive a response. When called with a cross-region inference profile, the request may be routed to any region listed in that profile.",
-        "Load Balancer Routing": "The mechanism by which a service distributes requests across multiple destinations. In Bedrock cross-region inference, routing is heuristics-based -- requests are spread across destination regions for throughput and availability, with no caller control over which region is selected."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "IAM role correct, model access enabled, Lambda code unchanged, same request succeeds then fails then succeeds -- usual explanations do not apply, problem not in the application",
-        "trials": "engineer checks IAM policies, Bedrock model configuration, Lambda execution logs, CloudWatch metrics -- everything correct, 31.2% error rate holds steady, pattern not in payload, timestamp, or caller",
-        "revelation": "cross-region inference profile routes to 3 regions, SCP blocks 1 of 3 (us-east-2), Bedrock load balancer picks blocked region ~1/3 of the time, SCP and inference profile operate at different layers with no mutual awareness",
-        "return": "create application inference profile with only allowed regions (us-east-1, us-west-2), establish coordination process between governance and engineering for SCP changes, post-incident review"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "Amazon SQS (claims-intake-q)",
-            "role": "Receives insurance claim documents from the intake system and triggers the Lambda processor",
-            "connections": [
-              "Lambda (claims-processor)"
-            ],
-            "failure_impact": "If the queue is inaccessible, claims stop entering the pipeline entirely"
-          },
-          {
-            "name": "Lambda (claims-processor)",
-            "role": "Reads claims from SQS, sends them to Bedrock for AI assessment via the cross-region inference profile, and returns results to adjusters",
-            "connections": [
-              "Amazon SQS",
-              "Amazon Bedrock"
-            ],
-            "failure_impact": "If the function errors, individual claims fail and retry up to three times before landing in the dead-letter queue"
-          },
-          {
-            "name": "IAM Role (polaris-claims-exec)",
-            "role": "Grants the Lambda function permission to call bedrock:InvokeModel on the inference profile and underlying foundation models in all three regions",
-            "connections": [
-              "Lambda (claims-processor)",
-              "Amazon Bedrock"
-            ],
-            "failure_impact": "If the IAM policy is too narrow, all Bedrock calls fail consistently -- not intermittently"
-          },
-          {
-            "name": "Amazon Bedrock (cross-region inference profile)",
-            "role": "Routes InvokeModel requests across us-east-1, us-east-2, and us-west-2 using internal load balancing for throughput and availability",
-            "connections": [
-              "Lambda (claims-processor)",
-              "us-east-1 endpoint",
-              "us-east-2 endpoint",
-              "us-west-2 endpoint"
-            ],
-            "failure_impact": "If one destination region is blocked at the organizational policy level, requests routed there fail while requests to allowed regions succeed -- producing an intermittent failure pattern"
-          },
-          {
-            "name": "SCP (RegionRestriction-v3)",
-            "role": "Denies all API actions (except IAM, Organizations, STS, Support, Budgets) in any region outside us-east-1 and us-west-2, applied to the Polaris OU",
-            "connections": [
-              "All API calls in Polaris OU accounts"
-            ],
-            "failure_impact": "Any Bedrock request routed to us-east-2 is denied before reaching the Bedrock service endpoint, returning AccessDeniedException"
-          },
-          {
-            "name": "AWS Organizations (Polaris OU)",
-            "role": "Groups the Polaris Underwriting production and dev accounts under Meridian Insurance Group, inheriting all attached SCPs",
-            "connections": [
-              "SCP (RegionRestriction-v3)",
-              "Polaris Underwriting account"
-            ],
-            "failure_impact": "If an SCP is too broad, it can silently break cross-region service features without any deployment-time validation"
-          }
-        ],
-        "data_flow": "Claims arrive in the SQS queue. Lambda picks up each claim, assumes the polaris-claims-exec role, and calls bedrock:InvokeModel using the system-defined cross-region inference profile us.anthropic.claude-3-5-sonnet-20241022-v2:0. Bedrock's load balancer selects one of three destination regions (us-east-1, us-east-2, us-west-2) and routes the request there. Before the request reaches the Bedrock endpoint in the destination region, AWS Organizations evaluates the SCP attached to the Polaris OU. If the destination region is us-east-1 or us-west-2, the SCP allows the call and it succeeds. If the destination is us-east-2, the SCP denies the call and returns AccessDeniedException.",
-        "what_broke": "On Tuesday, the Meridian governance team applied RegionRestriction-v3 to the Polaris OU, removing us-east-2 from the approved region list. The cross-region inference profile still includes us-east-2 as a destination. When Bedrock's load balancer routes a request to us-east-2, the SCP intercepts and denies it. Roughly one-third of all requests are routed there, producing a stable 31.2% failure rate. The SCP and the inference profile operate at different layers -- Organizations-level access control and Bedrock-level routing -- and neither validates against the other."
-      },
-      "hints": [
-        {
-          "hint": "failures are not random -- they follow a pattern, but the pattern is not in the request, it is in the routing",
-          "relevant_services": [
-            "bedrock",
-            "organizations"
-          ],
-          "skip_if_queried": []
-        },
-        {
-          "hint": "this account uses a cross-region inference profile -- where can Bedrock route the requests?",
-          "relevant_services": [
-            "bedrock"
-          ],
-          "skip_if_queried": [
-            "bedrock"
-          ]
-        },
-        {
-          "hint": "check which regions the inference profile includes, then check which regions the SCP allows",
-          "relevant_services": [
-            "bedrock",
-            "organizations"
-          ],
-          "skip_if_queried": [
-            "bedrock",
-            "organizations"
-          ]
-        },
-        {
-          "hint": "SCP blocks us-east-2, inference profile includes us-east-2 -- when Bedrock routes there the call is denied, when it routes to allowed regions it succeeds",
-          "relevant_services": [
-            "bedrock",
-            "iam",
-            "organizations"
-          ],
-          "skip_if_queried": []
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "bedrock",
-        "artifacts": [
-          "artifacts/inference-profile.json",
-          "artifacts/invocation-logs.json"
-        ],
-        "capabilities": [
-          "get_inference_profile",
-          "list_inference_profiles",
-          "invoke_model",
-          "get_model_invocation_logging_configuration"
-        ]
-      },
-      {
-        "service": "iam",
-        "artifacts": [
-          "artifacts/iam-policy.json",
-          "artifacts/scp-policy.json"
-        ],
-        "capabilities": [
-          "get_role",
-          "get_role_policy",
-          "list_attached_policies",
-          "simulate_policy"
-        ]
-      },
-      {
-        "service": "organizations",
-        "artifacts": [
-          "artifacts/scp-policy.json",
-          "artifacts/ou-structure.json"
-        ],
-        "capabilities": [
-          "describe_organization",
-          "list_policies",
-          "describe_policy",
-          "list_targets_for_policy"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/metrics.csv",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "get_metric_data",
-          "list_metrics",
-          "describe_alarms"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "A cross-region inference profile routes Bedrock InvokeModel calls across us-east-1, us-east-2, and us-west-2 for load balancing. A Service Control Policy applied by the parent organization blocks all API calls in us-east-2. When Bedrock routes to us-east-2, the call fails with AccessDeniedException. When it routes to an allowed region, it succeeds, producing an intermittent ~30% failure rate.",
     "fix_criteria": [
@@ -321,5 +101,134 @@
       "Add a pre-deployment validation step to the governance pipeline that automatically compares proposed SCP region changes against active cross-region service configurations in affected accounts. This catches conflicts before they cause intermittent failures in production.",
       "Set up a CloudWatch alarm on Bedrock InvocationErrors as a percentage of InvocationCount. A stable, non-trivial error rate -- not near 0% and not near 100% -- is a strong signal of a routing or policy conflict rather than an application bug. In this case, the steady 31.2% rate was the key clue."
     ]
-  }
+  },
+  "glossary": {
+    "Cross-Region Inference Profile": "A Bedrock configuration that routes model requests across multiple AWS regions for load balancing and higher throughput. System-defined profiles use a fixed set of regions. The caller does not choose which region handles a given request -- Bedrock's internal load balancer decides.",
+    "Service Control Policy (SCP)": "A policy set at the AWS Organizations level that defines the maximum permissions for all accounts in an organizational unit. SCPs cannot grant access -- they can only restrict it. If an SCP denies an action, no IAM policy in the child account can override it.",
+    "aws:RequestedRegion": "A global IAM condition key that evaluates to the AWS region where an API call is being made. SCPs commonly use this key with StringNotEquals to deny actions in unapproved regions.",
+    "Organizational Unit (OU)": "A grouping of AWS accounts within AWS Organizations. Policies like SCPs can be attached to an OU, and every account inside that OU inherits those restrictions.",
+    "AccessDeniedException": "An error returned when an AWS API call is blocked by IAM, SCP, or resource policies. The error message sometimes specifies 'explicit deny in a service control policy,' which means an SCP is the source of the block.",
+    "Application Inference Profile": "A user-created Bedrock inference profile that allows custom region selection. Unlike system-defined profiles, you control exactly which regions are included, so you can exclude regions blocked by organizational policies.",
+    "InvokeModel": "The Bedrock API action used to send a prompt to a foundation model and receive a response. When called with a cross-region inference profile, the request may be routed to any region listed in that profile.",
+    "Load Balancer Routing": "The mechanism by which a service distributes requests across multiple destinations. In Bedrock cross-region inference, routing is heuristics-based -- requests are spread across destination regions for throughput and availability, with no caller control over which region is selected."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "Amazon SQS (claims-intake-q)",
+        "role": "Receives insurance claim documents from the intake system and triggers the Lambda processor",
+        "connections": [
+          "Lambda (claims-processor)"
+        ],
+        "failure_impact": "If the queue is inaccessible, claims stop entering the pipeline entirely"
+      },
+      {
+        "name": "Lambda (claims-processor)",
+        "role": "Reads claims from SQS, sends them to Bedrock for AI assessment via the cross-region inference profile, and returns results to adjusters",
+        "connections": [
+          "Amazon SQS",
+          "Amazon Bedrock"
+        ],
+        "failure_impact": "If the function errors, individual claims fail and retry up to three times before landing in the dead-letter queue"
+      },
+      {
+        "name": "IAM Role (polaris-claims-exec)",
+        "role": "Grants the Lambda function permission to call bedrock:InvokeModel on the inference profile and underlying foundation models in all three regions",
+        "connections": [
+          "Lambda (claims-processor)",
+          "Amazon Bedrock"
+        ],
+        "failure_impact": "If the IAM policy is too narrow, all Bedrock calls fail consistently -- not intermittently"
+      },
+      {
+        "name": "Amazon Bedrock (cross-region inference profile)",
+        "role": "Routes InvokeModel requests across us-east-1, us-east-2, and us-west-2 using internal load balancing for throughput and availability",
+        "connections": [
+          "Lambda (claims-processor)",
+          "us-east-1 endpoint",
+          "us-east-2 endpoint",
+          "us-west-2 endpoint"
+        ],
+        "failure_impact": "If one destination region is blocked at the organizational policy level, requests routed there fail while requests to allowed regions succeed -- producing an intermittent failure pattern"
+      },
+      {
+        "name": "SCP (RegionRestriction-v3)",
+        "role": "Denies all API actions (except IAM, Organizations, STS, Support, Budgets) in any region outside us-east-1 and us-west-2, applied to the Polaris OU",
+        "connections": [
+          "All API calls in Polaris OU accounts"
+        ],
+        "failure_impact": "Any Bedrock request routed to us-east-2 is denied before reaching the Bedrock service endpoint, returning AccessDeniedException"
+      },
+      {
+        "name": "AWS Organizations (Polaris OU)",
+        "role": "Groups the Polaris Underwriting production and dev accounts under Meridian Insurance Group, inheriting all attached SCPs",
+        "connections": [
+          "SCP (RegionRestriction-v3)",
+          "Polaris Underwriting account"
+        ],
+        "failure_impact": "If an SCP is too broad, it can silently break cross-region service features without any deployment-time validation"
+      }
+    ],
+    "data_flow": "Claims arrive in the SQS queue. Lambda picks up each claim, assumes the polaris-claims-exec role, and calls bedrock:InvokeModel using the system-defined cross-region inference profile us.anthropic.claude-3-5-sonnet-20241022-v2:0. Bedrock's load balancer selects one of three destination regions (us-east-1, us-east-2, us-west-2) and routes the request there. Before the request reaches the Bedrock endpoint in the destination region, AWS Organizations evaluates the SCP attached to the Polaris OU. If the destination region is us-east-1 or us-west-2, the SCP allows the call and it succeeds. If the destination is us-east-2, the SCP denies the call and returns AccessDeniedException.",
+    "what_broke": "On Tuesday, the Meridian governance team applied RegionRestriction-v3 to the Polaris OU, removing us-east-2 from the approved region list. The cross-region inference profile still includes us-east-2 as a destination. When Bedrock's load balancer routes a request to us-east-2, the SCP intercepts and denies it. Roughly one-third of all requests are routed there, producing a stable 31.2% failure rate. The SCP and the inference profile operate at different layers -- Organizations-level access control and Bedrock-level routing -- and neither validates against the other."
+  },
+  "progressive_clues": [
+    "failures are not random -- they follow a pattern, but the pattern is not in the request, it is in the routing",
+    "this account uses a cross-region inference profile -- where can Bedrock route the requests?",
+    "check which regions the inference profile includes, then check which regions the SCP allows",
+    "SCP blocks us-east-2, inference profile includes us-east-2 -- when Bedrock routes there the call is denied, when it routes to allowed regions it succeeds"
+  ],
+  "consoles": [
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/inference-profile.json",
+        "artifacts/invocation-logs.json"
+      ],
+      "capabilities": [
+        "get_inference_profile",
+        "list_inference_profiles",
+        "invoke_model",
+        "get_model_invocation_logging_configuration"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/iam-policy.json",
+        "artifacts/scp-policy.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "list_attached_policies",
+        "simulate_policy"
+      ]
+    },
+    {
+      "service": "organizations",
+      "artifacts": [
+        "artifacts/scp-policy.json",
+        "artifacts/ou-structure.json"
+      ],
+      "capabilities": [
+        "describe_organization",
+        "list_policies",
+        "describe_policy",
+        "list_targets_for_policy"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/metrics.csv",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    }
+  ]
 }

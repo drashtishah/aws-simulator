@@ -27,219 +27,6 @@
     "industry": "analytics / business intelligence",
     "size": "Bootstrapped profitable, 34 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "ops lead who set up the alerting migration three weeks ago",
-        "demeanor": "methodical, embarrassed",
-        "recurring_concern": "stale customer dashboards and lost trust"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "alarm has been in ALARM state for 47 minutes",
-            "alarm fired correctly, SNS topic received the message",
-            "nobody on the team knew until the tweet"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "confirmation email found in ops inbox spam folder, three weeks old",
-            "subject line: 'AWS Notification - Subscription Confirmation'"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:15",
-          "facts": [
-            "six customers reported stale dashboards",
-            "data pipeline failing for almost an hour",
-            "one customer mentioned Clarabridge in a LinkedIn post about 'vendor reliability'"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "DynamoDB throttling is a real issue but this is about why nobody was notified",
-            "the alarm fired -- the question is what happened after that"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "SNS Topic": "A communication channel in Amazon Simple Notification Service. When a message is published to a topic, SNS attempts to deliver it to every subscription on that topic.",
-        "Subscription": "A connection between an SNS topic and an endpoint (like an email address, phone number, or Lambda function). Each subscription has a protocol and a delivery status.",
-        "PendingConfirmation": "The status of an SNS subscription that has been created but not yet verified by the recipient. SNS silently drops all messages to subscriptions in this state -- no error, no log entry.",
-        "CloudWatch Alarm": "A rule that watches a metric over time and takes an action (like publishing to an SNS topic) when the metric crosses a threshold you define.",
-        "Dead-Letter Queue": "A queue that captures messages or invocations that failed to process. Without one, failed deliveries disappear silently with no record of what went wrong.",
-        "SMS Spending Limit": "A monthly dollar cap on SMS messages sent through SNS. The default is $1.00 per month. When the limit is reached, SNS stops sending SMS messages for the rest of the month with no notification.",
-        "NumberOfNotificationsFailed": "A CloudWatch metric published by SNS that counts how many delivery attempts failed for a topic. Monitoring this metric is the primary way to detect a broken notification pipeline.",
-        "Webhook": "An HTTP endpoint that receives automated POST requests. Slack incoming webhooks accept JSON payloads and post them as messages in a channel. If the webhook URL is rotated or revoked, requests return 403 Forbidden.",
-        "Lambda Environment Variable": "A key-value pair stored alongside a Lambda function's configuration. The function code reads it at runtime. Changing the value requires updating the function configuration, not the code."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player enters investigation, CloudWatch alarm in ALARM for 47 minutes, SNS topic received the message, no human was notified",
-        "trials": "three subscriptions on the topic -- email shows PendingConfirmation, Lambda invoked but returned error, SMS shows spending limit failure -- each path broken independently",
-        "revelation": "email never confirmed (spam folder), Slack webhook rotated 8 days ago (403 Forbidden), SMS budget exhausted by noisy alarm last week ($1.00 default) -- three redundant paths, three silent failures",
-        "return": "confirm email, update webhook URL, increase SMS limit, add CloudWatch alarm on NumberOfNotificationsFailed routed to separate verified path, post-incident review"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "CloudWatch Alarm (clarabridge-ingest-error-rate)",
-            "role": "Monitors the Lambda ingest processor error rate and publishes to the SNS topic when the 5% threshold is crossed",
-            "connections": [
-              "SNS Topic"
-            ],
-            "failure_impact": "If the alarm is misconfigured or disabled, no notification is triggered regardless of how many errors occur"
-          },
-          {
-            "name": "SNS Topic (clarabridge-ops-alerts)",
-            "role": "Receives alarm notifications and fans out delivery attempts to all subscriptions on the topic",
-            "connections": [
-              "Email Subscription",
-              "Lambda Subscription",
-              "SMS Subscription"
-            ],
-            "failure_impact": "If the topic policy blocks the CloudWatch service principal, the publish itself fails and no subscription receives anything"
-          },
-          {
-            "name": "Email Subscription (ops-team@clarabridge.io)",
-            "role": "Delivers alarm notifications to the ops team email distribution list",
-            "connections": [],
-            "failure_impact": "In PendingConfirmation status, SNS silently skips delivery -- no error metric, no log entry, no retry"
-          },
-          {
-            "name": "Lambda Subscription (clarabridge-slack-notifier)",
-            "role": "Receives the SNS message and posts it to the ops Slack channel via an incoming webhook URL stored in an environment variable",
-            "connections": [
-              "Slack Webhook"
-            ],
-            "failure_impact": "If the webhook URL is invalid, the function returns an error. Without a dead-letter queue, the failure is only visible in CloudWatch Logs for the function"
-          },
-          {
-            "name": "SMS Subscription (+1-512-555-0147)",
-            "role": "Sends a text message to the ops lead's phone as a last-resort notification path",
-            "connections": [],
-            "failure_impact": "When the account SMS spending limit is reached, delivery silently stops for the rest of the month with no notification to the account owner"
-          },
-          {
-            "name": "Lambda Function (clarabridge-ingest-processor)",
-            "role": "Processes 14 million events per day and writes to DynamoDB tables that feed customer dashboards",
-            "connections": [
-              "DynamoDB"
-            ],
-            "failure_impact": "When this function fails, customer dashboards show stale data -- the upstream problem that triggered the alarm in the first place"
-          }
-        ],
-        "data_flow": "The Lambda ingest processor writes events to DynamoDB. When it starts failing, the CloudWatch alarm detects the error rate crossing 5% and publishes a notification to the SNS topic clarabridge-ops-alerts. SNS fans out three delivery attempts: email to ops-team@clarabridge.io, Lambda invocation of clarabridge-slack-notifier (which POSTs to a Slack webhook), and SMS to the ops lead's phone number. Each path is independent.",
-        "what_broke": "All three delivery paths failed independently. The email subscription was in PendingConfirmation status since March 5 -- the confirmation email landed in the shared inbox's spam folder and was never opened. The Slack webhook URL was rotated on March 18 during a security audit, but nobody updated the Lambda environment variable, so every invocation returned 403 Forbidden. The SMS spending limit ($1.00 default) was exhausted on March 19 by a noisy alarm, silently stopping all SMS delivery for the rest of the month. When the alarm fired on March 26, zero humans were notified."
-      },
-      "hints": [
-        {
-          "hint": "the CloudWatch alarm fired correctly -- what SNS topic did it publish to, and what subscriptions exist on that topic?",
-          "relevant_services": [
-            "cloudwatch",
-            "sns"
-          ],
-          "skip_if_queried": []
-        },
-        {
-          "hint": "check the status of each SNS subscription -- are they all confirmed and actively delivering?",
-          "relevant_services": [
-            "sns"
-          ],
-          "skip_if_queried": [
-            "sns"
-          ]
-        },
-        {
-          "hint": "one subscription is PendingConfirmation -- but the other two paths also failed, check the Slack Lambda logs and the SMS delivery status",
-          "relevant_services": [
-            "sns",
-            "lambda"
-          ],
-          "skip_if_queried": [
-            "sns"
-          ]
-        },
-        {
-          "hint": "all three paths broken: email is PendingConfirmation, Slack Lambda getting 403 from rotated webhook, SMS hit the $1.00 default monthly spending limit",
-          "relevant_services": [
-            "sns",
-            "lambda"
-          ],
-          "skip_if_queried": [
-            "sns",
-            "lambda"
-          ]
-        },
-        {
-          "hint": "confirm the email subscription, update Slack webhook URL in Lambda environment variables, increase SMS spending limit, add CloudWatch alarm on NumberOfNotificationsFailed routed to a separate verified path",
-          "relevant_services": [
-            "sns",
-            "lambda"
-          ],
-          "skip_if_queried": []
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "sns",
-        "artifacts": [
-          "artifacts/topic-config.json",
-          "artifacts/subscriptions.json",
-          "artifacts/delivery-logs.json"
-        ],
-        "capabilities": [
-          "get_topic_attributes",
-          "list_subscriptions_by_topic",
-          "get_subscription_attributes",
-          "list_topics",
-          "get_sms_attributes"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/alarms.json",
-          "artifacts/metrics.csv",
-          "artifacts/alarm-history.json"
-        ],
-        "capabilities": [
-          "describe_alarms",
-          "describe_alarm_history",
-          "get_metric_data",
-          "list_metrics"
-        ]
-      },
-      {
-        "service": "lambda",
-        "artifacts": [
-          "artifacts/slack-lambda-config.json",
-          "artifacts/slack-lambda-logs.txt",
-          "artifacts/ingest-lambda-logs.txt"
-        ],
-        "capabilities": [
-          "get_function_configuration",
-          "list_functions",
-          "get_function",
-          "list_event_source_mappings"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "All three SNS notification paths were broken: the email subscription was PendingConfirmation for three weeks (confirmation email went to spam), the Slack webhook Lambda was receiving 403 Forbidden (webhook URL rotated), and SMS delivery silently failed due to the $1.00 default account spending limit -- so when the CloudWatch alarm fired, zero humans were notified.",
     "fix_criteria": [
@@ -312,5 +99,120 @@
       "Set up a dead-letter queue on every Lambda function that SNS triggers, and on every HTTPS subscription. A dead-letter queue catches messages that failed to deliver, so failures are saved for investigation instead of silently thrown away.",
       "Monitor the notification pipeline itself. Create a CloudWatch alarm on the NumberOfNotificationsFailed metric for every important SNS topic, and route that alarm to a separate, already-verified notification path. This way, if your alerts break, the alert-about-alerts still works."
     ]
-  }
+  },
+  "glossary": {
+    "SNS Topic": "A communication channel in Amazon Simple Notification Service. When a message is published to a topic, SNS attempts to deliver it to every subscription on that topic.",
+    "Subscription": "A connection between an SNS topic and an endpoint (like an email address, phone number, or Lambda function). Each subscription has a protocol and a delivery status.",
+    "PendingConfirmation": "The status of an SNS subscription that has been created but not yet verified by the recipient. SNS silently drops all messages to subscriptions in this state -- no error, no log entry.",
+    "CloudWatch Alarm": "A rule that watches a metric over time and takes an action (like publishing to an SNS topic) when the metric crosses a threshold you define.",
+    "Dead-Letter Queue": "A queue that captures messages or invocations that failed to process. Without one, failed deliveries disappear silently with no record of what went wrong.",
+    "SMS Spending Limit": "A monthly dollar cap on SMS messages sent through SNS. The default is $1.00 per month. When the limit is reached, SNS stops sending SMS messages for the rest of the month with no notification.",
+    "NumberOfNotificationsFailed": "A CloudWatch metric published by SNS that counts how many delivery attempts failed for a topic. Monitoring this metric is the primary way to detect a broken notification pipeline.",
+    "Webhook": "An HTTP endpoint that receives automated POST requests. Slack incoming webhooks accept JSON payloads and post them as messages in a channel. If the webhook URL is rotated or revoked, requests return 403 Forbidden.",
+    "Lambda Environment Variable": "A key-value pair stored alongside a Lambda function's configuration. The function code reads it at runtime. Changing the value requires updating the function configuration, not the code."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "CloudWatch Alarm (clarabridge-ingest-error-rate)",
+        "role": "Monitors the Lambda ingest processor error rate and publishes to the SNS topic when the 5% threshold is crossed",
+        "connections": [
+          "SNS Topic"
+        ],
+        "failure_impact": "If the alarm is misconfigured or disabled, no notification is triggered regardless of how many errors occur"
+      },
+      {
+        "name": "SNS Topic (clarabridge-ops-alerts)",
+        "role": "Receives alarm notifications and fans out delivery attempts to all subscriptions on the topic",
+        "connections": [
+          "Email Subscription",
+          "Lambda Subscription",
+          "SMS Subscription"
+        ],
+        "failure_impact": "If the topic policy blocks the CloudWatch service principal, the publish itself fails and no subscription receives anything"
+      },
+      {
+        "name": "Email Subscription (ops-team@clarabridge.io)",
+        "role": "Delivers alarm notifications to the ops team email distribution list",
+        "connections": [],
+        "failure_impact": "In PendingConfirmation status, SNS silently skips delivery -- no error metric, no log entry, no retry"
+      },
+      {
+        "name": "Lambda Subscription (clarabridge-slack-notifier)",
+        "role": "Receives the SNS message and posts it to the ops Slack channel via an incoming webhook URL stored in an environment variable",
+        "connections": [
+          "Slack Webhook"
+        ],
+        "failure_impact": "If the webhook URL is invalid, the function returns an error. Without a dead-letter queue, the failure is only visible in CloudWatch Logs for the function"
+      },
+      {
+        "name": "SMS Subscription (+1-512-555-0147)",
+        "role": "Sends a text message to the ops lead's phone as a last-resort notification path",
+        "connections": [],
+        "failure_impact": "When the account SMS spending limit is reached, delivery silently stops for the rest of the month with no notification to the account owner"
+      },
+      {
+        "name": "Lambda Function (clarabridge-ingest-processor)",
+        "role": "Processes 14 million events per day and writes to DynamoDB tables that feed customer dashboards",
+        "connections": [
+          "DynamoDB"
+        ],
+        "failure_impact": "When this function fails, customer dashboards show stale data -- the upstream problem that triggered the alarm in the first place"
+      }
+    ],
+    "data_flow": "The Lambda ingest processor writes events to DynamoDB. When it starts failing, the CloudWatch alarm detects the error rate crossing 5% and publishes a notification to the SNS topic clarabridge-ops-alerts. SNS fans out three delivery attempts: email to ops-team@clarabridge.io, Lambda invocation of clarabridge-slack-notifier (which POSTs to a Slack webhook), and SMS to the ops lead's phone number. Each path is independent.",
+    "what_broke": "All three delivery paths failed independently. The email subscription was in PendingConfirmation status since March 5 -- the confirmation email landed in the shared inbox's spam folder and was never opened. The Slack webhook URL was rotated on March 18 during a security audit, but nobody updated the Lambda environment variable, so every invocation returned 403 Forbidden. The SMS spending limit ($1.00 default) was exhausted on March 19 by a noisy alarm, silently stopping all SMS delivery for the rest of the month. When the alarm fired on March 26, zero humans were notified."
+  },
+  "progressive_clues": [
+    "the CloudWatch alarm fired correctly -- what SNS topic did it publish to, and what subscriptions exist on that topic?",
+    "check the status of each SNS subscription -- are they all confirmed and actively delivering?",
+    "one subscription is PendingConfirmation -- but the other two paths also failed, check the Slack Lambda logs and the SMS delivery status",
+    "all three paths broken: email is PendingConfirmation, Slack Lambda getting 403 from rotated webhook, SMS hit the $1.00 default monthly spending limit",
+    "confirm the email subscription, update Slack webhook URL in Lambda environment variables, increase SMS spending limit, add CloudWatch alarm on NumberOfNotificationsFailed routed to a separate verified path"
+  ],
+  "consoles": [
+    {
+      "service": "sns",
+      "artifacts": [
+        "artifacts/topic-config.json",
+        "artifacts/subscriptions.json",
+        "artifacts/delivery-logs.json"
+      ],
+      "capabilities": [
+        "get_topic_attributes",
+        "list_subscriptions_by_topic",
+        "get_subscription_attributes",
+        "list_topics",
+        "get_sms_attributes"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/alarms.json",
+        "artifacts/metrics.csv",
+        "artifacts/alarm-history.json"
+      ],
+      "capabilities": [
+        "describe_alarms",
+        "describe_alarm_history",
+        "get_metric_data",
+        "list_metrics"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/slack-lambda-config.json",
+        "artifacts/slack-lambda-logs.txt",
+        "artifacts/ingest-lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function_configuration",
+        "list_functions",
+        "get_function",
+        "list_event_source_mappings"
+      ]
+    }
+  ]
 }

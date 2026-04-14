@@ -27,185 +27,6 @@
     "industry": "agritech",
     "size": "Series A startup, 18 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "DevOps engineer who grew up on a farm",
-        "demeanor": "practical, no-nonsense",
-        "recurring_concern": "actual farmers depend on the platform, losing daylight"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "three more counties reported the app is down",
-            "farmers calling support line directly, cannot log irrigation schedules",
-            "forecast shows rain in 6 hours -- if they miss this window, crops dry out"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "CEO just got off the phone with biggest customer, a 2,000-acre corn operation in Iowa",
-            "customer threatening to switch to competitor if not fixed before rain window"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "EC2 instances are healthy and application code has not changed",
-            "issue is at the database layer -- check RDS instance metrics"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "glossary": {
-        "RDS": "Amazon Relational Database Service. A managed service that runs database engines like MySQL, PostgreSQL, and others so you do not have to install or maintain the software yourself.",
-        "allocated storage": "The total disk space assigned to an RDS instance when you create or modify it. Once set, it can be increased but never decreased.",
-        "FreeStorageSpace": "A CloudWatch metric that reports how many bytes of disk space remain on an RDS instance. When it reaches zero, the database can no longer write data.",
-        "storage auto-scaling": "An RDS feature that automatically increases allocated storage when free space drops below 10 percent of the total. You set a maximum limit to control costs.",
-        "binary logs": "Files that MySQL writes to record every change made to the database. Used for replication and point-in-time recovery, but they consume disk space until purged.",
-        "gp3": "A general-purpose SSD storage type backed by Amazon EBS. Offers baseline performance of 3,000 IOPS and 125 MiB/s throughput regardless of volume size.",
-        "CloudWatch alarm": "A rule that watches a metric and changes state (OK, ALARM, INSUFFICIENT_DATA) when the metric crosses a threshold you define. Can trigger notifications or automated actions.",
-        "Multi-AZ": "A deployment option that maintains a standby replica of your RDS instance in a different Availability Zone for automatic failover during outages."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player checks CloudWatch, RDS instance in storage-full state, FreeStorageSpace at zero, database rejecting every INSERT and UPDATE",
-        "trials": "EC2 instances healthy, application code unchanged, SELECT queries still work -- failure isolated to write operations at database layer",
-        "revelation": "20GB storage consumed by rapid IoT data growth (800MB/week), accumulated binary logs (3.2GB), and verbose slow query logging left on (1.8GB)",
-        "return": "increase allocated storage to 50GB (immediate, no downtime), enable storage auto-scaling with 100GB max, add FreeStorageSpace CloudWatch alarm"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "ALB (cropsync-prod-lb)",
-            "role": "Receives traffic from farmers and IoT sensors and distributes it to the API instances",
-            "connections": [
-              "EC2 instances (cropsync-api-01, cropsync-api-02)"
-            ],
-            "failure_impact": "If the ALB fails, no traffic reaches the API and all farmer-facing operations stop"
-          },
-          {
-            "name": "EC2 instances (cropsync-api-01, cropsync-api-02, t3.medium)",
-            "role": "Run the CropSync API that handles sensor data ingestion and irrigation schedule management",
-            "connections": [
-              "ALB (cropsync-prod-lb)",
-              "RDS MySQL (cropsync-prod-db)"
-            ],
-            "failure_impact": "If instances fail, API requests return errors and farmers cannot log irrigation schedules"
-          },
-          {
-            "name": "RDS MySQL 8.0 (cropsync-prod-db, db.t3.medium, 20GB gp3)",
-            "role": "Stores sensor readings and irrigation schedules as the primary data store",
-            "connections": [
-              "EC2 instances (cropsync-api-01, cropsync-api-02)",
-              "CloudWatch"
-            ],
-            "failure_impact": "If storage is exhausted, all INSERT and UPDATE operations fail and the platform becomes read-only"
-          },
-          {
-            "name": "CloudWatch",
-            "role": "Monitors RDS metrics including FreeStorageSpace, DatabaseConnections, and WriteIOPS",
-            "connections": [
-              "RDS MySQL (cropsync-prod-db)"
-            ],
-            "failure_impact": "If monitoring is absent, storage exhaustion goes undetected until write failures begin"
-          }
-        ],
-        "data_flow": "IoT sensors and farmer browsers send requests through the ALB to the EC2 API servers, which read from and write to the RDS MySQL instance. CloudWatch collects RDS metrics every 60 seconds.",
-        "what_broke": "The RDS instance exhausted its 20GB of allocated storage. Data growth (14.8GB), binary logs (3.2GB), and slow query logs (1.8GB) filled the disk. MySQL cannot write when storage is zero, so all INSERT, UPDATE, and DELETE operations fail with error 1114."
-      },
-      "hints": [
-        {
-          "hint": "application is timing out on database writes -- what could cause a database to reject write operations?",
-          "relevant_services": [
-            "rds"
-          ],
-          "skip_if_queried": [
-            "rds"
-          ]
-        },
-        {
-          "hint": "check the RDS instance metrics in CloudWatch -- storage-related metrics reveal database health",
-          "relevant_services": [
-            "cloudwatch",
-            "rds"
-          ],
-          "skip_if_queried": [
-            "cloudwatch"
-          ]
-        },
-        {
-          "hint": "FreeStorageSpace metric is at zero -- RDS instance has run out of disk space, causing all write operations to fail",
-          "relevant_services": [
-            "cloudwatch",
-            "rds"
-          ],
-          "skip_if_queried": [
-            "rds"
-          ]
-        },
-        {
-          "hint": "increase the allocated storage for the RDS instance, and enable storage auto-scaling to prevent recurrence",
-          "relevant_services": [
-            "rds"
-          ],
-          "skip_if_queried": [
-            "rds"
-          ]
-        }
-      ],
-      "max_hints_before_nudge": 3
-    },
-    "consoles": [
-      {
-        "service": "rds",
-        "artifacts": [
-          "artifacts/rds-instance-status.json",
-          "artifacts/cloudwatch-logs.txt"
-        ],
-        "capabilities": [
-          "describe_db_instances",
-          "describe_db_log_files",
-          "describe_events",
-          "describe_db_snapshots"
-        ]
-      },
-      {
-        "service": "cloudwatch",
-        "artifacts": [
-          "artifacts/metrics.csv",
-          "artifacts/cloudwatch-alarms.json"
-        ],
-        "capabilities": [
-          "get_metric_data",
-          "describe_alarms",
-          "get_metric_statistics",
-          "list_metrics"
-        ]
-      },
-      {
-        "service": "ec2",
-        "artifacts": [
-          "artifacts/architecture-hint.txt",
-          "artifacts/application-logs.txt"
-        ],
-        "capabilities": [
-          "describe_instances",
-          "describe_instance_status",
-          "describe_security_groups"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "The RDS MySQL instance cropsync-prod-db (db.t3.medium, 20GB allocated storage) ran out of disk space. A runaway logging query and accumulated binary logs consumed all available storage, causing all INSERT and UPDATE operations to fail with 'The table is full' errors.",
     "fix_criteria": [
@@ -264,5 +85,101 @@
       "Treat binary log retention and slow query log settings as part of your infrastructure setup, not as temporary debugging switches. Review these settings in your parameter group (the database's configuration template) to make sure they are not quietly consuming disk space.",
       "Include database storage trends in your monthly capacity reviews. Checking how fast storage is growing each month lets you spot problems early and plan upgrades before they become emergencies."
     ]
-  }
+  },
+  "glossary": {
+    "RDS": "Amazon Relational Database Service. A managed service that runs database engines like MySQL, PostgreSQL, and others so you do not have to install or maintain the software yourself.",
+    "allocated storage": "The total disk space assigned to an RDS instance when you create or modify it. Once set, it can be increased but never decreased.",
+    "FreeStorageSpace": "A CloudWatch metric that reports how many bytes of disk space remain on an RDS instance. When it reaches zero, the database can no longer write data.",
+    "storage auto-scaling": "An RDS feature that automatically increases allocated storage when free space drops below 10 percent of the total. You set a maximum limit to control costs.",
+    "binary logs": "Files that MySQL writes to record every change made to the database. Used for replication and point-in-time recovery, but they consume disk space until purged.",
+    "gp3": "A general-purpose SSD storage type backed by Amazon EBS. Offers baseline performance of 3,000 IOPS and 125 MiB/s throughput regardless of volume size.",
+    "CloudWatch alarm": "A rule that watches a metric and changes state (OK, ALARM, INSUFFICIENT_DATA) when the metric crosses a threshold you define. Can trigger notifications or automated actions.",
+    "Multi-AZ": "A deployment option that maintains a standby replica of your RDS instance in a different Availability Zone for automatic failover during outages."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "ALB (cropsync-prod-lb)",
+        "role": "Receives traffic from farmers and IoT sensors and distributes it to the API instances",
+        "connections": [
+          "EC2 instances (cropsync-api-01, cropsync-api-02)"
+        ],
+        "failure_impact": "If the ALB fails, no traffic reaches the API and all farmer-facing operations stop"
+      },
+      {
+        "name": "EC2 instances (cropsync-api-01, cropsync-api-02, t3.medium)",
+        "role": "Run the CropSync API that handles sensor data ingestion and irrigation schedule management",
+        "connections": [
+          "ALB (cropsync-prod-lb)",
+          "RDS MySQL (cropsync-prod-db)"
+        ],
+        "failure_impact": "If instances fail, API requests return errors and farmers cannot log irrigation schedules"
+      },
+      {
+        "name": "RDS MySQL 8.0 (cropsync-prod-db, db.t3.medium, 20GB gp3)",
+        "role": "Stores sensor readings and irrigation schedules as the primary data store",
+        "connections": [
+          "EC2 instances (cropsync-api-01, cropsync-api-02)",
+          "CloudWatch"
+        ],
+        "failure_impact": "If storage is exhausted, all INSERT and UPDATE operations fail and the platform becomes read-only"
+      },
+      {
+        "name": "CloudWatch",
+        "role": "Monitors RDS metrics including FreeStorageSpace, DatabaseConnections, and WriteIOPS",
+        "connections": [
+          "RDS MySQL (cropsync-prod-db)"
+        ],
+        "failure_impact": "If monitoring is absent, storage exhaustion goes undetected until write failures begin"
+      }
+    ],
+    "data_flow": "IoT sensors and farmer browsers send requests through the ALB to the EC2 API servers, which read from and write to the RDS MySQL instance. CloudWatch collects RDS metrics every 60 seconds.",
+    "what_broke": "The RDS instance exhausted its 20GB of allocated storage. Data growth (14.8GB), binary logs (3.2GB), and slow query logs (1.8GB) filled the disk. MySQL cannot write when storage is zero, so all INSERT, UPDATE, and DELETE operations fail with error 1114."
+  },
+  "progressive_clues": [
+    "application is timing out on database writes -- what could cause a database to reject write operations?",
+    "check the RDS instance metrics in CloudWatch -- storage-related metrics reveal database health",
+    "FreeStorageSpace metric is at zero -- RDS instance has run out of disk space, causing all write operations to fail",
+    "increase the allocated storage for the RDS instance, and enable storage auto-scaling to prevent recurrence"
+  ],
+  "consoles": [
+    {
+      "service": "rds",
+      "artifacts": [
+        "artifacts/rds-instance-status.json",
+        "artifacts/cloudwatch-logs.txt"
+      ],
+      "capabilities": [
+        "describe_db_instances",
+        "describe_db_log_files",
+        "describe_events",
+        "describe_db_snapshots"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/metrics.csv",
+        "artifacts/cloudwatch-alarms.json"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "describe_alarms",
+        "get_metric_statistics",
+        "list_metrics"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/architecture-hint.txt",
+        "artifacts/application-logs.txt"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_instance_status",
+        "describe_security_groups"
+      ]
+    }
+  ]
 }

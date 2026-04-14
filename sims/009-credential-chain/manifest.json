@@ -28,220 +28,6 @@
     "industry": "b2b-saas",
     "size": "Series A startup, 10 engineers"
   },
-  "team": {
-    "narrator": {
-      "personality": {
-        "role": "engineer who noticed the failure Wednesday morning",
-        "demeanor": "matter-of-fact, states observations the way you might note the weather",
-        "recurring_concern": "deploy pipeline completely blocked, staging stuck on last week's build"
-      },
-      "story_beats": [
-        {
-          "trigger": "start",
-          "section": "opening"
-        },
-        {
-          "trigger": "elapsed_minutes:5",
-          "facts": [
-            "deploy has been failing since Tuesday, worked for eleven months before that",
-            "nobody changed the deploy script",
-            "product manager asked if the release would go out today"
-          ]
-        },
-        {
-          "trigger": "elapsed_minutes:10",
-          "facts": [
-            "teammate mentions Raj Patel set up the CI box originally",
-            "Raj left the company in November",
-            "his accounts were deactivated during offboarding",
-            "CI machine has been running since then without issue, or so everyone assumed"
-          ]
-        },
-        {
-          "trigger": "wrong_diagnosis",
-          "facts": [
-            "instance profile is fine, role has correct permissions",
-            "the CLI is not using the instance profile at all",
-            "something else is taking precedence in the credential chain"
-          ]
-        },
-        {
-          "trigger": "fix_validated",
-          "section": "resolution"
-        }
-      ],
-      "hints": [
-        {
-          "hint": "who does the pipeline think it is?",
-          "relevant_services": [
-            "sts"
-          ],
-          "skip_if_queried": [
-            "aws sts get-caller-identity"
-          ]
-        },
-        {
-          "hint": "run aws sts get-caller-identity on the CI machine",
-          "relevant_services": [
-            "sts"
-          ],
-          "skip_if_queried": [
-            "get-caller-identity",
-            "caller identity"
-          ]
-        },
-        {
-          "hint": "check if there are AWS credential environment variables set on the instance",
-          "relevant_services": [
-            "iam"
-          ],
-          "skip_if_queried": [
-            "AWS_ACCESS_KEY_ID",
-            "AWS_SECRET_ACCESS_KEY",
-            "environment variable",
-            "/etc/environment"
-          ]
-        },
-        {
-          "hint": "environment variables take precedence over instance profiles in the credential chain",
-          "relevant_services": [
-            "iam",
-            "sts"
-          ],
-          "skip_if_queried": [
-            "credential chain",
-            "credential provider chain",
-            "precedence",
-            "priority"
-          ]
-        }
-      ],
-      "max_hints_before_nudge": 3,
-      "glossary": {
-        "IAM (Identity and Access Management)": "The AWS service that controls who can do what. You create users, roles, and policies here to grant or deny access to other AWS services.",
-        "IAM Role": "A set of permissions that can be assumed by a user, service, or application. Unlike a user, a role has no permanent credentials -- it issues temporary ones.",
-        "Instance Profile": "A wrapper that lets an EC2 instance assume an IAM role. When attached, the instance can call AWS APIs using temporary credentials without any hardcoded keys.",
-        "Access Key": "A pair of values (an access key ID and a secret access key) that identify an IAM user or role for programmatic access. Long-lived access keys are a security risk if not rotated.",
-        "STS (Security Token Service)": "The AWS service that issues temporary, limited-privilege credentials. Used behind the scenes when you assume a role or use an instance profile.",
-        "Credential Provider Chain": "The fixed order in which the AWS CLI and SDKs look for credentials. The first source found wins. Environment variables come before instance profiles in this order.",
-        "Environment Variable": "A key-value pair set in the operating system shell. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are environment variables the CLI checks early in the credential chain.",
-        "GetCallerIdentity": "An STS API call that returns the IAM principal (user or role) the CLI is currently authenticating as. It works even when the principal lacks permissions for anything else."
-      },
-      "narrative_arc": {
-        "call": "alert arrives, stakes established from story.md Opening",
-        "threshold": "player enters investigation, instance profile permissions correct, role correct, instance healthy -- problem is not where you would normally look",
-        "trials": "checking instance profile, reviewing IAM policies, verifying role -- all confirm permissions are there, failure persists, something outside usual configuration is interfering",
-        "revelation": "CLI is authenticating as former employee Raj Patel, not the instance profile role -- environment variables with his access keys set eight months ago take precedence over instance profile",
-        "return": "environment variables removed, instance profile credentials take over, deploy runs, offboarding checklist updated to search shared infrastructure for leftover credentials"
-      },
-      "system_narration": {
-        "components": [
-          {
-            "name": "EC2 instance fenwick-ci-01",
-            "role": "Runs the CI/CD deploy script that calls S3, Secrets Manager, and Lambda APIs",
-            "connections": [
-              "Instance profile fenwick-ci-deploy",
-              "Environment variables in /etc/environment",
-              "S3 bucket fenwick-deploy-artifacts",
-              "Secrets Manager secret /prod/db-credentials",
-              "Lambda function fenwick-invoice-processor"
-            ],
-            "failure_impact": "If credentials resolve to an inactive user, every AWS API call returns AccessDenied and deploys fail"
-          },
-          {
-            "name": "Instance profile fenwick-ci-deploy",
-            "role": "Provides temporary credentials via IAM role fenwick-ci-deploy-role with correct permissions for the deploy pipeline",
-            "connections": [
-              "EC2 instance fenwick-ci-01"
-            ],
-            "failure_impact": "If overridden by higher-priority credentials in the chain, the instance profile is never used"
-          },
-          {
-            "name": "Environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in /etc/environment",
-            "role": "Hardcoded credentials set eight months ago by a former engineer, taking priority over the instance profile in the credential chain",
-            "connections": [
-              "EC2 instance fenwick-ci-01",
-              "IAM user raj.patel"
-            ],
-            "failure_impact": "These deactivated credentials override the valid instance profile, causing all API calls to fail with AccessDenied"
-          },
-          {
-            "name": "IAM user raj.patel (deactivated, access key inactive)",
-            "role": "Former employee whose access keys were deactivated during offboarding",
-            "connections": [
-              "Environment variables in /etc/environment"
-            ],
-            "failure_impact": "Deactivated keys cause AccessDenied for any API call authenticated with them"
-          },
-          {
-            "name": "S3 bucket fenwick-deploy-artifacts",
-            "role": "Stores deployment artifacts uploaded by the CI/CD pipeline",
-            "connections": [
-              "EC2 instance fenwick-ci-01"
-            ],
-            "failure_impact": "If the deploy script cannot authenticate, artifact uploads fail and the release is blocked"
-          },
-          {
-            "name": "Secrets Manager secret /prod/db-credentials",
-            "role": "Stores production database credentials retrieved during deployment",
-            "connections": [
-              "EC2 instance fenwick-ci-01"
-            ],
-            "failure_impact": "If GetSecretValue fails, the deploy cannot configure database access for the application"
-          },
-          {
-            "name": "Lambda function fenwick-invoice-processor",
-            "role": "Invoice processing function updated by the CI/CD deploy pipeline",
-            "connections": [
-              "EC2 instance fenwick-ci-01"
-            ],
-            "failure_impact": "If UpdateFunctionCode fails, the invoice processor runs stale code"
-          }
-        ],
-        "data_flow": "Deploy script runs on EC2 instance. CLI checks credential chain: finds environment variables (priority 2) before instance profile (priority 6). Environment variables point to raj.patel's inactive access key. Every API call (S3 PutObject, Secrets Manager GetSecretValue, Lambda UpdateFunctionCode) authenticates as raj.patel and returns AccessDenied.",
-        "what_broke": "Environment variables containing a former employee's access keys were set on the CI machine eight months ago and never cleaned up. The keys were deactivated during offboarding. Because environment variables outrank instance profiles in the credential chain, the CLI never reaches the valid instance profile. A recent CLI update changed how the credential chain resolved, making the environment variables consistently take precedence."
-      }
-    },
-    "consoles": [
-      {
-        "service": "iam",
-        "artifacts": [
-          "artifacts/iam-user-details.json",
-          "artifacts/cli-configure-list.txt"
-        ],
-        "capabilities": [
-          "list_users",
-          "get_user",
-          "list_access_keys",
-          "get_access_key_last_used",
-          "list_attached_user_policies",
-          "list_instance_profiles"
-        ]
-      },
-      {
-        "service": "sts",
-        "artifacts": [
-          "artifacts/sts-caller-identity.json"
-        ],
-        "capabilities": [
-          "get_caller_identity",
-          "get_session_token",
-          "assume_role"
-        ]
-      },
-      {
-        "service": "secrets-manager",
-        "artifacts": [
-          "artifacts/cloudtrail-events.json"
-        ],
-        "capabilities": [
-          "lookup_events",
-          "get_trail_status",
-          "describe_trails"
-        ]
-      }
-    ]
-  },
   "resolution": {
     "root_cause": "The EC2 instance running the CI/CD pipeline has AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables set in /etc/environment. These were configured eight months ago by a former engineer (Raj Patel) for a different project. The access key belongs to IAM user 'raj.patel', whose account was deactivated during offboarding. Because environment variables take precedence over instance profiles in the AWS credential resolution chain, the CLI uses the deactivated credentials instead of the valid instance profile role, resulting in AccessDenied on every API call.",
     "fix_criteria": [
@@ -312,5 +98,127 @@
       "Add a credential sweep to your offboarding checklist. When someone leaves the company, search all shared infrastructure (CI machines, jump boxes, dev servers) for their credentials in environment variables, credentials files (~/.aws/credentials), config files, and cron job definitions.",
       "Set up automatic detection using CloudTrail (the AWS audit log service). Configure alerts for AccessDenied errors from inactive users or from users that do not match the expected role for a given machine. This catches credential override problems before they cause days-long outages."
     ]
-  }
+  },
+  "glossary": {
+    "IAM (Identity and Access Management)": "The AWS service that controls who can do what. You create users, roles, and policies here to grant or deny access to other AWS services.",
+    "IAM Role": "A set of permissions that can be assumed by a user, service, or application. Unlike a user, a role has no permanent credentials -- it issues temporary ones.",
+    "Instance Profile": "A wrapper that lets an EC2 instance assume an IAM role. When attached, the instance can call AWS APIs using temporary credentials without any hardcoded keys.",
+    "Access Key": "A pair of values (an access key ID and a secret access key) that identify an IAM user or role for programmatic access. Long-lived access keys are a security risk if not rotated.",
+    "STS (Security Token Service)": "The AWS service that issues temporary, limited-privilege credentials. Used behind the scenes when you assume a role or use an instance profile.",
+    "Credential Provider Chain": "The fixed order in which the AWS CLI and SDKs look for credentials. The first source found wins. Environment variables come before instance profiles in this order.",
+    "Environment Variable": "A key-value pair set in the operating system shell. AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are environment variables the CLI checks early in the credential chain.",
+    "GetCallerIdentity": "An STS API call that returns the IAM principal (user or role) the CLI is currently authenticating as. It works even when the principal lacks permissions for anything else."
+  },
+  "system": {
+    "components": [
+      {
+        "name": "EC2 instance fenwick-ci-01",
+        "role": "Runs the CI/CD deploy script that calls S3, Secrets Manager, and Lambda APIs",
+        "connections": [
+          "Instance profile fenwick-ci-deploy",
+          "Environment variables in /etc/environment",
+          "S3 bucket fenwick-deploy-artifacts",
+          "Secrets Manager secret /prod/db-credentials",
+          "Lambda function fenwick-invoice-processor"
+        ],
+        "failure_impact": "If credentials resolve to an inactive user, every AWS API call returns AccessDenied and deploys fail"
+      },
+      {
+        "name": "Instance profile fenwick-ci-deploy",
+        "role": "Provides temporary credentials via IAM role fenwick-ci-deploy-role with correct permissions for the deploy pipeline",
+        "connections": [
+          "EC2 instance fenwick-ci-01"
+        ],
+        "failure_impact": "If overridden by higher-priority credentials in the chain, the instance profile is never used"
+      },
+      {
+        "name": "Environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in /etc/environment",
+        "role": "Hardcoded credentials set eight months ago by a former engineer, taking priority over the instance profile in the credential chain",
+        "connections": [
+          "EC2 instance fenwick-ci-01",
+          "IAM user raj.patel"
+        ],
+        "failure_impact": "These deactivated credentials override the valid instance profile, causing all API calls to fail with AccessDenied"
+      },
+      {
+        "name": "IAM user raj.patel (deactivated, access key inactive)",
+        "role": "Former employee whose access keys were deactivated during offboarding",
+        "connections": [
+          "Environment variables in /etc/environment"
+        ],
+        "failure_impact": "Deactivated keys cause AccessDenied for any API call authenticated with them"
+      },
+      {
+        "name": "S3 bucket fenwick-deploy-artifacts",
+        "role": "Stores deployment artifacts uploaded by the CI/CD pipeline",
+        "connections": [
+          "EC2 instance fenwick-ci-01"
+        ],
+        "failure_impact": "If the deploy script cannot authenticate, artifact uploads fail and the release is blocked"
+      },
+      {
+        "name": "Secrets Manager secret /prod/db-credentials",
+        "role": "Stores production database credentials retrieved during deployment",
+        "connections": [
+          "EC2 instance fenwick-ci-01"
+        ],
+        "failure_impact": "If GetSecretValue fails, the deploy cannot configure database access for the application"
+      },
+      {
+        "name": "Lambda function fenwick-invoice-processor",
+        "role": "Invoice processing function updated by the CI/CD deploy pipeline",
+        "connections": [
+          "EC2 instance fenwick-ci-01"
+        ],
+        "failure_impact": "If UpdateFunctionCode fails, the invoice processor runs stale code"
+      }
+    ],
+    "data_flow": "Deploy script runs on EC2 instance. CLI checks credential chain: finds environment variables (priority 2) before instance profile (priority 6). Environment variables point to raj.patel's inactive access key. Every API call (S3 PutObject, Secrets Manager GetSecretValue, Lambda UpdateFunctionCode) authenticates as raj.patel and returns AccessDenied.",
+    "what_broke": "Environment variables containing a former employee's access keys were set on the CI machine eight months ago and never cleaned up. The keys were deactivated during offboarding. Because environment variables outrank instance profiles in the credential chain, the CLI never reaches the valid instance profile. A recent CLI update changed how the credential chain resolved, making the environment variables consistently take precedence."
+  },
+  "progressive_clues": [
+    "who does the pipeline think it is?",
+    "run aws sts get-caller-identity on the CI machine",
+    "check if there are AWS credential environment variables set on the instance",
+    "environment variables take precedence over instance profiles in the credential chain"
+  ],
+  "consoles": [
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/iam-user-details.json",
+        "artifacts/cli-configure-list.txt"
+      ],
+      "capabilities": [
+        "list_users",
+        "get_user",
+        "list_access_keys",
+        "get_access_key_last_used",
+        "list_attached_user_policies",
+        "list_instance_profiles"
+      ]
+    },
+    {
+      "service": "sts",
+      "artifacts": [
+        "artifacts/sts-caller-identity.json"
+      ],
+      "capabilities": [
+        "get_caller_identity",
+        "get_session_token",
+        "assume_role"
+      ]
+    },
+    {
+      "service": "secrets-manager",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status",
+        "describe_trails"
+      ]
+    }
+  ]
 }
