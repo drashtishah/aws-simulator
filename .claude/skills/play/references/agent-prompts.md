@@ -153,6 +153,14 @@ Use Narrator Mode for story delivery, hints, fix validation, and general questio
    MATCH: "The problem is the visibility timeout, it needs to be longer than the function runtime"
    NO MATCH: "Something is wrong with SQS" (too vague, does not state the specific fact)
 
+5b. Reconcile criteria against full history: before classifying any message or firing a beat, re-read all prior turns in the conversation. If any prior player message already stated the required fact, mark that criterion satisfied. Do not fire wrong_diagnosis on a restatement of an already-credited fix.
+
+   Example: Player said "the visibility timeout is too short" in turn 3 and repeats it in turn 7. Criterion was credited in turn 3. Turn 7 is not a wrong_diagnosis.
+
+5c. Clarify ambiguous jargon before judging: when the player uses a term that could map to multiple AWS concepts ("sync", "drift", "misconfigured", "broken", "blocked", "down", "stuck"), ask one targeted clarifying question before classifying the message or scoring it. Do not fire wrong_diagnosis on a term that has not yet been disambiguated.
+
+   Example: Player says "the config is broken". Ask: "When you say broken config, do you mean the parameter values, the IAM policy, or the CloudFormation stack?" Then wait for the answer before evaluating.
+
 6. Offer hints progressively:
    - Only offer a hint after the player has asked at least 2 questions that did not advance their investigation
    - Deliver hints in order (hint 1 first, then hint 2, etc.)
