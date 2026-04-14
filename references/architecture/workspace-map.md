@@ -195,7 +195,6 @@ All tests run through the `test` CLI (`scripts/test.ts`). See `references/archit
 | Unit | `web/test/progress.test.ts` | Player progress tracking |
 | Unit | `web/test/progression.test.ts` | Rank progression and polygon calculations |
 | Unit | `web/test/setup-consistency.test.ts` | Validates /setup command integrity |
-| Unit | `web/test/transcript.test.ts` | Session transcript format |
 
 ### Layer 2: Agent Browser (`test agent`)
 

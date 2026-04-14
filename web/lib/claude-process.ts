@@ -202,7 +202,7 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
     session.claudeSessionId = parsed.claudeSessionId;
   }
 
-  logTurn(session.simId, turnNumber, message, parsed.usage);
+  logTurn(session.simId, turnNumber, message, parsed.fullText ?? '', parsed.usage);
 
   const gameSessionUpdate: Record<string, unknown> = { turnCount: turnNumber };
   if (sessionComplete) {

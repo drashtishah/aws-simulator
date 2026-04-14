@@ -338,7 +338,7 @@ export async function* streamMessage(
     if (metadata.resultError) {
       logEvent(sessionId, { level: 'warn', event: 'AGENT_RESULT_ERROR', subtype: metadata.resultError.subtype, error: metadata.resultError.error });
     }
-    logTurn(session.simId, turnNumber, message, metadata.usage);
+    logTurn(session.simId, turnNumber, message, metadata.fullText ?? '', metadata.usage);
     logEvent(sessionId, { level: 'info', event: 'turn', direction: 'out', usage: metadata.usage ?? undefined });
   }
 
