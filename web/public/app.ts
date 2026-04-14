@@ -454,10 +454,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
-        setTimeout(() => {
-          const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
-          tabDashboard?.click();
-        }, 1500);
+        scheduleReturnToDashboard();
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -522,10 +519,7 @@ async function sendMessage(): Promise<void> {
         sessionCompleted = true;
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
-        setTimeout(() => {
-          const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
-          tabDashboard?.click();
-        }, 1500);
+        scheduleReturnToDashboard();
       },
       profile_updating: () => {
         appendMessage('system', 'Updating your learning profile...');
@@ -569,10 +563,7 @@ async function sendMessage(): Promise<void> {
           sessionCompleted = true;
           setInputEnabled(false);
           appendMessage('system', 'Simulation complete.');
-          setTimeout(() => {
-            const tabDashboard = document.getElementById('tab-dashboard') as HTMLButtonElement | null;
-            tabDashboard?.click();
-          }, 1500);
+          scheduleReturnToDashboard();
         },
         profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
         profile_updated: () => handleSessionComplete('updated'),
@@ -718,6 +709,15 @@ function appendMessage(type: string, content: string, event?: { label?: string; 
   } else {
     $('new-messages-pill').classList.add('visible');
   }
+}
+
+// Delay so the "Simulation complete." system message renders before navigating away.
+const COMPLETE_TO_DASHBOARD_MS = 1500;
+
+function scheduleReturnToDashboard(): void {
+  setTimeout(() => {
+    document.getElementById('tab-dashboard')?.click();
+  }, COMPLETE_TO_DASHBOARD_MS);
 }
 
 function showTyping(show: boolean): void {
