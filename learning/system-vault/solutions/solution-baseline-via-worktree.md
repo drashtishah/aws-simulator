@@ -4,11 +4,11 @@ kind: solution
 title: Establish a master test baseline via worktree, not stash on the main clone
 tags: [kind/solution, scope/testing, stage/verifier, tool/git]
 created: 2026-04-11
-updated: 2026-04-11
-source_issues: [#195]
+updated: 2026-04-14
+source_issues: [#195, #253]
 confidence: observed
 summary: git worktree add a throwaway master checkout to compare pre-existing test failures; stash/checkout on the main clone leaves generated files dirty
-applies_to: []
+applies_to: [problem-baseline-checkout-contaminates-clone]
 preconditions: master is fetched locally
 cost: trivial
 ---
@@ -33,19 +33,17 @@ cost: trivial
 For a single-file peek at master (no test run), prefer
 `git show master:<path>` over a full checkout.
 
-## Why this works
-The stash, `git checkout master`, stash-pop dance on the main clone
-can leave tracked files (path-registry.csv, agent-index.md, other
-regen outputs) modified after pop, because scripts run during the
-master-side command write regenerated content that does not match
-the branch state. The worktree is isolated, so any regen stays under
-/tmp and the main clone never moves off the branch HEAD.
-
 ## When NOT to use
 If the pipeline stage already runs in a fresh ephemeral container,
 master is already baseline-clean; skip the worktree. See
 [[solution-worktree-symlink-node-modules]] to avoid a slow
 `npm install` inside the baseline worktree.
+
+## Anti-pattern
+`git checkout origin/master -- .` or `git stash && git checkout master`
+on the main clone. Regen scripts write outputs that never match on
+pop, and partial checkouts leave staged deletions that later reads
+silently pick up. See [[problem-baseline-checkout-contaminates-clone]].
 
 ## Note
 npm test on master may fail for environment reasons unrelated to the

@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
-updated: 2026-04-13
-note_count: 23
+updated: 2026-04-14
+note_count: 24
 ---
 # system-vault index
 
@@ -10,6 +10,7 @@ at most 3 matching notes; follow wiki-links one hop. See `references/pipeline/`
 for the per-stage version of this protocol.
 
 ## problems
+- [[problem-baseline-checkout-contaminates-clone]] scope/testing stage/verifier signal/loop: checking out master files on the main clone leaves feature-branch reads returning master content
 - [[problem-floor-snap-deletion-race]] scope/code signal/regression: deleting tracked file then running health snaps the wrong floor and trips a bucket_floor advisory in the same commit
 - [[problem-patch-plan-assumes-template-structure]] scope/pipeline stage/planner signal/loop: patch-plan fails on free-form issues or when embedded headings create false section anchors
 - [[problem-plan-old-string-master-drift]] scope/pipeline stage/planner signal/loop: copy-pasted old_string in a revised plan goes stale when a sibling PR merges mid-revision; match fails or silently reverts sibling work
@@ -38,4 +39,3 @@ for the per-stage version of this protocol.
 - [[pattern-question-the-tier-not-the-addition]] when a proposed addition's killer use case is already covered, question the whole tier
 - [[pattern-rules-in-duplicate-places-get-ignored]] a rule duplicated in two places gets ignored even by the agent that just read both copies
 - [[pattern-vault-read-write-asymmetry]] vault READ and vault WRITE are independently scoped permissions, never bundle them
-
