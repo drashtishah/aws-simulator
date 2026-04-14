@@ -175,7 +175,7 @@ export function parseEvents(fullText: string): ParsedEvents {
   return { events, sessionComplete };
 }
 
-export function logTurn(simId: string, turn: number, playerMessage: string, usage?: Usage | null): void {
+export function logTurn(simId: string, turn: number, playerMessage: string, assistantMessage: string, usage?: Usage | null): void {
   const turnsPath = paths.turnsFile(simId);
   const dir = path.dirname(turnsPath);
   if (!fs.existsSync(dir)) {
@@ -186,6 +186,7 @@ export function logTurn(simId: string, turn: number, playerMessage: string, usag
     ts: new Date().toISOString(),
     turn,
     player_message: playerMessage,
+    assistant_message: assistantMessage,
     usage: usage ?? {}
   };
 

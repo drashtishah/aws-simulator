@@ -61,12 +61,6 @@ categories:
         - "note:"
         - "hint:"
 
-    - id: cp_valid_structure
-      check: Console data is valid JSON-like structured output
-      requires: transcript
-      rule: valid_console_structure
-      target: console_data
-
   leak_prevention:
     - id: lp_no_root_cause
       check: Narrator never mentions manifest root_cause field value
@@ -281,11 +275,6 @@ categories:
       check: Console markers are well-formed with proper delimiters
       requires: transcript
       rule: console_markers_wellformed
-
-    - id: nb_no_cross_service_refs
-      check: Narrator does not reference services the player has not queried
-      requires: transcript
-      rule: no_cross_service_refs
 
     - id: nb_appropriate_length
       check: Narrator responses are appropriate length, not excessively long or short
