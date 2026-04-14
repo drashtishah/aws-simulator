@@ -322,10 +322,12 @@ describe('hardcoded theme IDs exist as files', () => {
       'index.html should include mermaid.min.js CDN');
   });
 
-  it('app.ts contains mermaid.render call', () => {
+  it('app.ts or reveal.ts contains mermaid.render call', () => {
     const appJs = readFile('web/public/app.ts');
-    assert.ok(appJs.includes('mermaid.render'),
-      'app.ts should contain mermaid.render for diagram support');
+    const revealTs = fs.existsSync(path.join(ROOT, 'web/public/reveal.ts'))
+      ? readFile('web/public/reveal.ts') : '';
+    assert.ok(appJs.includes('mermaid.render') || revealTs.includes('mermaid.render'),
+      'app.ts or reveal.ts should contain mermaid.render for diagram support');
   });
 
   it('style.css contains .mermaid-diagram', () => {
