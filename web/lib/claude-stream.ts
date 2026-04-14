@@ -269,14 +269,12 @@ export async function* streamMessage(
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
-  if (session.claudeSessionId && session.lastTurnHadToolUse) {
-    logEvent(sessionId, {
-      level: 'warn',
-      event: 'RESUME_SKIPPED',
-      reason: 'Previous turn had unresolved tool_use blocks'
-    });
-    queryOptions.systemPrompt = session.systemPrompt;
-  } else if (session.claudeSessionId) {
+  // The SDK resolves tool_use blocks when the iterator completes normally,
+  // so resume is safe even when the prior turn invoked tools. If a real
+  // resume failure occurs the SESSION_LOST catch below retries with a fresh
+  // systemPrompt. Keeping resume here preserves prompt caching across the
+  // whole session, which matters once artifacts move to Read()-on-demand.
+  if (session.claudeSessionId) {
     queryOptions.resume = session.claudeSessionId;
   } else {
     queryOptions.systemPrompt = session.systemPrompt;
@@ -339,7 +337,6 @@ export async function* streamMessage(
   }
 
   if (metadata) {
-    session.lastTurnHadToolUse = metadata.toolCalls.length > 0;
     if (metadata.resultError) {
       logEvent(sessionId, { level: 'warn', event: 'AGENT_RESULT_ERROR', subtype: metadata.resultError.subtype, error: metadata.resultError.error });
     }

@@ -13,7 +13,6 @@ export interface SessionData {
   turnCount: number;
   systemPrompt: string;
   abortController?: AbortController;
-  lastTurnHadToolUse?: boolean;
 }
 
 interface PersistedSession {

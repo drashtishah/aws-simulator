@@ -450,9 +450,15 @@ describe('parseAgentMessages hasToolUse', () => {
 describe('streamMessage resume validation', () => {
   const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-stream.ts'), 'utf8');
 
-  it('checks lastTurnHadToolUse before resume', () => {
-    assert.ok(source.includes('lastTurnHadToolUse'),
-      'streamMessage should check lastTurnHadToolUse');
+  it('always passes resume when claudeSessionId is set, regardless of prior tool use', () => {
+    // The SDK resolves tool_use blocks when the iterator completes normally.
+    // The pre-emptive RESUME_SKIPPED guard defeated prompt caching once
+    // artifacts moved to Read()-on-demand. Real resume failures fall back to
+    // the SESSION_LOST retry path.
+    assert.ok(!source.includes('RESUME_SKIPPED'),
+      'RESUME_SKIPPED workaround should be removed; rely on SESSION_LOST fallback');
+    assert.ok(!source.includes('lastTurnHadToolUse'),
+      'lastTurnHadToolUse field should no longer gate resume in streamMessage');
   });
 });
 
