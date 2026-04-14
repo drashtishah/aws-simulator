@@ -213,27 +213,24 @@ For each approved scenario, execute steps 12-19:
 - Validate against `.claude/skills/create-sim/assets/manifest-schema.json`
 - ID format: 3-digit zero-padded number + kebab-case slug (e.g., `002-rds-failover-cascade`)
 - Company: generate a realistic name matching the industry (never "Acme Corp")
-- Narrator personality: structured object with `role`, `demeanor`, and `recurring_concern` fields
-- Story beats: minimum `start` and `fix_validated` triggers; add time-based pressure beats. Non-section beats use `facts` arrays (not `message` strings)
-- Hints: 3-5 hints progressing from vague to specific, using `hint` field (not `text`)
-- Agents: minimum 2 service consoles; one per involved AWS service
+- Top-level shape: emit flat keys only. No `team` wrapper. Required top-level fields include `glossary`, `system`, `consoles`, `progressive_clues`, and `resolution`.
+- Consoles: minimum 2 service consoles; one per involved AWS service. Each console entry has `service`, `artifacts`, and `capabilities`. Preserve `capabilities` with real AWS action names so the play agent stays grounded.
 - Every service in the `services` array MUST have a corresponding console entry
 - Fix criteria: at least 2, with at least 1 marked `required: true`
 - Fix criteria must align with the Agent SOP retrieved in step 9b: require the same remediation actions the SOP prescribes, in the same order where sequence matters. Describe each criterion in plain English so a beginner understands what action to take, then name the specific AWS API or setting.
 - Exam topics: reference real domains from `.claude/skills/create-sim/references/exam-topics.md`
-- Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS -- no MCP needed for basic definitions. Do not define common English words.
-- Narrative arc: map this sim's story to the Campbell monomyth using `.claude/skills/create-sim/references/story-structure.md`. Each field (`call`, `threshold`, `trials`, `revelation`, `return`) is a short factual pacing cue describing what that phase looks like in THIS specific sim. No styled prose -- plain facts only. The `call` field should reference "story.md Opening" rather than duplicating its facts.
-- System narration: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only). Source from `mcp_research.service_interactions`.
-- Hints: generate as objects with `hint`, `relevant_services`, and `skip_if_queried` fields. For each hint, identify which services it relates to and which services, if already queried by the player, would make this hint redundant. Consult `.claude/skills/create-sim/references/game-design.md` for adaptive hint design principles. Hints still progress from vague to specific.
-- SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead -- this field is required, never omit it. Follow the beginner-friendly writing rule below.
+- Glossary: for each AWS term, API action, or service concept in the sim's artifacts or story, write a 1-2 sentence definition pitched at an AWS beginner. 5-10 entries. Use your own knowledge of AWS, no MCP needed for basic definitions. Do not define common English words.
+- System: for each major component in the architecture diagram, write a `components` entry with `name`, `role`, `connections`, and `failure_impact`. Write `data_flow` (normal data path) and `what_broke` (resolution-only summary of the failure). Source from `mcp_research.service_interactions`.
+- Progressive clues: array of plain strings, 3-5 clues, ordered from vaguest to most specific. Just the clue text. The play agent is given the full manifest at session start and decides when, if ever, to surface each clue based on the player's progress. Do not attach metadata, service tags, or skip conditions to clues.
+- SOP steps: from the SOP in step 9b, write the full "How AWS recommends approaching this" section as numbered steps adapted to the sim's specific resources and company name. If no SOP was found, generate equivalent best-practice remediation steps from `mcp_research.best_practices` instead; this field is required, never omit it. Follow the beginner-friendly writing rule below.
 - Related failure modes: from `mcp_research.failure_modes` and `mcp_research.best_practices`, generate 2-4 alternative failure modes for the same services. Each has `scenario`, `how_it_differs`, and `prevention`. Follow the beginner-friendly writing rule below.
-- SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix -- preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`. Follow the beginner-friendly writing rule below.
+- SOP practices: from the SOP in step 9b, extract 2-4 best-practice recommendations beyond the immediate fix: preventive measures, guardrails, operational habits. If no SOP, use `mcp_research.best_practices`. Follow the beginner-friendly writing rule below.
 
 **Beginner-friendly writing rule for all MCP-sourced content**: Every field populated from `mcp_research` data -- SOP steps, related failure modes, SOP practices, key concepts, remediation steps, system narration `failure_impact` and `what_broke` -- must be written for someone who does not yet know AWS terminology. Lead with a plain English explanation of what happens and why it matters. Then introduce the official AWS term, API action, or concept name. Never drop a term like "ACL", "presigned URL", "Origin Access Control", "PrincipalOrgID", "BucketOwnerEnforced", or any service-specific jargon without first explaining the idea in everyday language. The glossary handles definitions; these sections handle context and consequences.
 
 #### 16. Generate story.md
 
-- Consult `.claude/skills/create-sim/references/story-structure.md` for story beat pacing
+- Consult `.claude/skills/create-sim/references/story-structure.md` for what Opening and Resolution should contain. The play agent decides when to narrate, without triggers.
 - YAML frontmatter with tags: type/simulation, service/{slug} for each service, difficulty/{level-name}, category/{category}
 - Difficulty tag mapping: 1=starter, 2=associate, 3=professional, 4=expert
 - Opening section (structured facts, not prose):
@@ -389,13 +386,13 @@ tags:
 
 ## Content Style
 
-Sim content is theme-agnostic structured data. The play skill renders all text through the player's chosen theme at runtime.
+Sim content is theme-agnostic structured data. The play agent renders all text through the player's chosen theme at runtime, in whatever voice fits the situation.
 
 story.md uses structured facts (key: value pairs) for Opening and Resolution sections, not prose. See any existing sim's story.md for the format.
 
-Manifest story_beats use `facts` arrays instead of `message` strings. Manifest hints use `hint` with plain guidance sentences, not styled prose. Manifest narrative_arc uses factual pacing cues, not styled descriptions. Manifest narrator.personality uses a structured object (role, demeanor, recurring_concern), not a styled character description string.
+The manifest ships raw material: glossary terms, the `system` block (what_broke, data_flow, components), the consoles the player can reference, progressive_clues as a plain string array, and the resolution package. The play agent receives the full manifest, story.md, resolution.md, and the player's theme at session start, then picks a voice and decides pacing. Authors do not script narrator personality, story beats, or hint delivery in the manifest.
 
-Sim titles are theme-invariant. They read like chapter headings -- quiet, understated, slightly literary. Examples: "A Function in the Wrong Room," "Four Million Records, One by One," "Someone Else's Keys."
+Sim titles are theme-invariant. They read like chapter headings: quiet, understated, slightly literary. Examples: "A Function in the Wrong Room," "Four Million Records, One by One," "Someone Else's Keys."
 
 ---
 
@@ -421,6 +418,6 @@ Sim titles are theme-invariant. They read like chapter headings -- quiet, unders
 - [[exam-topics]] -- Exam domain and incident pattern reference
 - [[manifest-schema.json]] -- JSON Schema for manifest validation
 - [[learning/catalog.csv]] -- Player service catalog and progress
-- [[story-structure]] -- Campbell monomyth mapping for sim storytelling
+- [[story-structure]] -- What Opening and Resolution sections of story.md should contain
 - [[themes/_base]] -- Structural constants for the theme system
 - [[game-design]] -- Text-based game and investigation design best practices
