@@ -80,13 +80,16 @@ jobs:
 
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+          echo "model=$(jq -r .critic.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .critic.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
 
       - id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --model claude-opus-4-6
+            --model ${{ steps.setup.outputs.model }}
+            --effort ${{ steps.setup.outputs.effort }}
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["APPROVED","REVISE","DECOMPOSE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
