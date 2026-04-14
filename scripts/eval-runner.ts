@@ -294,8 +294,8 @@ const transcriptRules: Record<string, TranscriptRuleFn> = {
     let values: string[] = [];
     if (check.field === 'root_cause' && manifest?.resolution?.root_cause)
       values.push(manifest.resolution.root_cause);
-    else if (check.field === 'what_broke' && manifest?.team?.narrator?.system_narration?.what_broke)
-      values.push(manifest.team.narrator.system_narration.what_broke);
+    else if (check.field === 'what_broke' && (manifest as { system?: { what_broke?: string } } | null)?.system?.what_broke)
+      values.push((manifest as { system: { what_broke: string } }).system.what_broke);
     else if (check.field === 'criteria_ids' && manifest?.resolution?.fix_criteria)
       values = manifest.resolution.fix_criteria.map(c => c.id);
     else if (check.field === 'service_weights')
