@@ -5,7 +5,9 @@ on:
 
 jobs:
   close:
-    if: github.event.issue.user.login != github.repository_owner
+    if: >-
+      github.event.issue.user.login != github.repository_owner
+      && github.event.issue.user.login != 'claude[bot]'
     runs-on: ubuntu-latest
     permissions:
       issues: write
