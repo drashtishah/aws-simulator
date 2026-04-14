@@ -1,6 +1,6 @@
 /* AWS Incident Simulator - Frontend Application */
 
-import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal';
+import { revealMarkdownInto, CollapsibleBlock, renderMermaidIn } from './reveal.js';
 
 // --- Types ---
 
