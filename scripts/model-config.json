@@ -1,0 +1,10 @@
+{
+  "planner":           { "model": "claude-sonnet-4-6", "effort": "high" },
+  "critic":            { "model": "claude-opus-4-6",   "effort": "medium" },
+  "implementer":       { "model": "claude-sonnet-4-6", "effort": "medium" },
+  "verifier":          { "model": "claude-sonnet-4-6", "effort": "high" },
+  "evaluator":         { "model": "claude-opus-4-6",   "effort": "medium" },
+  "play":              { "model": "claude-sonnet-4-6", "effort": "medium" },
+  "post_session":      { "model": "claude-opus-4-6",   "effort": "medium" },
+  "agent_test_runner": { "model": "claude-sonnet-4-6", "effort": "low" }
+}
