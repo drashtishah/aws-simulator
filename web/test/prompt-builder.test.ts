@@ -13,15 +13,16 @@ describe('buildPrompt (persona template)', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     assert.ok(typeof prompt === 'string');
     assert.ok(prompt.length > 100);
-    assert.ok(prompt.includes('You are a guide inside an AWS incident'));
+    assert.ok(prompt.includes('You are the narrator of an AWS incident'));
   });
 
   it('throws for nonexistent sim with sim id in error', () => {
     assert.throws(() => buildPrompt('nonexistent-sim-999', 'calm-mentor'), /nonexistent-sim-999/);
   });
 
-  it('throws for nonexistent theme with theme id in error', () => {
-    assert.throws(() => buildPrompt(testSimId, 'nonexistent-theme-999'), /nonexistent-theme-999/);
+  it('accepts any themeId without crashing (themes are no longer injected)', () => {
+    const prompt = buildPrompt(testSimId, 'nonexistent-theme-999');
+    assert.ok(prompt.length > 100);
   });
 
   it('substitutes {sim_id} so the journal/session paths resolve', () => {
@@ -49,12 +50,10 @@ describe('buildPrompt (persona template)', () => {
     if (firstLine) assert.ok(prompt.includes(firstLine.trim()));
   });
 
-  it('injects themes/_base.md and selected theme', () => {
+  it('does not inject theme files (themes are not part of the prompt)', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
-    const baseFirstLine = fs.readFileSync(path.join(ROOT, 'themes', '_base.md'), 'utf8').split('\n').find(l => l.trim() && !l.startsWith('---')) ?? '';
-    assert.ok(prompt.includes('### themes/_base.md'));
-    assert.ok(prompt.includes('### themes/calm-mentor.md'));
-    if (baseFirstLine) assert.ok(prompt.includes(baseFirstLine.trim()));
+    assert.ok(!prompt.includes('### themes/_base.md'));
+    assert.ok(!prompt.includes('### themes/calm-mentor.md'));
   });
 
   it('injects every artifact file under its own ### artifacts/{name} heading', () => {
@@ -76,36 +75,9 @@ describe('buildPrompt (persona template)', () => {
     }
   });
 
-  it('builds for every theme', () => {
-    const themesDir = path.join(ROOT, 'themes');
-    const themes = fs.readdirSync(themesDir)
-      .filter(f => f.endsWith('.md') && !f.startsWith('_'))
-      .map(f => f.replace('.md', ''));
-    for (const themeId of themes) {
-      const prompt = buildPrompt(testSimId, themeId);
-      assert.ok(prompt.length > 100, `prompt should be non-trivial for theme: ${themeId}`);
-    }
-  });
-
-  it('strips theme frontmatter from the injected theme', () => {
-    const prompt = buildPrompt(testSimId, 'calm-mentor');
-    const themeFile = fs.readFileSync(path.join(ROOT, 'themes', 'calm-mentor.md'), 'utf8');
-    if (!themeFile.startsWith('---')) return;
-    const heading = '### themes/calm-mentor.md';
-    const idx = prompt.indexOf(heading);
-    assert.ok(idx >= 0, 'theme heading should be present');
-    const afterHeading = prompt.slice(idx + heading.length).trimStart();
-    assert.ok(!afterHeading.startsWith('---\n'), 'frontmatter fence should be stripped');
-    const frontmatter = themeFile.split('---')[1] ?? '';
-    const fmKeys = frontmatter
-      .split('\n')
-      .map(l => l.split(':')[0]?.trim())
-      .filter((k): k is string => Boolean(k));
-    for (const key of fmKeys) {
-      assert.ok(
-        !afterHeading.startsWith(`${key}:`),
-        `frontmatter key should not leak into theme body: ${key}`
-      );
-    }
+  it('builds identically for every themeId (themeId is cosmetic)', () => {
+    const p1 = buildPrompt(testSimId, 'calm-mentor');
+    const p2 = buildPrompt(testSimId, 'some-other-theme');
+    assert.equal(p1, p2);
   });
 });

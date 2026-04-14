@@ -164,8 +164,8 @@ export async function* streamSession(
   const abortController = new AbortController();
 
   const stdinMessage = options.resume
-    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/session.json for session state.`)
-    : 'Begin the simulation. Deliver the Opening and Briefing Card.';
+    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`)
+    : 'Begin. Open the incident in your voice: set the scene, establish the stakes, then hand the floor to the player.';
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
