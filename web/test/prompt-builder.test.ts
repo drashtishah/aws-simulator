@@ -56,14 +56,16 @@ describe('buildPrompt (persona template)', () => {
     assert.ok(!prompt.includes('### themes/calm-mentor.md'));
   });
 
-  it('injects every artifact file under its own ### artifacts/{name} heading', () => {
+  it('does not inline artifact file contents (narrator Read()s them on demand)', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
-    const artifactsDir = path.join(ROOT, 'sims', testSimId, 'artifacts');
-    if (fs.existsSync(artifactsDir)) {
-      const files = fs.readdirSync(artifactsDir);
-      for (const f of files) {
-        assert.ok(prompt.includes(`### artifacts/${f}`), `prompt should reference artifact heading ${f}`);
-      }
+    assert.ok(!prompt.includes('### artifacts/'), 'prompt should not inline artifact headings');
+  });
+
+  it('injects resolution.md so the narrator can guide and verify fixes', () => {
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    const resolutionPath = path.join(ROOT, 'sims', testSimId, 'resolution.md');
+    if (fs.existsSync(resolutionPath)) {
+      assert.ok(prompt.includes('### resolution.md'));
     }
   });
 
