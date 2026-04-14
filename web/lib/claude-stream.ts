@@ -8,6 +8,7 @@ import { parseEvents, logTurn, COLLECT_TIMEOUT_MS } from './claude-parse.js';
 import type { ParsedEvent } from './claude-parse.js';
 import { sessions, persistSession, createGameSession, updateGameSession, endSession } from './claude-session.js';
 import { logEvent } from './logger.js';
+import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 
 interface ContentBlock {
   type: string;
@@ -61,6 +62,7 @@ interface QueryOptions {
   resume?: string;
   abortController?: AbortController;
   maxBudgetUsd?: number;
+  effort?: EffortLevel;
 }
 
 interface StreamSessionOptions {
@@ -157,7 +159,7 @@ export async function* streamSession(
   }
 
   const modelKey = 'sonnet';
-  const modelId = 'claude-sonnet-4-6';
+  const modelId = MODEL_CONFIG.play.model;
   const sessionId = crypto.randomUUID();
   const promptText = buildPrompt(simId, themeId);
   const abortController = new AbortController();
@@ -174,6 +176,7 @@ export async function* streamSession(
     permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
+  if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
   try {
     const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8')) as {
@@ -259,6 +262,7 @@ export async function* streamMessage(
     permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
+  if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
   if (session.claudeSessionId && session.lastTurnHadToolUse) {
     logEvent(sessionId, {
@@ -308,6 +312,7 @@ export async function* streamMessage(
         permissionMode: 'bypassPermissions',
         maxTurns: 50
       };
+      if (MODEL_CONFIG.play.effort) retryOptions.effort = MODEL_CONFIG.play.effort;
 
       for await (const event of streamQuery(message, retryOptions, retryController)) {
         if (event.type === 'session_init') {

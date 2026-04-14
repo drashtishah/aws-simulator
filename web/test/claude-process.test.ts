@@ -500,14 +500,14 @@ describe('buildPostSessionPrompt includes solves', () => {
 describe('model is hardcoded', () => {
   const source = fs.readFileSync(path.join(ROOT, 'web', 'lib', 'claude-process.ts'), 'utf8');
 
-  it('startSession hardcodes claude-sonnet-4-6 via PLAY_SESSION_MODEL', () => {
+  it('startSession uses PLAY_SESSION_MODEL derived from MODEL_CONFIG.play.model', () => {
     const startIdx = source.indexOf('async function startSession');
     const endIdx = source.indexOf('async function', startIdx + 1);
     const fn = source.slice(startIdx, endIdx);
     assert.ok(fn.includes('PLAY_SESSION_MODEL'), 'startSession should reference PLAY_SESSION_MODEL constant');
     assert.ok(
-      source.includes("export const PLAY_SESSION_MODEL = 'claude-sonnet-4-6';"),
-      'PLAY_SESSION_MODEL constant must be claude-sonnet-4-6',
+      source.includes('export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model'),
+      'PLAY_SESSION_MODEL must derive from MODEL_CONFIG.play.model',
     );
   });
 

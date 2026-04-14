@@ -85,12 +85,15 @@ jobs:
 
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+          echo "model=$(jq -r .planner.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .planner.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: |
-            --model claude-sonnet-4-6
+            --model ${{ steps.setup.outputs.model }}
+            --effort ${{ steps.setup.outputs.effort }}
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}

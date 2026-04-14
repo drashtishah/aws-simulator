@@ -100,6 +100,8 @@ jobs:
 
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+          echo "model=$(jq -r .verifier.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .verifier.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
 
       - id: claude
         uses: anthropics/claude-code-action@v1
@@ -108,7 +110,8 @@ jobs:
           github_token: ${{ secrets.GH_PAT }}
           additional_permissions: "actions: read"
           claude_args: |
-            --model claude-sonnet-4-6
+            --model ${{ steps.setup.outputs.model }}
+            --effort ${{ steps.setup.outputs.effort }}
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["PASS","FAIL_RETRY","FAIL_ESCALATE"]},"summary":{"type":"string"}},"required":["verdict","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"

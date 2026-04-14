@@ -113,4 +113,3 @@ Base prompts and context overlays live in `references/pipeline/`:
 - `.github/workflows/verifier.yml`
 - `.github/workflows/evaluator.yml`
 - `.github/workflows/close-foreign-issues.yml`
-- `.github/workflows/poc-claude.yml` (one-time verification)

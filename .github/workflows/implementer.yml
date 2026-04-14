@@ -98,6 +98,8 @@ jobs:
 
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
           echo "mcp_arg=$MCP_ARG" >> "$GITHUB_OUTPUT"
+          echo "model=$(jq -r .implementer.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .implementer.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
 
       - id: claude
         uses: anthropics/claude-code-action@v1
@@ -105,7 +107,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
-            --model claude-sonnet-4-6
+            --model ${{ steps.setup.outputs.model }}
+            --effort ${{ steps.setup.outputs.effort }}
             --json-schema '{"type":"object","properties":{"status":{"type":"string","enum":["DONE","BLOCKED"]},"branch":{"type":"string"},"summary":{"type":"string"}},"required":["status","summary"]}'
             ${{ steps.setup.outputs.mcp_arg }}
             --allowed-tools "${{ steps.setup.outputs.tools }}"

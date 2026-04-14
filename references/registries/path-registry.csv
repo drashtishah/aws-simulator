@@ -157,7 +157,6 @@ references/architecture/gha-pipeline.md,.github/workflows/implementer.yml,112
 references/architecture/gha-pipeline.md,.github/workflows/verifier.yml,113
 references/architecture/gha-pipeline.md,.github/workflows/evaluator.yml,114
 references/architecture/gha-pipeline.md,.github/workflows/close-foreign-issues.yml,115
-references/architecture/gha-pipeline.md,.github/workflows/poc-claude.yml,116
 references/architecture/test-schemas.md,web/lib/schemas/,3
 references/architecture/test-schemas.md,web/test/test-schemas.test.ts,3
 references/architecture/test-schemas.md,web/test/test-selftest.test.ts,3

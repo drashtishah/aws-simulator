@@ -67,6 +67,8 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           echo "tools=$TOOLS" >> "$GITHUB_OUTPUT"
+          echo "model=$(jq -r .evaluator.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .evaluator.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
 
       - id: claude
         uses: anthropics/claude-code-action@v1
@@ -74,7 +76,8 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GH_PAT }}
           claude_args: |
-            --model claude-opus-4-6
+            --model ${{ steps.setup.outputs.model }}
+            --effort ${{ steps.setup.outputs.effort }}
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["CREATED","UPDATED","NOOP"]},"summary":{"type":"string"},"files":{"type":"array","items":{"type":"string"}},"loop_detected":{"type":"boolean"},"eval_score":{"type":"number"}},"required":["verdict","summary","files","loop_detected","eval_score"]}'
             --allowed-tools "${{ steps.setup.outputs.tools }}"
           prompt: ${{ steps.setup.outputs.prompt }}
