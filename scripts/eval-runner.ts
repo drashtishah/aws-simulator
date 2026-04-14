@@ -76,10 +76,12 @@ interface Session {
   [key: string]: unknown;
 }
 
-interface TranscriptEntry {
-  console?: string;
-  narrator?: string;
-  service?: string;
+interface TurnEntry {
+  ts: string;
+  turn: number;
+  player_message: string;
+  assistant_message: string;
+  usage?: unknown;
   [key: string]: unknown;
 }
 
@@ -100,7 +102,7 @@ interface Manifest {
 }
 
 type SessionRuleFn = (session: Session, manifest: Manifest | null, check: Check) => RuleResult;
-type TranscriptRuleFn = (transcript: TranscriptEntry[], manifest: Manifest | null, check: Check, session?: Session | null) => RuleResult;
+type TranscriptRuleFn = (transcript: TurnEntry[], manifest: Manifest | null, check: Check, session?: Session | null) => RuleResult;
 
 function loadScoringSpec(): ScoringSpec {
   return yaml.load(fs.readFileSync(SPEC_PATH, 'utf8')) as ScoringSpec;
@@ -120,11 +122,11 @@ function loadSession(simId: string): Session | null {
   return JSON.parse(fs.readFileSync(p, 'utf8')) as Session;
 }
 
-function loadTranscript(simId: string): TranscriptEntry[] | null {
-  const p: string = path.join(SESSIONS_DIR, simId, 'transcript.jsonl');
+function loadTurns(simId: string): TurnEntry[] | null {
+  const p: string = path.join(SESSIONS_DIR, simId, 'turns.jsonl');
   if (!fs.existsSync(p)) return null;
   const lines: string[] = fs.readFileSync(p, 'utf8').trim().split('\n');
-  return lines.filter(l => l.trim()).map(l => JSON.parse(l) as TranscriptEntry);
+  return lines.filter(l => l.trim()).map(l => JSON.parse(l) as TurnEntry);
 }
 
 function loadManifest(simId: string): Manifest | null {
@@ -151,11 +153,12 @@ function listCompletedSessions(): string[] {
   return completed;
 }
 
-function extractField(transcript: TranscriptEntry[] | null, target: string): string {
+function extractField(transcript: TurnEntry[] | null, target: string): string {
   if (!transcript) return '';
   const fieldMap: Record<string, string> = {
-    'console_data': 'console', 'transcript.console': 'console',
-    'narrator_text': 'narrator', 'transcript.narrator': 'narrator'
+    'narrator_text': 'assistant_message', 'transcript.narrator': 'assistant_message',
+    'narrator': 'assistant_message',
+    'player': 'player_message'
   };
   const field: string = fieldMap[target] ?? target;
   return transcript.map(t => (t[field] as string) ?? '').filter(Boolean).join('\n');
@@ -279,15 +282,15 @@ const sessionRules: Record<string, SessionRuleFn> = {
 
 // Transcript rules: each returns { pass, reason? }
 const transcriptRules: Record<string, TranscriptRuleFn> = {
-  not_contains_any(transcript: TranscriptEntry[], _manifest: Manifest | null, check: Check): RuleResult {
+  not_contains_any(transcript: TurnEntry[], _manifest: Manifest | null, check: Check): RuleResult {
     const text: string = extractField(transcript, check.target!).toLowerCase();
     for (const p of (check.patterns ?? [])) {
       if (text.includes(p.toLowerCase())) return { pass: false, reason: 'found forbidden phrase: ' + p };
     }
     return { pass: true };
   },
-  not_contains_manifest_field(transcript: TranscriptEntry[], manifest: Manifest | null, check: Check): RuleResult {
-    const narText: string = extractField(transcript, 'narrator_text').toLowerCase();
+  not_contains_manifest_field(transcript: TurnEntry[], manifest: Manifest | null, check: Check): RuleResult {
+    const narText: string = extractField(transcript, 'assistant_message').toLowerCase();
     let values: string[] = [];
     if (check.field === 'root_cause' && manifest?.resolution?.root_cause)
       values.push(manifest.resolution.root_cause);
@@ -302,30 +305,10 @@ const transcriptRules: Record<string, TranscriptRuleFn> = {
     }
     return { pass: true };
   },
-  no_emojis(transcript: TranscriptEntry[]): RuleResult {
-    const narText: string = extractField(transcript, 'narrator_text');
+  no_emojis(transcript: TurnEntry[]): RuleResult {
+    const narText: string = extractField(transcript, 'assistant_message');
     const emojiPattern: RegExp = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{200D}\u{20E3}]/u;
     if (emojiPattern.test(narText)) return { pass: false, reason: 'emoji found in narrator text' };
-    return { pass: true };
-  },
-  no_cross_service_refs(transcript: TranscriptEntry[], manifest: Manifest | null): RuleResult {
-    for (const entry of transcript) {
-      if (!entry.console || !entry.service) continue;
-      const consoleText: string = entry.console.toLowerCase();
-      for (const svc of (manifest?.services ?? [])) {
-        if (svc !== entry.service && consoleText.includes(svc.toLowerCase()))
-          return { pass: false, reason: 'console for ' + entry.service + ' references ' + svc };
-      }
-    }
-    return { pass: true };
-  },
-  valid_console_structure(transcript: TranscriptEntry[]): RuleResult {
-    for (const entry of transcript) {
-      if (!entry.console) continue;
-      const trimmed: string = entry.console.trim();
-      if (trimmed && !trimmed.startsWith('{') && !trimmed.startsWith('[') && !trimmed.includes(':'))
-        return { pass: false, reason: 'console entry not structured' };
-    }
     return { pass: true };
   },
   // TODO: all stubs below pass by default, refine with real play data
@@ -342,7 +325,7 @@ const transcriptRules: Record<string, TranscriptRuleFn> = {
   debrief_has_seed_questions(): RuleResult { return { pass: true }; }
 };
 
-function runCheck(check: Check, session: Session | null, transcript: TranscriptEntry[] | null, manifest: Manifest | null): CheckResult {
+function runCheck(check: Check, session: Session | null, transcript: TurnEntry[] | null, manifest: Manifest | null): CheckResult {
   const id: string = check.id;
   if (check.requires === 'llm') return { id, status: 'pending_llm', prompt: check.prompt };
   if (check.requires === 'transcript' && !transcript) return { id, status: 'skipped', reason: 'no transcript' };
@@ -361,7 +344,7 @@ function runCheck(check: Check, session: Session | null, transcript: TranscriptE
 function runScorecard(simId: string): ScorecardResult {
   const session: Session | null = loadSession(simId);
   if (!session) return { error: 'Session not found for ' + simId };
-  const transcript: TranscriptEntry[] | null = loadTranscript(simId);
+  const transcript: TurnEntry[] | null = loadTurns(simId);
   const manifest: Manifest | null = loadManifest(simId);
   const checks: Check[] = allChecks(loadScoringSpec());
   const results: CheckResult[] = checks.map(c => runCheck(c, session, transcript, manifest));
@@ -391,6 +374,6 @@ function appendHistory(entry: Record<string, unknown>): void {
 export {
   loadScoringSpec, allChecks, runCheck, runScorecard,
   writeResult, appendHistory, listCompletedSessions,
-  loadSession, loadTranscript, loadManifest,
+  loadSession, loadTurns, loadManifest,
   SESSIONS_DIR, RESULTS_DIR
 };

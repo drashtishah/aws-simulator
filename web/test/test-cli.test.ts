@@ -37,7 +37,6 @@ describe('test CLI self-tests', () => {
   it('evals --dry-run exits with code 0 and lists categories', () => {
     const output = run('evals --dry-run');
     assert.ok(output.includes('scoring_integrity'), 'should list scoring_integrity category');
-    assert.ok(output.includes('console_purity'), 'should list console_purity category');
     assert.ok(output.includes('leak_prevention'), 'should list leak_prevention category');
   });
 

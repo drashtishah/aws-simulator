@@ -238,12 +238,12 @@ describe('logTurn', () => {
   });
 
   it('creates turns.jsonl if it does not exist', () => {
-    logTurn(testSimId, 1, 'hello', { input_tokens: 10, output_tokens: 5 });
+    logTurn(testSimId, 1, 'hello', '', { input_tokens: 10, output_tokens: 5 });
     assert.ok(fs.existsSync(turnsPath));
   });
 
   it('writes a valid JSONL line with correct fields', () => {
-    logTurn(testSimId, 1, 'check logs', { input_tokens: 100, output_tokens: 50, duration_ms: 1500 });
+    logTurn(testSimId, 1, 'check logs', 'narrator reply', { input_tokens: 100, output_tokens: 50, duration_ms: 1500 });
     const line = fs.readFileSync(turnsPath, 'utf8').trim();
     const parsed = JSON.parse(line);
     assert.equal(parsed.turn, 1);
@@ -255,12 +255,42 @@ describe('logTurn', () => {
   });
 
   it('appends multiple lines on multiple calls', () => {
-    logTurn(testSimId, 1, 'first', { input_tokens: 10, output_tokens: 5 });
-    logTurn(testSimId, 2, 'second', { input_tokens: 20, output_tokens: 10 });
+    logTurn(testSimId, 1, 'first', 'reply1', { input_tokens: 10, output_tokens: 5 });
+    logTurn(testSimId, 2, 'second', 'reply2', { input_tokens: 20, output_tokens: 10 });
     const lines = fs.readFileSync(turnsPath, 'utf8').trim().split('\n');
     assert.equal(lines.length, 2);
     assert.equal(JSON.parse(lines[0]).turn, 1);
     assert.equal(JSON.parse(lines[1]).turn, 2);
+  });
+
+  it('writes assistant_message field to turns.jsonl entry', () => {
+    logTurn(testSimId, 1, 'player input', 'NARRATOR_STUB', { input_tokens: 1, output_tokens: 1 });
+    const line = fs.readFileSync(turnsPath, 'utf8').trim();
+    const parsed = JSON.parse(line);
+    assert.equal(parsed.assistant_message, 'NARRATOR_STUB');
+  });
+
+  it('writes assistant_message as empty string when empty', () => {
+    logTurn(testSimId, 1, 'player input', '', { input_tokens: 1, output_tokens: 1 });
+    const line = fs.readFileSync(turnsPath, 'utf8').trim();
+    const parsed = JSON.parse(line);
+    assert.equal(parsed.assistant_message, '');
+  });
+
+  it('player_message and assistant_message coexist on same entry', () => {
+    logTurn(testSimId, 1, 'the player asked', 'the narrator replied', { input_tokens: 1, output_tokens: 1 });
+    const line = fs.readFileSync(turnsPath, 'utf8').trim();
+    const parsed = JSON.parse(line);
+    assert.equal(parsed.player_message, 'the player asked');
+    assert.equal(parsed.assistant_message, 'the narrator replied');
+  });
+
+  it('appends multiple turns each with assistant_message', () => {
+    logTurn(testSimId, 1, 'q1', 'a1', { input_tokens: 1, output_tokens: 1 });
+    logTurn(testSimId, 2, 'q2', 'a2', { input_tokens: 2, output_tokens: 2 });
+    const lines = fs.readFileSync(turnsPath, 'utf8').trim().split('\n');
+    assert.equal(JSON.parse(lines[0]).assistant_message, 'a1');
+    assert.equal(JSON.parse(lines[1]).assistant_message, 'a2');
   });
 });
 

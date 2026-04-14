@@ -47,10 +47,6 @@ describe('paths', () => {
       assert.ok(paths.sessionFile('abc').endsWith(path.join('sessions', 'abc', 'session.json')));
     });
 
-    it('transcriptFile returns sessions/{id}/transcript.jsonl', () => {
-      assert.ok(paths.transcriptFile('abc').endsWith(path.join('sessions', 'abc', 'transcript.jsonl')));
-    });
-
     it('sessionDir returns sessions/{id}', () => {
       assert.ok(paths.sessionDir('abc').endsWith(path.join('sessions', 'abc')));
     });
