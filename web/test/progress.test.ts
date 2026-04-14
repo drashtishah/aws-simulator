@@ -51,6 +51,36 @@ describe('currentRank (via progress.js wrapper)', () => {
   it('returns Responder when only one axis is high', () => {
     assert.equal(currentRank({ gather: 10 }), 'Responder');
   });
+
+  // Regression: the wrapper must pipe the player profile through so that
+  // quality_gate checks (min_sessions_at_rank, avg_question_quality) run.
+  // Without this, polygon alone promotes the player and the UI disagrees
+  // with what the post-session agent wrote to rank_title.
+  describe('quality gate (regression)', () => {
+    it('passes polygon alone to Junior Investigator when profile omitted', () => {
+      const poly = { gather: 1, trace: 1, fix: 1 };
+      assert.equal(currentRank(poly), 'Junior Investigator');
+    });
+
+    it('blocks Junior Investigator when sessions_at_current_rank below gate', () => {
+      const poly = { gather: 1, trace: 1, fix: 1 };
+      // gate: avg_question_quality: 2, min_sessions_at_rank: 15
+      const profile = { question_quality: { avg_overall: 6 }, sessions_at_current_rank: 1 };
+      assert.equal(currentRank(poly, profile), 'Responder');
+    });
+
+    it('blocks Junior Investigator when avg_question_quality below gate', () => {
+      const poly = { gather: 1, trace: 1, fix: 1 };
+      const profile = { question_quality: { avg_overall: 1 }, sessions_at_current_rank: 50 };
+      assert.equal(currentRank(poly, profile), 'Responder');
+    });
+
+    it('promotes to Junior Investigator when both gates pass', () => {
+      const poly = { gather: 1, trace: 1, fix: 1 };
+      const profile = { question_quality: { avg_overall: 6 }, sessions_at_current_rank: 15 };
+      assert.equal(currentRank(poly, profile), 'Junior Investigator');
+    });
+  });
 });
 
 describe('normalizeHexagon (via progress.js wrapper)', () => {

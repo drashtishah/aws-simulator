@@ -57,6 +57,15 @@ describe('streamSession', () => {
     assert.ok(fnBlock.includes("type: 'session'"),
       'streamSession should yield session event');
   });
+
+  it('reads opening.md and defers the Claude call on fresh start', () => {
+    const fnStart = source.indexOf('async function* streamSession');
+    const fnBlock = source.slice(fnStart, source.indexOf('export async function* streamMessage'));
+    assert.ok(fnBlock.includes('paths.opening('),
+      'streamSession should read sims/{id}/opening.md for the hardcoded opener');
+    assert.ok(!fnBlock.includes('Begin. Open the incident'),
+      'the LLM-generated opener prompt should be removed from fresh-start path');
+  });
 });
 
 // --- streamMessage source-level tests ---

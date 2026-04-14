@@ -25,7 +25,7 @@ interface SDKMsg {
   model?: string;
   message?: { content?: ContentBlock[] };
   event?: { type: string; delta?: { type: string; text?: string }; index?: number };
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number };
   duration_ms?: number;
   is_error?: boolean;
   error?: unknown;
@@ -40,6 +40,8 @@ interface ToolCall {
 interface Usage {
   input_tokens: number;
   output_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
   duration_ms?: number;
 }
 
@@ -127,6 +129,8 @@ export async function* streamQuery(
       } else if (m.type === 'result') {
         const u = m.usage ?? {};
         usage = { input_tokens: u.input_tokens ?? 0, output_tokens: u.output_tokens ?? 0 };
+        if (u.cache_read_input_tokens !== undefined) usage.cache_read_input_tokens = u.cache_read_input_tokens;
+        if (u.cache_creation_input_tokens !== undefined) usage.cache_creation_input_tokens = u.cache_creation_input_tokens;
         if (m.duration_ms) usage.duration_ms = m.duration_ms;
         if (m.is_error || (m.subtype && m.subtype.startsWith('error_'))) {
           resultError = { subtype: m.subtype, error: m.error ?? null };
@@ -173,9 +177,45 @@ export async function* streamSession(
   const promptText = buildPrompt(simId, themeId);
   const abortController = new AbortController();
 
-  const stdinMessage = options.resume
-    ? (options.resumeMessage ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`)
-    : 'Begin. Open the incident in your voice: set the scene, establish the stakes, then hand the floor to the player.';
+  const sessionData = {
+    claudeSessionId: null as string | null,
+    simId,
+    themeId,
+    model: modelKey,
+    modelId,
+    startedAt: new Date(),
+    turnCount: 0,
+    systemPrompt: promptText,
+    abortController
+  };
+  sessions.set(sessionId, sessionData);
+  createGameSession(simId);
+  persistSession(sessionId, sessionData);
+
+  yield { type: 'session', sessionId };
+
+  logEvent(sessionId, {
+    level: 'info',
+    event: 'session_start',
+    sim_id: simId,
+    theme: themeId,
+    model_requested: modelKey
+  });
+
+  // Fresh start: render the author-written opening.md instantly. Defer the
+  // Claude session creation to the player's first streamMessage, which
+  // creates it via the systemPrompt fallback path. No LLM round-trip on
+  // first paint.
+  if (!options.resume) {
+    const opening = fs.readFileSync(paths.opening(simId), 'utf8').trim();
+    yield { type: 'text', content: opening };
+    yield { type: 'done' };
+    return;
+  }
+
+  // Resume path: ask Claude to re-orient from narrator-notes.md.
+  const stdinMessage = options.resumeMessage
+    ?? `Resume the in-progress session. Read learning/sessions/${simId}/narrator-notes.md for where you left off.`;
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
@@ -196,22 +236,6 @@ export async function* streamSession(
     if (budget) queryOptions.maxBudgetUsd = budget;
   } catch { /* ignore missing config */ }
 
-  const sessionData = {
-    claudeSessionId: null as string | null,
-    simId,
-    themeId,
-    model: modelKey,
-    modelId,
-    startedAt: new Date(),
-    turnCount: 0,
-    systemPrompt: promptText,
-    abortController
-  };
-  sessions.set(sessionId, sessionData);
-  createGameSession(simId);
-
-  yield { type: 'session', sessionId };
-
   let metadata: (StreamEvent & { type: '_metadata' }) | null = null;
   for await (const event of streamQuery(stdinMessage, queryOptions, abortController)) {
     if (event.type === 'session_init') {
@@ -226,25 +250,13 @@ export async function* streamSession(
     yield event;
   }
 
-  if (metadata) {
+  if (metadata?.resultError) {
     logEvent(sessionId, {
-      level: 'info',
-      event: 'session_start',
-      sim_id: simId,
-      theme: themeId,
-      model_requested: modelKey,
-      model_actual: metadata.claudeModel ?? 'unknown',
-      claude_session_id: metadata.claudeSessionId
+      level: 'warn',
+      event: 'AGENT_RESULT_ERROR',
+      subtype: metadata.resultError.subtype,
+      error: metadata.resultError.error
     });
-
-    if (metadata.resultError) {
-      logEvent(sessionId, {
-        level: 'warn',
-        event: 'AGENT_RESULT_ERROR',
-        subtype: metadata.resultError.subtype,
-        error: metadata.resultError.error
-      });
-    }
   }
 
   yield { type: 'done' };
@@ -275,14 +287,12 @@ export async function* streamMessage(
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
-  if (session.claudeSessionId && session.lastTurnHadToolUse) {
-    logEvent(sessionId, {
-      level: 'warn',
-      event: 'RESUME_SKIPPED',
-      reason: 'Previous turn had unresolved tool_use blocks'
-    });
-    queryOptions.systemPrompt = session.systemPrompt;
-  } else if (session.claudeSessionId) {
+  // The SDK resolves tool_use blocks when the iterator completes normally,
+  // so resume is safe even when the prior turn invoked tools. If a real
+  // resume failure occurs the SESSION_LOST catch below retries with a fresh
+  // systemPrompt. Keeping resume here preserves prompt caching across the
+  // whole session, which matters once artifacts move to Read()-on-demand.
+  if (session.claudeSessionId) {
     queryOptions.resume = session.claudeSessionId;
   } else {
     queryOptions.systemPrompt = session.systemPrompt;
@@ -346,7 +356,6 @@ export async function* streamMessage(
   }
 
   if (metadata) {
-    session.lastTurnHadToolUse = metadata.toolCalls.length > 0;
     if (metadata.resultError) {
       logEvent(sessionId, { level: 'warn', event: 'AGENT_RESULT_ERROR', subtype: metadata.resultError.subtype, error: metadata.resultError.error });
     }

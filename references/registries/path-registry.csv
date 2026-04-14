@@ -38,7 +38,7 @@ file,path,line_number
 .claude/skills/create-sim/ownership.json,sims/index.md,2
 .claude/skills/create-sim/ownership.json,sims/registry.json,2
 .claude/skills/create-sim/ownership.json,sims/,3
-.claude/skills/create-sim/references/sim-template.md,learning/catalog.csv,207
+.claude/skills/create-sim/references/sim-template.md,learning/catalog.csv,208
 .claude/skills/doc/SKILL.md,learning/logs/health-scores.jsonl,20
 .claude/skills/doc/SKILL.md,learning/logs/health-scores.jsonl,33
 .claude/skills/doc/SKILL.md,.claude/skills/doc/references/issue-template.md,109
@@ -75,11 +75,11 @@ file,path,line_number
 .claude/skills/play/ownership.json,learning/catalog.csv,2
 .claude/skills/play/ownership.json,learning/profile.json,2
 .claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,10
-.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,136
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,138
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,139
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,140
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/artifacts/,141
+.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,183
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/opening.md,185
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,186
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,187
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,188
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,165
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,185
 .claude/skills/play/references/coaching-patterns.md,learning/profile.json,254

@@ -25,10 +25,9 @@ describe('buildPrompt (persona template)', () => {
     assert.ok(prompt.length > 100);
   });
 
-  it('substitutes {sim_id} so the journal/session paths resolve', () => {
+  it('substitutes {sim_id} so the journal path resolves', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     assert.ok(prompt.includes(`learning/sessions/${testSimId}/narrator-notes.md`));
-    assert.ok(prompt.includes(`learning/sessions/${testSimId}/session.json`));
     assert.ok(!prompt.includes('{sim_id}'));
   });
 
@@ -56,15 +55,25 @@ describe('buildPrompt (persona template)', () => {
     assert.ok(!prompt.includes('### themes/calm-mentor.md'));
   });
 
-  it('injects every artifact file under its own ### artifacts/{name} heading', () => {
+  it('does not inline artifact file contents (narrator Read()s them on demand)', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
-    const artifactsDir = path.join(ROOT, 'sims', testSimId, 'artifacts');
-    if (fs.existsSync(artifactsDir)) {
-      const files = fs.readdirSync(artifactsDir);
-      for (const f of files) {
-        assert.ok(prompt.includes(`### artifacts/${f}`), `prompt should reference artifact heading ${f}`);
-      }
+    assert.ok(!prompt.includes('### artifacts/'), 'prompt should not inline artifact headings');
+  });
+
+  it('injects resolution.md so the narrator can guide and verify fixes', () => {
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    const resolutionPath = path.join(ROOT, 'sims', testSimId, 'resolution.md');
+    if (fs.existsSync(resolutionPath)) {
+      assert.ok(prompt.includes('### resolution.md'));
     }
+  });
+
+  it('injects opening.md so the narrator knows what the player has already seen', () => {
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    const opening = fs.readFileSync(path.join(ROOT, 'sims', testSimId, 'opening.md'), 'utf8');
+    assert.ok(prompt.includes('## Opening (already shown)'), 'prompt must include the opening header');
+    const firstLine = opening.split('\n').find(l => l.trim().length > 0) ?? '';
+    if (firstLine) assert.ok(prompt.includes(firstLine.trim()), 'prompt must contain the opening content');
   });
 
   it('builds for every registered sim', () => {

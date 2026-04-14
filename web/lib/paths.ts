@@ -4,7 +4,7 @@ const ROOT: string = path.resolve(__dirname, '..', '..');
 
 const SIMS_DIR: string = path.join(ROOT, 'sims');
 const THEMES_DIR: string = path.join(ROOT, 'themes');
-const LEARNING_DIR: string = path.join(ROOT, 'learning');
+const LEARNING_DIR: string = process.env.AWS_SIMULATOR_LEARNING_DIR ?? path.join(ROOT, 'learning');
 // PR-A.4.1: tests can stub the sessions dir via this env var so they no
 // longer leak `learning/sessions/<simId>/` directories back into the worktree.
 const SESSIONS_DIR: string = process.env.AWS_SIMULATOR_SESSIONS_DIR ?? path.join(LEARNING_DIR, 'sessions');
@@ -39,6 +39,7 @@ const AGENT_PROMPTS: string = path.join(ROOT, '.claude', 'skills', 'play', 'refe
 const simDir = (id: string): string => path.join(SIMS_DIR, id);
 const manifest = (id: string): string => path.join(SIMS_DIR, id, 'manifest.json');
 const story = (id: string): string => path.join(SIMS_DIR, id, 'story.md');
+const opening = (id: string): string => path.join(SIMS_DIR, id, 'opening.md');
 const theme = (id: string): string => path.join(THEMES_DIR, `${id}.md`);
 const sessionFile = (id: string): string => path.join(SESSIONS_DIR, id, 'session.json');
 const turnsFile = (id: string): string => path.join(SESSIONS_DIR, id, 'turns.jsonl');
@@ -69,6 +70,7 @@ const paths = {
   simDir,
   manifest,
   story,
+  opening,
   theme,
   sessionFile,
   turnsFile,

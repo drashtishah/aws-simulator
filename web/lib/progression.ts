@@ -189,8 +189,8 @@ function currentRank(polygon: Polygon, config: ProgressionConfig, profile?: Prof
   return config.ranks[config.ranks.length - 1]!;
 }
 
-function maxDifficulty(polygon: Polygon, config: ProgressionConfig): number {
-  return currentRank(polygon, config).max_difficulty;
+function maxDifficulty(polygon: Polygon, config: ProgressionConfig, profile?: Profile): number {
+  return currentRank(polygon, config, profile).max_difficulty;
 }
 
 function applyDecay(
@@ -282,10 +282,10 @@ function scoreSim(
          (sorting.retention_weight * retentionScore);
 }
 
-function availableModifiers(polygon: Polygon, config: ProgressionConfig): Modifier[] {
+function availableModifiers(polygon: Polygon, config: ProgressionConfig, profile?: Profile): Modifier[] {
   if (!config.modifiers) return [];
 
-  const rank = currentRank(polygon, config);
+  const rank = currentRank(polygon, config, profile);
   const unlocks = new Set(rank.unlocks ?? []);
 
   return config.modifiers.filter(mod =>
