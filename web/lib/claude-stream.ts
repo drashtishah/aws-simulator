@@ -24,6 +24,7 @@ interface SDKMsg {
   session_id?: string;
   model?: string;
   message?: { content?: ContentBlock[] };
+  event?: { type: string; delta?: { type: string; text?: string }; index?: number };
   usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number };
   duration_ms?: number;
   is_error?: boolean;
@@ -48,6 +49,7 @@ type StreamEvent =
   | { type: 'session_init'; claudeSessionId: string | null; claudeModel: string | null }
   | { type: 'session'; sessionId: string }
   | { type: 'text'; content: string }
+  | { type: 'text_delta'; content: string }
   | { type: 'dropdown'; content: string; label: string; open: boolean }
   | { type: 'complete' }
   | { type: 'done'; sessionComplete?: boolean }
@@ -64,6 +66,7 @@ interface QueryOptions {
   abortController?: AbortController;
   maxBudgetUsd?: number;
   effort?: EffortLevel;
+  includePartialMessages?: boolean;
 }
 
 interface StreamSessionOptions {
@@ -105,11 +108,20 @@ export async function* streamQuery(
         claudeSessionId = m.session_id ?? null;
         if (m.model) claudeModel = m.model;
         yield { type: 'session_init', claudeSessionId, claudeModel };
+      } else if (m.type === 'stream_event' && m.event) {
+        const ev = m.event;
+        if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+          const delta = ev.delta.text ?? '';
+          fullText += delta;
+          yield { type: 'text_delta', content: delta };
+        }
       } else if (m.type === 'assistant' && m.message) {
         const content = m.message.content ?? [];
         for (const block of content) {
           if (block.type === 'text') {
-            fullText += block.text ?? '';
+            if (!queryOptions.includePartialMessages) {
+              fullText += block.text ?? '';
+            }
           } else if (block.type === 'tool_use') {
             toolCalls.push({ name: block.name!, input: block.input, id: block.id! });
           }
@@ -129,11 +141,7 @@ export async function* streamQuery(
     clearTimeout(timeoutId!);
   }
 
-  // Parse and yield the complete response after the stream ends. Incremental
-  // yielding during tool-using turns was broken because empty text events
-  // emitted alongside tool_use blocks advanced an internal cursor past the
-  // point where real text later arrived. Client-side reveal animation
-  // preserves the typing feel.
+  // yield structured events after stream ends
   const { events, sessionComplete } = parseEvents(fullText);
   for (const ev of events) {
     if (ev.content && ev.content.trim()) yield ev;
@@ -215,7 +223,8 @@ export async function* streamSession(
     model: modelId,
     systemPrompt: promptText,
     permissionMode: 'bypassPermissions',
-    maxTurns: 50
+    maxTurns: 50,
+    includePartialMessages: true
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
@@ -273,7 +282,8 @@ export async function* streamMessage(
     allowedTools: ['Read', 'Write'],
     model: session.modelId,
     permissionMode: 'bypassPermissions',
-    maxTurns: 50
+    maxTurns: 50,
+    includePartialMessages: true
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
@@ -321,7 +331,8 @@ export async function* streamMessage(
         model: session.modelId,
         systemPrompt: session.systemPrompt,
         permissionMode: 'bypassPermissions',
-        maxTurns: 50
+        maxTurns: 50,
+        includePartialMessages: true
       };
       if (MODEL_CONFIG.play.effort) retryOptions.effort = MODEL_CONFIG.play.effort;
 

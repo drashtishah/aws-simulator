@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-14
-note_count: 25
+note_count: 27
 ---
 # system-vault index
 
@@ -32,6 +32,8 @@ for the per-stage version of this protocol.
 - [[solution-search-issues-before-create]] cost/trivial: gh issue list --state all --search before gh issue create, every time
 - [[solution-shell-portable-python-bridge]] cost/trivial: replace BSD-only date/sed/readlink with python3 one-liners
 - [[solution-worktree-symlink-node-modules]] cost/trivial: symlink the main checkout's node_modules into a fresh worktree instead of running npm install
+- [[solution-resummarize-before-ui-commit]] cost/trivial: run agent-browser-summarize right before git commit so committed_at_head matches HEAD and the pre-commit-ui-tests hook passes
+- [[solution-absence-selector-allowlist-or-evaluate]] cost/trivial: add removed selector to absenceSelectors in cross-file-consistency.test.ts or use evaluate_script when asserting DOM absence
 
 ## playbooks
 

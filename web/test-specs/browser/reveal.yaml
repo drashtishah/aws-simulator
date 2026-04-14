@@ -1,62 +1,58 @@
 name: reveal
 description: >
-  Progressive text reveal and collapsible narrator blocks.
-  Verifies narrator messages use sequential reveal units, console blocks
-  are folded by default, coaching blocks are open by default, and the
-  reveal-speed dropdown persists its value across page reload.
+  Delta streaming and collapsible narrator blocks.
+  Verifies settings modal has no reveal-speed dropdown, narrator messages
+  render via delta streaming, DROPDOWN markers are stripped, dropdowns
+  appear after narration in DOM order.
 setup:
   navigate: /
 
 steps:
-  - id: settings-has-reveal-speed-dropdown
-    action: click
-    target: "#btn-settings"
-    check:
-      - selector: "#select-reveal-speed"
-        visible: true
-      - selector: "#select-reveal-speed .custom-select-trigger"
-        visible: true
-
-  - id: reveal-speed-default-normal
-    check:
-      - selector: "#select-reveal-speed .custom-select-trigger"
-        text_contains: "Normal"
-
-  - id: reveal-speed-open
-    action: click
-    target: "#select-reveal-speed .custom-select-trigger"
-    check:
-      - selector: "#select-reveal-speed.open"
-        visible: true
-
-  - id: reveal-speed-select-instant
-    action: click
-    target: "#select-reveal-speed .custom-select-option[data-value='instant']"
-    check:
-      - selector: "#select-reveal-speed .custom-select-trigger"
-        text_contains: "Instant"
-      - selector: "#select-reveal-speed.open"
-        visible: false
-
-  - id: close-settings
-    action: click
-    target: "#btn-close-settings"
-
-  - id: reload-page
-    action: navigate
-    target: /
-
-  - id: reopen-settings-after-reload
+  - id: settings-has-no-reveal-speed-dropdown
     action: click
     target: "#btn-settings"
     check:
       - selector: "#settings-modal"
         visible: true
 
-  - id: reveal-speed-persists-after-reload
-    check:
-      - selector: "#select-reveal-speed .custom-select-trigger"
-        text_contains: "Instant"
+  - id: reveal-speed-absent
+    description: >
+      Settings modal must not contain a reveal-speed dropdown after the feature removal.
+    action: evaluate_script
+    script: |
+      return document.getElementById('select-reveal-speed') === null;
+    expected: true
+
+  - id: close-settings
+    action: click
+    target: "#btn-close-settings"
+
+  - id: narrator-no-raw-markers
+    description: >
+      narrator divs must not contain raw [DROPDOWN or [SESSION_COMPLETE] text
+    action: evaluate_script
+    script: |
+      const narrators = document.querySelectorAll('.chat-message.narrator');
+      const found = Array.from(narrators).some(el =>
+        el.innerHTML.includes('[DROPDOWN') || el.innerHTML.includes('[SESSION_COMPLETE]')
+      );
+      return !found;
+    expected: true
+
+  - id: collapsibles-after-narration
+    description: >
+      All .collapsible-block elements appear after .chat-message.narrator
+      in DOM order (accepted dropdown-ordering UX change).
+    action: evaluate_script
+    script: |
+      const all = Array.from(document.querySelectorAll('.chat-message.narrator, .collapsible-block'));
+      let seenNarrator = false;
+      for (const el of all) {
+        if (el.classList.contains('narrator')) { seenNarrator = true; }
+        if (el.classList.contains('collapsible-block') && !seenNarrator) { return false; }
+      }
+      return true;
+    expected: true
 
   - id: console-clean-after-flow
     check:
