@@ -8,14 +8,16 @@ import { sessions, persistSession, createGameSession, updateGameSession, endSess
 import { parseEvents, parseAgentMessages, logTurn, collectMessages, withRetry, COLLECT_TIMEOUT_MS } from './claude-parse.js';
 import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
+import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 
 // Model split rationale: Sonnet handles interactive play (faster, cheaper,
 // already strong enough for narrator + investigation reasoning). Opus handles
 // post-session scoring because it does cross-file analysis (session.json +
 // manifest + coaching-patterns + progression) and benefits from the deeper
-// reasoning. Do not flip these without an A/B test on quality. See Issue #107.
-export const PLAY_SESSION_MODEL = 'claude-sonnet-4-6';
-export const POST_SESSION_MODEL = 'claude-opus-4-6';
+// reasoning. Per-stage model and effort live in scripts/model-config.json.
+// Do not flip these without an A/B test on quality. See Issue #107.
+export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
+export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;
 
 interface StartSessionOptions {
   resume?: boolean;
@@ -31,6 +33,7 @@ interface QueryOptions {
   maxTurns: number;
   resume?: string;
   maxBudgetUsd?: number;
+  effort?: EffortLevel;
 }
 
 interface SessionResult {
@@ -68,6 +71,7 @@ export async function startSession(simId: string, themeId: string, options: Star
     permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
+  if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
   const messages = await collectMessages(query({
     prompt: stdinMessage,
@@ -134,6 +138,7 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
     permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
+  if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
 
   if (session.claudeSessionId) {
     queryOptions.resume = session.claudeSessionId;
@@ -165,6 +170,7 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
         permissionMode: 'bypassPermissions',
         maxTurns: 50
       };
+      if (MODEL_CONFIG.play.effort) retryOptions.effort = MODEL_CONFIG.play.effort;
 
       messages = await collectMessages(query({
         prompt: message,
@@ -270,6 +276,7 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
     permissionMode: 'bypassPermissions',
     maxTurns: 30
   };
+  if (MODEL_CONFIG.post_session.effort) queryOptions.effort = MODEL_CONFIG.post_session.effort;
 
   try {
     const metricsConfig = JSON.parse(fs.readFileSync(path.join(paths.ROOT, 'scripts', 'metrics.config.json'), 'utf8')) as {
