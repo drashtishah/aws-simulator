@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach, mock, after } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'path';
 import fs from 'fs';
-import { parseEvents, parseAgentMessages, logTurn, sendMessage, endSession, collectMessages, withRetry, buildPostSessionPrompt } from '../lib/claude-process';
+import { parseEvents, parseAgentMessages, logTurn, sendMessage, endSession, collectMessages, withRetry } from '../lib/claude-process';
 import { sessions } from '../lib/claude-session';
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -480,19 +480,6 @@ describe('withRetry', () => {
       () => withRetry(() => { throw new Error('always fail'); }, { maxAttempts: 2, delays: [1, 1] }),
       { message: 'always fail' }
     );
-  });
-});
-
-// --- Post-session prompt includes solves pattern ---
-
-describe('buildPostSessionPrompt includes solves', () => {
-  it('prompt includes solves instruction', () => {
-    // Use a known sim ID from registry
-    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
-    const simId = registry.sims[0].id;
-    const prompt = buildPostSessionPrompt(simId);
-    assert.ok(prompt.includes('solves'),
-      'buildPostSessionPrompt should include solves instruction');
   });
 });
 
