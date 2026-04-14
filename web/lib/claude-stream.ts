@@ -24,7 +24,7 @@ interface SDKMsg {
   session_id?: string;
   model?: string;
   message?: { content?: ContentBlock[] };
-  usage?: { input_tokens?: number; output_tokens?: number };
+  usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number };
   duration_ms?: number;
   is_error?: boolean;
   error?: unknown;
@@ -39,6 +39,8 @@ interface ToolCall {
 interface Usage {
   input_tokens: number;
   output_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
   duration_ms?: number;
 }
 
@@ -115,6 +117,8 @@ export async function* streamQuery(
       } else if (m.type === 'result') {
         const u = m.usage ?? {};
         usage = { input_tokens: u.input_tokens ?? 0, output_tokens: u.output_tokens ?? 0 };
+        if (u.cache_read_input_tokens !== undefined) usage.cache_read_input_tokens = u.cache_read_input_tokens;
+        if (u.cache_creation_input_tokens !== undefined) usage.cache_creation_input_tokens = u.cache_creation_input_tokens;
         if (m.duration_ms) usage.duration_ms = m.duration_ms;
         if (m.is_error || (m.subtype && m.subtype.startsWith('error_'))) {
           resultError = { subtype: m.subtype, error: m.error ?? null };
