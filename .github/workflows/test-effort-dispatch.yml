@@ -1,0 +1,39 @@
+name: test-effort-dispatch
+
+# Throwaway workflow to validate that claude-code-action@v1 correctly
+# forwards --effort (from scripts/model-config.json via jq) to the CLI.
+# To be deleted after one successful run. See Issue #251.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read config
+        id: cfg
+        run: |
+          echo "model=$(jq -r .planner.model scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+          echo "effort=$(jq -r .planner.effort scripts/model-config.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Echo resolved args
+        run: |
+          echo "model=${{ steps.cfg.outputs.model }}"
+          echo "effort=${{ steps.cfg.outputs.effort }}"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model ${{ steps.cfg.outputs.model }}
+            --effort ${{ steps.cfg.outputs.effort }}
+            --allowed-tools "Read"
+          prompt: |
+            Respond with exactly one word: "ok".
