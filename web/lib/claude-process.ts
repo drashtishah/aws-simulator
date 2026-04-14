@@ -274,7 +274,7 @@ Note types to write:
 - ${vaultDir}/sessions/{YYYY-MM-DD}-${simId}.md: one session note. Frontmatter: date, sim, rank_at_time, services (array), concepts (array), question_types (array), tags: [session]. Body summarizes what happened and links to [[services/<service>]] and [[concepts/<concept>]] notes, plus the sim by title.
 - ${vaultDir}/services/{service}.md: one per AWS service touched. Create if missing. Append a new bullet under ## Sessions linking back to this session note. Frontmatter: type: service, tags: [service].
 - ${vaultDir}/concepts/{concept}.md: one per AWS concept surfaced (security-groups, iam-execution-role, alb-health-checks, etc.). Create if missing. Append a sentence or two about how the concept appeared in this session, and a [[sessions/...]] link. Frontmatter: type: concept, tags: [concept].
-- ${vaultDir}/rank.md: update. Frontmatter: current_rank, sessions_completed, skill_polygon. Body has a ## Sessions section with [[sessions/...]] links in reverse-chron order.
+- ${vaultDir}/rank.md: create if missing, then update. Frontmatter: current_rank, sessions_completed, skill_polygon. Body has a ## Sessions section with [[sessions/...]] links in reverse-chron order.
 
 8. Set session status to "completed" in ${sessionFilePath}.
 
