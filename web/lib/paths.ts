@@ -41,7 +41,6 @@ const manifest = (id: string): string => path.join(SIMS_DIR, id, 'manifest.json'
 const story = (id: string): string => path.join(SIMS_DIR, id, 'story.md');
 const theme = (id: string): string => path.join(THEMES_DIR, `${id}.md`);
 const sessionFile = (id: string): string => path.join(SESSIONS_DIR, id, 'session.json');
-const transcriptFile = (id: string): string => path.join(SESSIONS_DIR, id, 'transcript.jsonl');
 const turnsFile = (id: string): string => path.join(SESSIONS_DIR, id, 'turns.jsonl');
 const sessionDir = (id: string): string => path.join(SESSIONS_DIR, id);
 
@@ -72,7 +71,6 @@ const paths = {
   story,
   theme,
   sessionFile,
-  transcriptFile,
   turnsFile,
   sessionDir,
 };
