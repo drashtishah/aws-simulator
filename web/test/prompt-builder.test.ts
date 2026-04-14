@@ -31,13 +31,6 @@ describe('buildPrompt', () => {
     assert.ok(prompt.includes(testSimId));
   });
 
-  it('contains web session rules', () => {
-    const prompt = buildPrompt(testSimId, 'calm-mentor');
-    assert.ok(prompt.includes('[CONSOLE_START]'));
-    assert.ok(prompt.includes('[COACHING_START]'));
-    assert.ok(prompt.includes('[SESSION_COMPLETE]'));
-  });
-
   it('contains console data from manifest', () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', testSimId, 'manifest.json'), 'utf8'));
     const prompt = buildPrompt(testSimId, 'calm-mentor');
@@ -126,14 +119,6 @@ describe('buildPrompt', () => {
       prompt.includes(`learning/sessions/${testSimId}/session.json`),
       'should include session file path with sim ID'
     );
-  });
-
-  it('includes all web session markers', () => {
-    const prompt = buildPrompt(testSimId, 'calm-mentor');
-    const markers = ['[CONSOLE_START]', '[CONSOLE_END]', '[COACHING_START]', '[COACHING_END]', '[SESSION_COMPLETE]'];
-    for (const marker of markers) {
-      assert.ok(prompt.includes(marker), `should include marker: ${marker}`);
-    }
   });
 
   it('contains no-play-another rule in web session rules', () => {

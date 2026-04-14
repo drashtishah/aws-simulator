@@ -82,6 +82,8 @@ interface StreamEvent {
   sessionId?: string;
   content?: string;
   message?: string;
+  label?: string;
+  open?: boolean;
 }
 
 type StreamHandlers = Record<string, (data: StreamEvent) => void>;
@@ -440,11 +442,8 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
       },
-      console: (data: StreamEvent) => {
-        appendMessage('console', data.content || '');
-      },
-      coaching: (data: StreamEvent) => {
-        appendMessage('coaching', data.content || '');
+      dropdown: (data: StreamEvent) => {
+        appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
         sessionCompleted = true;
@@ -507,11 +506,8 @@ async function sendMessage(): Promise<void> {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
       },
-      console: (data: StreamEvent) => {
-        appendMessage('console', data.content || '');
-      },
-      coaching: (data: StreamEvent) => {
-        appendMessage('coaching', data.content || '');
+      dropdown: (data: StreamEvent) => {
+        appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
         sessionCompleted = true;
@@ -555,8 +551,7 @@ async function sendMessage(): Promise<void> {
       });
       await streamResponse(retryResponse, {
         text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
-        console: (data: StreamEvent) => appendMessage('console', data.content || ''),
-        coaching: (data: StreamEvent) => appendMessage('coaching', data.content || ''),
+        dropdown: (data: StreamEvent) => appendMessage('dropdown', data.content || '', { label: data.label, open: data.open }),
         complete: () => { sessionCompleted = true; setInputEnabled(false); appendMessage('system', 'Simulation complete.'); },
         profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
         profile_updated: () => handleSessionComplete('updated'),
@@ -664,7 +659,7 @@ function hideConfirmModal(): void {
 
 // --- Chat UI Helpers ---
 
-function appendMessage(type: string, content: string): void {
+function appendMessage(type: string, content: string, event?: { label?: string; open?: boolean }): void {
   if (!content || !content.trim()) return;
   const messages = $('chat-messages');
   const div = document.createElement('div');
@@ -682,17 +677,13 @@ function appendMessage(type: string, content: string): void {
 
   div.className = 'chat-message ' + type + ' msg-enter';
 
-  if (type === 'console') {
+  if (type === 'dropdown') {
+    const label = event?.label ?? 'Details';
+    const open = event?.open ?? false;
     div.appendChild(CollapsibleBlock({
-      title: 'Console',
-      bodyHtml: '<pre>' + escapeHtml(content) + '</pre>',
-      defaultOpen: false,
-    }));
-  } else if (type === 'coaching') {
-    div.appendChild(CollapsibleBlock({
-      title: 'Coaching',
+      title: label,
       bodyHtml: renderMarkdown(content),
-      defaultOpen: true,
+      defaultOpen: open,
     }));
     renderMermaidIn(div);
   } else {

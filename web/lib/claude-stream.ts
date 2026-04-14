@@ -46,8 +46,7 @@ type StreamEvent =
   | { type: 'session_init'; claudeSessionId: string | null; claudeModel: string | null }
   | { type: 'session'; sessionId: string }
   | { type: 'text'; content: string }
-  | { type: 'console'; content: string }
-  | { type: 'coaching'; content: string }
+  | { type: 'dropdown'; content: string; label: string; open: boolean }
   | { type: 'complete' }
   | { type: 'done'; sessionComplete?: boolean }
   | { type: '_metadata'; claudeSessionId: string | null; claudeModel: string | null; fullText: string; toolCalls: ToolCall[]; usage: Usage | null; resultError: { subtype?: string; error: unknown } | null; sessionComplete: boolean };

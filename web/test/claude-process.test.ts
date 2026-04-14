@@ -18,26 +18,6 @@ describe('parseEvents', () => {
     assert.equal(result.sessionComplete, false);
   });
 
-  it('parses console markers into console events', () => {
-    const text = 'Checking CloudWatch. [CONSOLE_START]{"metric": "CPUUtilization", "value": 99.2}[CONSOLE_END] That looks high.';
-    const result = parseEvents(text);
-    assert.equal(result.events.length, 3);
-    assert.equal(result.events[0].type, 'text');
-    assert.ok(result.events[0].content.includes('Checking CloudWatch.'));
-    assert.equal(result.events[1].type, 'console');
-    assert.ok(result.events[1].content.includes('CPUUtilization'));
-    assert.equal(result.events[2].type, 'text');
-    assert.ok(result.events[2].content.includes('That looks high.'));
-  });
-
-  it('parses coaching markers into coaching events', () => {
-    const text = 'Summary. [COACHING_START]## What you did well\nGood investigation.[COACHING_END]';
-    const result = parseEvents(text);
-    const coaching = result.events.find(e => e.type === 'coaching');
-    assert.ok(coaching);
-    assert.ok(coaching.content.includes('What you did well'));
-  });
-
   it('detects SESSION_COMPLETE marker', () => {
     const text = 'Done. [SESSION_COMPLETE]';
     const result = parseEvents(text);
@@ -51,15 +31,6 @@ describe('parseEvents', () => {
     const result = parseEvents('');
     assert.ok(Array.isArray(result.events));
     assert.equal(result.sessionComplete, false);
-  });
-
-  it('handles multiple console blocks', () => {
-    const text = 'First. [CONSOLE_START]data1[CONSOLE_END] Middle. [CONSOLE_START]data2[CONSOLE_END] End.';
-    const result = parseEvents(text);
-    const consoleEvents = result.events.filter(e => e.type === 'console');
-    assert.equal(consoleEvents.length, 2);
-    assert.equal(consoleEvents[0].content, 'data1');
-    assert.equal(consoleEvents[1].content, 'data2');
   });
 });
 
@@ -546,27 +517,6 @@ describe('model is hardcoded', () => {
     const mapEnd = source.indexOf('};', mapIdx);
     const block = source.slice(mapIdx, mapEnd);
     assert.ok(!block.includes('haiku'), 'MODEL_MAP should not contain haiku');
-  });
-});
-
-// --- playtest transcript logging ---
-
-describe('playtest transcript logging', () => {
-  it('text can be split into narrator/console/coaching for transcripts', () => {
-    const text = 'Narrator intro. [CONSOLE_START]{"sg": "sg-123"}[CONSOLE_END] Back to narrator.';
-    const result = parseEvents(text);
-
-    const narratorText = result.events
-      .filter(e => e.type === 'text')
-      .map(e => e.content)
-      .join('\n');
-    const consoleText = result.events
-      .filter(e => e.type === 'console')
-      .map(e => e.content)
-      .join('\n');
-
-    assert.ok(narratorText.includes('Narrator intro'));
-    assert.ok(consoleText.includes('sg-123'));
   });
 });
 
