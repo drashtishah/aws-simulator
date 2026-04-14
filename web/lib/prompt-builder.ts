@@ -38,6 +38,8 @@ export function buildPrompt(simId: string, themeId: string): string {
     return `### artifacts/${f}\n\n${content}`;
   }).join('\n\n');
 
+  // Block placeholders first; they contain literal {sim_id} / {theme_id}
+  // that must not be pre-substituted by the global replace below.
   body = body
     .replace('{sims/{sim_id}/manifest.json contents}', manifest)
     .replace('{sims/{sim_id}/story.md contents}', story)

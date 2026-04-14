@@ -87,20 +87,25 @@ describe('buildPrompt (persona template)', () => {
     }
   });
 
-  it('strips theme frontmatter (--- fenced block) from the injected theme', () => {
+  it('strips theme frontmatter from the injected theme', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     const themeFile = fs.readFileSync(path.join(ROOT, 'themes', 'calm-mentor.md'), 'utf8');
-    if (themeFile.startsWith('---')) {
-      const fm = themeFile.split('---')[1] ?? '';
-      const fmKeys = fm.split('\n').map(l => l.split(':')[0]?.trim()).filter(Boolean);
-      const idx = prompt.indexOf('### themes/calm-mentor.md');
-      assert.ok(idx >= 0, 'theme heading should be present');
-      const after = prompt.slice(idx, idx + 200);
-      for (const key of fmKeys) {
-        if (key && key !== 'name' && key !== 'description') {
-          assert.ok(!after.startsWith('---\n'), 'frontmatter fence should be stripped');
-        }
-      }
+    if (!themeFile.startsWith('---')) return;
+    const heading = '### themes/calm-mentor.md';
+    const idx = prompt.indexOf(heading);
+    assert.ok(idx >= 0, 'theme heading should be present');
+    const afterHeading = prompt.slice(idx + heading.length).trimStart();
+    assert.ok(!afterHeading.startsWith('---\n'), 'frontmatter fence should be stripped');
+    const frontmatter = themeFile.split('---')[1] ?? '';
+    const fmKeys = frontmatter
+      .split('\n')
+      .map(l => l.split(':')[0]?.trim())
+      .filter((k): k is string => Boolean(k));
+    for (const key of fmKeys) {
+      assert.ok(
+        !afterHeading.startsWith(`${key}:`),
+        `frontmatter key should not leak into theme body: ${key}`
+      );
     }
   });
 });
