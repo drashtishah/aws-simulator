@@ -75,9 +75,3 @@ The Opening states symptoms and stakes. It does not hint at the root cause or te
 - **Missing mechanism**: The Resolution names the root cause and the fix but skips the mechanism (how the cause produces the symptoms). Without it, the player learns what was broken but not how the failure propagated.
 - **Vague stakes**: "Many users are affected." Replace with concrete numbers and the specific harm (data exposure, service outage, cost overrun).
 
----
-
-## Sources
-
-- [Hero's journey - Wikipedia](https://en.wikipedia.org/wiki/Hero's_journey)
-- [Joseph Campbell and the Hero's Journey - JCF](https://www.jcf.org/learn/joseph-campbell-heros-journey)
