@@ -1,6 +1,8 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { MODEL_CONFIG, type EffortLevel } from './model-config';
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = MODEL_CONFIG.agent_test_runner.model;
+const EFFORT: EffortLevel | null = MODEL_CONFIG.agent_test_runner.effort;
 const TIMEOUT_MS = 60000;
 
 interface Finding {
@@ -32,6 +34,7 @@ interface QueryOptions {
   permissionMode: string;
   maxTurns: number;
   systemPrompt?: string;
+  effort?: EffortLevel;
 }
 
 interface ContentBlock {
@@ -84,6 +87,7 @@ async function runAgentCheck({ prompt, systemPrompt }: AgentCheckOptions): Promi
     permissionMode: 'bypassPermissions',
     maxTurns: 1
   };
+  if (EFFORT) queryOptions.effort = EFFORT;
 
   if (systemPrompt) {
     queryOptions.systemPrompt = systemPrompt;

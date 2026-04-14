@@ -17,10 +17,10 @@ describe('agent-test-runner', () => {
     assert.equal(typeof runAgentCheck, 'function');
   });
 
-  it('hardcodes claude-sonnet-4-6', () => {
+  it('reads model from scripts/model-config.json (agent_test_runner entry)', () => {
     const source = fs.readFileSync(sourcePath, 'utf8');
-    assert.ok(source.includes("'claude-sonnet-4-6'"),
-      'must hardcode claude-sonnet-4-6');
+    assert.ok(source.includes('MODEL_CONFIG.agent_test_runner.model'),
+      'must read model from MODEL_CONFIG.agent_test_runner.model');
   });
 
   it('does not contain allowDangerouslySkipPermissions', () => {
