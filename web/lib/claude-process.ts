@@ -232,37 +232,53 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
 
 export function buildPostSessionPrompt(simId: string): string {
   const sessionFilePath = paths.sessionFile(simId);
+  const turnsPath = paths.turnsFile(simId);
   const manifestPath = paths.manifest(simId);
   const profilePath = paths.PROFILE;
   const catalogPath = paths.CATALOG;
   const coachingPatternsPath = path.join(paths.ROOT, '.claude', 'skills', 'play', 'references', 'coaching-patterns.md');
   const progressionPath = path.join(paths.ROOT, 'references', 'config', 'progression.yaml');
+  const vaultDir = paths.VAULT_DIR;
 
-  return `You are a post-session analysis agent for the AWS Incident Simulator.
+  return `You are the post-session analysis agent. The play session just ended.
 
-Your job is to perform Steps 15-19 of the play skill: score knowledge, update the learning profile, update the services catalog, and compile vault notes.
+Your job: score the player from the transcript, update profile and catalog, write Obsidian vault notes.
 
-Read these files to understand the session and player state:
-- Session data: ${sessionFilePath}
-- Sim manifest: ${manifestPath}
+Read:
+- Transcript: ${turnsPath}
+- Session metadata: ${sessionFilePath}
 - Player profile: ${profilePath}
 - Services catalog: ${catalogPath}
-- Coaching patterns: ${coachingPatternsPath}
-- Progression config: ${progressionPath}
+- Coaching patterns (classification + scoring rules): ${coachingPatternsPath}
+- Progression config (rank gates, polygon rules): ${progressionPath}
+- Sim manifest (scoring rubric only: services, resolution.fix_criteria, resolution.learning_objectives): ${manifestPath}
 
-Instructions:
-1. Read session.json to get the investigation data (question_profile, criteria_met, services_queried, question_quality_scores, debrief data).
-2. Read manifest.json for services, fix_criteria, and learning_objectives.
-3. Read coaching-patterns.md for scoring rules.
-4. Read progression.yaml for rank gates and polygon update rules.
-5. Score knowledge per service (cap at +2 per sim per service).
-6. Update profile.json: add sim to completed_sims, update skill_polygon with quality-weighted diminishing returns, update question_quality running averages, derive rank, increment total_sessions and sessions_at_current_rank.
-7. Update catalog.csv: increment sims_completed, update knowledge_score, set last_practiced.
-8. Compile vault notes: create session note, update question quality patterns, update behavioral profile, create/update concept and service notes.
-8b. For each service note in the vault, include a "solves" field in the frontmatter: the single question this service exists to answer. Examples: SageMaker solves "How do I run ML models at scale?", Lambda solves "How do I run code in response to events?", Auto Scaling solves "How do I automatically add/remove capacity?", CloudWatch solves "How do I see what is happening?"
-9. Set session status to "completed" in session.json.
+Do NOT read: sims/${simId}/story.md, sims/${simId}/resolution.md, sims/${simId}/artifacts/*. The transcript is your source of truth for what happened.
 
-Do not skip any step. Write all updates to the files listed above.`;
+Steps:
+1. Read the transcript. Classify each player question into one of: gather, diagnose, correlate, impact, trace, fix. Follow coaching-patterns.md.
+2. For each classification, judge effectiveness: did the question advance the investigation, or was it off-track.
+3. Identify which of the sim's fix_criteria the player articulated (literal content match, not wording).
+4. Identify services the player touched by name in the transcript.
+5. Update ${profilePath}: add sim to completed_sims, update skill_polygon with quality-weighted diminishing returns per progression.yaml, update question-quality running averages, derive rank, increment total_sessions and sessions_at_current_rank.
+6. Update ${catalogPath}: increment sims_completed, update knowledge_score, set last_practiced.
+7. Write Obsidian vault notes under ${vaultDir}:
+
+Obsidian conventions:
+- Every note starts with YAML frontmatter (--- fenced). Keys: date (YYYY-MM-DD), tags (array), plus type-specific keys.
+- Links between notes use [[wiki-link]] syntax. Link by note title without extension. Folder prefix optional: [[services/EC2]] or [[EC2]].
+- Tags use hashtag form inline (#session) or in frontmatter tags array.
+- Filenames lowercase, kebab-case. Session notes prefix with date: 2026-04-14-001-ec2-unreachable.md.
+
+Note types to write:
+- ${vaultDir}/sessions/{YYYY-MM-DD}-${simId}.md: one session note. Frontmatter: date, sim, rank_at_time, services (array), concepts (array), question_types (array), tags: [session]. Body summarizes what happened and links to [[services/<service>]] and [[concepts/<concept>]] notes, plus the sim by title.
+- ${vaultDir}/services/{service}.md: one per AWS service touched. Create if missing. Append a new bullet under ## Sessions linking back to this session note. Frontmatter: type: service, tags: [service].
+- ${vaultDir}/concepts/{concept}.md: one per AWS concept surfaced (security-groups, iam-execution-role, alb-health-checks, etc.). Create if missing. Append a sentence or two about how the concept appeared in this session, and a [[sessions/...]] link. Frontmatter: type: concept, tags: [concept].
+- ${vaultDir}/rank.md: update. Frontmatter: current_rank, sessions_completed, skill_polygon. Body has a ## Sessions section with [[sessions/...]] links in reverse-chron order.
+
+8. Set session status to "completed" in ${sessionFilePath}.
+
+Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogPath}, and ${sessionFilePath}. Do not touch sim files, agent prompts, or code.`;
 }
 
 export async function runPostSessionAgent(simId: string): Promise<{ success: boolean }> {
