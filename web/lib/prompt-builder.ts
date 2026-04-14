@@ -20,9 +20,12 @@ export function buildPrompt(simId: string, themeId: string): string {
   const resolutionPath = path.join(paths.simDir(simId), 'resolution.md');
   const resolution = fs.existsSync(resolutionPath) ? fs.readFileSync(resolutionPath, 'utf8') : '';
 
+  const opening = fs.readFileSync(paths.opening(simId), 'utf8');
+
   // Block placeholders first; they contain literal {sim_id} that must not be
   // pre-substituted by the global replace below.
   body = body
+    .replace('{sims/{sim_id}/opening.md contents}', opening)
     .replace('{sims/{sim_id}/manifest.json contents}', manifest)
     .replace('{sims/{sim_id}/story.md contents}', story)
     .replace('{sims/{sim_id}/resolution.md contents}', resolution);

@@ -43,26 +43,13 @@ Turn flow:
 3. Append a short note to narrator-notes.md before closing your response.
 
 First turn specifically:
-- Open the incident in four to eight short lines. Name the company, the time,
-  the symptom on the dashboard or in the pager. One pressure beat (tickets,
-  stakeholder, deadline). Introduce at most one other character. Hand the
-  floor to the player with a concrete prompt.
-- Do not emit [SESSION_COMPLETE].
-
-What the opening can contain (symptoms, not causes):
-- Company name, industry, time of day, the user-visible failure.
-- What the pager, dashboard, support queue, or stakeholders are reporting.
-- Pressure beats: deadlines, people waiting, tickets piling up.
-- The name of the instance, service, or endpoint that appears to be failing.
-
-What the opening MUST NOT contain (these are the player's to discover):
-- What changed, who changed it, or when it changed. No hardening sprints, no
-  deployments, no junior engineers, no accidental deletions.
-- Which rule, setting, policy, permission, or config is wrong.
-- The name of the service or layer that is actually at fault if different from
-  the surface symptom.
-- Any content from resolution.md, manifest.resolution.*, or progressive_clues.
-- The fix, the SOP step, or the related failure modes.
+- The scene opening has already been rendered to the player from
+  `## Opening (already shown)` below. Do NOT re-open, re-introduce the
+  company, or re-state the symptoms. Your first response is the narrator's
+  answer to the player's first question, continuing the scene.
+- Treat every character named in the opening (CTO, VP, on-call lead, etc.)
+  as established: you know who they are, they are part of this incident.
+- Do not emit [SESSION_COMPLETE] on the first turn.
 
 If the player asks "what happened" or "tell me the story," reply with symptoms
 only: what the on-call engineer was paged about, what users see, what dashboards
@@ -115,6 +102,14 @@ Hard rules:
 - No emojis. Use commas, periods, or colons instead of `--` as punctuation.
   Backticks only for file paths and code.
 
+## Opening (already shown)
+
+The following text has already been rendered to the player verbatim as
+the opening beat. They have read it. Your first turn continues the scene
+from their first question; do not re-narrate this.
+
+{sims/{sim_id}/opening.md contents}
+
 ## Sim context
 
 ### manifest.json
@@ -136,10 +131,11 @@ Hard rules:
 
 `web/lib/prompt-builder.ts` populates the template as follows:
 
-1. Read `sims/{sim_id}/manifest.json`, insert verbatim under `### manifest.json`.
-2. Read `sims/{sim_id}/story.md`, insert verbatim under `### story.md`.
-3. Read `sims/{sim_id}/resolution.md`, insert verbatim under `### resolution.md`.
-4. Replace `{sim_id}` and `{theme_id}` literals in the template with the sim id and theme id.
+1. Read `sims/{sim_id}/opening.md`, insert verbatim under `## Opening (already shown)`.
+2. Read `sims/{sim_id}/manifest.json`, insert verbatim under `### manifest.json`.
+3. Read `sims/{sim_id}/story.md`, insert verbatim under `### story.md`.
+4. Read `sims/{sim_id}/resolution.md`, insert verbatim under `### resolution.md`.
+5. Replace `{sim_id}` and `{theme_id}` literals in the template with the sim id and theme id.
 
 Artifacts are not inlined; the narrator Read()s them on demand via
 `manifest.consoles[].artifacts`.

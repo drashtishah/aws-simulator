@@ -75,10 +75,11 @@ file,path,line_number
 .claude/skills/play/ownership.json,learning/catalog.csv,2
 .claude/skills/play/ownership.json,learning/profile.json,2
 .claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,10
-.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,137
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,139
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,140
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,141
+.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,132
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/opening.md,134
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,135
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,136
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,137
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,165
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,185
 .claude/skills/play/references/coaching-patterns.md,learning/profile.json,254

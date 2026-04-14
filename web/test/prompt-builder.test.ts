@@ -69,6 +69,14 @@ describe('buildPrompt (persona template)', () => {
     }
   });
 
+  it('injects opening.md so the narrator knows what the player has already seen', () => {
+    const prompt = buildPrompt(testSimId, 'calm-mentor');
+    const opening = fs.readFileSync(path.join(ROOT, 'sims', testSimId, 'opening.md'), 'utf8');
+    assert.ok(prompt.includes('## Opening (already shown)'), 'prompt must include the opening header');
+    const firstLine = opening.split('\n').find(l => l.trim().length > 0) ?? '';
+    if (firstLine) assert.ok(prompt.includes(firstLine.trim()), 'prompt must contain the opening content');
+  });
+
   it('builds for every registered sim', () => {
     for (const sim of registry.sims) {
       const prompt = buildPrompt(sim.id, 'calm-mentor');
