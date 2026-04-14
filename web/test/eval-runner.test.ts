@@ -206,19 +206,19 @@ describe('eval runner: runCheck deterministic', () => {
 
 describe('eval runner: transcript checks', () => {
   const mockTranscript = [
-    { turn: 0, narrator: 'Welcome to BrightPath.', mode: 'narrator', player: null },
-    { turn: 1, player: 'Show me EC2', narrator: 'Here is the data.', console: '{"instance": "i-123"}', mode: 'console', service: 'ec2' },
-    { turn: 2, player: 'Check VPC', narrator: 'Network looks normal.', mode: 'narrator' }
+    { ts: '2026-01-01T00:00:00Z', turn: 0, player_message: '', assistant_message: 'Welcome to BrightPath.' },
+    { ts: '2026-01-01T00:01:00Z', turn: 1, player_message: 'Show me EC2', assistant_message: 'Here is the data.' },
+    { ts: '2026-01-01T00:02:00Z', turn: 2, player_message: 'Check VPC', assistant_message: 'Network looks normal.' }
   ];
   const mockManifest = {
     id: '001-ec2-unreachable',
     services: ['ec2', 'vpc', 'cloudwatch']
   };
 
-  it('not_contains_any passes when no forbidden phrases in console', () => {
+  it('not_contains_any passes when no forbidden phrases in assistant_message', () => {
     const check = {
       id: 'test', requires: 'transcript', rule: 'not_contains_any',
-      target: 'transcript.console',
+      target: 'assistant_message',
       patterns: ['this means', 'the issue is']
     };
     const result = evalRunner.runCheck(check, null, mockTranscript, mockManifest);
@@ -227,11 +227,11 @@ describe('eval runner: transcript checks', () => {
 
   it('not_contains_any fails when forbidden phrase found', () => {
     const badTranscript = [
-      { turn: 1, console: 'The instance shows the issue is clear.', mode: 'console', service: 'ec2' }
+      { ts: '2026-01-01T00:01:00Z', turn: 1, player_message: 'Show me EC2', assistant_message: 'The instance shows the issue is clear.' }
     ];
     const check = {
       id: 'test', requires: 'transcript', rule: 'not_contains_any',
-      target: 'transcript.console',
+      target: 'assistant_message',
       patterns: ['the issue is']
     };
     const result = evalRunner.runCheck(check, null, badTranscript, mockManifest);
@@ -245,16 +245,10 @@ describe('eval runner: transcript checks', () => {
   });
 
   it('no_emojis fails when emoji present', () => {
-    const badTranscript = [{ turn: 1, narrator: 'Great job! \u{1F389}', mode: 'narrator' }];
+    const badTranscript = [{ ts: '2026-01-01T00:01:00Z', turn: 1, player_message: 'q', assistant_message: 'Great job! \u{1F389}' }];
     const check = { id: 'test', requires: 'transcript', rule: 'no_emojis' };
     const result = evalRunner.runCheck(check, null, badTranscript, mockManifest);
     assert.equal(result.status, 'fail');
-  });
-
-  it('no_cross_service_refs passes when console stays in scope', () => {
-    const check = { id: 'test', requires: 'transcript', rule: 'no_cross_service_refs' };
-    const result = evalRunner.runCheck(check, null, mockTranscript, mockManifest);
-    assert.equal(result.status, 'pass');
   });
 });
 
