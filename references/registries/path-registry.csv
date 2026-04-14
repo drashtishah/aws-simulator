@@ -143,9 +143,9 @@ references/architecture/core-workflow.md,references/architecture/testing-system.
 references/architecture/game-design-document.md,references/config/progression.yaml,3
 references/architecture/game-design-document.md,references/config/progression.yaml,59
 references/architecture/game-design-document.md,learning/player-vault/patterns/behavioral-profile.md,132
-references/architecture/game-design-document.md,references/config/progression.yaml,202
-references/architecture/game-design-document.md,.claude/skills/play/references/coaching-patterns.md,203
-references/architecture/game-design-document.md,learning/player-vault/index.md,204
+references/architecture/game-design-document.md,references/config/progression.yaml,198
+references/architecture/game-design-document.md,.claude/skills/play/references/coaching-patterns.md,199
+references/architecture/game-design-document.md,learning/player-vault/index.md,200
 references/architecture/gha-pipeline.md,.github/scripts/pipeline-iterations.sh,16
 references/architecture/gha-pipeline.md,references/pipeline/labels.md,82
 references/architecture/gha-pipeline.md,references/pipeline/,86
@@ -261,7 +261,10 @@ references/operations/web-app-checklist.md,sims/,9
 references/operations/web-app-checklist.md,themes/,9
 references/operations/web-app-checklist.md,web/,9
 references/operations/web-app-checklist.md,sims/registry.json,15
-references/operations/web-app-checklist.md,web/test-specs/,134
+references/operations/web-app-checklist.md,themes/_base.md,35
+references/operations/web-app-checklist.md,themes/{theme_id}.md,35
+references/operations/web-app-checklist.md,sims/{id}/artifacts/,36
+references/operations/web-app-checklist.md,web/test-specs/,116
 references/pipeline/context-sim.md,.claude/skills/create-sim/assets/manifest-schema.json,15
 references/pipeline/context-ui.md,web/test/cross-file-consistency.test.ts,6
 references/pipeline/context-ui.md,web/test-specs/browser/,9
