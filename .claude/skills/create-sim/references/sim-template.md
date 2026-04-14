@@ -16,6 +16,7 @@ Gold-standard reference for the create-sim skill. Every generated simulation pac
 ```
 sims/001-s3-bucket-breach/
   manifest.json        -- Machine-readable sim definition (consoles, scoring, metadata)
+  opening.md           -- REQUIRED: 4-8 line hardcoded opener, symptoms only, no cause
   story.md             -- Narrative (opening, resolution)
   resolution.md        -- Root cause explanation, AWS docs, learning objectives
   artifacts/
