@@ -11,6 +11,15 @@ const plannerYml = fs.readFileSync(
 const criticYml = fs.readFileSync(
   path.join(ROOT, '.github', 'workflows', 'critic.yml'), 'utf8'
 );
+const implementerYml = fs.readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'implementer.yml'), 'utf8'
+);
+const verifierYml = fs.readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'verifier.yml'), 'utf8'
+);
+const evaluatorYml = fs.readFileSync(
+  path.join(ROOT, '.github', 'workflows', 'evaluator.yml'), 'utf8'
+);
 const criticMd = fs.readFileSync(
   path.join(ROOT, 'references', 'pipeline', 'critic.md'), 'utf8'
 );
@@ -80,4 +89,33 @@ describe('critic label validation', () => {
       'gha-pipeline.md critic tools row must include edit'
     );
   });
+});
+
+describe('pipeline gates allow claude[bot]-authored decomposed children', () => {
+  const gates: Array<[string, string]> = [
+    ['planner.yml', plannerYml],
+    ['critic.yml', criticYml],
+    ['implementer.yml', implementerYml],
+    ['verifier.yml', verifierYml],
+    ['evaluator.yml', evaluatorYml],
+  ];
+
+  for (const [name, yml] of gates) {
+    it(`${name} top-level if allows claude[bot] as issue author`, () => {
+      const ifBlock = yml.match(/if: \|([\s\S]*?)runs-on:/);
+      assert.ok(ifBlock, `${name} must have a top-level if block`);
+      assert.ok(
+        ifBlock![1].includes("'claude[bot]'"),
+        `${name} gate must allowlist 'claude[bot]' so pipeline-authored decomposed children are not stranded`
+      );
+    });
+
+    it(`${name} still restricts sender to repository owner`, () => {
+      const ifBlock = yml.match(/if: \|([\s\S]*?)runs-on:/);
+      assert.ok(
+        ifBlock![1].includes('github.event.sender.login == github.repository_owner'),
+        `${name} must keep sender == owner so only the owner can promote claude[bot] issues into the pipeline`
+      );
+    });
+  }
 });
