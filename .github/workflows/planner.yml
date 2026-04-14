@@ -13,7 +13,7 @@ jobs:
     if: |
       github.event.label.name == 'needs-plan' &&
       github.event.sender.login == github.repository_owner &&
-      github.event.issue.user.login == github.repository_owner &&
+      (github.event.issue.user.login == github.repository_owner || github.event.issue.user.login == 'claude[bot]') &&
       !contains(github.event.issue.labels.*.name, 'blocked') &&
       !contains(github.event.issue.labels.*.name, 'cancel') &&
       !contains(github.event.issue.labels.*.name, 'needs-human')
