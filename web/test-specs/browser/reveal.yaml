@@ -1,0 +1,67 @@
+name: reveal
+description: >
+  Progressive text reveal and collapsible narrator blocks.
+  Verifies narrator messages use sequential reveal units, console blocks
+  are folded by default, coaching blocks are open by default, and the
+  reveal-speed dropdown persists its value across page reload.
+setup:
+  navigate: /
+
+steps:
+  - id: settings-has-reveal-speed-dropdown
+    action: click
+    target: "#btn-settings"
+    check:
+      - selector: "#select-reveal-speed"
+        visible: true
+      - selector: "#select-reveal-speed .custom-select-trigger"
+        visible: true
+
+  - id: reveal-speed-default-normal
+    check:
+      - selector: "#select-reveal-speed .custom-select-trigger"
+        text_contains: "Normal"
+
+  - id: reveal-speed-open
+    action: click
+    target: "#select-reveal-speed .custom-select-trigger"
+    check:
+      - selector: "#select-reveal-speed.open"
+        visible: true
+
+  - id: reveal-speed-select-instant
+    action: click
+    target: "#select-reveal-speed .custom-select-option[data-value='instant']"
+    check:
+      - selector: "#select-reveal-speed .custom-select-trigger"
+        text_contains: "Instant"
+      - selector: "#select-reveal-speed.open"
+        visible: false
+
+  - id: close-settings
+    action: click
+    target: "#btn-close-settings"
+
+  - id: reload-page
+    action: navigate
+    target: /
+
+  - id: reopen-settings-after-reload
+    action: click
+    target: "#btn-settings"
+    check:
+      - selector: "#settings-modal"
+        visible: true
+
+  - id: reveal-speed-persists-after-reload
+    check:
+      - selector: "#select-reveal-speed .custom-select-trigger"
+        text_contains: "Instant"
+
+  - id: console-clean-after-flow
+    check:
+      - type: console_clean
+
+  - id: network-ok-after-flow
+    check:
+      - type: network_ok
