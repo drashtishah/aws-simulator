@@ -293,6 +293,11 @@ Note types to write:
 Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogPath}, and ${sessionFilePath}. Do not touch sim files, agent prompts, or code.`;
 }
 
+// Post-session does many file reads + writes (profile, catalog, session status,
+// and 3+ vault notes). Opus at medium effort routinely runs past the default
+// 120s narrator-turn timeout. 5 minutes is a generous headroom.
+const POST_SESSION_TIMEOUT_MS = 300000;
+
 export async function runPostSessionAgent(simId: string): Promise<{ success: boolean }> {
   const prompt = buildPostSessionPrompt(simId);
 
@@ -316,7 +321,7 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
   const messages = await collectMessages(query({
     prompt,
     options: queryOptions as Parameters<typeof query>[0]['options']
-  }));
+  }), POST_SESSION_TIMEOUT_MS);
 
   const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
 

@@ -25,10 +25,9 @@ describe('buildPrompt (persona template)', () => {
     assert.ok(prompt.length > 100);
   });
 
-  it('substitutes {sim_id} so the journal/session paths resolve', () => {
+  it('substitutes {sim_id} so the journal path resolves', () => {
     const prompt = buildPrompt(testSimId, 'calm-mentor');
     assert.ok(prompt.includes(`learning/sessions/${testSimId}/narrator-notes.md`));
-    assert.ok(prompt.includes(`learning/sessions/${testSimId}/session.json`));
     assert.ok(!prompt.includes('{sim_id}'));
   });
 

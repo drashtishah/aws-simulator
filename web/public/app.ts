@@ -460,7 +460,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         scheduleReturnToDashboard();
       },
       profile_updating: () => {
-        appendMessage('system', 'Updating your learning profile...');
+        appendMessage('system', 'Updating your learning profile. You can head back to the dashboard and play another sim while this runs.');
       },
       profile_updated: () => {
         handleSessionComplete('updated');
@@ -538,7 +538,7 @@ async function sendMessage(): Promise<void> {
         scheduleReturnToDashboard();
       },
       profile_updating: () => {
-        appendMessage('system', 'Updating your learning profile...');
+        appendMessage('system', 'Updating your learning profile. You can head back to the dashboard and play another sim while this runs.');
       },
       profile_updated: () => {
         handleSessionComplete('updated');
