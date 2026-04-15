@@ -1,0 +1,8 @@
+{"index":1,"question_type":"gather","effectiveness":4}
+{"index":2,"question_type":"diagnose","effectiveness":5}
+{"index":3,"question_type":"gather","effectiveness":3}
+{"index":4,"question_type":"correlate","effectiveness":6}
+{"index":5,"question_type":"impact","effectiveness":4}
+{"index":6,"question_type":"trace","effectiveness":5}
+{"index":7,"question_type":"fix","effectiveness":7}
+{"index":8,"question_type":"diagnose","effectiveness":4}

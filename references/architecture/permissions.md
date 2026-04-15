@@ -11,7 +11,8 @@ Source of truth: `web/lib/agent-policies.ts`.
 | Role | allowedTools | permissionMode | Writable paths |
 | --- | --- | --- | --- |
 | Play narrator | Read, Write | default | `learning/sessions/{simId}/` |
-| Post-session analysis | Read, Write | default | `learning/sessions/{simId}/`, `learning/player-vault/` |
+| Post-session analysis (Tier 1, classifier) | Read, Write | default | `learning/sessions/{simId}/` |
+| Post-session (Tier 2, renderer) | (none, Node fs direct) | n/a | `learning/player-vault/`, `learning/profile.json`, `learning/catalog.csv` |
 | generate-openings | (none) | default | none (Node fs.writeFileSync direct) |
 | agent-test-runner | (none) | default | none (single-turn grader) |
 

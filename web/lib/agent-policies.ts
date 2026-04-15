@@ -49,9 +49,6 @@ export function POST_SESSION_POLICY(simId: string): AgentPolicy {
   return {
     allowedTools: ['Read', 'Write'],
     permissionMode: 'default',
-    canUseTool: makeWritePolicy([
-      `learning/sessions/${simId}`,
-      'learning/player-vault'
-    ])
+    canUseTool: makeWritePolicy([`learning/sessions/${simId}`])
   };
 }
