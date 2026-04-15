@@ -132,7 +132,7 @@ describe('runPostSessionAgent integration', () => {
     assert.ok(typeof result.tier2_duration_ms === 'number', 'result must include tier2_duration_ms');
     assert.ok(sdkMockState.lastPrompt?.includes('post-session analysis agent'), 'prompt must flag post-session role');
     assert.equal((sdkMockState.lastOptions as { model: string }).model, 'claude-opus-4-6', 'post-session must run on opus');
-    assert.equal((sdkMockState.lastOptions as { allowedTools: string[] }).allowedTools.join(','), 'Read,Write', 'post-session may only Read and Write');
+    assert.equal((sdkMockState.lastOptions as { allowedTools: string[] }).allowedTools.join(','), 'Read,Write,Bash', 'post-session may Read, Write, and Bash (scoped to the verifier command by canUseTool)');
   });
 
   it('runPostSessionAgent throws when the SDK returns an error result', async () => {

@@ -46,9 +46,31 @@ export function PLAY_AGENT_POLICY(simId: string): AgentPolicy {
 }
 
 export function POST_SESSION_POLICY(simId: string): AgentPolicy {
+  const writePolicy = makeWritePolicy([`learning/sessions/${simId}`]);
+  const verifierPath = path.resolve(paths.ROOT, 'scripts', 'verify-classification.ts');
+  const allowedVerifierCommand = new RegExp(
+    `^(/[^\\s]+/)?npx\\s+tsx\\s+${escapeRegex(verifierPath)}\\s+${escapeRegex(simId)}\\s*$`
+  );
+
   return {
-    allowedTools: ['Read', 'Write'],
+    allowedTools: ['Read', 'Write', 'Bash'],
     permissionMode: 'default',
-    canUseTool: makeWritePolicy([`learning/sessions/${simId}`])
+    canUseTool: async (toolName, input) => {
+      if (toolName === 'Bash') {
+        const command = typeof input.command === 'string' ? input.command : '';
+        if (allowedVerifierCommand.test(command.trim())) {
+          return { behavior: 'allow' };
+        }
+        return {
+          behavior: 'deny',
+          message: `Bash denied: only the classification verifier command is allowed (npx tsx ${verifierPath} ${simId})`
+        };
+      }
+      return writePolicy(toolName, input);
+    }
   };
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

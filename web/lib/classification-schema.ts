@@ -5,6 +5,11 @@ export interface ClassificationRow {
   index: number;
   question_type: QuestionType;
   effectiveness: number;
+  services: string[];
+  concepts: string[];
+  beats: string[];
+  uncertainty: boolean;
+  note: string;
 }
 
 export class ClassificationSchemaError extends Error {
@@ -37,7 +42,41 @@ function validateRow(raw: unknown, lineNum: number): ClassificationRow {
     index: obj.index,
     question_type: obj.question_type as QuestionType,
     effectiveness: obj.effectiveness,
+    services: validateStringArray(obj.services, 'services', lineNum),
+    concepts: validateStringArray(obj.concepts, 'concepts', lineNum),
+    beats: validateStringArray(obj.beats, 'beats', lineNum),
+    uncertainty: validateBoolean(obj.uncertainty, 'uncertainty', lineNum),
+    note: validateString(obj.note, 'note', lineNum),
   };
+}
+
+function validateBoolean(raw: unknown, field: string, lineNum: number): boolean {
+  if (raw === undefined) return false;
+  if (typeof raw !== 'boolean') {
+    throw new ClassificationSchemaError(`line ${lineNum}: field "${field}" must be a boolean if present`);
+  }
+  return raw;
+}
+
+function validateString(raw: unknown, field: string, lineNum: number): string {
+  if (raw === undefined) return '';
+  if (typeof raw !== 'string') {
+    throw new ClassificationSchemaError(`line ${lineNum}: field "${field}" must be a string if present`);
+  }
+  return raw;
+}
+
+function validateStringArray(raw: unknown, field: string, lineNum: number): string[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    throw new ClassificationSchemaError(`line ${lineNum}: field "${field}" must be an array if present`);
+  }
+  for (const v of raw) {
+    if (typeof v !== 'string') {
+      throw new ClassificationSchemaError(`line ${lineNum}: field "${field}" must contain only strings`);
+    }
+  }
+  return raw as string[];
 }
 
 /**
