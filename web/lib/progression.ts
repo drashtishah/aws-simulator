@@ -293,13 +293,31 @@ function availableModifiers(polygon: Polygon, config: ProgressionConfig, profile
   );
 }
 
+function getDisplayCeiling(config: ProgressionConfig): number {
+  let ceiling = 1;
+  for (const rank of config.ranks) {
+    const gate = rank.gate;
+    if (!gate) continue;
+    if (gate.all_axes_min !== undefined) {
+      ceiling = Math.max(ceiling, gate.all_axes_min);
+    }
+    if (gate.axes_min) {
+      for (const v of Object.values(gate.axes_min)) ceiling = Math.max(ceiling, v);
+    }
+    if (gate.count_axes_above?.min !== undefined) {
+      ceiling = Math.max(ceiling, gate.count_axes_above.min);
+    }
+  }
+  return ceiling;
+}
+
 function normalizePolygon(polygon: Polygon, config: ProgressionConfig, maxScale = 10): Polygon {
   const axes = axisNames(config);
-  const values = axes.map(a => polygon[a] ?? 0);
-  const max = Math.max(...values, 1);
+  const ceiling = getDisplayCeiling(config);
   const result: Polygon = {};
   for (const axis of axes) {
-    result[axis] = ((polygon[axis] ?? 0) / max) * maxScale;
+    const scaled = ((polygon[axis] ?? 0) / ceiling) * maxScale;
+    result[axis] = Math.min(scaled, maxScale);
   }
   return result;
 }
@@ -359,6 +377,7 @@ export {
   scoreSim,
   availableModifiers,
   normalizePolygon,
+  getDisplayCeiling,
   initPolygon,
   applyDiminishingReturns,
 };
