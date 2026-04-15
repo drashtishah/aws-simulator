@@ -374,15 +374,15 @@ export async function runPostSessionAgent(
   return { success: true, tier1_duration_ms, tier2_duration_ms };
 }
 
-function parseCatalogCsv(text: string): CatalogRow[] {
+export function parseCatalogCsv(text: string): CatalogRow[] {
   const lines = text.trim().split('\n');
   if (lines.length <= 1) return []; // header only or empty
   return lines.slice(1).map(line => {
     const [service, sims_completed, knowledge_score, last_practiced] = line.split(',');
     return {
       service: service ?? '',
-      sims_completed: parseInt(sims_completed ?? '0', 10),
-      knowledge_score: parseFloat(knowledge_score ?? '0'),
+      sims_completed: parseInt((sims_completed || '0').trim(), 10) || 0,
+      knowledge_score: parseFloat((knowledge_score || '0').trim()) || 0,
       last_practiced: last_practiced ?? '',
     };
   });

@@ -75,11 +75,11 @@ file,path,line_number
 .claude/skills/play/ownership.json,learning/catalog.csv,2
 .claude/skills/play/ownership.json,learning/profile.json,2
 .claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,10
-.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,190
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/opening.md,192
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,193
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,194
-.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,195
+.claude/skills/play/references/agent-prompts.md,web/lib/prompt-builder.ts,193
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/opening.md,195
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/manifest.json,196
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/story.md,197
+.claude/skills/play/references/agent-prompts.md,sims/{sim_id}/resolution.md,198
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,165
 .claude/skills/play/references/coaching-patterns.md,learning/catalog.csv,185
 .claude/skills/play/references/coaching-patterns.md,learning/profile.json,254
