@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-15
-note_count: 29
+note_count: 30
 ---
 # system-vault index
 
@@ -44,3 +44,4 @@ for the per-stage version of this protocol.
 - [[pattern-question-the-tier-not-the-addition]] when a proposed addition's killer use case is already covered, question the whole tier
 - [[pattern-rules-in-duplicate-places-get-ignored]] a rule duplicated in two places gets ignored even by the agent that just read both copies
 - [[pattern-vault-read-write-asymmetry]] vault READ and vault WRITE are independently scoped permissions, never bundle them
+- [[pattern-negative-prompt-assertion-leaks-excluded-name]] scope/testing tool/claude-sdk: "Do NOT read X" in a prompt leaks literal X; assert(!prompt.includes('X')) flips true
