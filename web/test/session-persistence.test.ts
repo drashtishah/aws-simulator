@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach, after } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'path';
 import fs from 'fs';
+import { assertNoRootLeak } from './helpers/assert-no-root-leak';
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -11,6 +12,9 @@ const TMP_SESSIONS_DIR = path.join(__dirname, '.tmp', `session-persistence-${pro
 process.env.AWS_SIMULATOR_SESSIONS_DIR = TMP_SESSIONS_DIR;
 fs.mkdirSync(TMP_SESSIONS_DIR, { recursive: true });
 
+const realLeakPath = path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable');
+const realLeakPreExisted = fs.existsSync(realLeakPath);
+
 // require() preserved for paths and claude-session: must run after
 // AWS_SIMULATOR_SESSIONS_DIR is set above. ESM imports are hoisted before
 // module-level code, which would cause paths.ts to load without the env var.
@@ -19,11 +23,7 @@ const { persistSession, recoverSessions, sessions, SESSION_MAX_AGE_MS } = requir
 
 after(() => {
   try { fs.rmSync(TMP_SESSIONS_DIR, { recursive: true, force: true }); } catch {}
-  const realLeakPath = path.join(ROOT, 'learning', 'sessions', '001-ec2-unreachable');
-  assert.ok(
-    !fs.existsSync(realLeakPath),
-    `learning/sessions/001-ec2-unreachable/ leaked from a test run; tests must use AWS_SIMULATOR_SESSIONS_DIR override`
-  );
+  assertNoRootLeak(realLeakPath, realLeakPreExisted);
 });
 
 describe('persistSession', () => {
