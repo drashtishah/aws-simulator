@@ -10,7 +10,19 @@ import {
 } from './vault-templates.js';
 import type { SessionNoteCtx, FixCriterion } from './vault-templates.js';
 import { aggregateServiceStats, aggregateConceptStats, loadSessions } from './vault-aggregation.js';
+import { updateRunningAverage } from './question-quality.js';
+import type { QuestionQuality } from './question-quality.js';
 import * as paths from './paths.js';
+
+const EMPTY_QUESTION_QUALITY: QuestionQuality = {
+  avg_specificity: 0,
+  avg_relevance: 0,
+  avg_building: 0,
+  avg_targeting: 0,
+  avg_overall: 0,
+  total_questions_scored: 0,
+  last_5_session_avgs: [],
+};
 
 // --- Types for external data ---
 
@@ -32,7 +44,7 @@ export interface PlayerProfile {
   total_sessions: number;
   sessions_at_current_rank: number;
   avg_question_quality: number;
-  question_quality?: { avg_overall?: number; [key: string]: unknown };
+  question_quality?: QuestionQuality;
   [key: string]: unknown;
 }
 
@@ -174,6 +186,22 @@ export function updateProfileFromClassification(
     const prevSessions = updated.total_sessions - 1;
     updated.avg_question_quality =
       (profile.avg_question_quality * prevSessions + sessionAvg) / updated.total_sessions;
+  }
+
+  // Populate canonical profile.question_quality.avg_overall so the quality_gate
+  // in deriveRank (below) sees fresh data. Per-dimension scores are synthesized
+  // as effectiveness/4 so avg_overall (sum of 4 dim averages) matches
+  // avg(effectiveness) on the 0-8 scale used by progression.yaml gate thresholds.
+  if (rows.length > 0) {
+    const sessionScores = rows.map(r => ({
+      specificity: r.effectiveness / 4,
+      relevance: r.effectiveness / 4,
+      building: r.effectiveness / 4,
+      targeting: r.effectiveness / 4,
+    }));
+    const prior = (updated.question_quality as QuestionQuality | undefined) ?? EMPTY_QUESTION_QUALITY;
+    const qResult = updateRunningAverage({ question_quality: prior }, sessionScores);
+    updated.question_quality = qResult.question_quality;
   }
 
   // Derive rank from updated polygon, gated by quality_gate against updated profile.

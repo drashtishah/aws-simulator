@@ -129,6 +129,33 @@ describe('deriveRank', () => {
   });
 });
 
+describe('updateProfileFromClassification question_quality', () => {
+  it('populates profile.question_quality.avg_overall from classification effectiveness', () => {
+    const profile = loadProfileBefore();
+    const rows = loadSample();
+    const progression = loadProgression();
+    const updated = updateProfileFromClassification(profile, rows, 'test-sim-qq', progression);
+    const avgEff = rows.reduce((s, r) => s + r.effectiveness, 0) / rows.length;
+    const avgOverall = (updated.question_quality as { avg_overall: number }).avg_overall;
+    assert.ok(
+      Math.abs(avgOverall - avgEff) < 0.01,
+      'avg_overall (' + avgOverall + ') should approximately equal avg(effectiveness) (' + avgEff + ')'
+    );
+  });
+
+  it('is idempotent: second call with same simId does not double-update question_quality', () => {
+    const profile = loadProfileBefore();
+    const rows = loadSample();
+    const progression = loadProgression();
+    const once = updateProfileFromClassification(profile, rows, 'test-sim-qq2', progression);
+    const twice = updateProfileFromClassification(once, rows, 'test-sim-qq2', progression);
+    const onceQQ = once.question_quality as { avg_overall: number; total_questions_scored: number };
+    const twiceQQ = twice.question_quality as { avg_overall: number; total_questions_scored: number };
+    assert.equal(twiceQQ.avg_overall, onceQQ.avg_overall);
+    assert.equal(twiceQQ.total_questions_scored, onceQQ.total_questions_scored);
+  });
+});
+
 describe('updateProfileFromClassification sessions_at_current_rank', () => {
   it('resets to 0 when rank changes', () => {
     const rows = loadSample();
