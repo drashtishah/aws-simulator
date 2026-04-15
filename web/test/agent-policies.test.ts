@@ -41,14 +41,14 @@ describe('PLAY_AGENT_POLICY', () => {
 describe('POST_SESSION_POLICY', () => {
   const policy = POST_SESSION_POLICY(SIM_ID);
 
-  it('allows Write to player-vault profile', async () => {
+  it('denies Write to player-vault profile', async () => {
     const result = await policy.canUseTool('Write', { file_path: 'learning/player-vault/profile.json' }, {} as Parameters<typeof policy.canUseTool>[2]);
-    assert.equal(result.behavior, 'allow');
+    assert.equal(result.behavior, 'deny');
   });
 
-  it('allows Write to player-vault catalog', async () => {
+  it('denies Write to player-vault catalog', async () => {
     const result = await policy.canUseTool('Write', { file_path: 'learning/player-vault/catalog.json' }, {} as Parameters<typeof policy.canUseTool>[2]);
-    assert.equal(result.behavior, 'allow');
+    assert.equal(result.behavior, 'deny');
   });
 
   it('allows Write to session json', async () => {
