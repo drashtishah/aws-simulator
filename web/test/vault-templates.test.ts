@@ -2,10 +2,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   renderSessionNote,
-  appendSessionLinkToService,
-  appendSessionLinkToConcept,
+  renderServicePage,
+  renderConceptPage,
   updateRankNote,
 } from '../lib/vault-templates.js';
+import type { ServiceStats, ConceptStats } from '../lib/vault-aggregation.js';
 
 const BASE_CTX = {
   simId: '001-ec2-unreachable',
@@ -48,39 +49,133 @@ describe('renderSessionNote', () => {
   });
 });
 
-describe('appendSessionLinkToService', () => {
-  it('appends a session bullet to empty content', () => {
-    const result = appendSessionLinkToService('', BASE_CTX);
-    assert.ok(result.includes('[[sessions/'), 'must include session link');
-    assert.ok(result.includes(BASE_CTX.simId));
+describe('renderServicePage', () => {
+  const stats: ServiceStats = {
+    sessionCount: 3,
+    avgEffectiveness: 5.5,
+    recentAvgEffectiveness: 6.25,
+    coAppearingServices: { vpc: 2, s3: 1 },
+    coAppearingConcepts: { 'security-groups': 3, 'default-deny': 2 },
+    sessionLinks: [
+      { sessionSlug: '2026-04-01-foo', sessionDate: '2026-04-01' },
+      { sessionSlug: '2026-04-10-baz', sessionDate: '2026-04-10' },
+      { sessionSlug: '2026-04-05-bar', sessionDate: '2026-04-05' },
+    ],
+  };
+
+  it('starts with YAML frontmatter declaring type: service', () => {
+    const md = renderServicePage('ec2', stats);
+    assert.ok(md.startsWith('---\n'), 'must start with frontmatter');
+    assert.ok(md.includes('type: service'), 'frontmatter must include type: service');
+    assert.ok(md.includes('- service'), 'tags must include service');
   });
 
-  it('appends a session bullet to existing content with Sessions section', () => {
-    const existing = '---\ntype: service\n---\n\n## Sessions\n- [[sessions/old-sim]]\n';
-    const result = appendSessionLinkToService(existing, BASE_CTX);
-    assert.ok(result.includes('[[sessions/old-sim]]'), 'must preserve old links');
-    assert.ok(result.includes(BASE_CTX.simId), 'must append new link');
+  it('renders the Stats block with sessions_touched, avg, recent avg at 2dp', () => {
+    const md = renderServicePage('ec2', stats);
+    assert.ok(md.includes('## Stats'));
+    assert.ok(md.includes('sessions_touched: 3'));
+    assert.ok(md.includes('avg_effectiveness: 5.50'));
+    assert.ok(md.includes('recent_avg_effectiveness: 6.25'));
   });
 
-  it('is idempotent: calling twice with same ctx does not duplicate the link', () => {
-    const first = appendSessionLinkToService('', BASE_CTX);
-    const second = appendSessionLinkToService(first, BASE_CTX);
-    const linkPattern = BASE_CTX.simId;
-    const count = (second.split(linkPattern).length - 1);
-    assert.equal(count, 1, 'session link must appear exactly once after idempotent call');
+  it('renders both Co-appearing blocks with wiki-links sorted by count desc then alpha', () => {
+    const md = renderServicePage('ec2', stats);
+    assert.ok(md.includes('## Co-appearing services'));
+    assert.ok(md.includes('## Co-appearing concepts'));
+    assert.ok(md.includes('[[services/vpc]] (2 sessions)'));
+    assert.ok(md.includes('[[services/s3]] (1 sessions)'));
+    assert.ok(md.includes('[[concepts/security-groups]] (3 sessions)'));
+    assert.ok(md.includes('[[concepts/default-deny]] (2 sessions)'));
+    // order: vpc before s3
+    const vpcIdx = md.indexOf('[[services/vpc]]');
+    const s3Idx = md.indexOf('[[services/s3]]');
+    assert.ok(vpcIdx !== -1 && s3Idx !== -1 && vpcIdx < s3Idx, 'vpc (2) should sort before s3 (1)');
+  });
+
+  it('renders Sessions block with wiki-links sorted lexically by slug', () => {
+    const md = renderServicePage('ec2', stats);
+    assert.ok(md.includes('## Sessions'));
+    assert.ok(md.includes('[[sessions/2026-04-01-foo]] (2026-04-01)'));
+    assert.ok(md.includes('[[sessions/2026-04-05-bar]] (2026-04-05)'));
+    assert.ok(md.includes('[[sessions/2026-04-10-baz]] (2026-04-10)'));
+    const a = md.indexOf('2026-04-01-foo');
+    const b = md.indexOf('2026-04-05-bar');
+    const c = md.indexOf('2026-04-10-baz');
+    assert.ok(a < b && b < c, 'sessions must be chronological');
+  });
+
+  it('renders zero-state with sessions_touched: 0 and (none) placeholders', () => {
+    const zero: ServiceStats = {
+      sessionCount: 0,
+      avgEffectiveness: 0,
+      recentAvgEffectiveness: 0,
+      coAppearingServices: {},
+      coAppearingConcepts: {},
+      sessionLinks: [],
+    };
+    const md = renderServicePage('ec2', zero);
+    assert.ok(md.includes('sessions_touched: 0'));
+    assert.ok(md.includes('avg_effectiveness: 0.00'));
+    assert.ok(md.includes('recent_avg_effectiveness: 0.00'));
+    assert.ok(md.includes('## Co-appearing services\n(none)'));
+    assert.ok(md.includes('## Co-appearing concepts\n(none)'));
+    assert.ok(md.includes('## Sessions\n(none)'));
+  });
+
+  it('does not include double-dashes punctuation', () => {
+    const md = renderServicePage('ec2', stats);
+    // Only `---` frontmatter fences are allowed; no `--` as punctuation in body.
+    const withoutFences = md.replace(/^---$/gm, '');
+    assert.ok(!/[^-]--[^-]/.test(withoutFences), 'body must not use -- as punctuation');
   });
 });
 
-describe('appendSessionLinkToConcept', () => {
-  it('appends a session link to empty content', () => {
-    const result = appendSessionLinkToConcept('', { ...BASE_CTX, concept: 'security-groups' });
-    assert.ok(result.includes('[[sessions/'), 'must include session link');
+describe('renderConceptPage', () => {
+  const stats: ConceptStats = {
+    sessionCount: 2,
+    avgEffectiveness: 5,
+    recentAvgEffectiveness: 5,
+    coAppearingServices: { ec2: 2, vpc: 1 },
+    coAppearingConcepts: { 'default-deny': 1 },
+    sessionLinks: [
+      { sessionSlug: '2026-04-01-foo', sessionDate: '2026-04-01' },
+      { sessionSlug: '2026-04-05-bar', sessionDate: '2026-04-05' },
+    ],
+  };
+
+  it('frontmatter declares type: concept with tag concept', () => {
+    const md = renderConceptPage('security-groups', stats);
+    assert.ok(md.startsWith('---\n'));
+    assert.ok(md.includes('type: concept'));
+    assert.ok(md.includes('- concept'));
   });
 
-  it('preserves existing content', () => {
-    const existing = '---\ntype: concept\n---\n\nExisting body.\n';
-    const result = appendSessionLinkToConcept(existing, { ...BASE_CTX, concept: 'security-groups' });
-    assert.ok(result.includes('Existing body.'), 'must preserve existing body');
+  it('includes Stats, both Co-appearing blocks, and Sessions', () => {
+    const md = renderConceptPage('security-groups', stats);
+    assert.ok(md.includes('## Stats'));
+    assert.ok(md.includes('sessions_touched: 2'));
+    assert.ok(md.includes('avg_effectiveness: 5.00'));
+    assert.ok(md.includes('## Co-appearing services'));
+    assert.ok(md.includes('## Co-appearing concepts'));
+    assert.ok(md.includes('## Sessions'));
+    assert.ok(md.includes('[[services/ec2]] (2 sessions)'));
+    assert.ok(md.includes('[[concepts/default-deny]] (1 sessions)'));
+  });
+
+  it('zero-state renders (none) placeholders', () => {
+    const zero: ConceptStats = {
+      sessionCount: 0,
+      avgEffectiveness: 0,
+      recentAvgEffectiveness: 0,
+      coAppearingServices: {},
+      coAppearingConcepts: {},
+      sessionLinks: [],
+    };
+    const md = renderConceptPage('security-groups', zero);
+    assert.ok(md.includes('sessions_touched: 0'));
+    assert.ok(md.includes('## Co-appearing services\n(none)'));
+    assert.ok(md.includes('## Co-appearing concepts\n(none)'));
+    assert.ok(md.includes('## Sessions\n(none)'));
   });
 });
 

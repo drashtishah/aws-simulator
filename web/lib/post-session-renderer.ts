@@ -4,11 +4,13 @@ import jsYaml from 'js-yaml';
 import type { ClassificationRow } from './classification-schema.js';
 import {
   renderSessionNote,
-  appendSessionLinkToService,
-  appendSessionLinkToConcept,
+  renderServicePage,
+  renderConceptPage,
   updateRankNote,
 } from './vault-templates.js';
 import type { SessionNoteCtx, FixCriterion } from './vault-templates.js';
+import { aggregateServiceStats, aggregateConceptStats } from './vault-aggregation.js';
+import * as paths from './paths.js';
 
 // --- Types for external data ---
 
@@ -264,18 +266,18 @@ export function renderVaultUpdates(
   const sessionNotePath = path.join(vaultDir, 'sessions', `${sessionDate}-${simId}.md`);
   files.push({ path: sessionNotePath, content: renderSessionNote(ctx) });
 
-  // Service notes.
+  // Service notes: deterministic per-session full rewrite from aggregated stats.
   for (const service of ctx.services) {
+    const stats = aggregateServiceStats(service, paths.SESSIONS_DIR);
     const p = path.join(vaultDir, 'services', `${service}.md`);
-    const existing = existingFiles[p] ?? '';
-    files.push({ path: p, content: appendSessionLinkToService(existing, ctx) });
+    files.push({ path: p, content: renderServicePage(service, stats) });
   }
 
-  // Concept notes.
+  // Concept notes: same pattern.
   for (const concept of ctx.concepts) {
+    const stats = aggregateConceptStats(concept, paths.SESSIONS_DIR);
     const p = path.join(vaultDir, 'concepts', `${concept}.md`);
-    const existing = existingFiles[p] ?? '';
-    files.push({ path: p, content: appendSessionLinkToConcept(existing, { ...ctx, concept }) });
+    files.push({ path: p, content: renderConceptPage(concept, stats) });
   }
 
   // Rank note.

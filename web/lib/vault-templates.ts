@@ -1,3 +1,5 @@
+import type { ServiceStats, ConceptStats } from './vault-aggregation.js';
+
 export interface SessionNoteCtx {
   simId: string;
   sessionDate: string;
@@ -173,62 +175,76 @@ function renderGaps(rows: ClassificationRowLike[]): string {
 }
 
 /**
- * Appends a session bullet under the ## Sessions section of a service note.
- * Creates the section if missing. Idempotent: skips if link already present.
- * Pure, returns a string.
+ * Renders a full service page from aggregated stats.
+ * Pure: always produces the entire file content; callers overwrite the target file.
  */
-export function appendSessionLinkToService(existing: string, ctx: SessionNoteCtx): string {
-  const link = `[[${sessionNoteFilename(ctx)}]]`;
-  if (existing.includes(ctx.simId)) return existing;
-
-  const sessionsBullet = `- ${link} (${ctx.sessionDate})`;
-
-  if (!existing) {
-    return `---
-type: service
-tags:
-  - service
----
-
-## Sessions
-${sessionsBullet}
-`;
-  }
-
-  if (existing.includes('## Sessions')) {
-    return existing.replace('## Sessions\n', `## Sessions\n${sessionsBullet}\n`);
-  }
-
-  return existing.trimEnd() + `\n\n## Sessions\n${sessionsBullet}\n`;
+export function renderServicePage(service: string, stats: ServiceStats): string {
+  return renderAggregatedPage({
+    type: 'service',
+    stats,
+  });
 }
 
 /**
- * Appends a session link to a concept note.
- * Creates the note if empty. Pure, returns a string.
+ * Renders a full concept page from aggregated stats.
+ * Pure: always produces the entire file content; callers overwrite the target file.
  */
-export function appendSessionLinkToConcept(existing: string, ctx: ConceptCtx): string {
-  const link = `[[${sessionNoteFilename(ctx)}]]`;
-  if (existing.includes(ctx.simId)) return existing;
+export function renderConceptPage(concept: string, stats: ConceptStats): string {
+  return renderAggregatedPage({
+    type: 'concept',
+    stats,
+  });
+}
 
-  const sessionLine = `- ${link} (${ctx.sessionDate}): concept appeared in sim ${ctx.simId}.`;
+interface AggregatedPageCtx {
+  type: 'service' | 'concept';
+  stats: ServiceStats | ConceptStats;
+}
 
-  if (!existing) {
-    return `---
-type: concept
+function renderAggregatedPage(ctx: AggregatedPageCtx): string {
+  const { stats } = ctx;
+  const frontmatter = `---
+type: ${ctx.type}
 tags:
-  - concept
+  - ${ctx.type}
 ---
-
-## Sessions
-${sessionLine}
 `;
-  }
 
-  if (existing.includes('## Sessions')) {
-    return existing.replace('## Sessions\n', `## Sessions\n${sessionLine}\n`);
-  }
+  const statsBlock = `
+## Stats
+sessions_touched: ${stats.sessionCount}
+avg_effectiveness: ${stats.avgEffectiveness.toFixed(2)}
+recent_avg_effectiveness: ${stats.recentAvgEffectiveness.toFixed(2)}
+`;
 
-  return existing.trimEnd() + `\n\n## Sessions\n${sessionLine}\n`;
+  const coServicesBlock = `\n## Co-appearing services\n${renderCoAppearing(stats.coAppearingServices, 'services')}`;
+  const coConceptsBlock = `\n## Co-appearing concepts\n${renderCoAppearing(stats.coAppearingConcepts, 'concepts')}`;
+  const sessionsBlock = `\n## Sessions\n${renderSessionLinks(stats.sessionLinks)}`;
+
+  return frontmatter + statsBlock + coServicesBlock + coConceptsBlock + sessionsBlock;
+}
+
+function renderCoAppearing(
+  map: Record<string, number>,
+  linkKind: 'services' | 'concepts'
+): string {
+  const entries = Object.entries(map);
+  if (entries.length === 0) return '(none)\n';
+  entries.sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+  return entries
+    .map(([name, count]) => `- [[${linkKind}/${name}]] (${count} sessions)`)
+    .join('\n') + '\n';
+}
+
+function renderSessionLinks(links: ReadonlyArray<{ sessionSlug: string; sessionDate: string }>): string {
+  if (links.length === 0) return '(none)\n';
+  const sorted = [...links].sort((a, b) => a.sessionSlug.localeCompare(b.sessionSlug));
+  return sorted
+    .map(l => `- [[sessions/${l.sessionSlug}]] (${l.sessionDate})`)
+    .join('\n') + '\n';
 }
 
 /**
