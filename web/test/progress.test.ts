@@ -84,8 +84,8 @@ describe('currentRank (via progress.js wrapper)', () => {
 });
 
 describe('normalizeHexagon (via progress.js wrapper)', () => {
-  it('normalizes to 0-10 scale by default', () => {
-    const poly = { gather: 10, diagnose: 5, correlate: 0, impact: 0, trace: 0, fix: 0 };
+  it('normalizes to 0-10 scale against top rank threshold', () => {
+    const poly = { gather: 6, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const norm = normalizeHexagon(poly);
     assert.equal(norm.gather, 10);
     assert.equal(norm.diagnose, 5);
@@ -100,7 +100,7 @@ describe('normalizeHexagon (via progress.js wrapper)', () => {
   });
 
   it('normalizes to custom scale', () => {
-    const poly = { gather: 4, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const poly = { gather: 6, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const norm = normalizeHexagon(poly, 5);
     assert.equal(norm.gather, 5);
     assert.equal(norm.diagnose, 2.5);

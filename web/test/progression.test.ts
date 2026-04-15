@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'path';
-import { loadConfig, axisNames, evaluateGate, currentRank, maxDifficulty, applyDecay, scoreSim, availableModifiers, normalizePolygon, initPolygon, applyDiminishingReturns, evaluateQualityGate } from '../lib/progression';
+import { loadConfig, axisNames, evaluateGate, currentRank, maxDifficulty, applyDecay, scoreSim, availableModifiers, normalizePolygon, getDisplayCeiling, initPolygon, applyDiminishingReturns, evaluateQualityGate } from '../lib/progression';
 
 
 const CONFIG_PATH = path.join(__dirname, '..', '..', 'references', 'config', 'progression.yaml');
@@ -438,8 +438,8 @@ describe('availableModifiers', () => {
 describe('normalizePolygon', () => {
   const config = loadConfig(CONFIG_PATH);
 
-  it('normalizes to 0-10 scale', () => {
-    const poly = { gather: 10, diagnose: 5, correlate: 0, impact: 0, trace: 0, fix: 0 };
+  it('normalizes to 0-10 scale against top rank threshold', () => {
+    const poly = { gather: 6, diagnose: 3, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const norm = normalizePolygon(poly, config);
     assert.equal(norm.gather, 10);
     assert.equal(norm.diagnose, 5);
@@ -450,6 +450,24 @@ describe('normalizePolygon', () => {
     for (const axis of axisNames(config)) {
       assert.equal(norm[axis], 0);
     }
+  });
+
+  it('normalizes against the top rank threshold, not player-max', () => {
+    const poly = { gather: 1, diagnose: 0, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const norm = normalizePolygon(poly, config);
+    assert.equal(Math.round(norm.gather * 100) / 100, 1.67);
+    assert.equal(norm.diagnose, 0);
+  });
+
+  it('clamps axes above the ceiling to maxScale', () => {
+    const poly = { gather: 9, diagnose: 6, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const norm = normalizePolygon(poly, config);
+    assert.equal(norm.gather, 10);
+    assert.equal(norm.diagnose, 10);
+  });
+
+  it('getDisplayCeiling derives 6 from chaos-architect gate', () => {
+    assert.equal(getDisplayCeiling(config), 6);
   });
 });
 
