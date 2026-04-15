@@ -1,0 +1,3 @@
+{"ts": "2026-04-15T10:00:00Z", "turn": 1, "player_message": "what instances are running", "assistant_message": "Three EC2 instances are up."}
+{"ts": "2026-04-15T10:01:00Z", "turn": 2, "player_message": "what instances are running", "assistant_message": "Same as before."}
+{"ts": "2026-04-15T10:02:00Z", "turn": 3, "player_message": "run this rotation", "assistant_message": "Applied the rotation."}

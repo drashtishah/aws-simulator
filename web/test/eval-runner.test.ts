@@ -16,10 +16,10 @@ describe('eval scoring spec', () => {
     assert.ok(spec.categories, 'should have categories');
   });
 
-  it('has 60 checks total', () => {
+  it('has 49 checks total', () => {
     const spec = yaml.load(fs.readFileSync(specPath, 'utf8'));
     const total = Object.values(spec.categories).flat().length;
-    assert.equal(total, 55, 'should have exactly 55 checks');
+    assert.equal(total, 49, 'should have exactly 49 checks');
   });
 
   it('every check has id, check, requires, and rule or prompt', () => {
@@ -44,10 +44,10 @@ describe('eval scoring spec', () => {
       ids.filter((id, i) => ids.indexOf(id) !== i).join(', '));
   });
 
-  it('requires is one of session, transcript, llm', () => {
+  it('requires is one of session, transcript, llm, classification', () => {
     const spec = yaml.load(fs.readFileSync(specPath, 'utf8'));
     const checks = Object.values(spec.categories).flat();
-    const valid = ['session', 'transcript', 'llm'];
+    const valid = ['session', 'transcript', 'llm', 'classification'];
     for (const c of checks) {
       assert.ok(valid.includes(c.requires),
         c.id + ' has invalid requires: ' + c.requires);
@@ -67,7 +67,7 @@ describe('eval scoring spec', () => {
     const cats = Object.keys(spec.categories);
     const expected = [
       'scoring_integrity', 'leak_prevention',
-      'coaching_accuracy', 'hint_delivery', 'question_classification',
+      'coaching_accuracy', 'hint_delivery',
       'session_integrity', 'debrief_quality', 'narrator_behavior',
       'progression', 'narrator_quality'
     ];
@@ -94,7 +94,7 @@ describe('eval runner: allChecks', () => {
   it('returns flat array with category field added', () => {
     const spec = evalRunner.loadScoringSpec();
     const checks = evalRunner.allChecks(spec);
-    assert.equal(checks.length, 55);
+    assert.equal(checks.length, 49);
     assert.ok(checks[0].category, 'each check should have category');
   });
 });
@@ -154,22 +154,6 @@ describe('eval runner: runCheck deterministic', () => {
     const result = evalRunner.runCheck(check, bad, null, mockManifest);
     assert.equal(result.status, 'fail');
     assert.equal(result.score, 0);
-  });
-
-  it('effective-lte-total passes for valid profile', () => {
-    const check = { id: 'qtype-effective-lte-total', requires: 'session', rule: 'effective_lte_total_per_axis' };
-    const result = evalRunner.runCheck(check, mockSession, null, mockManifest);
-    assert.equal(result.status, 'pass');
-  });
-
-  it('effective-lte-total fails when effective > count', () => {
-    const bad = {
-      ...mockSession,
-      question_profile: { gather: { count: 2, effective: 5 } }
-    };
-    const check = { id: 'test', requires: 'session', rule: 'effective_lte_total_per_axis' };
-    const result = evalRunner.runCheck(check, bad, null, mockManifest);
-    assert.equal(result.status, 'fail');
   });
 
   it('field_exists passes when field present', () => {
@@ -270,5 +254,38 @@ describe('eval runner: runScorecard', () => {
   it('returns error for missing session', () => {
     const result = evalRunner.runScorecard('nonexistent-sim-id');
     assert.ok(result.error);
+  });
+});
+
+describe('eval runner: classification_matches_keywords', () => {
+  const fixtureDir = path.join(ROOT, 'web', 'test', 'fixtures', 'eval-classification');
+
+  function loadFixtures() {
+    const { parseClassificationJsonl } = require('../lib/classification-schema');
+    const rows = parseClassificationJsonl(fs.readFileSync(path.join(fixtureDir, 'classification.jsonl'), 'utf8'));
+    const turns = fs.readFileSync(path.join(fixtureDir, 'turns.jsonl'), 'utf8')
+      .trim().split('\n').map(l => JSON.parse(l));
+    return { rows, turns };
+  }
+
+  it('passes when every row has a player message matching its axis keywords', () => {
+    const { rows, turns } = loadFixtures();
+    // Use rows 1 and 3 only (both legitimate matches): gather + fix
+    const goodRows = [rows[0], rows[2]];
+    const goodTurns = [turns[0], turns[2]];
+    // Re-index goodRows to be 1, 2 so they align with goodTurns positions
+    goodRows[0] = { ...goodRows[0], index: 1 };
+    goodRows[1] = { ...goodRows[1], index: 2 };
+    const result = evalRunner.classificationRules.classification_matches_keywords(goodRows, goodTurns, null, { id: 'x', rule: 'classification_matches_keywords', requires: 'classification' });
+    assert.equal(result.pass, true);
+  });
+
+  it('fails with row index when one row has no matching keyword in its player message', () => {
+    const { rows, turns } = loadFixtures();
+    const result = evalRunner.classificationRules.classification_matches_keywords(rows, turns, null, { id: 'x', rule: 'classification_matches_keywords', requires: 'classification' });
+    assert.equal(result.pass, false);
+    assert.ok(result.reason, 'should include reason');
+    assert.ok(result.reason.includes('row 2'), 'reason should cite row 2: ' + result.reason);
+    assert.ok(result.reason.includes('diagnose'), 'reason should cite diagnose axis: ' + result.reason);
   });
 });

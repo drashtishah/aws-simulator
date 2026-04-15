@@ -1,0 +1,3 @@
+{"index": 1, "question_type": "gather", "effectiveness": 5, "services": ["ec2"], "concepts": [], "beats": [], "uncertainty": false, "note": "listed instances"}
+{"index": 2, "question_type": "diagnose", "effectiveness": 3, "services": ["ec2"], "concepts": [], "beats": [], "uncertainty": false, "note": "asked what instances are running"}
+{"index": 3, "question_type": "fix", "effectiveness": 6, "services": ["ec2"], "concepts": [], "beats": [], "uncertainty": false, "note": "proposed rotation"}

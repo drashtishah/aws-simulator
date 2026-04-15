@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
+import { parseClassificationJsonl, ClassificationRow } from '../web/lib/classification-schema';
 
 const ROOT: string = path.resolve(__dirname, '..');
 const SESSIONS_DIR: string = path.join(ROOT, 'learning', 'sessions');
@@ -102,6 +103,7 @@ interface Manifest {
 
 type SessionRuleFn = (session: Session, manifest: Manifest | null, check: Check) => RuleResult;
 type TranscriptRuleFn = (transcript: TurnEntry[], manifest: Manifest | null, check: Check, session?: Session | null) => RuleResult;
+type ClassificationRuleFn = (rows: ClassificationRow[], turns: TurnEntry[], manifest: Manifest | null, check: Check) => RuleResult;
 
 function loadScoringSpec(): ScoringSpec {
   return yaml.load(fs.readFileSync(SPEC_PATH, 'utf8')) as ScoringSpec;
@@ -126,6 +128,12 @@ function loadTurns(simId: string): TurnEntry[] | null {
   if (!fs.existsSync(p)) return null;
   const lines: string[] = fs.readFileSync(p, 'utf8').trim().split('\n');
   return lines.filter(l => l.trim()).map(l => JSON.parse(l) as TurnEntry);
+}
+
+function loadClassification(simId: string): ClassificationRow[] | null {
+  const p: string = path.join(SESSIONS_DIR, simId, 'classification.jsonl');
+  if (!fs.existsSync(p)) return null;
+  return parseClassificationJsonl(fs.readFileSync(p, 'utf8'));
 }
 
 function loadManifest(simId: string): Manifest | null {
@@ -190,36 +198,10 @@ const sessionRules: Record<string, SessionRuleFn> = {
     if (total !== sum) return { pass: false, reason: 'total ' + total + ' != sum ' + sum };
     return { pass: true };
   },
-  all_values_gte_0(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
-    if ((check.target ?? 'scoring') === 'question_profile.counts') {
-      const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
-      for (const [axis, data] of Object.entries(profile)) {
-        if ((data.count ?? 0) < 0) return { pass: false, reason: axis + ' count is negative' };
-      }
-      return { pass: true };
-    }
+  all_values_gte_0(session: Session): RuleResult {
     for (const [k, v] of Object.entries(session.scoring ?? {})) {
       if (v < 0) return { pass: false, reason: k + ' is negative' };
     }
-    return { pass: true };
-  },
-  effective_lte_total_per_axis(session: Session): RuleResult {
-    for (const [axis, data] of Object.entries((session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {})) {
-      if ((data.effective ?? 0) > (data.count ?? 0))
-        return { pass: false, reason: axis + ' effective ' + data.effective + ' > count ' + data.count };
-    }
-    return { pass: true };
-  },
-  question_counts_match_total(session: Session): RuleResult {
-    const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
-    const sum: number = Object.values(profile).reduce((s, d) => s + (d.count ?? 0), 0);
-    if (session.total_questions != null && session.total_questions !== sum)
-      return { pass: false, reason: 'total_questions ' + session.total_questions + ' != sum ' + sum };
-    return { pass: true };
-  },
-  at_least_one_axis_has_questions(session: Session): RuleResult {
-    const hasAny: boolean = Object.values((session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {}).some(d => (d.count ?? 0) > 0);
-    if (!hasAny) return { pass: false, reason: 'no axis has questions' };
     return { pass: true };
   },
   field_exists(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
@@ -235,22 +217,10 @@ const sessionRules: Record<string, SessionRuleFn> = {
     if (!Array.isArray(session[check.field!])) return { pass: false, reason: check.field + ' is not an array' };
     return { pass: true };
   },
-  has_all_axes(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
-    const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
-    const axes: string[] = check.axes ?? ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
-    for (const a of axes) {
-      if (!(a in profile)) return { pass: false, reason: 'missing axis ' + a };
-    }
-    return { pass: true };
-  },
   array_contains(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
     const arr = (session[check.target!] as string[] | undefined) ?? session.story_beats_fired ?? [];
     if (!Array.isArray(arr)) return { pass: false, reason: check.target + ' is not an array' };
     if (!arr.includes(check.value!)) return { pass: false, reason: check.target + ' missing ' + check.value };
-    return { pass: true };
-  },
-  classification_matches_keywords(session: Session): RuleResult {
-    if (!(session.question_profile as Record<string, { count?: number; effective?: number }> | undefined)) return { pass: false, reason: 'no question_profile' };
     return { pass: true };
   },
   criteria_met_subset_of_manifest(session: Session, manifest: Manifest | null): RuleResult {
@@ -324,11 +294,50 @@ const transcriptRules: Record<string, TranscriptRuleFn> = {
   debrief_has_seed_questions(): RuleResult { return { pass: true }; }
 };
 
-function runCheck(check: Check, session: Session | null, transcript: TurnEntry[] | null, manifest: Manifest | null): CheckResult {
+// Keyword table for classification axes. Sourced from
+// .claude/skills/play/references/coaching-patterns.md (classification rubric).
+// Loose gross-mismatch check, not tight alignment.
+const CLASSIFICATION_KEYWORDS: Record<string, string[]> = {
+  gather: ['show me', 'what is the', 'what is', 'list', 'describe', 'get', 'which', 'what'],
+  diagnose: ['why', 'what caused', "what's wrong", 'explain the error', 'cause', 'reason', 'explain', 'diagnose', 'investigate', 'check'],
+  correlate: ['related to', 'connected', 'at the same time', 'both', 'between', 'related', 'link', 'correlate', 'compare', 'difference', 'versus', ' vs '],
+  impact: ["who's affected", 'blast radius', 'how many users', 'production', 'impact', 'affect', 'downstream', 'users', 'customers', 'availability'],
+  trace: ['what changed', 'who deployed', 'cloudtrail', 'when did', 'recent', 'trace', 'log', 'history', 'timeline', 'when', 'sequence', 'path', 'flow'],
+  fix: ['fix', 'solve', 'resolve', 'apply', 'update', 'change', 'run', 'deploy', 'rotate', 'add rule', 'increase', 'should', 'we should']
+};
+
+const classificationRules: Record<string, ClassificationRuleFn> = {
+  classification_matches_keywords(rows: ClassificationRow[], turns: TurnEntry[]): RuleResult {
+    for (const row of rows) {
+      const turn = turns[row.index - 1];
+      if (!turn) continue;
+      const msg = (turn.player_message ?? '').toLowerCase();
+      const keywords = CLASSIFICATION_KEYWORDS[row.question_type] ?? [];
+      const matched = keywords.some(k => msg.includes(k));
+      if (!matched) {
+        return {
+          pass: false,
+          reason: 'row ' + row.index + ' question_type ' + row.question_type + ' does not match any keyword in player message'
+        };
+      }
+    }
+    return { pass: true };
+  }
+};
+
+function runCheck(check: Check, session: Session | null, transcript: TurnEntry[] | null, manifest: Manifest | null, classification: ClassificationRow[] | null = null): CheckResult {
   const id: string = check.id;
   if (check.requires === 'llm') return { id, status: 'pending_llm', prompt: check.prompt };
   if (check.requires === 'transcript' && !transcript) return { id, status: 'skipped', reason: 'no transcript' };
   if (check.requires === 'session' && !session) return { id, status: 'skipped', reason: 'no session' };
+  if (check.requires === 'classification' && !classification) return { id, status: 'skipped', reason: 'no classification' };
+
+  if (check.requires === 'classification') {
+    const ruleFn = classificationRules[check.rule];
+    if (!ruleFn) return { id, status: 'error', reason: 'unknown rule' };
+    const result: RuleResult = ruleFn(classification!, transcript ?? [], manifest, check);
+    return { id, status: result.pass ? 'pass' : 'fail', score: result.pass ? 1 : 0, reason: result.reason ?? undefined };
+  }
 
   const ruleFn = check.requires === 'session'
     ? sessionRules[check.rule]
@@ -345,8 +354,9 @@ function runScorecard(simId: string): ScorecardResult {
   if (!session) return { error: 'Session not found for ' + simId };
   const transcript: TurnEntry[] | null = loadTurns(simId);
   const manifest: Manifest | null = loadManifest(simId);
+  const classification: ClassificationRow[] | null = loadClassification(simId);
   const checks: Check[] = allChecks(loadScoringSpec());
-  const results: CheckResult[] = checks.map(c => runCheck(c, session, transcript, manifest));
+  const results: CheckResult[] = checks.map(c => runCheck(c, session, transcript, manifest, classification));
   const count = (status: string): number => results.filter(r => r.status === status).length;
   return {
     sim_id: simId,
@@ -373,6 +383,7 @@ function appendHistory(entry: Record<string, unknown>): void {
 export {
   loadScoringSpec, allChecks, runCheck, runScorecard,
   writeResult, appendHistory, listCompletedSessions,
-  loadSession, loadTurns, loadManifest,
+  loadSession, loadTurns, loadManifest, loadClassification,
+  classificationRules,
   SESSIONS_DIR, RESULTS_DIR
 };
