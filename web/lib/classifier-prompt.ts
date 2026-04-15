@@ -4,6 +4,7 @@ import * as paths from './paths.js';
 const COACHING_PATTERNS_PATH = path.join(
   paths.ROOT, '.claude', 'skills', 'play', 'references', 'coaching-patterns.md'
 );
+const PROGRESSION_PATH = path.join(paths.ROOT, 'references', 'config', 'progression.yaml');
 
 /**
  * Builds the Tier 1 classifier prompt for the post-session agent.
@@ -26,8 +27,9 @@ Read:
 - Session metadata: ${sessionPath}
 - Sim manifest (fix_criteria and learning_objectives only): ${manifestPath}
 - Coaching patterns (classification + scoring rules): ${COACHING_PATTERNS_PATH}
+- Progression config (axis definitions only): ${PROGRESSION_PATH}
 
-Do NOT read: profile.json, catalog.csv, or any file under learning/player-vault/. Those are handled by the deterministic Tier 2 renderer after you finish.
+Do NOT read: the player profile, the services catalog, or any file under learning/player-vault/. Those are handled by the deterministic Tier 2 renderer after you finish.
 
 Steps:
 1. Read the transcript at ${turnsPath}. Count the total player turns.
