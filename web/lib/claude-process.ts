@@ -335,14 +335,30 @@ export async function runPostSessionAgent(
   fs.writeFileSync(paths.CATALOG, serializeCatalogCsv(updatedCatalog), 'utf8');
 
   const sessionDate = new Date().toISOString().slice(0, 10);
+
+  // Read manifest.fix_criteria and session.investigation_summary (both populated by Tier 1)
+  // so the deterministic renderer can emit a diagnostic session note.
+  const sessionPath = paths.sessionFile(simId);
+  const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8')) as Record<string, unknown>;
+  const investigationSummary = typeof session.investigation_summary === 'string'
+    ? session.investigation_summary
+    : '';
+
+  const manifestPath = paths.manifest(simId);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
+    resolution?: { fix_criteria?: Array<{ id: string; description: string; required: boolean }> };
+  };
+  const fixCriteria = manifest.resolution?.fix_criteria ?? [];
+
   const vaultUpdates = renderVaultUpdates(
-    updatedProfile, classificationRows, simId, sessionDate, paths.VAULT_DIR
+    updatedProfile, classificationRows, simId, sessionDate, paths.VAULT_DIR, {}, {
+      investigationSummary,
+      fixCriteria,
+    }
   );
   applyVaultUpdates(vaultUpdates);
 
   // Set session status to completed.
-  const sessionPath = paths.sessionFile(simId);
-  const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8')) as Record<string, unknown>;
   session.status = 'completed';
   fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2), 'utf8');
 

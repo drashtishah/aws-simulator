@@ -8,7 +8,7 @@ import {
   appendSessionLinkToConcept,
   updateRankNote,
 } from './vault-templates.js';
-import type { SessionNoteCtx } from './vault-templates.js';
+import type { SessionNoteCtx, FixCriterion } from './vault-templates.js';
 
 // --- Types for external data ---
 
@@ -217,25 +217,36 @@ export interface VaultUpdates {
  * Pure: returns vault file paths and contents without touching the filesystem.
  * Callers supply existing file contents for notes that may already exist.
  */
+export interface VaultRenderExtras {
+  investigationSummary?: string;
+  fixCriteria?: FixCriterion[];
+}
+
 export function renderVaultUpdates(
   profile: PlayerProfile,
   rows: ClassificationRow[],
   simId: string,
   sessionDate: string,
   vaultDir: string,
-  existingFiles: Record<string, string> = {}
+  existingFiles: Record<string, string> = {},
+  extras: VaultRenderExtras = {}
 ): VaultUpdates {
   const questionTypes = [...new Set(rows.map(r => r.question_type))];
+  const services = [...new Set(rows.flatMap(r => r.services))];
+  const concepts = [...new Set(rows.flatMap(r => r.concepts))];
 
   const ctx: SessionNoteCtx = {
     simId,
     sessionDate,
     rankAtTime: profile.rank,
-    // services extraction deferred: classification rows do not carry service names
-    services: (profile as { _sessionServices?: string[] })._sessionServices ?? [],
-    // concepts extraction deferred: classification rows do not carry concept names
-    concepts: (profile as { _sessionConcepts?: string[] })._sessionConcepts ?? [],
+    services,
+    concepts,
     questionTypes,
+    investigationSummary: extras.investigationSummary,
+    rows,
+    fixCriteria: extras.fixCriteria,
+    polygon: profile.skill_polygon,
+    avgQuestionQuality: profile.avg_question_quality,
   };
 
   const files: VaultFile[] = [];
