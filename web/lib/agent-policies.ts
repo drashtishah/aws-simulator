@@ -55,7 +55,7 @@ export function POST_SESSION_POLICY(simId: string): AgentPolicy {
   return {
     allowedTools: ['Read', 'Write', 'Bash'],
     permissionMode: 'default',
-    canUseTool: async (toolName, input) => {
+    canUseTool: async (toolName, input, options) => {
       if (toolName === 'Bash') {
         const command = typeof input.command === 'string' ? input.command : '';
         if (allowedVerifierCommand.test(command.trim())) {
@@ -66,7 +66,7 @@ export function POST_SESSION_POLICY(simId: string): AgentPolicy {
           message: `Bash denied: only the classification verifier command is allowed (npx tsx ${verifierPath} ${simId})`
         };
       }
-      return writePolicy(toolName, input);
+      return writePolicy(toolName, input, options);
     }
   };
 }
