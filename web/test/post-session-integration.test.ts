@@ -98,29 +98,38 @@ describe('runPostSessionAgent integration', () => {
       'service,sims_completed,knowledge_score,last_practiced\n'
     );
     fs.mkdirSync(path.join(TMP_LEARNING_DIR, 'logs'), { recursive: true });
+    // Seed classification.jsonl so Tier 2 can run after the mock SDK returns.
+    fs.writeFileSync(
+      path.join(sessionDir, 'classification.jsonl'),
+      JSON.stringify({ index: 1, question_type: 'gather', effectiveness: 4 }) + '\n' +
+      JSON.stringify({ index: 2, question_type: 'diagnose', effectiveness: 5 }) + '\n' +
+      JSON.stringify({ index: 3, question_type: 'fix', effectiveness: 6 }) + '\n'
+    );
   });
 
   it('builds a post-session prompt referencing every required file', () => {
     const prompt = claudeProcess.buildPostSessionPrompt(testSimId);
     assert.ok(prompt.includes('turns.jsonl'), 'prompt must reference turns.jsonl');
     assert.ok(prompt.includes('session.json'), 'prompt must reference session.json');
-    assert.ok(prompt.includes('profile.json'), 'prompt must reference profile.json');
-    assert.ok(prompt.includes('catalog.csv'), 'prompt must reference catalog.csv');
+    assert.ok(!prompt.includes('profile.json'), 'Tier 1 prompt must not reference profile.json');
+    assert.ok(!prompt.includes('catalog.csv'), 'Tier 1 prompt must not reference catalog.csv');
+    assert.ok(prompt.includes('classification.jsonl'), 'Tier 1 prompt must reference classification.jsonl output path');
     assert.ok(prompt.includes('manifest.json'), 'prompt must reference manifest.json');
     assert.ok(prompt.includes('coaching-patterns.md'), 'prompt must reference coaching-patterns.md');
     assert.ok(prompt.includes('progression.yaml'), 'prompt must reference progression.yaml');
   });
 
-  it('buildPostSessionPrompt routes paths through the learning-dir override', () => {
+  it('buildPostSessionPrompt routes paths through the sessions-dir override', () => {
     const prompt = claudeProcess.buildPostSessionPrompt(testSimId);
-    assert.ok(prompt.includes(TMP_LEARNING_DIR), 'prompt must point at the tmp LEARNING_DIR');
     assert.ok(prompt.includes(TMP_SESSIONS_DIR), 'prompt must point at the tmp SESSIONS_DIR');
   });
 
   it('runPostSessionAgent returns success when the SDK completes normally', async () => {
     sdkMockState.nextResult = 'success';
     const result = await claudeProcess.runPostSessionAgent(testSimId);
-    assert.deepEqual(result, { success: true });
+    assert.ok(result.success, 'result.success must be true');
+    assert.ok(typeof result.tier1_duration_ms === 'number', 'result must include tier1_duration_ms');
+    assert.ok(typeof result.tier2_duration_ms === 'number', 'result must include tier2_duration_ms');
     assert.ok(sdkMockState.lastPrompt?.includes('post-session analysis agent'), 'prompt must flag post-session role');
     assert.equal((sdkMockState.lastOptions as { model: string }).model, 'claude-opus-4-6', 'post-session must run on opus');
     assert.equal((sdkMockState.lastOptions as { allowedTools: string[] }).allowedTools.join(','), 'Read,Write', 'post-session may only Read and Write');

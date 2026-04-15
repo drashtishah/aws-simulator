@@ -188,9 +188,10 @@ describe('buildPostSessionPrompt', () => {
     const prompt = buildPostSessionPrompt('001-ec2-unreachable');
     assert.ok(prompt.includes('session.json'), 'should reference session.json');
     assert.ok(prompt.includes('manifest.json'), 'should reference manifest.json');
-    assert.ok(prompt.includes('profile.json'), 'should reference profile.json');
-    assert.ok(prompt.includes('catalog.csv'), 'should reference catalog.csv');
+    assert.ok(!prompt.includes('profile.json'), 'Tier 1 prompt must not reference profile.json');
+    assert.ok(!prompt.includes('catalog.csv'), 'Tier 1 prompt must not reference catalog.csv');
     assert.ok(prompt.includes('coaching-patterns.md'), 'should reference coaching-patterns.md');
+    assert.ok(prompt.includes('classification.jsonl'), 'should reference classification.jsonl output path');
   });
 
   it('specifies model as claude-opus-4-6', () => {

@@ -11,6 +11,16 @@ import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 import { PLAY_AGENT_POLICY, POST_SESSION_POLICY } from './agent-policies.js';
+import { buildClassifierPrompt } from './classifier-prompt.js';
+import { parseClassificationJsonl } from './classification-schema.js';
+import {
+  updateProfileFromClassification,
+  updateCatalogFromClassification,
+  renderVaultUpdates,
+  applyVaultUpdates,
+} from './post-session-renderer.js';
+import type { PlayerProfile, CatalogRow, Progression } from './post-session-renderer.js';
+import jsYaml from 'js-yaml';
 
 // Play uses Sonnet-medium with progressive disclosure of artifacts (see
 // prompt-builder). Manifest, story, and resolution stay in context so the
@@ -243,54 +253,7 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
 }
 
 export function buildPostSessionPrompt(simId: string): string {
-  const sessionFilePath = paths.sessionFile(simId);
-  const turnsPath = paths.turnsFile(simId);
-  const manifestPath = paths.manifest(simId);
-  const profilePath = paths.PROFILE;
-  const catalogPath = paths.CATALOG;
-  const coachingPatternsPath = path.join(paths.ROOT, '.claude', 'skills', 'play', 'references', 'coaching-patterns.md');
-  const progressionPath = path.join(paths.ROOT, 'references', 'config', 'progression.yaml');
-  const vaultDir = paths.VAULT_DIR;
-
-  return `You are the post-session analysis agent. The play session just ended.
-
-Your job: score the player from the transcript, update profile and catalog, write Obsidian vault notes.
-
-Read:
-- Transcript: ${turnsPath}
-- Session metadata: ${sessionFilePath}
-- Player profile: ${profilePath}
-- Services catalog: ${catalogPath}
-- Coaching patterns (classification + scoring rules): ${coachingPatternsPath}
-- Progression config (rank gates, polygon rules): ${progressionPath}
-- Sim manifest (scoring rubric only: services, resolution.fix_criteria, resolution.learning_objectives): ${manifestPath}
-
-Do NOT read: sims/${simId}/story.md, sims/${simId}/resolution.md, sims/${simId}/artifacts/*. The transcript is your source of truth for what happened.
-
-Steps:
-1. Read the transcript. Classify each player question into one of: gather, diagnose, correlate, impact, trace, fix. Follow coaching-patterns.md.
-2. For each classification, judge effectiveness: did the question advance the investigation, or was it off-track.
-3. Identify which of the sim's fix_criteria the player articulated (literal content match, not wording).
-4. Identify services the player touched by name in the transcript.
-5. Update ${profilePath}: add sim to completed_sims, update skill_polygon with quality-weighted diminishing returns per progression.yaml, update question-quality running averages, derive rank, increment total_sessions and sessions_at_current_rank.
-6. Update ${catalogPath}: increment sims_completed, update knowledge_score, set last_practiced.
-7. Write Obsidian vault notes under ${vaultDir}:
-
-Obsidian conventions:
-- Every note starts with YAML frontmatter (--- fenced). Keys: date (YYYY-MM-DD), tags (array), plus type-specific keys.
-- Links between notes use [[wiki-link]] syntax. Link by note title without extension. Folder prefix optional: [[services/EC2]] or [[EC2]].
-- Tags use hashtag form inline (#session) or in frontmatter tags array.
-- Filenames lowercase, kebab-case. Session notes prefix with date: 2026-04-14-001-ec2-unreachable.md.
-
-Note types to write:
-- ${vaultDir}/sessions/{YYYY-MM-DD}-${simId}.md: one session note. Frontmatter: date, sim, rank_at_time, services (array), concepts (array), question_types (array), tags: [session]. Body summarizes what happened and links to [[services/<service>]] and [[concepts/<concept>]] notes, plus the sim by title.
-- ${vaultDir}/services/{service}.md: one per AWS service touched. Create if missing. Append a new bullet under ## Sessions linking back to this session note. Frontmatter: type: service, tags: [service].
-- ${vaultDir}/concepts/{concept}.md: one per AWS concept surfaced (security-groups, iam-execution-role, alb-health-checks, etc.). Create if missing. Append a sentence or two about how the concept appeared in this session, and a [[sessions/...]] link. Frontmatter: type: concept, tags: [concept].
-- ${vaultDir}/rank.md: create if missing, then update. Frontmatter: current_rank, sessions_completed, skill_polygon. Body has a ## Sessions section with [[sessions/...]] links in reverse-chron order.
-
-8. Set session status to "completed" in ${sessionFilePath}.
-
-Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogPath}, and ${sessionFilePath}. Do not touch sim files, agent prompts, or code. Write policy enforced in code; see references/architecture/permissions.md.`;
+  return buildClassifierPrompt(simId);
 }
 
 // Post-session does many file reads + writes (profile, catalog, session status,
@@ -298,7 +261,9 @@ Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogP
 // 120s narrator-turn timeout. 5 minutes is a generous headroom.
 const POST_SESSION_TIMEOUT_MS = 300000;
 
-export async function runPostSessionAgent(simId: string): Promise<{ success: boolean }> {
+export async function runPostSessionAgent(
+  simId: string
+): Promise<{ success: boolean; tier1_duration_ms: number; tier2_duration_ms: number }> {
   const prompt = buildPostSessionPrompt(simId);
 
   const queryOptions: QueryOptions = {
@@ -317,10 +282,13 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
     if (budget) queryOptions.maxBudgetUsd = budget;
   } catch { /* ignore missing config */ }
 
+  // Tier 1: classifier agent (LLM call, 300s cap).
+  const tier1Start = Date.now();
   const messages = await collectMessages(query({
     prompt,
     options: queryOptions as Parameters<typeof query>[0]['options']
   }), POST_SESSION_TIMEOUT_MS);
+  const tier1_duration_ms = Date.now() - tier1Start;
 
   const parsed = parseAgentMessages(messages as Parameters<typeof parseAgentMessages>[0]);
 
@@ -328,7 +296,8 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
     level: 'info',
     event: 'post_session_agent_complete',
     sim_id: simId,
-    usage: parsed.usage ?? undefined
+    usage: parsed.usage ?? undefined,
+    tier1_duration_ms
   });
 
   if (parsed.resultError) {
@@ -341,7 +310,74 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
     throw new Error(`Post-session agent failed: ${parsed.resultError.subtype}`);
   }
 
-  return { success: true };
+  // Tier 2: deterministic renderer (no LLM calls).
+  const tier2Start = Date.now();
+  const classificationPath = path.join(paths.sessionDir(simId), 'classification.jsonl');
+  const classificationText = fs.readFileSync(classificationPath, 'utf8');
+  const classificationRows = parseClassificationJsonl(classificationText);
+
+  const profileText = fs.readFileSync(paths.PROFILE, 'utf8');
+  const profile = JSON.parse(profileText) as PlayerProfile;
+
+  const progressionText = fs.readFileSync(
+    path.join(paths.ROOT, 'references', 'config', 'progression.yaml'), 'utf8'
+  );
+  const progression = jsYaml.load(progressionText) as Progression;
+
+  const alreadyCompleted = profile.completed_sims.includes(simId);
+
+  const updatedProfile = updateProfileFromClassification(profile, classificationRows, simId, progression);
+  fs.writeFileSync(paths.PROFILE, JSON.stringify(updatedProfile, null, 2), 'utf8');
+
+  const catalogText = fs.readFileSync(paths.CATALOG, 'utf8');
+  const catalogRows = parseCatalogCsv(catalogText);
+  const updatedCatalog = updateCatalogFromClassification(catalogRows, classificationRows, simId, alreadyCompleted);
+  fs.writeFileSync(paths.CATALOG, serializeCatalogCsv(updatedCatalog), 'utf8');
+
+  const sessionDate = new Date().toISOString().slice(0, 10);
+  const vaultUpdates = renderVaultUpdates(
+    updatedProfile, classificationRows, simId, sessionDate, paths.VAULT_DIR
+  );
+  applyVaultUpdates(vaultUpdates);
+
+  // Set session status to completed.
+  const sessionPath = paths.sessionFile(simId);
+  const session = JSON.parse(fs.readFileSync(sessionPath, 'utf8')) as Record<string, unknown>;
+  session.status = 'completed';
+  fs.writeFileSync(sessionPath, JSON.stringify(session, null, 2), 'utf8');
+
+  const tier2_duration_ms = Date.now() - tier2Start;
+
+  logEvent(null, {
+    level: 'info',
+    event: 'post_session_tier2_complete',
+    sim_id: simId,
+    tier2_duration_ms
+  });
+
+  return { success: true, tier1_duration_ms, tier2_duration_ms };
+}
+
+function parseCatalogCsv(text: string): CatalogRow[] {
+  const lines = text.trim().split('\n');
+  if (lines.length <= 1) return []; // header only or empty
+  return lines.slice(1).map(line => {
+    const [service, sims_completed, knowledge_score, last_practiced] = line.split(',');
+    return {
+      service: service ?? '',
+      sims_completed: parseInt(sims_completed ?? '0', 10),
+      knowledge_score: parseFloat(knowledge_score ?? '0'),
+      last_practiced: last_practiced ?? '',
+    };
+  });
+}
+
+function serializeCatalogCsv(rows: CatalogRow[]): string {
+  const header = 'service,sims_completed,knowledge_score,last_practiced';
+  const lines = rows.map(r =>
+    `${r.service},${r.sims_completed},${r.knowledge_score.toFixed(2)},${r.last_practiced}`
+  );
+  return [header, ...lines].join('\n') + '\n';
 }
 
 export {

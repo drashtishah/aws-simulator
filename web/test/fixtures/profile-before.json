@@ -1,0 +1,16 @@
+{
+  "rank": "responder",
+  "rank_title": "Responder",
+  "completed_sims": [],
+  "skill_polygon": {
+    "gather": 0,
+    "diagnose": 0,
+    "correlate": 0,
+    "impact": 0,
+    "trace": 0,
+    "fix": 0
+  },
+  "total_sessions": 0,
+  "sessions_at_current_rank": 0,
+  "avg_question_quality": 0
+}
