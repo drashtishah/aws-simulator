@@ -84,7 +84,7 @@ function parseAgentJSON(text: string): ParsedResponse | null {
 async function runAgentCheck({ prompt, systemPrompt }: AgentCheckOptions): Promise<AgentCheckResult> {
   const queryOptions: QueryOptions = {
     model: MODEL,
-    permissionMode: 'bypassPermissions',
+    permissionMode: 'default',
     maxTurns: 1
   };
   if (EFFORT) queryOptions.effort = EFFORT;

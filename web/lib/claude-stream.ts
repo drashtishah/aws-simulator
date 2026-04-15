@@ -1,4 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import type { CanUseTool } from '@anthropic-ai/claude-agent-sdk';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -9,6 +10,7 @@ import type { ParsedEvent } from './claude-parse.js';
 import { sessions, persistSession, createGameSession, updateGameSession, endSession } from './claude-session.js';
 import { logEvent } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
+import { PLAY_AGENT_POLICY } from './agent-policies.js';
 
 interface ContentBlock {
   type: string;
@@ -57,10 +59,11 @@ type StreamEvent =
 
 interface QueryOptions {
   cwd: string;
-  allowedTools: string[];
+  allowedTools?: string[];
   model: string;
   systemPrompt?: string;
-  permissionMode: string;
+  permissionMode?: string;
+  canUseTool?: CanUseTool;
   maxTurns: number;
   resume?: string;
   abortController?: AbortController;
@@ -219,10 +222,9 @@ export async function* streamSession(
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
-    allowedTools: ['Read', 'Write'],
+    ...PLAY_AGENT_POLICY(simId),
     model: modelId,
     systemPrompt: promptText,
-    permissionMode: 'bypassPermissions',
     maxTurns: 50,
     includePartialMessages: true
   };
@@ -279,9 +281,8 @@ export async function* streamMessage(
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
-    allowedTools: ['Read', 'Write'],
+    ...PLAY_AGENT_POLICY(session.simId),
     model: session.modelId,
-    permissionMode: 'bypassPermissions',
     maxTurns: 50,
     includePartialMessages: true
   };
@@ -327,10 +328,9 @@ export async function* streamMessage(
       session.abortController = retryController;
       const retryOptions: QueryOptions = {
         cwd: paths.ROOT,
-        allowedTools: ['Read', 'Write'],
+        ...PLAY_AGENT_POLICY(session.simId),
         model: session.modelId,
         systemPrompt: session.systemPrompt,
-        permissionMode: 'bypassPermissions',
         maxTurns: 50,
         includePartialMessages: true
       };
