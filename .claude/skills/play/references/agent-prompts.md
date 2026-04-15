@@ -205,5 +205,3 @@ No per-field placeholder substitution. The agent reads structured data from the 
 - `[[SKILL]]`: Play skill workflow that consumes this template
 - `[[coaching-patterns]]`: Post-session analysis rules
 - `[[sim-template]]`: Simulation package structure reference
-
-Write policy enforced in code; see `references/architecture/permissions.md`.
