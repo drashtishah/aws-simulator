@@ -225,7 +225,6 @@ export function renderVaultUpdates(
   vaultDir: string,
   existingFiles: Record<string, string> = {}
 ): VaultUpdates {
-  const services = [...new Set(rows.map(() => ''))].filter(Boolean); // placeholder; real services come from manifest
   const questionTypes = [...new Set(rows.map(r => r.question_type))];
 
   const ctx: SessionNoteCtx = {
