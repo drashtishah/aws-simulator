@@ -11,6 +11,7 @@ const BASE_CTX = {
   simId: '001-ec2-unreachable',
   sessionDate: '2026-04-15',
   rankAtTime: 'responder',
+  sessionsCompleted: 1,
   services: ['EC2', 'VPC'],
   concepts: ['security-groups', 'inbound-rules'],
   questionTypes: ['gather', 'diagnose', 'fix'],
@@ -96,5 +97,38 @@ describe('updateRankNote', () => {
     const updated = updateRankNote(existing, { ...BASE_CTX, simId: '002-rds-timeout', sessionDate: '2026-04-16' });
     assert.ok(updated.includes('002-rds-timeout'), 'must include new sim');
     assert.ok(updated.includes('001-ec2-unreachable'), 'must preserve old sim');
+  });
+
+  it('advances sessions_completed on update', () => {
+    const existing = `---
+current_rank: responder
+sessions_completed: 1
+---
+
+## Sessions
+- [[sessions/2026-04-01-foo]] (2026-04-01)
+`;
+    const result = updateRankNote(existing, { ...BASE_CTX, sessionsCompleted: 2 });
+    assert.ok(result.includes('sessions_completed: 2'), 'must advance to 2');
+    assert.ok(!result.includes('sessions_completed: 1'), 'must not retain 1');
+  });
+
+  it('writes the provided sessionsCompleted when creating fresh', () => {
+    const result = updateRankNote('', { ...BASE_CTX, sessionsCompleted: 7 });
+    assert.ok(result.includes('sessions_completed: 7'), 'must include 7');
+  });
+
+  it('advances sessions_completed across multi-digit values', () => {
+    const existing = `---
+current_rank: responder
+sessions_completed: 9
+---
+
+## Sessions
+- [[sessions/2026-04-01-foo]] (2026-04-01)
+`;
+    const result = updateRankNote(existing, { ...BASE_CTX, sessionsCompleted: 12 });
+    assert.ok(result.includes('sessions_completed: 12'), 'must advance to 12');
+    assert.ok(!result.includes('sessions_completed: 9'), 'must not retain 9');
   });
 });

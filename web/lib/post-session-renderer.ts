@@ -254,6 +254,7 @@ export function renderVaultUpdates(
     rows,
     fixCriteria: extras.fixCriteria,
     polygon: profile.skill_polygon,
+    sessionsCompleted: profile.total_sessions,
     avgQuestionQuality: profile.avg_question_quality,
   };
 

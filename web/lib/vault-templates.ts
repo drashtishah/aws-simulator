@@ -2,6 +2,7 @@ export interface SessionNoteCtx {
   simId: string;
   sessionDate: string;
   rankAtTime: string;
+  sessionsCompleted: number;
   services: string[];
   concepts: string[];
   questionTypes: string[];
@@ -243,7 +244,7 @@ export function updateRankNote(existing: string, ctx: SessionNoteCtx): string {
   if (!existing) {
     return `---
 current_rank: ${ctx.rankAtTime}
-sessions_completed: 1
+sessions_completed: ${ctx.sessionsCompleted}
 ---
 
 ${polygonBlock}## Sessions
@@ -253,6 +254,7 @@ ${sessionLine}
 
   // Update current_rank in frontmatter.
   let updated = existing.replace(/^current_rank: .+$/m, `current_rank: ${ctx.rankAtTime}`);
+  updated = updated.replace(/^sessions_completed: \d+$/m, `sessions_completed: ${ctx.sessionsCompleted}`);
 
   // Replace or insert the polygon block (between frontmatter and ## Sessions).
   if (ctx.polygon) {
