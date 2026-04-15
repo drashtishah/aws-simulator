@@ -13,6 +13,7 @@ import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
 import { PLAY_AGENT_POLICY, POST_SESSION_POLICY } from './agent-policies.js';
 import { buildClassifierPrompt } from './classifier-prompt.js';
 import { parseClassificationJsonl } from './classification-schema.js';
+import { runConsolidator, shouldRunConsolidator } from '../../scripts/consolidator.js';
 import {
   updateProfileFromClassification,
   updateCatalogFromClassification,
@@ -357,6 +358,15 @@ export async function runPostSessionAgent(
     }
   );
   applyVaultUpdates(vaultUpdates);
+
+  // D3: every Nth sim, spawn an Opus consolidator to synthesize cross-session
+  // patterns into learning/player-vault/insights/. Writes are policy-scoped to
+  // insights/, so the deterministic renderer output above is not touched.
+  // Errors are swallowed inside runConsolidator; the post-session flow
+  // continues regardless.
+  if (shouldRunConsolidator(updatedProfile.total_sessions, process.env.CONSOLIDATION_INTERVAL)) {
+    await runConsolidator(updatedProfile.total_sessions);
+  }
 
   // Set session status to completed.
   session.status = 'completed';

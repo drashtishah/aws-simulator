@@ -15,7 +15,10 @@ function makeWritePolicy(allowedRelPrefixes: string[]): CanUseTool {
   const rootWithSep = paths.ROOT + path.sep;
 
   return async (toolName: string, input: Record<string, unknown>): Promise<PermissionResult> => {
-    if (toolName !== 'Write') {
+    // Gate both Write and Edit. Edit also mutates files, so any write-scoping
+    // policy must cover it. NotebookEdit is not currently in use; add here if
+    // that changes.
+    if (toolName !== 'Write' && toolName !== 'Edit') {
       return { behavior: 'allow' };
     }
     const filePath = typeof input.file_path === 'string' ? input.file_path : '';
@@ -24,7 +27,7 @@ function makeWritePolicy(allowedRelPrefixes: string[]): CanUseTool {
       : path.resolve(paths.ROOT, filePath);
 
     if (!resolved.startsWith(rootWithSep) && resolved !== paths.ROOT) {
-      return { behavior: 'deny', message: `Write denied: path outside workspace root` };
+      return { behavior: 'deny', message: `${toolName} denied: path outside workspace root` };
     }
 
     for (const absPrefix of absPrefixes) {
@@ -33,7 +36,7 @@ function makeWritePolicy(allowedRelPrefixes: string[]): CanUseTool {
       }
     }
 
-    return { behavior: 'deny', message: `Write denied: ${filePath} is outside allowed write directories` };
+    return { behavior: 'deny', message: `${toolName} denied: ${filePath} is outside allowed write directories` };
   };
 }
 
@@ -68,6 +71,14 @@ export function POST_SESSION_POLICY(simId: string): AgentPolicy {
       }
       return writePolicy(toolName, input, options);
     }
+  };
+}
+
+export function CONSOLIDATOR_POLICY(): AgentPolicy {
+  return {
+    allowedTools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
+    permissionMode: 'default',
+    canUseTool: makeWritePolicy(['learning/player-vault/insights']),
   };
 }
 
