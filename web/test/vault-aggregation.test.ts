@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   aggregateServiceStats,
   aggregateConceptStats,
+  loadSessions,
 } from '../lib/vault-aggregation.js';
 
 const TMP_ROOT = path.join(__dirname, '.tmp', `vault-agg-${process.pid}`);
@@ -155,6 +156,22 @@ describe('aggregateConceptStats', () => {
     const stats = aggregateConceptStats('security-groups', path.join(TMP_ROOT, 'does-not-exist'));
     assert.equal(stats.sessionCount, 0);
     assert.deepEqual(stats.sessionLinks, []);
+  });
+});
+
+describe('aggregate*: preloaded LoadedSession[] signature', () => {
+  it('array signature returns identical output to string signature', () => {
+    const viaString = aggregateServiceStats('ec2', SESSIONS_DIR);
+    const loaded = loadSessions(SESSIONS_DIR);
+    const viaArray = aggregateServiceStats('ec2', loaded);
+    assert.deepEqual(viaArray, viaString);
+  });
+
+  it('concept array signature returns identical output to string signature', () => {
+    const viaString = aggregateConceptStats('security-groups', SESSIONS_DIR);
+    const loaded = loadSessions(SESSIONS_DIR);
+    const viaArray = aggregateConceptStats('security-groups', loaded);
+    assert.deepEqual(viaArray, viaString);
   });
 });
 

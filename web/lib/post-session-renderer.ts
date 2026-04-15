@@ -9,7 +9,7 @@ import {
   updateRankNote,
 } from './vault-templates.js';
 import type { SessionNoteCtx, FixCriterion } from './vault-templates.js';
-import { aggregateServiceStats, aggregateConceptStats } from './vault-aggregation.js';
+import { aggregateServiceStats, aggregateConceptStats, loadSessions } from './vault-aggregation.js';
 import * as paths from './paths.js';
 
 // --- Types for external data ---
@@ -266,16 +266,19 @@ export function renderVaultUpdates(
   const sessionNotePath = path.join(vaultDir, 'sessions', `${sessionDate}-${simId}.md`);
   files.push({ path: sessionNotePath, content: renderSessionNote(ctx) });
 
+  // Preload sessions once so service and concept aggregation skip the disk walk per item.
+  const loadedSessions = loadSessions(paths.SESSIONS_DIR);
+
   // Service notes: deterministic per-session full rewrite from aggregated stats.
   for (const service of ctx.services) {
-    const stats = aggregateServiceStats(service, paths.SESSIONS_DIR);
+    const stats = aggregateServiceStats(service, loadedSessions);
     const p = path.join(vaultDir, 'services', `${service}.md`);
     files.push({ path: p, content: renderServicePage(service, stats) });
   }
 
   // Concept notes: same pattern.
   for (const concept of ctx.concepts) {
-    const stats = aggregateConceptStats(concept, paths.SESSIONS_DIR);
+    const stats = aggregateConceptStats(concept, loadedSessions);
     const p = path.join(vaultDir, 'concepts', `${concept}.md`);
     files.push({ path: p, content: renderConceptPage(concept, stats) });
   }

@@ -49,12 +49,12 @@ function listSessionDirs(sessionsDir: string): string[] {
     .sort();
 }
 
-interface LoadedSession {
+export interface LoadedSession {
   slug: string;
   rows: ClassificationRow[];
 }
 
-function loadSessions(sessionsDir: string): LoadedSession[] {
+export function loadSessions(sessionsDir: string): LoadedSession[] {
   const dirs = listSessionDirs(sessionsDir);
   const out: LoadedSession[] = [];
   for (const slug of dirs) {
@@ -94,8 +94,8 @@ interface AggregateSpec {
   sameKindTargetKey: 'coAppearingServices' | 'coAppearingConcepts';
 }
 
-function aggregate(sessionsDir: string, spec: AggregateSpec): ServiceStats {
-  const sessions = loadSessions(sessionsDir);
+function aggregate(source: string | LoadedSession[], spec: AggregateSpec): ServiceStats {
+  const sessions = typeof source === 'string' ? loadSessions(source) : source;
   if (sessions.length === 0) return zeroState();
 
   const stats = zeroState();
@@ -159,8 +159,8 @@ function aggregate(sessionsDir: string, spec: AggregateSpec): ServiceStats {
   return stats;
 }
 
-export function aggregateServiceStats(service: string, sessionsDir: string): ServiceStats {
-  return aggregate(sessionsDir, {
+export function aggregateServiceStats(service: string, source: string | LoadedSession[]): ServiceStats {
+  return aggregate(source, {
     target: service,
     matches: r => r.services.includes(service),
     sameKindField: r => r.services,
@@ -169,8 +169,8 @@ export function aggregateServiceStats(service: string, sessionsDir: string): Ser
   });
 }
 
-export function aggregateConceptStats(concept: string, sessionsDir: string): ConceptStats {
-  return aggregate(sessionsDir, {
+export function aggregateConceptStats(concept: string, source: string | LoadedSession[]): ConceptStats {
+  return aggregate(source, {
     target: concept,
     matches: r => r.concepts.includes(concept),
     sameKindField: r => r.concepts,
