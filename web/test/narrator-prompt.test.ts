@@ -10,13 +10,18 @@ function readAgentPrompts(): string {
 function sliceEndingBlock(text: string): string {
   const start = text.indexOf('\nEnding:');
   assert.ok(start !== -1, 'Ending: section must exist in agent-prompts.md');
-  // End at the next blank-line followed by a top-level heading (line ending
-  // with ':' at column 0), which is how the sibling sections are delimited.
+  // Scope narrator-spec assertions to the `Ending:` section. Terminator: next `##` ATX heading or next top-level `Name:` header.
   const rest = text.slice(start + 1);
-  const match = rest.match(/\n\n[A-Z][A-Za-z ]+:\n/);
+  const match = rest.match(/\n\n(?:## |[A-Za-z][^\n]*:\n)/);
   const end = match && match.index !== undefined ? start + 1 + match.index : text.length;
   return text.slice(start + 1, end);
 }
+
+it('sliceEndingBlock bounds: returns a scoped slice, not the rest of the file', () => {
+  const block = sliceEndingBlock(readAgentPrompts());
+  assert.ok(block.length > 100, `Ending slice too short (${block.length} chars); helper may be empty`);
+  assert.ok(block.length < 1000, `Ending slice too long (${block.length} chars); terminator regex likely failed to match`);
+});
 
 describe('narrator Ending block in agent-prompts.md', () => {
   it('a) contains the [SESSION_COMPLETE] protocol instruction', () => {
