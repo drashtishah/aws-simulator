@@ -105,15 +105,20 @@ describe('updateCatalogFromClassification', () => {
     { service: 'VPC', sims_completed: 2, knowledge_score: 3, last_practiced: '2026-01-01' },
   ];
 
+  // Inject services so rows engage the catalog under the service-filtered rule.
+  function withServices(rows: ClassificationRow[], services: string[]): ClassificationRow[] {
+    return rows.map(r => ({ ...r, services }));
+  }
+
   it('increments sims_completed on first call', () => {
-    const rows = loadSample();
+    const rows = withServices(loadSample(), ['EC2', 'VPC']);
     const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
     assert.equal(updated[0].sims_completed, 1);
     assert.equal(updated[1].sims_completed, 3);
   });
 
   it('is idempotent: catalog not double-incremented on second call (alreadyCompleted=true)', () => {
-    const rows = loadSample();
+    const rows = withServices(loadSample(), ['EC2', 'VPC']);
     const first = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
     const second = updateCatalogFromClassification(first, rows, 'sim-001', true);
     assert.equal(second[0].sims_completed, first[0].sims_completed);
@@ -121,14 +126,14 @@ describe('updateCatalogFromClassification', () => {
   });
 
   it('updates last_practiced to today', () => {
-    const rows = loadSample();
+    const rows = withServices(loadSample(), ['EC2', 'VPC']);
     const today = new Date().toISOString().slice(0, 10);
     const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
     assert.equal(updated[0].last_practiced, today);
   });
 
   it('does not exceed knowledge_score of 10', () => {
-    const rows = loadSample();
+    const rows = withServices(loadSample(), ['EC2']);
     const highScore: CatalogRow[] = [{ service: 'EC2', sims_completed: 100, knowledge_score: 9.9, last_practiced: '' }];
     const updated = updateCatalogFromClassification(highScore, rows, 'sim-001', false);
     assert.ok(updated[0].knowledge_score <= 10);
