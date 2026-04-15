@@ -2,6 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import jsYaml from 'js-yaml';
 import type { ClassificationRow } from './classification-schema.js';
+import {
+  renderSessionNote,
+  appendSessionLinkToService,
+  appendSessionLinkToConcept,
+  updateRankNote,
+} from './vault-templates.js';
+import type { SessionNoteCtx } from './vault-templates.js';
 
 // --- Types for external data ---
 
@@ -208,18 +215,54 @@ export interface VaultUpdates {
 
 /**
  * Pure: returns vault file paths and contents without touching the filesystem.
- * See vault-templates.ts for the per-file renderers.
+ * Callers supply existing file contents for notes that may already exist.
  */
 export function renderVaultUpdates(
   profile: PlayerProfile,
   rows: ClassificationRow[],
   simId: string,
   sessionDate: string,
-  vaultDir: string
+  vaultDir: string,
+  existingFiles: Record<string, string> = {}
 ): VaultUpdates {
-  // Deferred to commit 4 implementation; imported from vault-templates.
-  // This placeholder keeps the module boundary clean.
-  return { files: [] };
+  const services = [...new Set(rows.map(() => ''))].filter(Boolean); // placeholder; real services come from manifest
+  const questionTypes = [...new Set(rows.map(r => r.question_type))];
+
+  const ctx: SessionNoteCtx = {
+    simId,
+    sessionDate,
+    rankAtTime: profile.rank,
+    services: (profile as { _sessionServices?: string[] })._sessionServices ?? [],
+    concepts: (profile as { _sessionConcepts?: string[] })._sessionConcepts ?? [],
+    questionTypes,
+  };
+
+  const files: VaultFile[] = [];
+
+  // Session note.
+  const sessionNotePath = path.join(vaultDir, 'sessions', `${sessionDate}-${simId}.md`);
+  files.push({ path: sessionNotePath, content: renderSessionNote(ctx) });
+
+  // Service notes.
+  for (const service of ctx.services) {
+    const p = path.join(vaultDir, 'services', `${service}.md`);
+    const existing = existingFiles[p] ?? '';
+    files.push({ path: p, content: appendSessionLinkToService(existing, ctx) });
+  }
+
+  // Concept notes.
+  for (const concept of ctx.concepts) {
+    const p = path.join(vaultDir, 'concepts', `${concept}.md`);
+    const existing = existingFiles[p] ?? '';
+    files.push({ path: p, content: appendSessionLinkToConcept(existing, { ...ctx, concept }) });
+  }
+
+  // Rank note.
+  const rankPath = path.join(vaultDir, 'rank.md');
+  const existingRank = existingFiles[rankPath] ?? '';
+  files.push({ path: rankPath, content: updateRankNote(existingRank, ctx) });
+
+  return { files };
 }
 
 /**
