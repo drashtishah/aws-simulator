@@ -4,11 +4,13 @@ import jsYaml from 'js-yaml';
 import type { ClassificationRow } from './classification-schema.js';
 import {
   renderSessionNote,
-  appendSessionLinkToService,
-  appendSessionLinkToConcept,
+  renderServicePage,
+  renderConceptPage,
   updateRankNote,
 } from './vault-templates.js';
 import type { SessionNoteCtx, FixCriterion } from './vault-templates.js';
+import { aggregateServiceStats, aggregateConceptStats, loadSessions } from './vault-aggregation.js';
+import * as paths from './paths.js';
 
 // --- Types for external data ---
 
@@ -175,8 +177,9 @@ export interface CatalogRow {
 /**
  * Updates catalog rows from classification results.
  * Pure and idempotent: if alreadyCompleted is true, returns rows unchanged.
- * Increments sims_completed and updates knowledge_score + last_practiced
- * for all rows (the session touched the whole catalog entry set).
+ * Only touches rows whose service appears in the session's classification
+ * rows. Untouched rows return the same reference (pass-through) so callers
+ * can detect unchanged rows by identity.
  */
 export function updateCatalogFromClassification(
   catalogRows: CatalogRow[],
@@ -194,12 +197,19 @@ export function updateCatalogFromClassification(
       : 0;
   const qualityFactor = Math.min(1, Math.max(0.25, avgEffectiveness / 8));
 
-  return catalogRows.map(row => ({
-    ...row,
-    sims_completed: row.sims_completed + 1,
-    knowledge_score: Math.min(10, row.knowledge_score + qualityFactor),
-    last_practiced: today,
-  }));
+  const touched = new Set(rows.flatMap(r => r.services));
+  const finiteOr0 = (n: number | null | undefined): number =>
+    typeof n === 'number' && Number.isFinite(n) ? n : 0;
+
+  return catalogRows.map(row => {
+    if (!touched.has(row.service)) return row;
+    return {
+      ...row,
+      sims_completed: finiteOr0(row.sims_completed) + 1,
+      knowledge_score: Math.min(10, finiteOr0(row.knowledge_score) + qualityFactor),
+      last_practiced: today,
+    };
+  });
 }
 
 // --- Vault updates (added in commit 4) ---
@@ -246,6 +256,7 @@ export function renderVaultUpdates(
     rows,
     fixCriteria: extras.fixCriteria,
     polygon: profile.skill_polygon,
+    sessionsCompleted: profile.total_sessions,
     avgQuestionQuality: profile.avg_question_quality,
   };
 
@@ -255,18 +266,21 @@ export function renderVaultUpdates(
   const sessionNotePath = path.join(vaultDir, 'sessions', `${sessionDate}-${simId}.md`);
   files.push({ path: sessionNotePath, content: renderSessionNote(ctx) });
 
-  // Service notes.
+  // Preload sessions once so service and concept aggregation skip the disk walk per item.
+  const loadedSessions = loadSessions(paths.SESSIONS_DIR);
+
+  // Service notes: deterministic per-session full rewrite from aggregated stats.
   for (const service of ctx.services) {
+    const stats = aggregateServiceStats(service, loadedSessions);
     const p = path.join(vaultDir, 'services', `${service}.md`);
-    const existing = existingFiles[p] ?? '';
-    files.push({ path: p, content: appendSessionLinkToService(existing, ctx) });
+    files.push({ path: p, content: renderServicePage(service, stats) });
   }
 
-  // Concept notes.
+  // Concept notes: same pattern.
   for (const concept of ctx.concepts) {
+    const stats = aggregateConceptStats(concept, loadedSessions);
     const p = path.join(vaultDir, 'concepts', `${concept}.md`);
-    const existing = existingFiles[p] ?? '';
-    files.push({ path: p, content: appendSessionLinkToConcept(existing, { ...ctx, concept }) });
+    files.push({ path: p, content: renderConceptPage(concept, stats) });
   }
 
   // Rank note.

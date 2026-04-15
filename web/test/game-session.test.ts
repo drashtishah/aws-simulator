@@ -56,7 +56,7 @@ describe('createGameSession', () => {
     const session = createGameSession('001-ec2-unreachable');
     const required = [
       'sim_id', 'status', 'criteria_met', 'criteria_remaining',
-      'question_profile', 'investigation_summary', 'story_beats_fired',
+      'investigation_summary', 'story_beats_fired',
       'services_queried', 'feedback_notes', 'debrief_phase',
       'debrief_questions_asked', 'debrief_zones_explored',
       'debrief_seeds_offered', 'debrief_depth_score',
@@ -94,18 +94,6 @@ describe('createGameSession', () => {
     // Verify they parse as valid dates
     assert.ok(!isNaN(new Date(session.started_at).getTime()), 'started_at should be valid ISO datetime');
     assert.ok(!isNaN(new Date(session.last_active).getTime()), 'last_active should be valid ISO datetime');
-    // Cleanup
-    try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
-  });
-
-  it('question_profile has six axes each with count and effective', () => {
-    const session = createGameSession('001-ec2-unreachable');
-    const axes = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
-    for (const axis of axes) {
-      assert.ok(axis in session.question_profile, `question_profile should have axis: ${axis}`);
-      assert.equal(session.question_profile[axis].count, 0);
-      assert.equal(session.question_profile[axis].effective, 0);
-    }
     // Cleanup
     try { fs.rmSync(path.join(TMP_SESSIONS_DIR, '001-ec2-unreachable'), { recursive: true, force: true }); } catch {}
   });

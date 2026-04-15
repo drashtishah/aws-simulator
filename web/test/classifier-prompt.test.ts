@@ -54,4 +54,9 @@ describe('buildClassifierPrompt', () => {
     const prompt = buildClassifierPrompt(SIM_ID);
     assert.ok(!prompt.includes('player-vault'), 'Tier 1 prompt must not reference player-vault');
   });
+
+  it('does not reference question_profile', () => {
+    const prompt = buildClassifierPrompt(SIM_ID);
+    assert.ok(!prompt.includes('question_profile'), 'Tier 1 prompt must not reference question_profile (derived field removed)');
+  });
 });

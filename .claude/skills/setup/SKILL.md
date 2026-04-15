@@ -68,13 +68,13 @@ Feedback collected during play sessions via /feedback. Processed after each sim 
 
 ### 5. Create services catalog
 
-If `learning/catalog.csv` does not exist, generate it with a starter set of high-priority services extracted from `.claude/skills/create-sim/references/exam-topics.md`. Each row uses the merged format:
+If `learning/catalog.csv` does not exist, generate it with a starter set of high-priority services extracted from `.claude/skills/create-sim/references/exam-topics.md`. Each row uses the schema:
 
 ```csv
-service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_practiced,notes
+service,sims_completed,knowledge_score,last_practiced
 ```
 
-All progress columns default to `0,0,,`.
+All progress columns default to `0,0,` (blank last_practiced).
 
 If `learning/catalog.csv` already exists, leave it. Do not overwrite.
 

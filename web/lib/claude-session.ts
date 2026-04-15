@@ -32,11 +32,6 @@ interface CriterionStatus {
   required: boolean;
 }
 
-interface QuestionAxisProfile {
-  count: number;
-  effective: number;
-}
-
 export interface GameSession {
   sim_id: string;
   status: string;
@@ -44,7 +39,6 @@ export interface GameSession {
   last_active: string;
   criteria_met: CriterionStatus[];
   criteria_remaining: CriterionStatus[];
-  question_profile: Record<string, QuestionAxisProfile>;
   investigation_summary: string;
   story_beats_fired: string[];
   services_queried: string[];
@@ -127,11 +121,6 @@ export function createGameSession(simId: string): GameSession {
   };
 
   const now = new Date().toISOString();
-  const axes = ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
-  const questionProfile: Record<string, QuestionAxisProfile> = {};
-  for (const axis of axes) {
-    questionProfile[axis] = { count: 0, effective: 0 };
-  }
 
   const session: GameSession = {
     sim_id: simId,
@@ -144,7 +133,6 @@ export function createGameSession(simId: string): GameSession {
       description: c.description,
       required: c.required
     })),
-    question_profile: questionProfile,
     investigation_summary: '',
     story_beats_fired: [],
     services_queried: [],

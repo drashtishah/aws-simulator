@@ -86,16 +86,9 @@ categories:
       prompt: Review each coaching message in the transcript. Does the coaching use a supportive, guiding tone rather than giving direct answers? Rate pass if all coaching is non-directive.
 
     - id: ca_classification_matches_keywords
-      check: Question classification matches keyword rules
-      requires: session
+      check: Question classification matches keyword rules on the player message
+      requires: classification
       rule: classification_matches_keywords
-      target: question_profile
-
-    - id: ca_effective_lte_count
-      check: Effective count is less than or equal to total count per axis
-      requires: session
-      rule: effective_lte_total_per_axis
-      target: question_profile
 
     - id: ca_coaching_not_repetitive
       check: Coaching messages vary and do not repeat the same phrasing
@@ -127,31 +120,6 @@ categories:
       check: No hints appear before the player has had a chance to investigate
       requires: transcript
       rule: no_hints_before_turn_3
-
-  question_classification:
-    - id: qc_counts_gte_0
-      check: Each axis has question count greater than or equal to 0
-      requires: session
-      rule: all_values_gte_0
-      target: question_profile.counts
-
-    - id: qc_effective_lte_count
-      check: Effective count is at most total count per axis
-      requires: session
-      rule: effective_lte_total_per_axis
-      target: question_profile
-
-    - id: qc_total_matches_sum
-      check: Total questions match the sum of axis counts
-      requires: session
-      rule: question_counts_match_total
-      target: question_profile
-
-    - id: qc_at_least_one_axis
-      check: At least one axis has questions recorded
-      requires: session
-      rule: at_least_one_axis_has_questions
-      target: question_profile
 
   session_integrity:
     - id: sei_has_source
@@ -248,19 +216,6 @@ categories:
       prompt: Review narrator response lengths across the transcript. Are responses appropriately sized for the context, avoiding walls of text or overly terse replies? Rate pass if response lengths are reasonable and consistent.
 
   progression:
-    - id: pr_has_all_axes
-      check: Question profile has all 6 hexagon axes
-      requires: session
-      rule: has_all_axes
-      target: question_profile
-      axes:
-        - gather
-        - diagnose
-        - correlate
-        - impact
-        - trace
-        - fix
-
     - id: pr_story_beats_include_start
       check: Story beats include a "start" beat
       requires: session
