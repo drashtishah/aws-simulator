@@ -32,7 +32,6 @@ interface ParsedResponse {
 interface QueryOptions {
   model: string;
   permissionMode: string;
-  allowedTools: string[];
   maxTurns: number;
   systemPrompt?: string;
   effort?: EffortLevel;
@@ -86,7 +85,6 @@ async function runAgentCheck({ prompt, systemPrompt }: AgentCheckOptions): Promi
   const queryOptions: QueryOptions = {
     model: MODEL,
     permissionMode: 'default',
-    allowedTools: [],
     maxTurns: 1
   };
   if (EFFORT) queryOptions.effort = EFFORT;
