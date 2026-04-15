@@ -167,8 +167,9 @@ export interface CatalogRow {
 
 /**
  * Updates catalog rows from classification results.
- * Pure and idempotent: if simId already in completed_sims, catalog unchanged.
- * alreadyCompleted is derived from the profile's completed_sims before this session.
+ * Pure and idempotent: if alreadyCompleted is true, returns rows unchanged.
+ * Increments sims_completed and updates knowledge_score + last_practiced
+ * for all rows (the session touched the whole catalog entry set).
  */
 export function updateCatalogFromClassification(
   catalogRows: CatalogRow[],
@@ -179,23 +180,19 @@ export function updateCatalogFromClassification(
   if (alreadyCompleted) return catalogRows;
 
   const today = new Date().toISOString().slice(0, 10);
-  const touchedAxes = new Set(rows.map(r => r.question_type));
+  const allEffectiveness = rows.map(r => r.effectiveness);
+  const avgEffectiveness =
+    allEffectiveness.length > 0
+      ? allEffectiveness.reduce((s, v) => s + v, 0) / allEffectiveness.length
+      : 0;
+  const qualityFactor = Math.min(1, Math.max(0.25, avgEffectiveness / 8));
 
-  return catalogRows.map(row => {
-    if (!touchedAxes.has(row.service)) return row;
-    const avgEffectiveness =
-      rows
-        .filter(r => r.question_type === row.service)
-        .reduce((s, r) => s + r.effectiveness, 0) /
-      rows.filter(r => r.question_type === row.service).length;
-    const qualityFactor = Math.min(1, Math.max(0.25, avgEffectiveness / 8));
-    return {
-      ...row,
-      sims_completed: row.sims_completed + 1,
-      knowledge_score: Math.min(10, row.knowledge_score + qualityFactor),
-      last_practiced: today,
-    };
-  });
+  return catalogRows.map(row => ({
+    ...row,
+    sims_completed: row.sims_completed + 1,
+    knowledge_score: Math.min(10, row.knowledge_score + qualityFactor),
+    last_practiced: today,
+  }));
 }
 
 // --- Vault updates (added in commit 4) ---

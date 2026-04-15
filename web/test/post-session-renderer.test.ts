@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseClassificationJsonl } from '../lib/classification-schema.js';
 import type { ClassificationRow } from '../lib/classification-schema.js';
-import { updateProfileFromClassification, deriveRank } from '../lib/post-session-renderer.js';
+import { updateProfileFromClassification, deriveRank, updateCatalogFromClassification } from '../lib/post-session-renderer.js';
+import type { CatalogRow } from '../lib/post-session-renderer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -95,5 +96,41 @@ describe('deriveRank', () => {
     const polygon = { gather: 2, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
     const progression = loadProgression();
     assert.equal(deriveRank(polygon, progression), 'investigator');
+  });
+});
+
+describe('updateCatalogFromClassification', () => {
+  const sampleRows: CatalogRow[] = [
+    { service: 'EC2', sims_completed: 0, knowledge_score: 0, last_practiced: '' },
+    { service: 'VPC', sims_completed: 2, knowledge_score: 3, last_practiced: '2026-01-01' },
+  ];
+
+  it('increments sims_completed on first call', () => {
+    const rows = loadSample();
+    const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
+    assert.equal(updated[0].sims_completed, 1);
+    assert.equal(updated[1].sims_completed, 3);
+  });
+
+  it('is idempotent: catalog not double-incremented on second call (alreadyCompleted=true)', () => {
+    const rows = loadSample();
+    const first = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
+    const second = updateCatalogFromClassification(first, rows, 'sim-001', true);
+    assert.equal(second[0].sims_completed, first[0].sims_completed);
+    assert.equal(second[1].sims_completed, first[1].sims_completed);
+  });
+
+  it('updates last_practiced to today', () => {
+    const rows = loadSample();
+    const today = new Date().toISOString().slice(0, 10);
+    const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
+    assert.equal(updated[0].last_practiced, today);
+  });
+
+  it('does not exceed knowledge_score of 10', () => {
+    const rows = loadSample();
+    const highScore: CatalogRow[] = [{ service: 'EC2', sims_completed: 100, knowledge_score: 9.9, last_practiced: '' }];
+    const updated = updateCatalogFromClassification(highScore, rows, 'sim-001', false);
+    assert.ok(updated[0].knowledge_score <= 10);
   });
 });
