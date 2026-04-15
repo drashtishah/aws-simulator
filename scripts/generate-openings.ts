@@ -56,7 +56,8 @@ async function generateOpener(simId: string): Promise<string> {
     prompt: userPrompt,
     options: {
       model: MODEL,
-      permissionMode: 'bypassPermissions',
+      permissionMode: 'default',
+      allowedTools: [],
       maxTurns: 3,
       systemPrompt: SYSTEM_PROMPT,
       effort: EFFORT,

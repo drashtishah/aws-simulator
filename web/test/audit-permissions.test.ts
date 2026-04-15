@@ -16,11 +16,12 @@ describe('permission bypass audit', () => {
     assert.ok(fs.existsSync(path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md')));
   });
 
-  it('registry contains known usage in claude-process', () => {
+  it('registry does not contain web/lib bypass occurrences (active-code clean)', () => {
     const registry = fs.readFileSync(
       path.join(ROOT, 'references', 'registries', 'permission-bypass-registry.md'), 'utf8'
     );
-    assert.ok(registry.includes('claude-process'), 'should find usage in claude-process');
+    assert.ok(!registry.includes('web/lib/claude-process'), 'claude-process must have no bypass occurrences');
+    assert.ok(!registry.includes('web/lib/claude-stream'), 'claude-stream must have no bypass occurrences');
   });
 
   it('registry has table format', () => {
