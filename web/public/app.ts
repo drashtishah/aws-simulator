@@ -460,7 +460,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         scheduleReturnToDashboard();
       },
       profile_updating: () => {
-        appendMessage('system', 'Updating your learning profile. You can head back to the dashboard and play another sim while this runs.');
+        handleSessionComplete('updating');
       },
       profile_updated: () => {
         handleSessionComplete('updated');
@@ -538,7 +538,7 @@ async function sendMessage(): Promise<void> {
         scheduleReturnToDashboard();
       },
       profile_updating: () => {
-        appendMessage('system', 'Updating your learning profile. You can head back to the dashboard and play another sim while this runs.');
+        handleSessionComplete('updating');
       },
       profile_updated: () => {
         handleSessionComplete('updated');
@@ -592,7 +592,7 @@ async function sendMessage(): Promise<void> {
           appendMessage('system', 'Simulation complete.');
           scheduleReturnToDashboard();
         },
-        profile_updating: () => appendMessage('system', 'Updating your learning profile...'),
+        profile_updating: () => handleSessionComplete('updating'),
         profile_updated: () => handleSessionComplete('updated'),
         profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
         error: (data: StreamEvent) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
@@ -623,7 +623,9 @@ async function sendMessage(): Promise<void> {
 function handleSessionComplete(profileStatus: string, errorMessage?: string): void {
   const title = 'Simulation Complete';
   let body: string;
-  if (profileStatus === 'updated') {
+  if (profileStatus === 'updating') {
+    body = 'Simulation complete. We will update your learner profile. You can play other sims in the meantime.';
+  } else if (profileStatus === 'updated') {
     body = 'Your learning profile has been updated.';
   } else if (profileStatus === 'failed') {
     body = 'Learning profile update failed' + (errorMessage ? ': ' + errorMessage : '') + '.';
