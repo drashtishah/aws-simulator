@@ -65,7 +65,6 @@ interface Session {
   status?: string;
   scoring?: Record<string, number>;
   services_queried?: string[];
-  question_profile?: Record<string, { count?: number; effective?: number }>;
   total_questions?: number;
   last_active?: string;
   story_beats_fired?: string[];
@@ -193,7 +192,7 @@ const sessionRules: Record<string, SessionRuleFn> = {
   },
   all_values_gte_0(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
     if ((check.target ?? 'scoring') === 'question_profile.counts') {
-      const profile = session.question_profile ?? {};
+      const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
       for (const [axis, data] of Object.entries(profile)) {
         if ((data.count ?? 0) < 0) return { pass: false, reason: axis + ' count is negative' };
       }
@@ -205,21 +204,21 @@ const sessionRules: Record<string, SessionRuleFn> = {
     return { pass: true };
   },
   effective_lte_total_per_axis(session: Session): RuleResult {
-    for (const [axis, data] of Object.entries(session.question_profile ?? {})) {
+    for (const [axis, data] of Object.entries((session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {})) {
       if ((data.effective ?? 0) > (data.count ?? 0))
         return { pass: false, reason: axis + ' effective ' + data.effective + ' > count ' + data.count };
     }
     return { pass: true };
   },
   question_counts_match_total(session: Session): RuleResult {
-    const profile = session.question_profile ?? {};
+    const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
     const sum: number = Object.values(profile).reduce((s, d) => s + (d.count ?? 0), 0);
     if (session.total_questions != null && session.total_questions !== sum)
       return { pass: false, reason: 'total_questions ' + session.total_questions + ' != sum ' + sum };
     return { pass: true };
   },
   at_least_one_axis_has_questions(session: Session): RuleResult {
-    const hasAny: boolean = Object.values(session.question_profile ?? {}).some(d => (d.count ?? 0) > 0);
+    const hasAny: boolean = Object.values((session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {}).some(d => (d.count ?? 0) > 0);
     if (!hasAny) return { pass: false, reason: 'no axis has questions' };
     return { pass: true };
   },
@@ -237,7 +236,7 @@ const sessionRules: Record<string, SessionRuleFn> = {
     return { pass: true };
   },
   has_all_axes(session: Session, _manifest: Manifest | null, check: Check): RuleResult {
-    const profile = session.question_profile ?? {};
+    const profile = (session.question_profile as Record<string, { count?: number; effective?: number }> | undefined) ?? {};
     const axes: string[] = check.axes ?? ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'];
     for (const a of axes) {
       if (!(a in profile)) return { pass: false, reason: 'missing axis ' + a };
@@ -251,7 +250,7 @@ const sessionRules: Record<string, SessionRuleFn> = {
     return { pass: true };
   },
   classification_matches_keywords(session: Session): RuleResult {
-    if (!session.question_profile) return { pass: false, reason: 'no question_profile' };
+    if (!(session.question_profile as Record<string, { count?: number; effective?: number }> | undefined)) return { pass: false, reason: 'no question_profile' };
     return { pass: true };
   },
   criteria_met_subset_of_manifest(session: Session, manifest: Manifest | null): RuleResult {

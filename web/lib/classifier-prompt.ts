@@ -61,7 +61,6 @@ Steps:
 - investigation_summary: 1-3 sentences of prose naming the path the player took, what they got right, and where they hesitated. No spoilers from resolution.md beyond what the player uncovered.
 - story_beats_fired: deduplicated union of every beats array from classification.jsonl.
 - services_queried: deduplicated union of every services array from classification.jsonl.
-- question_profile: for each axis (gather/diagnose/correlate/impact/trace/fix), set count = number of turns with that question_type, and effective = number of those turns with effectiveness >= 5.
 
 Do not write to any other path. Write policy enforced in code.`;
 }
