@@ -32,6 +32,7 @@ interface ParsedResponse {
 interface QueryOptions {
   model: string;
   permissionMode: string;
+  allowedTools: string[];
   maxTurns: number;
   systemPrompt?: string;
   effort?: EffortLevel;
@@ -84,7 +85,8 @@ function parseAgentJSON(text: string): ParsedResponse | null {
 async function runAgentCheck({ prompt, systemPrompt }: AgentCheckOptions): Promise<AgentCheckResult> {
   const queryOptions: QueryOptions = {
     model: MODEL,
-    permissionMode: 'bypassPermissions',
+    permissionMode: 'default',
+    allowedTools: [],
     maxTurns: 1
   };
   if (EFFORT) queryOptions.effort = EFFORT;

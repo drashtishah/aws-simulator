@@ -1,4 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import type { CanUseTool } from '@anthropic-ai/claude-agent-sdk';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -9,6 +10,7 @@ import { parseEvents, parseAgentMessages, logTurn, collectMessages, withRetry, C
 import type { ParsedEvent, Usage } from './claude-parse.js';
 import { logEvent, generateFixManifest } from './logger.js';
 import { MODEL_CONFIG, type EffortLevel } from '../../scripts/model-config.js';
+import { PLAY_AGENT_POLICY, POST_SESSION_POLICY } from './agent-policies.js';
 
 // Play uses Sonnet-medium with progressive disclosure of artifacts (see
 // prompt-builder). Manifest, story, and resolution stay in context so the
@@ -25,10 +27,11 @@ interface StartSessionOptions {
 
 interface QueryOptions {
   cwd: string;
-  allowedTools: string[];
+  allowedTools?: string[];
   model: string;
   systemPrompt?: string;
-  permissionMode: string;
+  permissionMode?: string;
+  canUseTool?: CanUseTool;
   maxTurns: number;
   resume?: string;
   maxBudgetUsd?: number;
@@ -97,10 +100,9 @@ export async function startSession(simId: string, themeId: string, options: Star
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
-    allowedTools: ['Read', 'Write'],
+    ...PLAY_AGENT_POLICY(simId),
     model: modelId,
     systemPrompt: promptText,
-    permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
@@ -144,9 +146,8 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
-    allowedTools: ['Read', 'Write'],
+    ...PLAY_AGENT_POLICY(session.simId),
     model: session.modelId,
-    permissionMode: 'bypassPermissions',
     maxTurns: 50
   };
   if (MODEL_CONFIG.play.effort) queryOptions.effort = MODEL_CONFIG.play.effort;
@@ -175,10 +176,9 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
 
       const retryOptions: QueryOptions = {
         cwd: paths.ROOT,
-        allowedTools: ['Read', 'Write'],
+        ...PLAY_AGENT_POLICY(session.simId),
         model: session.modelId,
         systemPrompt: session.systemPrompt,
-        permissionMode: 'bypassPermissions',
         maxTurns: 50
       };
       if (MODEL_CONFIG.play.effort) retryOptions.effort = MODEL_CONFIG.play.effort;
@@ -290,7 +290,7 @@ Note types to write:
 
 8. Set session status to "completed" in ${sessionFilePath}.
 
-Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogPath}, and ${sessionFilePath}. Do not touch sim files, agent prompts, or code.`;
+Do not skip steps. All writes are inside ${vaultDir}, ${profilePath}, ${catalogPath}, and ${sessionFilePath}. Do not touch sim files, agent prompts, or code. Write policy enforced in code; see references/architecture/permissions.md.`;
 }
 
 // Post-session does many file reads + writes (profile, catalog, session status,
@@ -303,9 +303,8 @@ export async function runPostSessionAgent(simId: string): Promise<{ success: boo
 
   const queryOptions: QueryOptions = {
     cwd: paths.ROOT,
-    allowedTools: ['Read', 'Write'],
+    ...POST_SESSION_POLICY(simId),
     model: POST_SESSION_MODEL,
-    permissionMode: 'bypassPermissions',
     maxTurns: 30
   };
   if (MODEL_CONFIG.post_session.effort) queryOptions.effort = MODEL_CONFIG.post_session.effort;

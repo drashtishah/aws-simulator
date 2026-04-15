@@ -18,46 +18,26 @@ describe('web app tool whitelist', () => {
   );
   const lines = source.split('\n');
 
-  it('has exactly 7 allowedTools occurrences, each restricted to Read and Write', () => {
+  it('has zero allowedTools declarations in claude-process.ts and claude-stream.ts (policy moved to agent-policies.ts)', () => {
     const matches = [];
     for (let i = 0; i < lines.length; i++) {
-      // Skip type/interface declarations (must have actual tool names)
       if (lines[i].includes('allowedTools:') && lines[i].includes("'Read'")) {
         matches.push({ lineNumber: i + 1, text: lines[i] });
       }
     }
-    assert.equal(matches.length, 7,
-      'expected exactly 7 allowedTools declarations, found ' + matches.length);
-    for (const m of matches) {
-      assert.ok(
-        m.text.includes("'Read'") && m.text.includes("'Write'"),
-        'allowedTools on line ' + m.lineNumber + ' must include Read and Write'
-      );
-      // Ensure no other tools are listed beyond Read and Write
-      const bracketContent = m.text.match(/\[([^\]]+)\]/);
-      assert.ok(bracketContent, 'allowedTools on line ' + m.lineNumber + ' should be an array');
-      const items = bracketContent[1].split(',').map(s => s.trim().replace(/'/g, ''));
-      assert.deepStrictEqual(items.sort(), ['Read', 'Write'],
-        'allowedTools on line ' + m.lineNumber + ' must contain only Read and Write');
-    }
+    assert.equal(matches.length, 0,
+      'expected zero allowedTools declarations in claude-process.ts + claude-stream.ts, found ' + matches.length + '. Move to agent-policies.ts');
   });
 
-  it('has exactly 7 permissionMode occurrences, each set to bypassPermissions', () => {
+  it('has zero permissionMode declarations in claude-process.ts and claude-stream.ts (policy moved to agent-policies.ts)', () => {
     const matches = [];
     for (let i = 0; i < lines.length; i++) {
-      // Skip type/interface declarations (must have a string value)
       if (lines[i].includes('permissionMode:') && lines[i].includes("'")) {
         matches.push({ lineNumber: i + 1, text: lines[i] });
       }
     }
-    assert.equal(matches.length, 7,
-      'expected exactly 7 permissionMode declarations, found ' + matches.length);
-    for (const m of matches) {
-      assert.ok(
-        m.text.includes("'bypassPermissions'"),
-        'permissionMode on line ' + m.lineNumber + ' must be bypassPermissions'
-      );
-    }
+    assert.equal(matches.length, 0,
+      'expected zero permissionMode declarations in claude-process.ts + claude-stream.ts, found ' + matches.length + '. Move to agent-policies.ts');
   });
 
   it('does not contain dangerouslyDisableSandbox', () => {
