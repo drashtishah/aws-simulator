@@ -76,6 +76,8 @@ function readJSON<T>(filePath: string, fallback: T): T {
 
 app.get('/api/profile', (_req: Request, res: Response) => {
   const profile = readJSON(paths.PROFILE, {
+    rank: 'responder',
+    rank_title: 'Responder',
     completed_sims: [] as string[],
     skill_polygon: {} as Record<string, number>
   });

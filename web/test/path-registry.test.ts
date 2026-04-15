@@ -46,6 +46,7 @@ describe('path-registry', () => {
       if (row.path === '.claude/plans/' || row.path === '.claude/plans') continue;
       if (row.path === 'learning/catalog.csv') continue;
       if (row.path === 'learning/feedback.md') continue;
+      if (row.path === 'learning/profile.json') continue;
       // Vault-internal subdirectory references in system-vault skill docs.
       // These are paths inside learning/system-vault/, never standalone.
       if (

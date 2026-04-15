@@ -125,7 +125,10 @@ function buildApp() {
 
   app.get('/api/profile', (req, res) => {
     const profile = readJSON(path.join(ROOT, 'learning', 'profile.json'), {
-      completed_sims: [], skill_polygon: {}
+      rank: 'responder',
+      rank_title: 'Responder',
+      completed_sims: [],
+      skill_polygon: {}
     });
     res.json(profile);
   });
