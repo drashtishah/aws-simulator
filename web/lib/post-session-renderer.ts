@@ -32,6 +32,7 @@ export interface PlayerProfile {
   total_sessions: number;
   sessions_at_current_rank: number;
   avg_question_quality: number;
+  question_quality?: { avg_overall?: number; [key: string]: unknown };
   [key: string]: unknown;
 }
 
@@ -64,19 +65,27 @@ export interface Progression {
 
 // --- Public API ---
 
+type QualityProfile = {
+  question_quality?: { avg_overall?: number };
+  sessions_at_current_rank?: number;
+};
+
 /**
  * Derives the rank id from a polygon and progression config.
- * Checks only polygon gates (not quality gates) since quality gates
- * require sustained sessions, which are not enforced here.
- * Returns the id of the first rank whose gate is satisfied (top-down).
+ * Checks polygon gates and, when a profile is supplied, rank.quality_gate
+ * against profile.question_quality.avg_overall and profile.sessions_at_current_rank.
+ * Returns the id of the first rank whose gates are satisfied (top-down).
  */
-export function deriveRank(polygon: SkillPolygon, progression: Progression): string {
+export function deriveRank(
+  polygon: SkillPolygon,
+  progression: Progression,
+  profile?: QualityProfile
+): string {
   const axisValues = Object.values(polygon);
   for (const rank of progression.ranks) {
-    const gate = rank.gate;
-    if (gateMatches(polygon, axisValues, gate)) {
-      return rank.id;
-    }
+    if (!gateMatches(polygon, axisValues, rank.gate)) continue;
+    if (profile && !qualityGateMatches(profile, rank.quality_gate)) continue;
+    return rank.id;
   }
   return 'responder';
 }
@@ -95,6 +104,18 @@ function gateMatches(polygon: SkillPolygon, axisValues: number[], gate: Progress
     const qualifying = axisValues.filter(v => v >= min).length;
     if (qualifying < count) return false;
   }
+  return true;
+}
+
+function qualityGateMatches(
+  profile: QualityProfile,
+  qualityGate: ProgressionRank['quality_gate']
+): boolean {
+  if (!qualityGate) return true;
+  const avgQuality = profile.question_quality?.avg_overall ?? 0;
+  const sessionsAtRank = profile.sessions_at_current_rank ?? 0;
+  if (avgQuality < qualityGate.avg_question_quality) return false;
+  if (sessionsAtRank < qualityGate.min_sessions_at_rank) return false;
   return true;
 }
 
@@ -155,8 +176,13 @@ export function updateProfileFromClassification(
       (profile.avg_question_quality * prevSessions + sessionAvg) / updated.total_sessions;
   }
 
-  // Derive rank from updated polygon.
-  const rankId = deriveRank(updated.skill_polygon, progression);
+  // Derive rank from updated polygon, gated by quality_gate against updated profile.
+  const rankId = deriveRank(updated.skill_polygon, progression, updated);
+  if (rankId !== profile.rank) {
+    // Promotion (or demotion): this session counted toward the OLD rank; the
+    // new rank's session clock starts fresh next session.
+    updated.sessions_at_current_rank = 0;
+  }
   updated.rank = rankId;
   const rankDef = progression.ranks.find(r => r.id === rankId);
   if (rankDef) updated.rank_title = rankDef.title;

@@ -97,6 +97,70 @@ describe('deriveRank', () => {
     const progression = loadProgression();
     assert.equal(deriveRank(polygon, progression), 'investigator');
   });
+
+  it('falls through to responder when profile quality_gate is unmet', () => {
+    const polygon = { gather: 2, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const progression = loadProgression();
+    const profile = {
+      question_quality: { avg_overall: 0 },
+      sessions_at_current_rank: 0,
+    };
+    assert.equal(deriveRank(polygon, progression, profile), 'responder');
+  });
+
+  it('returns investigator when quality_gate is satisfied', () => {
+    const polygon = { gather: 2, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const progression = loadProgression();
+    const profile = {
+      question_quality: { avg_overall: 3 },
+      sessions_at_current_rank: 30,
+    };
+    assert.equal(deriveRank(polygon, progression, profile), 'investigator');
+  });
+
+  it('blocks promotion when sessions_at_current_rank below quality_gate floor', () => {
+    const polygon = { gather: 2, diagnose: 2, correlate: 0, impact: 0, trace: 0, fix: 0 };
+    const progression = loadProgression();
+    const profile = {
+      question_quality: { avg_overall: 5 },
+      sessions_at_current_rank: 1,
+    };
+    assert.equal(deriveRank(polygon, progression, profile), 'responder');
+  });
+});
+
+describe('updateProfileFromClassification sessions_at_current_rank', () => {
+  it('resets to 0 when rank changes', () => {
+    const rows = loadSample();
+    const progression = loadProgression();
+    // Seed with 14 so after the +1 increment (line 122) sessions_at_current_rank
+    // reaches 15, satisfying junior-investigator.quality_gate.min_sessions_at_rank.
+    const profile = {
+      ...loadProfileBefore(),
+      rank: 'responder',
+      rank_title: 'Responder',
+      sessions_at_current_rank: 14,
+      question_quality: { avg_overall: 6 },
+    };
+    const updated = updateProfileFromClassification(profile, rows, 'test-sim-reset', progression);
+    assert.notEqual(updated.rank, 'responder', 'precondition: rank should have advanced');
+    assert.equal(updated.sessions_at_current_rank, 0);
+  });
+
+  it('increments (no reset) when rank does not change', () => {
+    const rows = loadSample();
+    const progression = loadProgression();
+    const profile = {
+      ...loadProfileBefore(),
+      rank: 'responder',
+      rank_title: 'Responder',
+      sessions_at_current_rank: 5,
+      question_quality: { avg_overall: 0 },
+    };
+    const updated = updateProfileFromClassification(profile, rows, 'test-sim-noreset', progression);
+    assert.equal(updated.rank, 'responder', 'precondition: rank should not have advanced');
+    assert.equal(updated.sessions_at_current_rank, 6);
+  });
 });
 
 describe('updateCatalogFromClassification', () => {
