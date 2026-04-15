@@ -231,7 +231,9 @@ export function renderVaultUpdates(
     simId,
     sessionDate,
     rankAtTime: profile.rank,
+    // services extraction deferred: classification rows do not carry service names
     services: (profile as { _sessionServices?: string[] })._sessionServices ?? [],
+    // concepts extraction deferred: classification rows do not carry concept names
     concepts: (profile as { _sessionConcepts?: string[] })._sessionConcepts ?? [],
     questionTypes,
   };
