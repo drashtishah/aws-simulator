@@ -132,7 +132,7 @@ export function updateProfileFromClassification(
   const axisRows: Record<string, number[]> = {};
   for (const row of rows) {
     if (!axisRows[row.question_type]) axisRows[row.question_type] = [];
-    axisRows[row.question_type].push(row.effectiveness);
+    axisRows[row.question_type]!.push(row.effectiveness);
   }
 
   for (const [axis, effectivenessScores] of Object.entries(axisRows)) {
