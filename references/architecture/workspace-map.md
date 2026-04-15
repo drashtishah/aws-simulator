@@ -155,6 +155,8 @@ test ----> run: executes node --test (unit tests)
 | `sims/registry.json` | create-sim | setup, play, create-sim | JSON: array of sim metadata |
 | `web/test-results/summary.json` | `test summary` | fix | JSON: aggregated test results across all layers |
 
+- Session status flows in_progress -> post-processing -> completed. Only the Tier 2 deterministic renderer (`web/lib/claude-process.ts`) flips to completed; all earlier sessionComplete signals emit post-processing.
+
 ### Model split
 
 Both play and post-session run on `claude-opus-4-6` via `scripts/model-config.json`. Play uses a persona-driven prompt (free narration, nudging, ending) and needs the deeper reasoning to hold the full sim folder and withhold root cause across turns; post-session does cross-file scoring and Obsidian vault writes. Adjust per-stage `effort` before swapping models.

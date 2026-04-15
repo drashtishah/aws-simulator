@@ -365,7 +365,7 @@ export async function* streamMessage(
 
   const gameSessionUpdate: Record<string, unknown> = { turnCount: turnNumber };
   if (sessionComplete) {
-    gameSessionUpdate.status = 'completed';
+    gameSessionUpdate.status = 'post-processing';
     logEvent(sessionId, { level: 'info', event: 'session_end', outcome: 'success' });
   }
   updateGameSession(session.simId, gameSessionUpdate);

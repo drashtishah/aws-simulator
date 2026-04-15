@@ -227,7 +227,7 @@ export async function sendMessage(sessionId: string, message: string): Promise<M
 
   const gameSessionUpdate: Record<string, unknown> = { turnCount: turnNumber };
   if (sessionComplete) {
-    gameSessionUpdate.status = 'completed';
+    gameSessionUpdate.status = 'post-processing';
   }
   updateGameSession(session.simId, gameSessionUpdate);
 

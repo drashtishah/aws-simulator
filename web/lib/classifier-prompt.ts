@@ -58,7 +58,6 @@ Steps:
    If the verifier fails, fix the offending rows in ${outputPath} and re-run the verifier. Repeat until it exits 0. Do not proceed to step 5 until the verifier passes.
 
 5. After the verifier passes, update ${sessionPath} with the session-level rollup:
-- status: "completed"
 - investigation_summary: 1-3 sentences of prose naming the path the player took, what they got right, and where they hesitated. No spoilers from resolution.md beyond what the player uncovered.
 - story_beats_fired: deduplicated union of every beats array from classification.jsonl.
 - services_queried: deduplicated union of every services array from classification.jsonl.
