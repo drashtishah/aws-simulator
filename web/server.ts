@@ -391,6 +391,8 @@ app.post('/api/game/message', async (req: Request, res: Response) => {
       const session = claudeSession.sessions.get(sessionId);
       const simId = session ? session.simId : null;
       if (simId) {
+        // Mark post-processing so the sim is hidden from the Play tab immediately.
+        claudeSession.updateGameSession(simId, { status: 'post-processing' });
         res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
         try {
           await claudeProcess.runPostSessionAgent(simId);
