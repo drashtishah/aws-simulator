@@ -22,11 +22,8 @@ import {
 import type { PlayerProfile, Progression } from './post-session-renderer.js';
 import jsYaml from 'js-yaml';
 
-// Play uses Sonnet-medium with progressive disclosure of artifacts (see
-// prompt-builder). Manifest, story, and resolution stay in context so the
-// narrator can guide and verify the player's fix without leaking. Rollback
-// to Opus is a one-line change in scripts/model-config.json; no code revert
-// needed. Per-stage effort lives in scripts/model-config.json.
+// Play uses Opus with no effort (thinking disabled). Per-stage model and
+// effort live in scripts/model-config.json.
 export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
 export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;
 

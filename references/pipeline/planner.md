@@ -40,6 +40,15 @@ before acting on them.
 
 Hard cap per stage per issue: 1 index read, up to 5 note reads, up to 3 grep calls.
 
+## Graph query protocol
+
+graphify is the primary navigation mechanism for this codebase. Use it to map dependencies and ripple effects before writing the plan:
+- `graphify query "what depends on <file or function>"` to identify downstream consumers.
+- `graphify explain "<module or concept>"` to understand a component's connections.
+- `graphify path "A" "B"` to trace relationships between components.
+
+Navigate the codebase via graphify, not by browsing `references/`. The `references/` folder is reserved for specific files named in this prompt (e.g., `references/pipeline/plan-template.md`); do not browse it for exploration. If graphify is not available, fall back to Grep and Read on specific files you already know you need. Post a comment noting the failure.
+
 Your role: PLANNER
 
 Read the full issue body and all comments.

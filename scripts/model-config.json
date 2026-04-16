@@ -4,7 +4,7 @@
   "implementer":       { "model": "claude-sonnet-4-6", "effort": "medium" },
   "verifier":          { "model": "claude-sonnet-4-6", "effort": "high" },
   "evaluator":         { "model": "claude-opus-4-6",   "effort": "medium" },
-  "play":              { "model": "claude-opus-4-6",   "effort": "medium" },
+  "play":              { "model": "claude-opus-4-6",   "effort": null },
   "post_session":      { "model": "claude-opus-4-6",   "effort": "medium" },
   "agent_test_runner": { "model": "claude-sonnet-4-6", "effort": "low" }
 }

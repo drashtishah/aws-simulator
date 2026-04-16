@@ -4,10 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as claudeProcess from '../lib/claude-process.ts';
 // Asserts the model split is driven by scripts/model-config.json via named
-// constants, not inline literals. See Issue #107, #270, #272. Play reverted
-// to Opus-medium: Sonnet was skipping tool calls (no Read() of artifacts, no
-// Write() to narrator-notes.md), which produced fabricated responses and
-// misled players. Post-session stays on Opus.
+// constants, not inline literals. See Issue #107, #270, #272.
 
 const ROOT = path.join(__dirname, '..', '..');
 

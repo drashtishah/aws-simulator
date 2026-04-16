@@ -49,10 +49,36 @@ jobs:
 
       - run: npm ci
 
+      - name: Cache RTK
+        id: rtk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.rtk
+          key: rtk-8a7106c8f2996ebc75b38a71c5f342f17811ce39
+
       - name: Install RTK (git token compression)
+        if: steps.rtk-cache.outputs.cache-hit != 'true'
         run: |
           curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/8a7106c8f2996ebc75b38a71c5f342f17811ce39/install.sh | sh || true
-          echo "$HOME/.rtk/bin" >> "$GITHUB_PATH"
+
+      - name: Add RTK to PATH
+        run: echo "$HOME/.rtk/bin" >> "$GITHUB_PATH"
+
+      - name: Cache graphify
+        id: graphify-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/pipx/venvs/graphifyy
+            ~/.local/bin/graphify
+          key: graphify-0.4.15
+
+      - name: Install graphify
+        if: steps.graphify-cache.outputs.cache-hit != 'true'
+        run: pipx install graphifyy==0.4.15
+
+      - name: Add graphify to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Classify issue and load prompt
         id: setup
@@ -75,7 +101,7 @@ jobs:
 
           BASE="references/pipeline/verifier.md"
           OVERLAY=""
-          TOOLS="Read,Glob,Grep,Edit,Bash(git:*),Bash(rtk:*),Bash(which:*),Bash(npm:*),Bash(tsx:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
+          TOOLS="Read,Glob,Grep,Edit,Bash(git:*),Bash(rtk:*),Bash(which:*),Bash(npm:*),Bash(tsx:*),Bash(graphify:*),Bash(gh issue view:*),Bash(gh issue comment:*)"
           MCP_ARG=""
 
           if echo "$labels" | grep -q "text-only"; then
