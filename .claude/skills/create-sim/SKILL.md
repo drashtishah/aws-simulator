@@ -21,7 +21,7 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 
 | Step | Action | Tool | Target |
 |------|--------|------|--------|
-| 1 | Load catalog | Read | `learning/catalog.csv` |
+| 1 | Load profile + registry | Read | `learning/profile.json`, `sims/registry.json` |
 | 6 | Load exam topics | Read | `.claude/skills/create-sim/references/exam-topics.md` |
 | 6-9 | Research incidents | WebSearch | AWS incident patterns |
 | 9b | Query AWS docs | MCP aws___ | Documentation and SOPs |
@@ -34,14 +34,12 @@ Generates AWS incident simulation packages targeting knowledge gaps and exam cov
 | 18 | Write artifacts | Write | `sims/{id}/artifacts/*.txt` |
 | 20 | Update registry | Write | `sims/registry.json` |
 | 21 | Update index | Write | `sims/index.md` |
-| 9c | Update catalog | Write | `learning/catalog.csv` |
 
 ---
 
 ## Prerequisites
 
 Before starting, confirm these files exist:
-- `learning/catalog.csv` -- Player service catalog and progress
 - `sims/registry.json` -- Simulation registry
 - `.claude/skills/create-sim/references/exam-topics.md` -- Exam domain reference
 - `.claude/skills/create-sim/references/sim-template.md` -- Gold-standard template
@@ -71,13 +69,11 @@ Issue granularity: one issue per simulation scenario. A scenario's manifest, sto
 
 ### Phase 1: Identify Knowledge Gaps
 
-1. Read `learning/catalog.csv` for service metadata and player progress
-1b. Read the player vault (`learning/player-vault/`) for confusion patterns, recurring mistakes, and weak dimensions. Look at session journals for services the player struggled with and questions they asked poorly. This personalizes scenario selection beyond catalog scores.
-2. Filter for services where `knowledge_score < 2`, prioritizing services the player vault shows active confusion about
-3. Sort by `sims_completed` ascending (least practiced first)
-4. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter by `category` column
-5. Note which certifications each service appears in (`cert_relevance` column)
-6. Also consult `.claude/skills/create-sim/references/exam-topics.md` to identify services not yet in the catalog that are relevant to the player's current cert targets
+1. Read `learning/profile.json` for `completed_sims` and `sims/registry.json` for per-sim `services` lists. Collect the set of services already encountered across completed sims.
+1b. Read the player vault (`learning/player-vault/`) for confusion patterns, recurring mistakes, and weak dimensions. Look at session journals for services the player struggled with and questions they asked poorly. This personalizes scenario selection beyond completion counts.
+2. Consult `.claude/skills/create-sim/references/exam-topics.md` to identify exam-relevant services that have zero completed sims.
+3. If the user provided a topic area argument (security, compute, networking, database, serverless, etc.), filter by category.
+4. Prioritize services the player vault shows active confusion about, then services with zero encounters.
 
 ### Phase 2: Research Incident Patterns
 
@@ -162,26 +158,6 @@ Issue granularity: one issue per simulation scenario. A scenario's manifest, sto
     - `"AWS {service} error codes list"`
     - `"AWS CloudWatch metrics {service}"`
     Note: SOP-based fix criteria and resolution alignment will be skipped; rely on exam-topics.md and WebSearch findings instead.
-
-#### 9c. Update Catalog with Discovered Services
-
-After completing research, check whether any services encountered are missing from `learning/catalog.csv`. This includes:
-- Services directly involved in the incident patterns found
-- Supporting services mentioned in SOPs, best practices, or failure modes
-- Less well-known or newer AWS services discovered during web search or MCP research
-
-For each missing service, append a row to `learning/catalog.csv`:
-```
-{slug},{Official AWS Name},{category},{cert_codes},0,0,,
-```
-
-Where:
-- `slug`: kebab-case (e.g., `resource-explorer`)
-- `full_name`: official AWS name (e.g., `AWS Resource Explorer`)
-- `category`: compute, storage, database, networking, security, serverless, containers, integration, management, developer-tools, analytics, ml-ai, migration
-- `cert_relevance`: semicolon-separated cert codes from `.claude/skills/create-sim/references/exam-topics.md`, or empty if not exam-relevant
-
-Report additions: "Added {N} new services to catalog: {list}."
 
 ### Phase 3: Propose Scenarios
 

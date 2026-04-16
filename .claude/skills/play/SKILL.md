@@ -17,7 +17,6 @@ If any of the following are missing, tell the user: "Run `/setup` first to initi
 
 - `learning/` directory
 - `learning/profile.json`
-- `learning/catalog.csv`
 
 ### 1. Clean Up Stale Lock
 

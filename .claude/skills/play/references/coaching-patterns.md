@@ -160,51 +160,6 @@ Feedback: "You asked questions during the debrief. Try pushing deeper next time:
 
 ---
 
-## Knowledge Score Update Rules
-
-After the simulation, update `learning/catalog.csv` for each service involved in the sim.
-
-### Scoring Criteria
-
-For each service in `manifest.services`, award points based on the player's interaction:
-
-| Action | Points | Condition |
-|---|---|---|
-| Asked relevant questions about the service | +1 | Player queried the service console AND asked at least 1 question that returned useful data |
-| Correctly identified an issue in the service | +1 | Player identified a misconfiguration, anomaly, or root cause component in this service |
-| Demonstrated config understanding | +1 | Player showed understanding of service-specific configuration (e.g., knew what a bucket policy Principal field means, understood security group rules, recognized CloudTrail event structure) |
-
-### Scoring Constraints
-
-- **Cap: +2 per sim per service.** Even if the player scores +3 on the criteria above, record only +2. This prevents a single simulation from inflating scores.
-- **Minimum: +0.** If the player never interacted with a service console, that service gets no score change.
-- **No negative scores.** Do not reduce knowledge_score based on poor performance. The score represents exposure and understanding, not perfection.
-
-### Catalog CSV Update Format
-
-For each service in `manifest.services`, update these columns in `learning/catalog.csv`:
-
-| Column | Update rule |
-|---|---|
-| `knowledge_score` | Add the points awarded (respecting the +2 cap). Do not exceed the maximum meaningful score. |
-| `sims_completed` | Increment by 1 |
-| `last_practiced` | Set to today's date (ISO 8601, date only: YYYY-MM-DD) |
-| `notes` | Append a brief observation about the player's interaction with this service. Format: "{sim_id}: {observation}". If notes already exist, append with semicolon separator. |
-
-### Example Notes
-
-Good notes are specific and reference what the player actually did:
-
-- `001-s3-bucket-breach: identified Principal:* in bucket policy, understood resource-based vs identity-based policy difference`
-- `001-s3-bucket-breach: queried CloudTrail but did not correlate PutBucketPolicy timestamp with incident timeline`
-- `001-s3-bucket-breach: did not query this service`
-
-Bad notes are vague or generic:
-
-- `completed sim` (says nothing useful)
-- `good job` (not actionable)
-- `needs improvement` (no specifics)
-
 ---
 
 ## Question Quality Rubric
@@ -254,8 +209,6 @@ Higher quality questions earn more polygon points. Even low quality questions st
 After scoring, update `learning/profile.json`:
 
 ### Service Progress
-
-Service-level progress is tracked in `learning/catalog.csv` via knowledge scores (0-8 per service). The play skill updates scores after each sim per the scoring rules above. No separate strengths/weaknesses arrays are maintained.
 
 ### Question Type Classification
 
@@ -339,5 +292,4 @@ Players stack services to solve their specific set of problems. The "solves" que
 
 - [[SKILL]] -- Play skill workflow that triggers coaching analysis
 - [[agent-prompts]] -- Consolidated prompt template (Narrator Mode + Console Mode)
-- [[learning/catalog.csv]] -- Player service progress
 - [[profile.json]] -- Learner profile with patterns and progression

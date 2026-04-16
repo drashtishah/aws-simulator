@@ -1,4 +1,4 @@
 {
-  "files": ["sims/registry.json", "sims/index.md", "learning/catalog.csv"],
+  "files": ["sims/registry.json", "sims/index.md"],
   "dirs": ["sims/"]
 }
