@@ -58,10 +58,10 @@ Base tools per role. Additional tools are added by issue type label (see Label G
 
 | Stage | Base tools |
 |---|---|
-| Planner | Read, Glob, Grep, WebFetch, Bash(gh issue view/list/comment/edit/create*) |
+| Planner | Read, Glob, Grep, WebFetch, Bash(graphify/gh issue view/list/comment/edit/create*) |
 | Critic | Read, Glob, Grep, Bash(gh issue view/comment/edit) |
 | Implementer | Read, Glob, Grep, Edit, Write, Bash(git/rtk/which/npm/npx/tsx/python3/gh issue view/comment) |
-| Verifier | Read, Glob, Grep, Edit, Bash(git/rtk/which/npm/tsx/gh issue view/comment) |
+| Verifier | Read, Glob, Grep, Edit, Bash(git/rtk/which/npm/tsx/graphify/gh issue view/comment) |
 | Reflector | Read, Glob, Grep, Write, Edit, Bash(git/rtk/which/gh issue view/edit/comment/gh pr create/merge/rg/npx tsx scripts/vault-lint.ts) |
 
 Verifier also has `actions: read` permission for CI check-run access.
@@ -96,6 +96,14 @@ Base prompts and context overlays live in `references/pipeline/`:
 | `context-ui.md` | Overlay for ui issues (all roles) |
 | `context-sim.md` | Overlay for sim-content issues (Planner/Critic) |
 | `labels.md` | Label definitions and routing rules |
+
+## graphify (knowledge graph)
+
+The codebase knowledge graph at `graphify-out/` is git-tracked (minus cache).
+Planner and verifier install graphify via cached pipx.
+Both use `graphify query/explain/path` for dependency mapping and cross-file impact checks.
+Other stages read `graphify-out/GRAPH_REPORT.md` via Read (no install needed).
+Graph stays current via local `graphify update .` runs.
 
 ## Repo settings
 
