@@ -5,8 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseClassificationJsonl } from '../lib/classification-schema.js';
 import type { ClassificationRow } from '../lib/classification-schema.js';
-import { updateProfileFromClassification, deriveRank, updateCatalogFromClassification } from '../lib/post-session-renderer.js';
-import type { CatalogRow } from '../lib/post-session-renderer.js';
+import { updateProfileFromClassification, deriveRank } from '../lib/post-session-renderer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, 'fixtures');
@@ -187,46 +186,5 @@ describe('updateProfileFromClassification sessions_at_current_rank', () => {
     const updated = updateProfileFromClassification(profile, rows, 'test-sim-noreset', progression);
     assert.equal(updated.rank, 'responder', 'precondition: rank should not have advanced');
     assert.equal(updated.sessions_at_current_rank, 6);
-  });
-});
-
-describe('updateCatalogFromClassification', () => {
-  const sampleRows: CatalogRow[] = [
-    { service: 'EC2', sims_completed: 0, knowledge_score: 0, last_practiced: '' },
-    { service: 'VPC', sims_completed: 2, knowledge_score: 3, last_practiced: '2026-01-01' },
-  ];
-
-  // Inject services so rows engage the catalog under the service-filtered rule.
-  function withServices(rows: ClassificationRow[], services: string[]): ClassificationRow[] {
-    return rows.map(r => ({ ...r, services }));
-  }
-
-  it('increments sims_completed on first call', () => {
-    const rows = withServices(loadSample(), ['EC2', 'VPC']);
-    const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
-    assert.equal(updated[0].sims_completed, 1);
-    assert.equal(updated[1].sims_completed, 3);
-  });
-
-  it('is idempotent: catalog not double-incremented on second call (alreadyCompleted=true)', () => {
-    const rows = withServices(loadSample(), ['EC2', 'VPC']);
-    const first = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
-    const second = updateCatalogFromClassification(first, rows, 'sim-001', true);
-    assert.equal(second[0].sims_completed, first[0].sims_completed);
-    assert.equal(second[1].sims_completed, first[1].sims_completed);
-  });
-
-  it('updates last_practiced to today', () => {
-    const rows = withServices(loadSample(), ['EC2', 'VPC']);
-    const today = new Date().toISOString().slice(0, 10);
-    const updated = updateCatalogFromClassification(sampleRows, rows, 'sim-001', false);
-    assert.equal(updated[0].last_practiced, today);
-  });
-
-  it('does not exceed knowledge_score of 10', () => {
-    const rows = withServices(loadSample(), ['EC2']);
-    const highScore: CatalogRow[] = [{ service: 'EC2', sims_completed: 100, knowledge_score: 9.9, last_practiced: '' }];
-    const updated = updateCatalogFromClassification(highScore, rows, 'sim-001', false);
-    assert.ok(updated[0].knowledge_score <= 10);
   });
 });

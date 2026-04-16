@@ -93,10 +93,6 @@ describe('runPostSessionAgent integration', () => {
       path.join(TMP_LEARNING_DIR, 'profile.json'),
       JSON.stringify({ rank: 'cadet', completed_sims: [], skill_polygon: { ec2: 0, vpc: 0 }, total_sessions: 0 })
     );
-    fs.writeFileSync(
-      path.join(TMP_LEARNING_DIR, 'catalog.csv'),
-      'service,sims_completed,knowledge_score,last_practiced\n'
-    );
     fs.mkdirSync(path.join(TMP_LEARNING_DIR, 'logs'), { recursive: true });
     // Seed classification.jsonl so Tier 2 can run after the mock SDK returns.
     fs.writeFileSync(

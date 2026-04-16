@@ -7,12 +7,12 @@ const ROOT = '/tmp/aws-test-root';
 
 // Ownership objects matching the ownership.json files
 const PLAY_OWNERSHIP = {
-  files: ['learning/profile.json', 'learning/catalog.csv', 'learning/journal.md'],
+  files: ['learning/profile.json', 'learning/journal.md'],
   dirs: ['learning/sessions']
 };
 
 const CREATE_SIM_OWNERSHIP = {
-  files: ['sims/registry.json', 'sims/index.md', 'learning/catalog.csv'],
+  files: ['sims/registry.json', 'sims/index.md'],
   dirs: ['sims/']
 };
 
@@ -87,11 +87,6 @@ describe('checkAccess', () => {
   describe('play skill context', () => {
     it('allows learning/profile.json (owned)', () => {
       const r = checkAccess(path.join(ROOT, 'learning/profile.json'), PLAY_OWNERSHIP, ROOT);
-      assert.equal(r.allowed, true);
-    });
-
-    it('allows learning/catalog.csv (owned)', () => {
-      const r = checkAccess(path.join(ROOT, 'learning/catalog.csv'), PLAY_OWNERSHIP, ROOT);
       assert.equal(r.allowed, true);
     });
 

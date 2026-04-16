@@ -16,11 +16,10 @@ import { parseClassificationJsonl } from './classification-schema.js';
 import { runConsolidator, shouldRunConsolidator } from '../../scripts/consolidator.js';
 import {
   updateProfileFromClassification,
-  updateCatalogFromClassification,
   renderVaultUpdates,
   applyVaultUpdates,
 } from './post-session-renderer.js';
-import type { PlayerProfile, CatalogRow, Progression } from './post-session-renderer.js';
+import type { PlayerProfile, Progression } from './post-session-renderer.js';
 import jsYaml from 'js-yaml';
 
 // Play uses Sonnet-medium with progressive disclosure of artifacts (see
@@ -330,11 +329,6 @@ export async function runPostSessionAgent(
   const updatedProfile = updateProfileFromClassification(profile, classificationRows, simId, progression);
   fs.writeFileSync(paths.PROFILE, JSON.stringify(updatedProfile, null, 2), 'utf8');
 
-  const catalogText = fs.readFileSync(paths.CATALOG, 'utf8');
-  const catalogRows = parseCatalogCsv(catalogText);
-  const updatedCatalog = updateCatalogFromClassification(catalogRows, classificationRows, simId, alreadyCompleted);
-  fs.writeFileSync(paths.CATALOG, serializeCatalogCsv(updatedCatalog), 'utf8');
-
   const sessionDate = new Date().toISOString().slice(0, 10);
 
   // Read manifest.fix_criteria and session.investigation_summary (both populated by Tier 1)
@@ -382,28 +376,6 @@ export async function runPostSessionAgent(
   });
 
   return { success: true, tier1_duration_ms, tier2_duration_ms };
-}
-
-export function parseCatalogCsv(text: string): CatalogRow[] {
-  const lines = text.trim().split('\n');
-  if (lines.length <= 1) return []; // header only or empty
-  return lines.slice(1).map(line => {
-    const [service, sims_completed, knowledge_score, last_practiced] = line.split(',');
-    return {
-      service: service ?? '',
-      sims_completed: parseInt((sims_completed || '0').trim(), 10) || 0,
-      knowledge_score: parseFloat((knowledge_score || '0').trim()) || 0,
-      last_practiced: last_practiced ?? '',
-    };
-  });
-}
-
-function serializeCatalogCsv(rows: CatalogRow[]): string {
-  const header = 'service,sims_completed,knowledge_score,last_practiced';
-  const lines = rows.map(r =>
-    `${r.service},${r.sims_completed},${r.knowledge_score.toFixed(2)},${r.last_practiced}`
-  );
-  return [header, ...lines].join('\n') + '\n';
 }
 
 export {

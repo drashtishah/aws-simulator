@@ -32,7 +32,6 @@ const SYSTEM_LOG_FILE: string = RAW_LOG_FILE;
 // file to enforce per-session note recording.
 const NOTES_LOG_FILE: string = path.join(LOGS_DIR, 'notes.jsonl');
 const HEALTH_SCORES_FILE: string = path.join(LOGS_DIR, 'health-scores.jsonl');
-const CATALOG: string = path.join(LEARNING_DIR, 'catalog.csv');
 const THEME_BASE: string = path.join(THEMES_DIR, '_base.md');
 const AGENT_PROMPTS: string = path.join(ROOT, '.claude', 'skills', 'play', 'references', 'agent-prompts.md');
 
@@ -64,7 +63,6 @@ const paths = {
   RAW_LOG_FILE,
   NOTES_LOG_FILE,
   HEALTH_SCORES_FILE,
-  CATALOG,
   THEME_BASE,
   AGENT_PROMPTS,
   simDir,

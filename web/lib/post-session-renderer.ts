@@ -218,54 +218,6 @@ export function updateProfileFromClassification(
   return updated;
 }
 
-// --- Catalog update (added in commit 3) ---
-
-export interface CatalogRow {
-  service: string;
-  sims_completed: number;
-  knowledge_score: number;
-  last_practiced: string;
-  [key: string]: unknown;
-}
-
-/**
- * Updates catalog rows from classification results.
- * Pure and idempotent: if alreadyCompleted is true, returns rows unchanged.
- * Only touches rows whose service appears in the session's classification
- * rows. Untouched rows return the same reference (pass-through) so callers
- * can detect unchanged rows by identity.
- */
-export function updateCatalogFromClassification(
-  catalogRows: CatalogRow[],
-  rows: ClassificationRow[],
-  simId: string,
-  alreadyCompleted: boolean
-): CatalogRow[] {
-  if (alreadyCompleted) return catalogRows;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const allEffectiveness = rows.map(r => r.effectiveness);
-  const avgEffectiveness =
-    allEffectiveness.length > 0
-      ? allEffectiveness.reduce((s, v) => s + v, 0) / allEffectiveness.length
-      : 0;
-  const qualityFactor = Math.min(1, Math.max(0.25, avgEffectiveness / 8));
-
-  const touched = new Set(rows.flatMap(r => r.services));
-  const finiteOr0 = (n: number | null | undefined): number =>
-    typeof n === 'number' && Number.isFinite(n) ? n : 0;
-
-  return catalogRows.map(row => {
-    if (!touched.has(row.service)) return row;
-    return {
-      ...row,
-      sims_completed: finiteOr0(row.sims_completed) + 1,
-      knowledge_score: Math.min(10, finiteOr0(row.knowledge_score) + qualityFactor),
-      last_practiced: today,
-    };
-  });
-}
-
 // --- Vault updates (added in commit 4) ---
 
 export interface VaultFile {

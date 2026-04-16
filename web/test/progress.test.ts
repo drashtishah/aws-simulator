@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { getQuestionTypes, currentRank, normalizeHexagon, parseCatalog, serviceProgress } from '../lib/progress';
+import { getQuestionTypes, currentRank, normalizeHexagon } from '../lib/progress';
 
 
 describe('getQuestionTypes', () => {
@@ -107,46 +107,3 @@ describe('normalizeHexagon (via progress.js wrapper)', () => {
   });
 });
 
-describe('parseCatalog', () => {
-  it('parses CSV content into service objects', () => {
-    const csv = 'service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_practiced,notes\n' +
-      'ec2,Amazon EC2,compute,SAA-C03,3,2,2026-03-25,some notes\n' +
-      's3,Amazon S3,storage,SAA-C03,0,0,,\n';
-    const result = parseCatalog(csv);
-    assert.equal(result.length, 2);
-    assert.equal(result[0].service, 'ec2');
-    assert.equal(result[0].knowledge_score, 3);
-    assert.equal(result[0].sims_completed, 2);
-    assert.equal(result[1].service, 's3');
-    assert.equal(result[1].knowledge_score, 0);
-  });
-
-  it('handles empty CSV', () => {
-    const result = parseCatalog('service,full_name,category,cert_relevance,knowledge_score,sims_completed,last_practiced,notes\n');
-    assert.equal(result.length, 0);
-  });
-});
-
-describe('serviceProgress', () => {
-  it('separates practiced and unpracticed services', () => {
-    const catalog = [
-      { service: 'ec2', full_name: 'Amazon EC2', category: 'compute', knowledge_score: 3, sims_completed: 2 },
-      { service: 's3', full_name: 'Amazon S3', category: 'storage', knowledge_score: 0, sims_completed: 0 },
-      { service: 'lambda', full_name: 'AWS Lambda', category: 'serverless', knowledge_score: 6, sims_completed: 5 }
-    ];
-    const result = serviceProgress(catalog);
-    assert.equal(result.practiced.length, 2);
-    assert.equal(result.unpracticed.length, 1);
-    assert.equal(result.unpracticed[0].service, 's3');
-  });
-
-  it('sorts practiced by knowledge_score descending', () => {
-    const catalog = [
-      { service: 'ec2', full_name: 'Amazon EC2', category: 'compute', knowledge_score: 3, sims_completed: 2 },
-      { service: 'lambda', full_name: 'AWS Lambda', category: 'serverless', knowledge_score: 6, sims_completed: 5 }
-    ];
-    const result = serviceProgress(catalog);
-    assert.equal(result.practiced[0].service, 'lambda');
-    assert.equal(result.practiced[1].service, 'ec2');
-  });
-});
