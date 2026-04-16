@@ -342,11 +342,12 @@ export async function runPostSessionAgent(
   };
   const fixCriteria = manifest.resolution?.fix_criteria ?? [];
 
+  const rankPath = path.join(paths.VAULT_DIR, 'rank.md');
+  const existingRank = fs.existsSync(rankPath) ? fs.readFileSync(rankPath, 'utf8') : '';
   const vaultUpdates = renderVaultUpdates(
-    updatedProfile, classificationRows, simId, sessionDate, paths.VAULT_DIR, {}, {
-      investigationSummary,
-      fixCriteria,
-    }
+    updatedProfile, classificationRows, simId, sessionDate, paths.VAULT_DIR,
+    { [rankPath]: existingRank },
+    { investigationSummary, fixCriteria }
   );
   applyVaultUpdates(vaultUpdates);
 

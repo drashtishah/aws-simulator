@@ -20,7 +20,11 @@
       "Write(/Users/drashti/experiments/aws-simulator/.claude/skills/**)",
       "Write(/Users/drashti/experiments/aws-simulator/.claude/worktrees/**)",
       "Write(/Users/drashti/experiments/aws-simulator/CLAUDE.md)",
-      "Write(/Users/drashti/experiments/aws-simulator/references/**)"
+      "Write(/Users/drashti/experiments/aws-simulator/references/**)",
+      "Bash(cp .git/hooks/post-commit .claude/hooks/post-commit)",
+      "Bash(chmod +x .claude/hooks/post-commit)",
+      "Bash(cp .git/hooks/post-checkout .claude/hooks/post-checkout)",
+      "Bash(chmod +x .claude/hooks/post-checkout)"
     ]
   },
   "enabledMcpjsonServers": [
