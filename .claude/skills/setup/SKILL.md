@@ -66,7 +66,7 @@ tags:
 Feedback collected during play sessions via /feedback. Processed after each sim resolution.
 ```
 
-### 5. Create learning vault (player, Bash-only seed)
+### 5b. Create learning vault (player, Bash-only seed)
 
 Both vaults are in `guard-write.ts` NEVER_WRITABLE_DIRS, so Write and
 Edit tools are blocked. Seed via Bash instead (mkdir + cp, which the

@@ -87,7 +87,6 @@ Before making any change to `sims/`, `themes/`, `.claude/skills/`, `learning/` s
 - [ ] journal.md: entries split by `## ` headers, Date and Key Takeaway fields
 - [ ] registry.json: version, sims array with id, title, difficulty, category, services, estimated_minutes
 - [ ] manifest.json: id, title, company, glossary, system, consoles, progressive_clues, resolution
-- [ ] catalog.csv: service, full_name, category, cert_relevance, knowledge_score, sims_completed, last_practiced, notes
 
 ## Observability
 

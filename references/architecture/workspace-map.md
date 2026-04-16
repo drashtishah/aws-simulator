@@ -16,44 +16,40 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 |  (command)       |       |  (skill)          |       |   (skill)        |
 |                  |       |                   |       |                  |
 | Reads:           |       | Reads:            |       | Reads:           |
-|  catalog.csv     |       |  catalog.csv      |       |  catalog.csv     |
 |  sims/registry   |       |  sims/registry    |       |  sims/registry   |
 |  .mcp.json       |       |  exam-topics.md   |       |  sims/{id}/*     |
 |                  |       |  sim-template.md  |       |  profile.json    |
 | Writes:          |       |  story-struct.md  |       |  sessions/*.json |
 |  profile.json    |       |  themes/_base.md  |       |  agent-prompts   |
-|  catalog.csv     |       |  game-design.md   |       |  coaching-patt.  |
-|  journal.md      |       |  manifest-schema  |       |  themes/*.md     |
-|  feedback.md     |       |  catalog.csv      |       |                  |
+|  journal.md      |       |  game-design.md   |       |  coaching-patt.  |
+|  feedback.md     |       |  manifest-schema  |       |  themes/*.md     |
 |  sessions/ (dir) |       |                   |       |                  |
 +------------------+       | Writes:           |       | Writes:          |
                            |  sims/{id}/*      |       |  sessions/*.json |
 +------------------+       |  sims/registry    |       |  profile.json    |
-|   /feedback      |       |  sims/index.md    |       |  catalog.csv     |
-|  (command)       |       |  catalog.csv      |       |  journal.md      |
-|                  |       +-------------------+       +------------------+
+|   /feedback      |       |  sims/index.md    |       |  journal.md      |
+|  (command)       |       +-------------------+       +------------------+
 | Reads:           |
 |  sessions/*.json |       +-------------------+       +------------------+
 |                  |       |   web/ app        |       |     /fix         |
 | Writes:          |       |  (Express + UI)   |       |  (skill)         |
 |  feedback.md     |       |                   |       |                  |
 |  sessions/*.json |       | Reads:            |       | Reads:           |
-+------------------+       |  catalog.csv      |       |  feedback.md     |
-                           |  sims/registry    |       |  raw.jsonl       |
-                           |  sims/{id}/*      |       |  health scores   |
-                           |  profile.json     |       |  skill files     |
-                           |  sessions/*.json  |       |  workspace-map   |
-                           |  journal.md       |       |  metrics.config  |
-                           |  agent-prompts    |       |                  |
-                           |  themes/*.md      |       | Writes:          |
-                           |  coaching-patt.   |       |  skill files     |
++------------------+       |  sims/registry    |       |  feedback.md     |
+                           |  sims/{id}/*      |       |  raw.jsonl       |
+                           |  profile.json     |       |  health scores   |
+                           |  sessions/*.json  |       |  skill files     |
+                           |  journal.md       |       |  workspace-map   |
+                           |  agent-prompts    |       |  metrics.config  |
+                           |  themes/*.md      |       |                  |
+                           |  coaching-patt.   |       | Writes:          |
+                           |                   |       |  skill files     |
                            |                   |       |  feedback.md     |
                            | Writes:           |       |  health-scores   |
                            |  (via Claude      |       |                  |
                            |   subprocess)     |       +------------------+
                            |  sessions/*.json  |
                            |  profile.json     |
-                           |  catalog.csv      |
                            |  journal.md       |
                            +-------------------+
 
@@ -99,18 +95,16 @@ C4-style component diagram for impact analysis. Read this before making cross-cu
 ## Data Flow
 
 ```
-/setup --> catalog.csv, profile.json, journal.md, feedback.md, sessions/
+/setup --> profile.json, journal.md, feedback.md, sessions/
                 |
                 v
-/create-sim --> reads catalog.csv (gap analysis)
-            --> writes sims/{id}/* (new sim packages)
+/create-sim --> writes sims/{id}/* (new sim packages)
             --> writes sims/registry.json, sims/index.md
-            --> writes catalog.csv (adds new services discovered during research)
                 |
                 v
-/play --------> reads sims/{id}/* + catalog.csv + profile.json
+/play --------> reads sims/{id}/* + profile.json
             --> writes sessions/{id}.json (auto-save every interaction)
-            --> on resolution: writes profile.json, catalog.csv, journal.md
+            --> on resolution: writes profile.json, journal.md
             --> deletes sessions/{id}.json
                 |
                 v
@@ -143,7 +137,6 @@ test ----> run: executes node --test (unit tests)
 
 | File | Written by | Read by | Format |
 |------|-----------|---------|--------|
-| `learning/catalog.csv` | setup, create-sim, play | create-sim, play | CSV: service, full_name, category, cert_relevance, knowledge_score, sims_completed, last_practiced, notes |
 | `learning/profile.json` | setup, play | play | JSON: level, completed sims, patterns, strengths, weaknesses |
 | `learning/player-vault/sessions/` | setup, play | (reference) | Markdown: per-sim vault session entries |
 | `learning/feedback.md` | setup, feedback | fix | Markdown: timestamped feedback entries |
@@ -219,7 +212,6 @@ When changing a component, check what else reads/writes the same data:
 
 | If you change... | Also check... |
 |---|---|
-| `catalog.csv` format | setup (creates it), create-sim (reads + writes), play (reads + writes), web/ server.ts (reads for dashboard) |
 | `profile.json` format | setup (creates it), play (reads + writes), web/ server.ts (reads for dashboard), web/ app.js (renders stats) |
 | `manifest.json` schema | create-sim (generates), play (consumes), manifest-schema.json (validates), web/ prompt-builder.js (populates template from manifest) |
 | `agent-prompts.md` template | play (populates it from manifest data), web/ prompt-builder.js (must match all placeholders) |
