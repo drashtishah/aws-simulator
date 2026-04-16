@@ -6,7 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'node:child_process';
 import express from 'express';
-import { currentRank, normalizeHexagon, parseCatalog, getQuestionTypes, getConfig, progression } from '../lib/progress';
+import { currentRank, normalizeHexagon, getQuestionTypes, getConfig, progression } from '../lib/progress';
 
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -262,14 +262,17 @@ function buildApp() {
     const rankIdx = config.ranks.findIndex(r => r.id === rank.id);
     const nextRank = rankIdx > 0 ? config.ranks[rankIdx - 1] : null;
 
-    let servicesEncountered = [];
-    try {
-      const content = fs.readFileSync(path.join(ROOT, 'learning', 'catalog.csv'), 'utf8');
-      const catalog = parseCatalog(content);
-      servicesEncountered = catalog.filter(s => s.sims_completed > 0).map(s => s.full_name);
-    } catch {
-      // catalog may not exist yet
-    }
+    const completedSimEntries = profile.completed_sims ?? [];
+    const completedSimIds = completedSimEntries.map((entry: unknown) =>
+      typeof entry === 'string' ? entry : (entry as { sim_id: string }).sim_id
+    );
+    const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'sims', 'registry.json'), 'utf8'));
+    const servicesEncountered = [...new Set(
+      completedSimIds.flatMap((id: string) => {
+        const sim = registry.sims.find((s: { id: string }) => s.id === id);
+        return sim?.services ?? [];
+      })
+    )].sort();
 
     res.json({
       rank: rank.title,
@@ -279,7 +282,7 @@ function buildApp() {
       axisNames: axes,
       axisLabels,
       hexagon: normalized,
-      simsCompleted: (profile.completed_sims || []).length,
+      simsCompleted: completedSimIds.length,
       servicesEncountered,
       maxDifficulty: rank.max_difficulty,
       polygonLastAdvanced: profile.polygon_last_advanced || {},

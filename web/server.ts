@@ -4,7 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { exec, execSync } from 'node:child_process';
 import paths from './lib/paths';
-import { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression, parseCatalog } from './lib/progress';
+import { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression } from './lib/progress';
 import { stripFrontmatter } from './lib/frontmatter';
 
 const app = express();
@@ -256,15 +256,6 @@ app.get('/api/progress', (_req: Request, res: Response) => {
   const rankIdx = config.ranks.findIndex(r => r.id === rank.id);
   const nextRank = rankIdx > 0 ? config.ranks[rankIdx - 1] : null;
 
-  let servicesEncountered: string[] = [];
-  try {
-    const content = fs.readFileSync(paths.CATALOG, 'utf8');
-    const catalog = parseCatalog(content);
-    servicesEncountered = catalog.filter(s => s.sims_completed > 0).map(s => s.full_name);
-  } catch {
-    // catalog may not exist yet
-  }
-
   // completed_sims may be string[] (legacy) or Array<{sim_id, ...}> (what the
   // post-session agent writes today with session metadata). Normalize here.
   const completedSimEntries = profile.completed_sims ?? [];
@@ -287,6 +278,13 @@ app.get('/api/progress', (_req: Request, res: Response) => {
       questionTypes
     };
   });
+
+  const servicesEncountered = [...new Set(
+    completedSimIds.flatMap(id => {
+      const sim = registry.sims.find(s => s.id === id);
+      return sim?.services ?? [];
+    })
+  )].sort();
 
   res.json({
     rank: rank.title,
