@@ -32,5 +32,4 @@ This project has a graphify knowledge graph at `graphify-out/`.
 
 Rules:
 - Before exploring the workspace (navigating, searching, answering questions about structure or behavior), read `graphify-out/GRAPH_REPORT.md` for community hubs and god nodes
-- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
 - After modifying files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)

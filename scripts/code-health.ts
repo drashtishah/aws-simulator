@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import { classify, BUCKETS, defaultBucketWeights } from './lib/classify';
+import { classify, BUCKETS, defaultBucketWeights, isExcluded } from './lib/classify';
 import type { Bucket } from './lib/classify';
 import {
   proseDuplication,
@@ -812,9 +812,9 @@ export function discoverScope(
     if (ignoreSet.has(f)) continue;
     const b = classify(f);
     if (b === null) {
-      // classify() returns null for explicitly excluded paths (.claude/plans/).
+      // classify() returns null for explicitly excluded paths (see EXCLUDED_PREFIXES).
       // For everything else, null is a hard failure surfaced as unclassifiedErrors.
-      if (f.startsWith('.claude/plans/')) {
+      if (isExcluded(f)) {
         excluded++;
         continue;
       }
