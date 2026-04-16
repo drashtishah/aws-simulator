@@ -1,12 +1,12 @@
 # Graph Report - .  (2026-04-16)
 
 ## Corpus Check
-- 127 files · ~202,438 words
+- 127 files · ~202,065 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1143 nodes · 1527 edges · 157 communities detected
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 168 edges (avg confidence: 0.77)
+- 1144 nodes · 1530 edges · 158 communities detected
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 169 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -167,6 +167,7 @@
 - [[_COMMUNITY_Community 154|Community 154]]
 - [[_COMMUNITY_Community 155|Community 155]]
 - [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Sim 008: S3 CORS Presigned URL Failure` - 21 edges
@@ -234,11 +235,11 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.03
-Nodes (100): Category: Data, Category: Networking, Category: Performance, Category: Reliability, Canopy Goods, Spellbook, Threadline, CloudWatch Alarm Actionability (+92 more)
+Nodes (104): Category: Networking, Category: Performance, Category: Reliability, Canopy Goods, Patchwork Health, Spellbook, Action Group Design (Consolidated Responses), AI Triage Assistant (+96 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.03
-Nodes (98): Category: Cost Optimization, Category: Security, Patchwork Health, Action Group Design (Consolidated Responses), AI Triage Assistant, AWS Budgets for Spending Alerts, AWS Config Rules for S3 Public Access Detection, Bedrock Agent Token Billing (+90 more)
+Nodes (82): Category: Cost Optimization, Category: Data, Category: Security, AWS Config Rules for S3 Public Access Detection, Bucket Policies vs IAM Policies, CloudFormation Stack Policy, CI/CD Permission Validation Step, CloudTrail Forensics (+74 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.05
@@ -246,7 +247,7 @@ Nodes (57): Cancel Label (Pipeline Escape Mechanism), Cancel Label Design Spec, 
 
 ### Community 3 - "Community 3"
 Cohesion: 0.09
-Nodes (48): classify(), defaultBucketWeights(), normalize(), appendHistory(), applyFloors(), checkOwnershipConsistency(), checkTestDensityInvariant(), computeComplexity() (+40 more)
+Nodes (49): classify(), defaultBucketWeights(), isExcluded(), normalize(), appendHistory(), applyFloors(), checkOwnershipConsistency(), checkTestDensityInvariant() (+41 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.09
@@ -270,19 +271,19 @@ Nodes (44): Amazon EC2 Auto Scaling, Bedrock Foundation Model (Claude 3 Haiku), 
 
 ### Community 9 - "Community 9"
 Cohesion: 0.07
-Nodes (37): Category: Operations, CI/CD Environment Configuration Drift, CloudFront Cache Invalidation, CloudFront CORS Header Forwarding and Caching, CloudFront CORS-S3Origin Origin Request Policy, CORS (Cross-Origin Resource Sharing), Why curl/Postman Works But Browser Does Not, Preflight Request (OPTIONS Method) (+29 more)
+Nodes (36): Category: Operations, Threadline, Binary Log Retention (binlog), CloudFormation Drift Detection, CloudFormation State Model (Logical vs Physical IDs), CloudWatch FreeStorageSpace Alarm, ContinueUpdateRollback with Resources-to-Skip, FreeStorageSpace CloudWatch Metric (+28 more)
 
 ### Community 10 - "Community 10"
+Cohesion: 0.07
+Nodes (36): CI/CD Environment Configuration Drift, CloudFront Cache Invalidation, CloudFront CORS Header Forwarding and Caching, CloudFront CORS-S3Origin Origin Request Policy, CORS (Cross-Origin Resource Sharing), Why curl/Postman Works But Browser Does Not, Preflight Request (OPTIONS Method), S3 Presigned URLs (+28 more)
+
+### Community 11 - "Community 11"
 Cohesion: 0.11
 Nodes (30): applyVaultUpdates(), deriveRank(), gateMatches(), qualityGateMatches(), renderVaultUpdates(), updateProfileFromClassification(), updateRunningAverage(), aggregate() (+22 more)
 
-### Community 11 - "Community 11"
-Cohesion: 0.07
-Nodes (34): Feature Branch Strategy, Reflection Signals (Implementer), RTK Git Compression (Implementer), Implementer Pipeline Stage, TDD Red-Green Workflow (Implementer), needs-decomposition Label, needs-eval Label, needs-plan Label (+26 more)
-
 ### Community 12 - "Community 12"
 Cohesion: 0.07
-Nodes (31): ALB Gradual Capacity Scaling Limits, ALB Pre-Warming for Planned Events, ALBRequestCountPerTarget Scaling Metric, T3 Burstable CPU Credits, Connection Draining / Deregistration Delay, Auto Scaling Cooldown Period Tuning, CPU as Lagging Indicator for Web Traffic, LCU Reservation (Load Balancer Capacity Units) (+23 more)
+Nodes (34): Feature Branch Strategy, Reflection Signals (Implementer), RTK Git Compression (Implementer), Implementer Pipeline Stage, TDD Red-Green Workflow (Implementer), needs-decomposition Label, needs-eval Label, needs-plan Label (+26 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.07
@@ -334,55 +335,55 @@ Nodes (6): buildSummary(), currentHead(), hashUiFilesAtHead(), listUiFilesAtHead
 
 ### Community 25 - "Community 25"
 Cohesion: 0.29
-Nodes (0): 
+Nodes (8): Application Auto Scaling, Blue-Green Deployment, CloudWatch Metric Dimension Mismatch, Infrastructure as Code for Endpoint Config, CloudWatch INSUFFICIENT_DATA State, put-metric-alarm CLI Command, Rationale: IaC prevents dimension drift after deployment, SageMaker Endpoint Variants
 
 ### Community 26 - "Community 26"
-Cohesion: 0.33
-Nodes (7): Problem: Ad-hoc Commit Duplicates Work a Live Sibling Worktree Already Owns, Rationale: Dedupe via gh issue list is constant-time, one call, Rationale: git revert preserves audit trail while undoing effect, Solution: Revert Your Direct Commit So the Sibling PR Can Land Cleanly, Solution: Always Run gh issue list Before gh issue create, Tool: gh issue list, Tool: git revert
+Cohesion: 0.29
+Nodes (0): 
 
 ### Community 27 - "Community 27"
 Cohesion: 0.33
-Nodes (7): Console Mode (Theme-Free Raw Data), Flat Affect Observational Narration, Mundane-Beside-Crisis Stacking (Signature Device), Plain English First, AWS Term Second, Universal Theme Anti-Patterns, Theme System: Structural Constants, Calm Mentor Theme
+Nodes (7): Problem: Ad-hoc Commit Duplicates Work a Live Sibling Worktree Already Owns, Rationale: Dedupe via gh issue list is constant-time, one call, Rationale: git revert preserves audit trail while undoing effect, Solution: Revert Your Direct Commit So the Sibling PR Can Land Cleanly, Solution: Always Run gh issue list Before gh issue create, Tool: gh issue list, Tool: git revert
 
 ### Community 28 - "Community 28"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (7): Console Mode (Theme-Free Raw Data), Flat Affect Observational Narration, Mundane-Beside-Crisis Stacking (Signature Device), Plain English First, AWS Term Second, Universal Theme Anti-Patterns, Theme System: Structural Constants, Calm Mentor Theme
 
 ### Community 29 - "Community 29"
+Cohesion: 0.33
+Nodes (0): 
+
+### Community 30 - "Community 30"
 Cohesion: 0.4
 Nodes (4): hasTest(), filterByGlob(), globToRegExp(), mapChangedToTests()
 
-### Community 30 - "Community 30"
+### Community 31 - "Community 31"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 31 - "Community 31"
+### Community 32 - "Community 32"
 Cohesion: 0.6
 Nodes (5): extractFrontmatter(), lintIndex(), lintNote(), lintVault(), main()
 
-### Community 32 - "Community 32"
+### Community 33 - "Community 33"
 Cohesion: 0.33
 Nodes (6): Bedrock Knowledge Base: terravox-legal-kb, OpenSearch Serverless Vector Store, OpenSearch Serverless Index: terravox-legal-index, S3 Bucket: terravox-legal-docs-prod, Amazon Titan Embed Text v2, Amazon Titan Embeddings V2
-
-### Community 33 - "Community 33"
-Cohesion: 0.4
-Nodes (0): 
 
 ### Community 34 - "Community 34"
 Cohesion: 0.4
 Nodes (0): 
 
 ### Community 35 - "Community 35"
+Cohesion: 0.4
+Nodes (0): 
+
+### Community 36 - "Community 36"
 Cohesion: 0.7
 Nodes (4): buildBlock(), describeFile(), rewrite(), walkFiles()
 
-### Community 36 - "Community 36"
+### Community 37 - "Community 37"
 Cohesion: 0.8
 Nodes (5): Concept: Credential Provider Chain, Concept: Environment Variables, Concept: Instance Profile, Concept: OIDC Federation, Concept: STS (Security Token Service)
-
-### Community 37 - "Community 37"
-Cohesion: 0.5
-Nodes (0): 
 
 ### Community 38 - "Community 38"
 Cohesion: 0.5
@@ -409,20 +410,20 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 44 - "Community 44"
+Cohesion: 0.5
+Nodes (0): 
+
+### Community 45 - "Community 45"
 Cohesion: 0.83
 Nodes (3): main(), parseArgs(), patchBody()
 
-### Community 45 - "Community 45"
+### Community 46 - "Community 46"
 Cohesion: 1.0
 Nodes (4): Behavioral Profile Pattern, Investigation Style Pattern, Question Quality Trends Pattern, Learning Vault Index
 
-### Community 46 - "Community 46"
+### Community 47 - "Community 47"
 Cohesion: 0.5
 Nodes (4): Rationale: Per-file test spawn prevents hangs and tsx resolution, npm test Pipeline (extract_paths, mypy, typecheck, test CLI), Path Registry (auto-generated, extract_paths.py), Per-file Test Spawn (tsx subprocess isolation)
-
-### Community 47 - "Community 47"
-Cohesion: 0.67
-Nodes (0): 
 
 ### Community 48 - "Community 48"
 Cohesion: 0.67
@@ -457,36 +458,36 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 56 - "Community 56"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 57 - "Community 57"
 Cohesion: 1.0
 Nodes (2): main(), readLastEntry()
 
-### Community 57 - "Community 57"
+### Community 58 - "Community 58"
 Cohesion: 0.67
 Nodes (0): 
-
-### Community 58 - "Community 58"
-Cohesion: 1.0
-Nodes (2): generateOpener(), main()
 
 ### Community 59 - "Community 59"
 Cohesion: 1.0
-Nodes (2): sliceSection(), validateDocIssue()
+Nodes (2): generateOpener(), main()
 
 ### Community 60 - "Community 60"
-Cohesion: 0.67
-Nodes (3): Rationale: CLI Schema Contracts Prevent Silent Breakage, Test CLI Output Schemas, agent-specs-output.schema.json
+Cohesion: 1.0
+Nodes (2): sliceSection(), validateDocIssue()
 
 ### Community 61 - "Community 61"
 Cohesion: 0.67
-Nodes (3): Bedrock Agent Action Group, Bedrock Agent ABCDE12345, clairvue-dashboard-query Lambda
+Nodes (3): Rationale: CLI Schema Contracts Prevent Silent Breakage, Test CLI Output Schemas, agent-specs-output.schema.json
 
 ### Community 62 - "Community 62"
 Cohesion: 0.67
-Nodes (3): Ownership Integrity (Code Health Metric), Test Fixture: Bad Doc Issue, Test Fixture: Good Doc Issue
+Nodes (3): Bedrock Agent Action Group, Bedrock Agent ABCDE12345, clairvue-dashboard-query Lambda
 
 ### Community 63 - "Community 63"
-Cohesion: 1.0
-Nodes (0): 
+Cohesion: 0.67
+Nodes (3): Ownership Integrity (Code Health Metric), Test Fixture: Bad Doc Issue, Test Fixture: Good Doc Issue
 
 ### Community 64 - "Community 64"
 Cohesion: 1.0
@@ -522,11 +523,11 @@ Nodes (0):
 
 ### Community 72 - "Community 72"
 Cohesion: 1.0
-Nodes (2): Concept: Skill Polygon (gather/diagnose/correlate/impact/trace/fix), Player Rank: Responder
+Nodes (0): 
 
 ### Community 73 - "Community 73"
 Cohesion: 1.0
-Nodes (2): ui Label, MCP Chrome DevTools Server
+Nodes (2): Concept: Skill Polygon (gather/diagnose/correlate/impact/trace/fix), Player Rank: Responder
 
 ### Community 74 - "Community 74"
 Cohesion: 1.0
@@ -534,19 +535,19 @@ Nodes (2): sim-content Label, MCP AWS Knowledge Server
 
 ### Community 75 - "Community 75"
 Cohesion: 1.0
-Nodes (2): Pipeline Security (owner-only gates), Anti-Cheat Enforcement
+Nodes (2): ui Label, MCP Chrome DevTools Server
 
 ### Community 76 - "Community 76"
 Cohesion: 1.0
-Nodes (2): DynamoDB Partition Key Design, Hot Partition Problem (DynamoDB)
+Nodes (2): Pipeline Security (owner-only gates), Anti-Cheat Enforcement
 
 ### Community 77 - "Community 77"
 Cohesion: 1.0
-Nodes (2): NAT Gateway: nat-0a1b2c3d4e5f67890, S3 Bucket: fieldspar-sensor-lake-prod
+Nodes (2): DynamoDB Partition Key Design, Hot Partition Problem (DynamoDB)
 
 ### Community 78 - "Community 78"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (2): NAT Gateway: nat-0a1b2c3d4e5f67890, S3 Bucket: fieldspar-sensor-lake-prod
 
 ### Community 79 - "Community 79"
 Cohesion: 1.0
@@ -750,317 +751,321 @@ Nodes (0):
 
 ### Community 129 - "Community 129"
 Cohesion: 1.0
-Nodes (1): MCP Integration (AWS Knowledge)
+Nodes (0): 
 
 ### Community 130 - "Community 130"
 Cohesion: 1.0
-Nodes (1): sim-test Runner Pain Points
+Nodes (1): MCP Integration (AWS Knowledge)
 
 ### Community 131 - "Community 131"
 Cohesion: 1.0
-Nodes (1): extract_paths.py Mutates Working Tree
+Nodes (1): sim-test Runner Pain Points
 
 ### Community 132 - "Community 132"
 Cohesion: 1.0
-Nodes (1): Problem: Shell Scripts Pass on macOS, Fail in Linux CI Due to BSD vs GNU Drift
+Nodes (1): extract_paths.py Mutates Working Tree
 
 ### Community 133 - "Community 133"
 Cohesion: 1.0
-Nodes (1): Compile Pending Log
+Nodes (1): Problem: Shell Scripts Pass on macOS, Fail in Linux CI Due to BSD vs GNU Drift
 
 ### Community 134 - "Community 134"
 Cohesion: 1.0
-Nodes (1): Environment Variables
+Nodes (1): Compile Pending Log
 
 ### Community 135 - "Community 135"
 Cohesion: 1.0
-Nodes (1): Instance Profile
+Nodes (1): Environment Variables
 
 ### Community 136 - "Community 136"
 Cohesion: 1.0
-Nodes (1): OIDC Federation
+Nodes (1): Instance Profile
 
 ### Community 137 - "Community 137"
 Cohesion: 1.0
-Nodes (1): needs-triage Label
+Nodes (1): OIDC Federation
 
 ### Community 138 - "Community 138"
 Cohesion: 1.0
-Nodes (1): text-only Label
+Nodes (1): needs-triage Label
 
 ### Community 139 - "Community 139"
 Cohesion: 1.0
-Nodes (1): decomposed-from Label
+Nodes (1): text-only Label
 
 ### Community 140 - "Community 140"
 Cohesion: 1.0
-Nodes (1): pipeline-failed Label
+Nodes (1): decomposed-from Label
 
 ### Community 141 - "Community 141"
 Cohesion: 1.0
-Nodes (1): blocked Label
+Nodes (1): pipeline-failed Label
 
 ### Community 142 - "Community 142"
 Cohesion: 1.0
-Nodes (1): cancel Label
+Nodes (1): blocked Label
 
 ### Community 143 - "Community 143"
 Cohesion: 1.0
-Nodes (1): needs-human Label
+Nodes (1): cancel Label
 
 ### Community 144 - "Community 144"
 Cohesion: 1.0
-Nodes (1): Vault Query Protocol (Planner)
+Nodes (1): needs-human Label
 
 ### Community 145 - "Community 145"
 Cohesion: 1.0
-Nodes (1): Agent SDK Tool Names
+Nodes (1): Vault Query Protocol (Planner)
 
 ### Community 146 - "Community 146"
 Cohesion: 1.0
-Nodes (1): pre-commit-ui-tests Hook
+Nodes (1): Agent SDK Tool Names
 
 ### Community 147 - "Community 147"
 Cohesion: 1.0
-Nodes (1): build-agent-index.ts Script
+Nodes (1): pre-commit-ui-tests Hook
 
 ### Community 148 - "Community 148"
 Cohesion: 1.0
-Nodes (1): HEXAD Signals
+Nodes (1): build-agent-index.ts Script
 
 ### Community 149 - "Community 149"
 Cohesion: 1.0
-Nodes (1): Transient Files
+Nodes (1): HEXAD Signals
 
 ### Community 150 - "Community 150"
 Cohesion: 1.0
-Nodes (1): Reflector Stage (Opus)
+Nodes (1): Transient Files
 
 ### Community 151 - "Community 151"
 Cohesion: 1.0
-Nodes (1): Permission Bypass Registry (auto-generated)
+Nodes (1): Reflector Stage (Opus)
 
 ### Community 152 - "Community 152"
 Cohesion: 1.0
-Nodes (1): Cleanup (branch, Issues, ephemeral artifacts, doctor)
+Nodes (1): Permission Bypass Registry (auto-generated)
 
 ### Community 153 - "Community 153"
 Cohesion: 1.0
-Nodes (1): Target Group Slow Start Mode
+Nodes (1): Cleanup (branch, Issues, ephemeral artifacts, doctor)
 
 ### Community 154 - "Community 154"
 Cohesion: 1.0
-Nodes (1): Cross-Zone Load Balancing
+Nodes (1): Target Group Slow Start Mode
 
 ### Community 155 - "Community 155"
 Cohesion: 1.0
-Nodes (1): ScaleOutCooldown Period
+Nodes (1): Cross-Zone Load Balancing
 
 ### Community 156 - "Community 156"
+Cohesion: 1.0
+Nodes (1): ScaleOutCooldown Period
+
+### Community 157 - "Community 157"
 Cohesion: 1.0
 Nodes (1): AWS Control Tower
 
 ## Knowledge Gaps
 - **320 isolated node(s):** `A single path reference found in a source file.`, `Walk the repo tree and return scannable files.`, `Clean and normalize a raw extracted path string.      Returns None if the string`, `Extract path references from a Markdown file.      Matches any backtick-wrapped`, `Extract path references from a JSON file.      Matches any JSON string value tha` (+315 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 63`** (2 nodes): `extractEditPaths()`, `headless-allowlist.test.ts`
+- **Thin community `Community 64`** (2 nodes): `extractEditPaths()`, `headless-allowlist.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 64`** (2 nodes): `parseCommitMessage()`, `git-commit-format.test.ts`
+- **Thin community `Community 65`** (2 nodes): `parseCommitMessage()`, `git-commit-format.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 65`** (2 nodes): `parseCSV()`, `path-registry.test.ts`
+- **Thin community `Community 66`** (2 nodes): `parseCSV()`, `path-registry.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 66`** (2 nodes): `runCheck()`, `health-regression-check.test.ts`
+- **Thin community `Community 67`** (2 nodes): `runCheck()`, `health-regression-check.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 67`** (2 nodes): `eachManifest()`, `manifest-shape.test.ts`
+- **Thin community `Community 68`** (2 nodes): `eachManifest()`, `manifest-shape.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 68`** (2 nodes): `loadSettings()`, `hook-permissions.test.ts`
+- **Thin community `Community 69`** (2 nodes): `loadSettings()`, `hook-permissions.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 69`** (2 nodes): `workflow-references.test.ts`, `grepCount()`
+- **Thin community `Community 70`** (2 nodes): `workflow-references.test.ts`, `grepCount()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 70`** (2 nodes): `assertNoRootLeak()`, `assert-no-root-leak.ts`
+- **Thin community `Community 71`** (2 nodes): `assertNoRootLeak()`, `assert-no-root-leak.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 71`** (2 nodes): `stripFrontmatter()`, `frontmatter.ts`
+- **Thin community `Community 72`** (2 nodes): `stripFrontmatter()`, `frontmatter.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 72`** (2 nodes): `Concept: Skill Polygon (gather/diagnose/correlate/impact/trace/fix)`, `Player Rank: Responder`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 73`** (2 nodes): `ui Label`, `MCP Chrome DevTools Server`
+- **Thin community `Community 73`** (2 nodes): `Concept: Skill Polygon (gather/diagnose/correlate/impact/trace/fix)`, `Player Rank: Responder`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 74`** (2 nodes): `sim-content Label`, `MCP AWS Knowledge Server`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 75`** (2 nodes): `Pipeline Security (owner-only gates)`, `Anti-Cheat Enforcement`
+- **Thin community `Community 75`** (2 nodes): `ui Label`, `MCP Chrome DevTools Server`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 76`** (2 nodes): `DynamoDB Partition Key Design`, `Hot Partition Problem (DynamoDB)`
+- **Thin community `Community 76`** (2 nodes): `Pipeline Security (owner-only gates)`, `Anti-Cheat Enforcement`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 77`** (2 nodes): `NAT Gateway: nat-0a1b2c3d4e5f67890`, `S3 Bucket: fieldspar-sensor-lake-prod`
+- **Thin community `Community 77`** (2 nodes): `DynamoDB Partition Key Design`, `Hot Partition Problem (DynamoDB)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 78`** (1 nodes): `audit-permissions.test.ts`
+- **Thin community `Community 78`** (2 nodes): `NAT Gateway: nat-0a1b2c3d4e5f67890`, `S3 Bucket: fieldspar-sensor-lake-prod`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 79`** (1 nodes): `agent-test-runner.test.ts`
+- **Thin community `Community 79`** (1 nodes): `audit-permissions.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 80`** (1 nodes): `agent-policies.test.ts`
+- **Thin community `Community 80`** (1 nodes): `agent-test-runner.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 81`** (1 nodes): `model-split.test.ts`
+- **Thin community `Community 81`** (1 nodes): `agent-policies.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 82`** (1 nodes): `post-session-integration.test.ts`
+- **Thin community `Community 82`** (1 nodes): `model-split.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 83`** (1 nodes): `consolidator-effect.test.ts`
+- **Thin community `Community 83`** (1 nodes): `post-session-integration.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 84`** (1 nodes): `references-health.test.ts`
+- **Thin community `Community 84`** (1 nodes): `consolidator-effect.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 85`** (1 nodes): `test-run.test.ts`
+- **Thin community `Community 85`** (1 nodes): `references-health.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 86`** (1 nodes): `core-workflow-doc.test.ts`
+- **Thin community `Community 86`** (1 nodes): `test-run.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 87`** (1 nodes): `progress.test.ts`
+- **Thin community `Community 87`** (1 nodes): `core-workflow-doc.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 88`** (1 nodes): `audit-permissions-hermeticity.test.ts`
+- **Thin community `Community 88`** (1 nodes): `progress.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 89`** (1 nodes): `streaming.test.ts`
+- **Thin community `Community 89`** (1 nodes): `audit-permissions-hermeticity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 90`** (1 nodes): `pipeline-label-routing.test.ts`
+- **Thin community `Community 90`** (1 nodes): `streaming.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 91`** (1 nodes): `claude-stream.test.ts`
+- **Thin community `Community 91`** (1 nodes): `pipeline-label-routing.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 92`** (1 nodes): `progression.test.ts`
+- **Thin community `Community 92`** (1 nodes): `claude-stream.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 93`** (1 nodes): `claude-parse.test.ts`
+- **Thin community `Community 93`** (1 nodes): `progression.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 94`** (1 nodes): `play-picker-filter.test.ts`
+- **Thin community `Community 94`** (1 nodes): `claude-parse.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 95`** (1 nodes): `consolidator-scope.test.ts`
+- **Thin community `Community 95`** (1 nodes): `play-picker-filter.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 96`** (1 nodes): `markdown.test.ts`
+- **Thin community `Community 96`** (1 nodes): `consolidator-scope.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 97`** (1 nodes): `guard-coverage.test.ts`
+- **Thin community `Community 97`** (1 nodes): `markdown.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 98`** (1 nodes): `unified-dropdown.test.ts`
+- **Thin community `Community 98`** (1 nodes): `guard-coverage.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 99`** (1 nodes): `guard-write.test.ts`
+- **Thin community `Community 99`** (1 nodes): `unified-dropdown.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 100`** (1 nodes): `doc-issue-format.test.ts`
+- **Thin community `Community 100`** (1 nodes): `guard-write.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 101`** (1 nodes): `claude-process.test.ts`
+- **Thin community `Community 101`** (1 nodes): `doc-issue-format.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 102`** (1 nodes): `vault-aggregation.test.ts`
+- **Thin community `Community 102`** (1 nodes): `claude-process.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 103`** (1 nodes): `consolidator-trigger.test.ts`
+- **Thin community `Community 103`** (1 nodes): `vault-aggregation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 104`** (1 nodes): `migration.test.ts`
+- **Thin community `Community 104`** (1 nodes): `consolidator-trigger.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 105`** (1 nodes): `code-health-config.test.ts`
+- **Thin community `Community 105`** (1 nodes): `migration.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 106`** (1 nodes): `vault.test.ts`
+- **Thin community `Community 106`** (1 nodes): `code-health-config.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 107`** (1 nodes): `frontmatter.test.ts`
+- **Thin community `Community 107`** (1 nodes): `vault.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 108`** (1 nodes): `session-persistence.test.ts`
+- **Thin community `Community 108`** (1 nodes): `frontmatter.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 109`** (1 nodes): `narrator-streaming.test.ts`
+- **Thin community `Community 109`** (1 nodes): `session-persistence.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 110`** (1 nodes): `prompt-builder.test.ts`
+- **Thin community `Community 110`** (1 nodes): `narrator-streaming.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 111`** (1 nodes): `classify.test.ts`
+- **Thin community `Community 111`** (1 nodes): `prompt-builder.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 112`** (1 nodes): `patch-plan.test.ts`
+- **Thin community `Community 112`** (1 nodes): `classify.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 113`** (1 nodes): `question-quality.test.ts`
+- **Thin community `Community 113`** (1 nodes): `patch-plan.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 114`** (1 nodes): `claude-session.test.ts`
+- **Thin community `Community 114`** (1 nodes): `question-quality.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 115`** (1 nodes): `paths.test.ts`
+- **Thin community `Community 115`** (1 nodes): `claude-session.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 116`** (1 nodes): `game-session.test.ts`
+- **Thin community `Community 116`** (1 nodes): `paths.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 117`** (1 nodes): `vault-templates.test.ts`
+- **Thin community `Community 117`** (1 nodes): `game-session.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 118`** (1 nodes): `classifier-prompt.test.ts`
+- **Thin community `Community 118`** (1 nodes): `vault-templates.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 119`** (1 nodes): `model-config.test.ts`
+- **Thin community `Community 119`** (1 nodes): `classifier-prompt.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 120`** (1 nodes): `consolidator-isolation.test.ts`
+- **Thin community `Community 120`** (1 nodes): `model-config.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 121`** (1 nodes): `classification-schema.test.ts`
+- **Thin community `Community 121`** (1 nodes): `consolidator-isolation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 122`** (1 nodes): `log-hook.test.ts`
+- **Thin community `Community 122`** (1 nodes): `classification-schema.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 123`** (1 nodes): `assert-no-root-leak.test.ts`
+- **Thin community `Community 123`** (1 nodes): `log-hook.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 124`** (1 nodes): `session-lifecycle.test.ts`
+- **Thin community `Community 124`** (1 nodes): `assert-no-root-leak.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 125`** (1 nodes): `upload-youtube.test.ts`
+- **Thin community `Community 125`** (1 nodes): `session-lifecycle.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 126`** (1 nodes): `globals.d.ts`
+- **Thin community `Community 126`** (1 nodes): `upload-youtube.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 127`** (1 nodes): `install-git-hooks.ts`
+- **Thin community `Community 127`** (1 nodes): `globals.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 128`** (1 nodes): `model-config.ts`
+- **Thin community `Community 128`** (1 nodes): `install-git-hooks.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 129`** (1 nodes): `MCP Integration (AWS Knowledge)`
+- **Thin community `Community 129`** (1 nodes): `model-config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 130`** (1 nodes): `sim-test Runner Pain Points`
+- **Thin community `Community 130`** (1 nodes): `MCP Integration (AWS Knowledge)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 131`** (1 nodes): `extract_paths.py Mutates Working Tree`
+- **Thin community `Community 131`** (1 nodes): `sim-test Runner Pain Points`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 132`** (1 nodes): `Problem: Shell Scripts Pass on macOS, Fail in Linux CI Due to BSD vs GNU Drift`
+- **Thin community `Community 132`** (1 nodes): `extract_paths.py Mutates Working Tree`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 133`** (1 nodes): `Compile Pending Log`
+- **Thin community `Community 133`** (1 nodes): `Problem: Shell Scripts Pass on macOS, Fail in Linux CI Due to BSD vs GNU Drift`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 134`** (1 nodes): `Environment Variables`
+- **Thin community `Community 134`** (1 nodes): `Compile Pending Log`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 135`** (1 nodes): `Instance Profile`
+- **Thin community `Community 135`** (1 nodes): `Environment Variables`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 136`** (1 nodes): `OIDC Federation`
+- **Thin community `Community 136`** (1 nodes): `Instance Profile`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 137`** (1 nodes): `needs-triage Label`
+- **Thin community `Community 137`** (1 nodes): `OIDC Federation`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 138`** (1 nodes): `text-only Label`
+- **Thin community `Community 138`** (1 nodes): `needs-triage Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 139`** (1 nodes): `decomposed-from Label`
+- **Thin community `Community 139`** (1 nodes): `text-only Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 140`** (1 nodes): `pipeline-failed Label`
+- **Thin community `Community 140`** (1 nodes): `decomposed-from Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 141`** (1 nodes): `blocked Label`
+- **Thin community `Community 141`** (1 nodes): `pipeline-failed Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 142`** (1 nodes): `cancel Label`
+- **Thin community `Community 142`** (1 nodes): `blocked Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 143`** (1 nodes): `needs-human Label`
+- **Thin community `Community 143`** (1 nodes): `cancel Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 144`** (1 nodes): `Vault Query Protocol (Planner)`
+- **Thin community `Community 144`** (1 nodes): `needs-human Label`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 145`** (1 nodes): `Agent SDK Tool Names`
+- **Thin community `Community 145`** (1 nodes): `Vault Query Protocol (Planner)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 146`** (1 nodes): `pre-commit-ui-tests Hook`
+- **Thin community `Community 146`** (1 nodes): `Agent SDK Tool Names`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 147`** (1 nodes): `build-agent-index.ts Script`
+- **Thin community `Community 147`** (1 nodes): `pre-commit-ui-tests Hook`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 148`** (1 nodes): `HEXAD Signals`
+- **Thin community `Community 148`** (1 nodes): `build-agent-index.ts Script`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 149`** (1 nodes): `Transient Files`
+- **Thin community `Community 149`** (1 nodes): `HEXAD Signals`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 150`** (1 nodes): `Reflector Stage (Opus)`
+- **Thin community `Community 150`** (1 nodes): `Transient Files`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 151`** (1 nodes): `Permission Bypass Registry (auto-generated)`
+- **Thin community `Community 151`** (1 nodes): `Reflector Stage (Opus)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 152`** (1 nodes): `Cleanup (branch, Issues, ephemeral artifacts, doctor)`
+- **Thin community `Community 152`** (1 nodes): `Permission Bypass Registry (auto-generated)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 153`** (1 nodes): `Target Group Slow Start Mode`
+- **Thin community `Community 153`** (1 nodes): `Cleanup (branch, Issues, ephemeral artifacts, doctor)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 154`** (1 nodes): `Cross-Zone Load Balancing`
+- **Thin community `Community 154`** (1 nodes): `Target Group Slow Start Mode`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 155`** (1 nodes): `ScaleOutCooldown Period`
+- **Thin community `Community 155`** (1 nodes): `Cross-Zone Load Balancing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 156`** (1 nodes): `AWS Control Tower`
+- **Thin community `Community 156`** (1 nodes): `ScaleOutCooldown Period`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 157`** (1 nodes): `AWS Control Tower`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Amazon CloudWatch` connect `Community 1` to `Community 0`, `Community 9`, `Community 12`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `round()` connect `Community 3` to `Community 16`, `Community 10`, `Community 18`?**
+- **Why does `Amazon CloudWatch` connect `Community 0` to `Community 9`, `Community 10`, `Community 1`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `round()` connect `Community 3` to `Community 16`, `Community 18`, `Community 11`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Why does `updateProfileFromClassification()` connect `Community 10` to `Community 3`, `Community 7`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+- **Why does `updateProfileFromClassification()` connect `Community 11` to `Community 3`, `Community 7`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
 - **What connects `A single path reference found in a source file.`, `Walk the repo tree and return scannable files.`, `Clean and normalize a raw extracted path string.      Returns None if the string` to the rest of the system?**
   _320 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
