@@ -27,7 +27,7 @@ const DST_DIR = path.join(GIT_COMMON_DIR, 'hooks');
 
 // Git-native hook names we manage from .claude/hooks/ (not the Claude Code
 // hooks, which live in .claude/settings.json and run inside Claude sessions).
-const GIT_HOOKS: string[] = [];
+const GIT_HOOKS: string[] = ['post-commit'];
 
 fs.mkdirSync(DST_DIR, { recursive: true });
 
