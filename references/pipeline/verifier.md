@@ -50,6 +50,14 @@ Read:
 Use `rtk git fetch`, `rtk git diff`, `rtk git log`, `rtk git status` for heavy git output.
 If RTK is unavailable, fall back to plain git and post a comment: `RTK not available; using plain git.`
 
+## Graph query protocol
+
+graphify is the primary navigation mechanism for this codebase. Use it to verify cross-file impact:
+- `graphify query "what depends on <changed export or function>"` to confirm all callers are updated.
+- `graphify explain "<changed module>"` to check if the diff missed a consumer.
+
+Navigate the codebase via graphify, not by browsing `references/`. The `references/` folder is reserved for specific files named in this prompt; do not browse it for exploration. If graphify is not available, fall back to Grep on specific files you already know you need. Post a comment noting the failure.
+
 Check out the implementer's branch and update with master:
   rtk git fetch origin
   git checkout feature/issue-{{ISSUE}}-<slug>
