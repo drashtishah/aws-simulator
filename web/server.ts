@@ -2,7 +2,7 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
-import { exec, execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import paths from './lib/paths';
 import { getConfig, currentRank, normalizeHexagon, getQuestionTypes, progression } from './lib/progress';
 import { stripFrontmatter } from './lib/frontmatter';
@@ -38,10 +38,12 @@ app.post('/api/save-recording', (req: Request, res: Response) => {
   const webmPath = path.join(paths.VIDEOS_DIR, `${basename}.webm`);
   const mp4Path = path.join(paths.VIDEOS_DIR, `${basename}.mp4`);
   fs.writeFileSync(webmPath, req.body);
-  exec(`ffmpeg -i "${webmPath}" -c:v libx264 -c:a aac -movflags +faststart "${mp4Path}"`, (err) => {
-    if (err) console.error(`mp4 conversion failed for ${basename}:`, err.message);
+  const child = spawn('ffmpeg', ['-i', webmPath, '-c:v', 'libx264', '-c:a', 'aac', '-movflags', '+faststart', mp4Path], { detached: true, stdio: 'ignore' });
+  child.on('close', code => {
+    if (code !== 0) console.error(`mp4 conversion failed for ${basename}: exit ${code}`);
     else { fs.unlinkSync(webmPath); console.log(`Converted ${basename}.mp4`); }
   });
+  child.unref();
   res.status(201).json({ filename: `${basename}.mp4` });
 });
 
