@@ -1,0 +1,46 @@
+               +------------------------+
+               | Support agent user     |
+               | (Quillstone web app)   |
+               +-----------+------------+
+                           |
+                           v
+              +-------------------------------+
+              | Bedrock AgentCore Runtime     |
+              | quillstone-support-agent      |
+              +---+---------------------------+
+                  |
+                  | tool call:
+                  | reorder_from_catalog
+                  v
+       +--------------------------------------+
+       | Bedrock AgentCore Gateway            |
+       | quillstone-mcp-tools                 |
+       | (invocation timeout: 300s)           |
+       +------+-------------------------------+
+              |
+              v
+       +-------------------------+
+       | API Gateway REST API    |
+       | quillstone-tools-api    |
+       +-----------+-------------+
+                   |
+                   v
+       +-----------------------------+
+       | Lambda                      |
+       | quillstone-reorder-fn       |
+       | timeout: 900s (15 min)      |
+       | HTTP client timeout: 600s   |
+       +-----------+-----------------+
+                   |
+                   v
+       +----------------------------+
+       | Partner Fulfillment API    |
+       | fulfill.vendorpartner.io   |
+       +----------------------------+
+
+  Tool latency profile (observed):
+    p50: 5:48  p95: 7:12  p99: 8:44
+    (p50 already exceeds Gateway's 300s timeout)
+
+  Agent framework retry policy (default):
+    on 4xx/5xx from a tool: up to 3 retries with exponential backoff

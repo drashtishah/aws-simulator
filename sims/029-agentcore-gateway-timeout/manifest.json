@@ -1,0 +1,187 @@
+{
+  "id": "029-agentcore-gateway-timeout",
+  "title": "Five Minutes Is Not Enough",
+  "summary": "A support agent's catalog-sync tool times out at exactly five minutes every time. The agent silently retries, and customers get charged twice.",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["bedrock-agentcore", "lambda", "api-gateway", "cloudwatch"],
+  "tags": ["agentcore", "gateway", "runtime", "mcp-server", "tool-timeout", "idempotency"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain4:Troubleshooting",
+    "SAP-C02:Domain2:NewSolutions"
+  ],
+  "company": {
+    "name": "Quillstone Support",
+    "industry": "B2B customer support SaaS",
+    "size": "Series A, 48 engineers"
+  },
+  "glossary": {
+    "Amazon Bedrock AgentCore Gateway": "A managed AgentCore service designed for stateless, short tool invocations. Exposes MCP servers as HTTPS endpoints that agents can call. Invocations have a 5-minute (300 second) timeout.",
+    "Amazon Bedrock AgentCore Runtime": "A managed AgentCore service for long-running agent sessions and tools. Sync request timeout is 15 minutes and async session duration is up to 8 hours.",
+    "MCP (Model Context Protocol)": "An open protocol for letting language models call external tools. An MCP server exposes a set of tools the agent can invoke; the agent calls them the way it would call a library function.",
+    "Tool timeout": "The deadline a hosting service imposes on a single tool invocation. When a tool exceeds the deadline, the hosting service cuts the call off and returns an error to the agent regardless of whether the tool finished its work.",
+    "Idempotency key": "A token a client includes with a request so the server can recognize retries as the same logical request and avoid duplicating the work. Without one, a retry that reaches the server while the original is still processing creates two side effects.",
+    "Ping/HEALTHY_BUSY": "A SnapStart Runtime mechanism where a long-running tool periodically sends a ping response so AgentCore does not treat the session as idle or stuck. Without it, long-running work on Runtime can be interrupted.",
+    "HTTP 504 Gateway Timeout": "The error returned when the hosting layer (Gateway, API Gateway, or a load balancer) cuts a request off because the upstream did not respond in time. The caller sees 504; the upstream may still be working.",
+    "Fulfillment API": "The downstream partner API that Quillstone calls to place actual orders on behalf of its customers. Each successful call produces a real shipment and a real charge."
+  },
+  "system": {
+    "what_broke": "The catalog-sync MCP tool takes six to eight minutes on a full partner catalog. The team hosted the MCP server on Amazon Bedrock AgentCore Gateway, whose invocation timeout is 5 minutes. The Gateway cuts the call off at 5:00, returns 504 to the agent, and the agent retries. Because the MCP tool places fulfillment orders as part of the sync (not just reads the catalog), every retry puts in a duplicate order. The customer is charged twice for each of the past week's reorders.",
+    "data_flow": "A customer-support user asks the agent to reorder a past order. The agent calls the reorder-from-catalog MCP tool hosted on AgentCore Gateway. The tool is a Lambda behind API Gateway that calls the partner's Fulfillment API. The Fulfillment API is slow because it refreshes the partner's catalog before placing the order. After 5 minutes AgentCore Gateway returns 504 to the agent. The agent interprets 504 as a transient error and retries. The second call reaches the Fulfillment API while the first is still running, completes first (partial cache warm-up), and places a second order.",
+    "components": [
+      {
+        "name": "quillstone-support-agent (AgentCore Runtime-hosted agent)",
+        "role": "A customer-support assistant that chats with support agents and takes actions on their behalf: lookup orders, process returns, place reorders.",
+        "connections": ["Calls tools via the quillstone-mcp-tools Gateway", "Uses Anthropic Claude on Amazon Bedrock for reasoning"],
+        "failure_impact": "Transparent retries on 504 produce duplicate fulfillment calls. The agent's users see a single reorder; downstream there are two or three."
+      },
+      {
+        "name": "quillstone-mcp-tools (AgentCore Gateway)",
+        "role": "Hosts the MCP tools that the agent can call. Provides authentication, rate limiting, and invocation routing. Invocations time out at 300 seconds.",
+        "connections": ["Routes tool calls to Lambda functions fronted by API Gateway", "Exposes each tool as an HTTP endpoint the agent can invoke"],
+        "failure_impact": "A tool that exceeds the 300-second timeout is cut off and the agent sees a 504. Anything the tool started downstream keeps running."
+      },
+      {
+        "name": "quillstone-reorder-fn (Lambda function)",
+        "role": "Implements the reorder-from-catalog tool. Fetches the partner catalog, matches the SKU from the past order, and calls the Fulfillment API to place the order.",
+        "connections": ["Triggered by API Gateway from the Gateway MCP tool", "Calls the partner Fulfillment API with a 10-minute client timeout"],
+        "failure_impact": "Has no idempotency key logic. Every call that reaches the Fulfillment API and succeeds results in a real order."
+      },
+      {
+        "name": "partner Fulfillment API (external)",
+        "role": "The vendor that actually ships inventory and charges the customer.",
+        "connections": ["Called by quillstone-reorder-fn over HTTPS", "Accepts optional Idempotency-Key header"],
+        "failure_impact": "Without an idempotency key, retries produce duplicate orders. The vendor's support desk is now Quillstone's second-most-common daily call."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "bedrock-agentcore",
+      "artifacts": [
+        "artifacts/gateway-config.json",
+        "artifacts/agent-tool-trace.json"
+      ],
+      "capabilities": [
+        "get_gateway",
+        "list_gateway_targets",
+        "get_agent_runtime",
+        "describe_gateway_timeout"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json",
+        "artifacts/reorder-handler-code.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "invoke"
+      ]
+    },
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/api-gateway-config.json"
+      ],
+      "capabilities": [
+        "get_rest_api",
+        "get_integration",
+        "get_stage"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-logs.txt",
+        "artifacts/tool-latency-metrics.csv"
+      ],
+      "capabilities": [
+        "filter_log_events",
+        "get_metric_data",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The tool keeps returning 504. Who is cutting the call off, and at exactly what time?",
+    "Look at the latency distribution for this tool. Where does it sit relative to AgentCore Gateway's invocation timeout?",
+    "How long does Gateway allow a tool call to run, and how long does Runtime allow?",
+    "What happens on the partner API side when the agent retries? Is there an idempotency key?",
+    "For tools that regularly take more than five minutes, you want AgentCore Runtime, not Gateway. For any tool that has side effects, you also want idempotency keys."
+  ],
+  "resolution": {
+    "root_cause": "The reorder-from-catalog MCP tool is hosted on Amazon Bedrock AgentCore Gateway, which caps invocations at 300 seconds. The tool's normal latency is 6 to 8 minutes because it refreshes the partner catalog before placing an order. Every invocation exceeds the Gateway timeout, the Gateway returns 504, and the agent retries. The tool places a real order on the Fulfillment API as part of its work and does not send an idempotency key, so each retry creates a duplicate order. The combination of the wrong deployment target (should be AgentCore Runtime) and the missing idempotency key turns a tool latency problem into a double-charging problem.",
+    "fix_criteria": [
+      {
+        "id": "identify_504_timeout",
+        "description": "Player identifies that the tool invocations are returning 504 Gateway Timeout at the 300-second mark",
+        "required": true
+      },
+      {
+        "id": "identify_gateway_vs_runtime",
+        "description": "Player identifies that AgentCore Gateway has a 5-minute invocation timeout while Runtime allows 15-minute synchronous requests and 8-hour async sessions, and that the tool should be hosted on Runtime",
+        "required": true
+      },
+      {
+        "id": "identify_missing_idempotency",
+        "description": "Player identifies that the reorder Lambda does not send an idempotency key to the Fulfillment API, so retries produce duplicate orders",
+        "required": true
+      },
+      {
+        "id": "propose_move_to_runtime_and_idempotency",
+        "description": "Player proposes migrating the MCP tool to AgentCore Runtime and adding an idempotency key to the Fulfillment API call",
+        "required": true
+      },
+      {
+        "id": "propose_agent_retry_backoff",
+        "description": "Player proposes disabling automatic agent retries on 504 for tools that have side effects, or making retry decisions sensitive to tool-category metadata",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "The difference between AgentCore Gateway and AgentCore Runtime, and how to choose a hosting target based on expected tool duration",
+      "How to read 504 Gateway Timeout errors and distinguish a cut-off at the hosting layer from a real downstream failure",
+      "Idempotency keys as the standard way to make external API calls safe to retry",
+      "Why agent tool-use loops that silently retry non-idempotent operations are a dangerous default"
+    ],
+    "sop_steps": [
+      "Read the agent's tool-call log. Look for a consistent error code on the tool that is misbehaving. In this case every invocation returns 504 at almost exactly 300 seconds. That number is the signature of the Gateway timeout, not of a downstream failure.",
+      "Compare the tool's latency distribution to Gateway's invocation timeout. Pull CloudWatch metrics for the tool's p50 and p95 latency. If the p95 is above 300 seconds, Gateway will cut off a significant fraction of calls. If the p50 is above 300 seconds, it cuts off every call.",
+      "Check what AgentCore hosting target you are on. Gateway is a 5-minute (300 second) invocation timeout and is meant for short, stateless tool calls. Runtime supports a 15-minute synchronous request timeout and up to an 8-hour asynchronous session. The docs are clear that long-running MCP servers belong on Runtime.",
+      "Inspect the tool's downstream behavior. Read the reorder Lambda's code and trace what it calls and in what order. The question you are answering is: does this tool have side effects that can be repeated safely? If it places orders, processes payments, or sends messages, it is not safe to repeat without an idempotency key.",
+      "Migrate the MCP tool to AgentCore Runtime. Publish a new AgentCore Runtime with the tool's container image, configure it with an appropriate maxLifetime and idleRuntimeSessionTimeout, and update the agent's tool bindings to point at the Runtime endpoint instead of the Gateway endpoint.",
+      "Add idempotency keys on the downstream call. Every reorder Lambda invocation should generate or receive an idempotency key (a deterministic hash of the user's request, or a UUID minted at the agent's tool-call boundary) and pass it to the Fulfillment API's Idempotency-Key header. The Fulfillment API then rejects duplicates.",
+      "Disable the agent's automatic retries for tools with side effects. In the agent framework, mark the reorder tool as non-idempotent. The framework will surface the error to the user rather than retrying quietly.",
+      "Add CloudWatch alarms on the gateway timeout rate. Count the number of 504s per hour for the Gateway. Page if the rate exceeds a small threshold. This catches future cases where a tool grows past the 300-second cutoff without anyone realizing.",
+      "Reconcile and refund. Pull the week's reorder-tool call log, cross-reference against the Fulfillment API's orders, identify the duplicates, cancel the extra shipments where possible, and refund the customers where not. Write a customer notification."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The tool is on Runtime, not Gateway, but still gets interrupted at 15 minutes because it does not send a ping.",
+        "how_it_differs": "Moving to Runtime fixed the 5-minute cut-off, but Runtime's sync request timeout is 15 minutes. For tools that can take longer, Runtime supports a ping mechanism where the tool periodically responds with HEALTHY_BUSY. Without pings, Runtime treats the session as stuck and terminates it.",
+        "prevention": "For any tool whose p95 latency is close to the Runtime timeout, implement the ping/HEALTHY_BUSY pattern per AgentCore docs. Or restructure the work into an async job: the tool enqueues a job and returns immediately with a handle, the agent polls for completion."
+      },
+      {
+        "scenario": "The tool's idempotency key is wrong: it is a timestamp, so it is different on every retry.",
+        "how_it_differs": "Idempotency keys exist, so on the surface the problem looks solved. But the key is generated at the moment the Fulfillment API call is made, using System.currentTimeMillis(). Every retry generates a new key. The Fulfillment API sees two distinct requests with different keys and places two orders.",
+        "prevention": "Derive idempotency keys deterministically from the user's request: a hash of user ID plus requested SKU plus target date. If those inputs are identical, the key is identical, and the Fulfillment API deduplicates correctly."
+      },
+      {
+        "scenario": "The agent framework's retry logic is at the AgentCore SDK layer, not the agent's reasoning layer, so marking the tool as non-idempotent in the agent code does not stop retries.",
+        "how_it_differs": "You tried to disable retries by annotating the tool, but the retry actually happens inside AgentCore's SDK at a lower level. It retries before your code gets to see the 504. The agent thinks its tool call simply took longer than expected.",
+        "prevention": "Configure retry behavior at the AgentCore Gateway target or Runtime SDK client level, not just at the agent framework level. For side-effect tools, disable client-side retries entirely and let the agent handle the error."
+      }
+    ],
+    "sop_practices": [
+      "Pick the AgentCore hosting target based on expected tool duration. Gateway is for short, stateless invocations (under 5 minutes). Runtime is for long-running tools and stateful sessions (up to 15 minutes sync, 8 hours async). Document the choice in the tool's README and revisit it when the tool's latency profile changes.",
+      "Every tool with side effects takes an idempotency key. The agent passes a deterministic key at tool-call time; the tool forwards it to the downstream API's Idempotency-Key header. This is the baseline for any agent that can initiate charges, ship goods, or send notifications.",
+      "Categorize tools by idempotency and configure retry behavior accordingly. Read-only tools can retry transparently; side-effect tools should surface errors to the user. A mismatch between tool category and retry behavior is how agents accidentally spam.",
+      "Alarm on Gateway 504 rate and Runtime timeout interruptions. These are the earliest signals that a tool's latency has grown past the platform's cut-off."
+    ]
+  }
+}

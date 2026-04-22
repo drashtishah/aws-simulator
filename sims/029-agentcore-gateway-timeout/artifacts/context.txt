@@ -1,0 +1,6 @@
+Company: Quillstone Support (Series A, 48 engineers)
+Industry: B2B customer support SaaS
+Users: About 230 customer companies, ~4,800 AI-driven reorders per week
+AWS Services: Amazon Bedrock AgentCore (Gateway), AWS Lambda, Amazon API Gateway, Amazon CloudWatch
+Your role: On-call engineer, first rotation, Friday 14:22
+Situation: Partner Fulfillment team emails: 14 duplicate reorders placed this morning, two already shipped. Every call returns 504 Gateway Timeout at exactly 5:00.04 and the agent retried.

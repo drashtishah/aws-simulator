@@ -1,0 +1,51 @@
+               +------------------------+
+               | Support agent user     |
+               | (Quillstone web app)   |
+               +-----------+------------+
+                           |
+                           v
+              +-------------------------------+
+              | Bedrock AgentCore Runtime     |
+              | quillstone-support-agent      |
+              +---+---------------------------+
+                  |
+                  | tool call:
+                  | reorder_from_catalog
+                  v
+       +--------------------------------------+
+       | Bedrock AgentCore Gateway            |
+       | quillstone-mcp-tools                 |
+       | [PROBLEM: WRONG TARGET               |
+       |  invocation timeout: 300s            |
+       |  tool's p50 latency: 5:48]           |
+       +------+-------------------------------+
+              |
+              v                          ^
+       +-------------------------+       |
+       | API Gateway REST API    |       |
+       | quillstone-tools-api    |       |
+       +-----------+-------------+       |
+                   |                     | 504 returned to agent at 5:00.04
+                   v                     | while Lambda continues running
+       +-----------------------------+   |
+       | Lambda                      |   |
+       | quillstone-reorder-fn       |   |
+       | timeout: 900s (15 min)      |   |
+       | HTTP client timeout: 600s   |   |
+       | [PROBLEM: NO IDEMPOTENCY    |   |
+       |  KEY SENT TO PARTNER]       |   |
+       +-----------+-----------------+   |
+                   |                     |
+                   v                     |
+       +----------------------------+    |
+       | Partner Fulfillment API    |    |
+       | fulfill.vendorpartner.io   |    |
+       | Accepts Idempotency-Key    |    |
+       | but Quillstone never sends |    |
+       | one -> duplicates allowed  |    |
+       +----------------------------+    |
+                                         |
+  Agent framework retry policy (default):|
+    [PROBLEM: SILENT RETRY ON 504 for    |
+     side-effect tools -----------------+
+  No CloudWatch alarm on Gateway 504 rate

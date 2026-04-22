@@ -1,0 +1,28 @@
+{
+  "agentRun": "run-4a82c1d97",
+  "userQuestion": "reorder the same items customer Maureen McAuley bought last October",
+  "toolCalls": [
+    {
+      "tool": "reorder_from_catalog",
+      "attempt": 1,
+      "startedAt": "2026-04-22T09:14:02Z",
+      "endedAt": "2026-04-22T09:19:02Z",
+      "durationMs": 300043,
+      "status": "504",
+      "error": "Gateway Timeout",
+      "_note": "Gateway cut the call off at exactly 5:00.04. The downstream Lambda continued running and completed at 09:21:06 with a successful Fulfillment API 201 Created."
+    },
+    {
+      "tool": "reorder_from_catalog",
+      "attempt": 2,
+      "startedAt": "2026-04-22T09:19:04Z",
+      "endedAt": "2026-04-22T09:21:16Z",
+      "durationMs": 131984,
+      "status": "200",
+      "result": {"orderId": "vendor-ord-88441129", "totalCharged": 184.37},
+      "_note": "Catalog was warm from attempt 1, so this succeeded within Gateway's timeout. The retry's response is what the agent saw as success. But attempt 1 also placed a real order (vendor-ord-88441128) and charged the same amount."
+    }
+  ],
+  "visibleToAgent": "One successful reorder: vendor-ord-88441129",
+  "actuallyHappened": "Two real orders at the partner: vendor-ord-88441128 and vendor-ord-88441129, each charging the customer $184.37"
+}

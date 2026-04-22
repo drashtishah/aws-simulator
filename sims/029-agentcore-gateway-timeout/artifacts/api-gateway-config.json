@@ -1,0 +1,15 @@
+{
+  "restApiId": "7x8y9z0abc",
+  "restApiName": "quillstone-tools-api",
+  "stage": "prod",
+  "integrations": [
+    {
+      "resourcePath": "/reorder",
+      "method": "POST",
+      "type": "AWS_PROXY",
+      "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:920481736251:function:quillstone-reorder-fn/invocations",
+      "timeoutInMillis": 29000,
+      "_note": "API Gateway REST APIs have a hard maximum integration timeout of 29 seconds. This is shorter than the reorder Lambda's actual latency (6 to 8 minutes). This integration is only reachable via Gateway; the 504 you see is from Gateway, not from API Gateway. However this is still worth fixing: a migration to AgentCore Runtime bypasses API Gateway entirely. If the team chose to keep API Gateway in the chain they would need to move to API Gateway response streaming (available since Nov 2025, 15-minute timeout) or HTTP API with similar constraints."
+    }
+  ]
+}

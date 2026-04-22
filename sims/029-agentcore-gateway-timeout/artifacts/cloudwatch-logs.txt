@@ -1,0 +1,15 @@
+2026-04-22T09:14:02.441Z INFO  [agentcore-gateway] invoke reorder_from_catalog session=rs-ae01 target=reorder-from-catalog
+2026-04-22T09:14:02.512Z INFO  [lambda reorder-fn] catalog refresh started
+2026-04-22T09:19:02.484Z WARN  [agentcore-gateway] invocation exceeded 300s timeout; returning 504 Gateway Timeout to client
+2026-04-22T09:19:04.118Z INFO  [agentcore-gateway] invoke reorder_from_catalog session=rs-ae01 target=reorder-from-catalog (agent retry)
+2026-04-22T09:19:04.220Z INFO  [lambda reorder-fn] catalog refresh started
+2026-04-22T09:21:06.702Z INFO  [lambda reorder-fn] fulfillment API 201 Created orderId=vendor-ord-88441128 totalCharged=184.37
+2026-04-22T09:21:06.801Z INFO  [lambda reorder-fn] request 1 complete, Lambda handler returning
+2026-04-22T09:21:16.004Z INFO  [lambda reorder-fn] fulfillment API 201 Created orderId=vendor-ord-88441129 totalCharged=184.37
+2026-04-22T09:21:16.112Z INFO  [lambda reorder-fn] request 2 complete, Lambda handler returning
+2026-04-22T09:21:16.203Z INFO  [agentcore-gateway] invocation completed in 132s, returning 200 to agent
+2026-04-22T14:22:44.004Z INFO  [partner-email] "Your AI agent placed 14 duplicate reorders today"
+2026-04-22T14:48:22.778Z INFO  [deploy] reorder MCP tool migrated to AgentCore Runtime quillstone-reorder-runtime
+2026-04-22T15:11:04.881Z INFO  [deploy] reorder Lambda now sending Idempotency-Key: reorder:{userId}:{sku}:{requestedDate}
+2026-04-22T15:30:18.220Z INFO  [deploy] agent framework: reorder_from_catalog tool marked non-idempotent (no auto-retry)
+2026-04-22T16:02:01.441Z INFO  [alarm] new alarm BedrockAgentCoreGateway504Rate configured, threshold > 5 per 5-minute period

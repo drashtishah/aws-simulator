@@ -1,0 +1,29 @@
+{
+  "gatewayName": "quillstone-mcp-tools",
+  "gatewayArn": "arn:aws:bedrock-agentcore:us-east-1:920481736251:gateway/quillstone-mcp-tools",
+  "gatewayType": "Gateway",
+  "invocationTimeoutSeconds": 300,
+  "targets": [
+    {
+      "targetName": "reorder-from-catalog",
+      "targetArn": "arn:aws:bedrock-agentcore:us-east-1:920481736251:gateway/quillstone-mcp-tools/target/reorder-from-catalog",
+      "protocol": "MCP",
+      "upstreamType": "apiGateway",
+      "upstreamArn": "arn:aws:execute-api:us-east-1:920481736251:7x8y9z0abc/prod/POST/reorder"
+    },
+    {
+      "targetName": "lookup-order-status",
+      "protocol": "MCP",
+      "upstreamType": "apiGateway",
+      "upstreamArn": "arn:aws:execute-api:us-east-1:920481736251:7x8y9z0abc/prod/GET/status"
+    },
+    {
+      "targetName": "process-return",
+      "protocol": "MCP",
+      "upstreamType": "apiGateway",
+      "upstreamArn": "arn:aws:execute-api:us-east-1:920481736251:7x8y9z0abc/prod/POST/return"
+    }
+  ],
+  "createdAt": "2026-03-04T16:22:07Z",
+  "_observation": "AgentCore Gateway invocation timeout is 300 seconds (5 minutes). This is fixed and documented; it cannot be raised on Gateway. For tools whose p95 exceeds this, migrate to AgentCore Runtime which supports 15-minute sync requests and up to 8-hour async sessions."
+}

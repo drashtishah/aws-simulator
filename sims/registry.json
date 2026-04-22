@@ -396,6 +396,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-22"
+    },
+    {
+      "id": "029-agentcore-gateway-timeout",
+      "title": "Five Minutes Is Not Enough",
+      "summary": "A support agent's catalog-sync tool times out at exactly five minutes every time. The agent silently retries, and customers get charged twice.",
+      "difficulty": 2,
+      "category": "operations",
+      "services": [
+        "bedrock-agentcore",
+        "lambda",
+        "api-gateway",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 25,
+      "created": "2026-04-22"
     }
   ]
 }

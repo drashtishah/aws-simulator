@@ -31,3 +31,9 @@ tags:
 | 021 | [[021-bedrock-agent-cost/story\|Ten Dollars a Minute]] | 2 - Associate | Cost | bedrock, cloudwatch, lambda | 25 min |
 | 022 | [[022-bedrock-guardrail-medical/story\|The Guardrail and the Doctor]] | 2 - Associate | Reliability | bedrock, cloudwatch, lambda, sns | 25 min |
 | 023 | [[023-sagemaker-endpoint-scaling/story\|The Endpoint That Stopped Thinking]] | 3 - Professional | Performance | sagemaker, cloudwatch, auto-scaling, lambda | 35 min |
+| 024 | [[024-agentcore-runaway-session/story\|The Agent That Would Not Stop]] | 3 - Professional | Cost | bedrock-agentcore, bedrock, cloudwatch, iam | 35 min |
+| 025 | [[025-agentcore-iam-god-mode/story\|The Agent With the Wrong Keys]] | 3 - Professional | Security | bedrock-agentcore, iam, cloudtrail, s3 | 35 min |
+| 026 | [[026-devops-agent-prod-wipe/story\|The Thirteen-Hour Recreation]] | 3 - Professional | Operations | q-developer, cloudformation, iam, cloudtrail | 40 min |
+| 027 | [[027-s3-vectors-filter-rag/story\|The Filter That Lost the Answer]] | 3 - Professional | Data | s3-vectors, bedrock, opensearch-serverless, cloudwatch | 40 min |
+| 028 | [[028-lambda-snapstart-credentials/story\|Yesterday's Token, Today's Traffic]] | 3 - Professional | Reliability | lambda, iam, sts, secrets-manager, cloudwatch | 35 min |
+| 029 | [[029-agentcore-gateway-timeout/story\|Five Minutes Is Not Enough]] | 2 - Associate | Operations | bedrock-agentcore, lambda, api-gateway, cloudwatch | 25 min |

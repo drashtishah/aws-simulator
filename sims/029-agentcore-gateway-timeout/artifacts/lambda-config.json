@@ -1,0 +1,17 @@
+{
+  "FunctionName": "quillstone-reorder-fn",
+  "FunctionArn": "arn:aws:lambda:us-east-1:920481736251:function:quillstone-reorder-fn",
+  "Runtime": "nodejs20.x",
+  "Role": "arn:aws:iam::920481736251:role/quillstone-reorder-fn-role",
+  "Handler": "index.handler",
+  "Timeout": 900,
+  "MemorySize": 1024,
+  "Environment": {
+    "Variables": {
+      "FULFILLMENT_API_BASE": "https://fulfill.vendorpartner.io/v2",
+      "FULFILLMENT_CLIENT_TIMEOUT_MS": "600000",
+      "PARTNER_CATALOG_CACHE_TABLE": "quillstone-partner-catalog-cache"
+    }
+  },
+  "_observation": "Lambda timeout is 900 seconds (15 minutes) and the HTTP client timeout to the Fulfillment API is 600 seconds. Both are longer than AgentCore Gateway's 300-second invocation timeout. When Gateway cuts off, Lambda keeps running and calls Fulfillment successfully."
+}

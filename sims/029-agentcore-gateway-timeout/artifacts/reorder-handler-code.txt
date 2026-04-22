@@ -1,0 +1,41 @@
+// File: src/index.js
+// quillstone-reorder-fn, nodejs20.x
+
+import { FulfillmentClient } from "./fulfillment.js";
+import { refreshCatalogFromPartner } from "./catalog.js";
+
+const fulfillment = new FulfillmentClient({
+  baseUrl: process.env.FULFILLMENT_API_BASE,
+  timeoutMs: parseInt(process.env.FULFILLMENT_CLIENT_TIMEOUT_MS, 10),
+});
+
+export async function handler(event) {
+  const { userId, originalOrderId, sku, quantity, requestedDate } = event;
+
+  // Slow path: refresh the partner's catalog before placing the order.
+  // This takes 4 to 6 minutes when the cache is cold.
+  const catalog = await refreshCatalogFromPartner();
+  const item = catalog.findBySku(sku);
+
+  // PROBLEM: no idempotency key sent to the Fulfillment API. Every request
+  // is treated as a distinct order by the partner. If Quillstone retries
+  // because the upstream Gateway returned 504, the partner ships twice.
+  const resp = await fulfillment.placeOrder({
+    userId,
+    sku: item.sku,
+    quantity,
+    requestedDate,
+    // FIX: add an Idempotency-Key header whose value is deterministic.
+    // headers: {
+    //   "Idempotency-Key": `reorder:${userId}:${sku}:${requestedDate}`,
+    // },
+  });
+
+  return {
+    statusCode: 201,
+    body: JSON.stringify({
+      orderId: resp.orderId,
+      totalCharged: resp.totalCharged,
+    }),
+  };
+}
