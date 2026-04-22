@@ -1,0 +1,11 @@
+{
+  "evalRunId": "eval-2026-04-21-golden-500",
+  "evalSize": 500,
+  "filterCoverage": "none (all golden questions are unfiltered)",
+  "overallRecallAt10": 0.91,
+  "overallMRR": 0.78,
+  "perJurisdictionRecallAt10": null,
+  "filteredVariantCoverage": false,
+  "_observation": "The nightly eval runs 500 unfiltered questions through both S3 Vectors and OpenSearch Serverless and compares recall. It has never run a filtered variant. Filtered-query degradation is therefore invisible to CI.",
+  "recommendation": "Expand to include at least one filtered variant per golden question per relevant jurisdiction. Compare filtered recall to unfiltered recall per jurisdiction. Fail if filtered recall drops by more than 0.05."
+}

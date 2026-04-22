@@ -365,6 +365,21 @@
       ],
       "estimated_minutes": 40,
       "created": "2026-04-22"
+    },
+    {
+      "id": "027-s3-vectors-filter-rag",
+      "title": "The Filter That Lost the Answer",
+      "summary": "A legal research assistant returns correct cases when asked broadly. Filter by jurisdiction and it starts inventing citations that sound right. The embeddings look fine.",
+      "difficulty": 3,
+      "category": "data",
+      "services": [
+        "s3-vectors",
+        "bedrock",
+        "opensearch-serverless",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 40,
+      "created": "2026-04-22"
     }
   ]
 }

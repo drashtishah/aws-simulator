@@ -1,0 +1,26 @@
+{
+  "vectorBucketName": "lex-approximate-cases",
+  "indexName": "lex-approximate-cases-v3",
+  "indexArn": "arn:aws:s3vectors:us-east-1:302988145607:index/lex-approximate-cases/lex-approximate-cases-v3",
+  "dimension": 1024,
+  "distanceMetric": "cosine",
+  "dataType": "float32",
+  "quantization": {
+    "type": "int8",
+    "enabled": true
+  },
+  "metadataConfiguration": {
+    "filterableFields": ["jurisdiction", "court_level", "year", "source"],
+    "nonFilterableFields": ["excerpt", "citation_string", "docket_number"]
+  },
+  "indexAlgorithm": "hnsw",
+  "hnswParameters": {
+    "m": 16,
+    "efConstruction": 200,
+    "efSearch": 64,
+    "filterMode": "pre"
+  },
+  "vectorCount": 4218342,
+  "createdAt": "2026-01-21T14:22:07Z",
+  "_note": "filterMode: pre means HNSW rejects non-matching nodes during graph traversal. This is the default. For narrow filters it can fragment the graph by removing bridge nodes. Change to post for post-filtering, or split into per-jurisdiction indexes."
+}

@@ -1,0 +1,13 @@
+2026-04-21T13:42:18.441Z INFO  [retriever] received query question_hash=8f6c4b2a filter=jurisdiction:NY k=10
+2026-04-21T13:42:18.512Z INFO  [retriever] invoked Titan embed v2 latency_ms=61 dim=1024
+2026-04-21T13:42:18.547Z INFO  [retriever] s3vectors:QueryVectors index=lex-approximate-cases-v3 latency_ms=34 results=10
+2026-04-21T13:42:18.548Z INFO  [retriever] top_scores=[0.878,0.872,0.871,0.869,0.868,0.867,0.866,0.865,0.864,0.863]
+2026-04-21T13:42:18.549Z DEBUG [retriever] score_span=0.015 top_score=0.878 cutoff=0.80 all_pass_cutoff=true
+2026-04-21T13:42:18.552Z INFO  [answerer] passing 10 chunks to Claude Haiku
+2026-04-21T13:42:21.201Z INFO  [answerer] generation_complete tokens_out=412 citations_in_answer=3
+2026-04-21T13:42:21.202Z WARN  [answerer-validator] NOT ENABLED: verbatim citation matching against context is disabled
+2026-04-21T13:42:21.210Z INFO  [api] returned answer to user request_id=R-0e2c7b
+2026-04-21T14:11:02.994Z INFO  [retriever] received query question_hash=8f6c4b2a filter=null k=10
+2026-04-21T14:11:03.028Z INFO  [retriever] s3vectors:QueryVectors index=lex-approximate-cases-v3 latency_ms=31 results=10
+2026-04-21T14:11:03.029Z INFO  [retriever] top_scores=[0.942,0.894,0.881,0.867,0.852,0.843,0.841,0.839,0.837,0.832]
+2026-04-21T14:11:03.030Z DEBUG [retriever] score_span=0.110 top_score=0.942 cutoff=0.80 all_pass_cutoff=true

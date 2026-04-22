@@ -1,0 +1,31 @@
+{
+  "question": "When is a merger clause enforceable against parol evidence for a commercial contract dispute?",
+  "filter": {"jurisdiction": "NY"},
+  "comparison": [
+    {
+      "source": "s3-vectors (pre-filter, HNSW)",
+      "top3": [
+        {"docId": "nycs-1987-0417-01", "score": 0.878, "title": "Meyers v. Eastwood Realty (1987)", "relevance": "off-topic: residential lease, not commercial"},
+        {"docId": "nycs-1988-0212-17", "score": 0.872, "title": "Brenner v. Holdfast Partners (1988)", "relevance": "off-topic: promissory note, not commercial contract"},
+        {"docId": "nycs-1991-0604-09", "score": 0.871, "title": "Allenwood Co. v. Kim (1991)", "relevance": "off-topic: residential merger clause"}
+      ]
+    },
+    {
+      "source": "s3-vectors (post-filter at K=200, then trim to NY, then top-10)",
+      "top3": [
+        {"docId": "nyca-2021-0907-01", "score": 0.942, "title": "Wynkoop Fund LP v. ADM Holdings (2021)", "relevance": "exactly on point"},
+        {"docId": "nycs-2020-0612-17", "score": 0.867, "title": "Hartwicke Industries v. Trevon Partners (2020)", "relevance": "directly on point"},
+        {"docId": "nyca-2018-0415-09", "score": 0.881, "title": "Calumet Global v. Iridian (2018)", "relevance": "on point"}
+      ]
+    },
+    {
+      "source": "opensearch-serverless (keyword search with NY filter)",
+      "top3": [
+        {"docId": "nyca-2021-0907-01", "score": 14.2, "title": "Wynkoop Fund LP v. ADM Holdings (2021)", "relevance": "exactly on point"},
+        {"docId": "nyca-2023-0118-05", "score": 11.8, "title": "Torridon LLC v. Frost River (2023)", "relevance": "recent restatement of Wynkoop rule"},
+        {"docId": "nycs-2020-0612-17", "score": 10.4, "title": "Hartwicke Industries v. Trevon Partners (2020)", "relevance": "directly on point"}
+      ]
+    }
+  ],
+  "_observation": "OpenSearch keyword-only retrieval and S3 Vectors post-filter converge on the same top results. S3 Vectors with pre-filter returns a completely different set of (all NY, all old, all off-topic) documents."
+}

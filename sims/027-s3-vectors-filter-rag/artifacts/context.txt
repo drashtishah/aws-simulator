@@ -1,0 +1,6 @@
+Company: Lex Approximate (Series A, 40 lawyers, 12 engineers)
+Industry: Legal research AI
+Users: About 1,700 seats across 48 customer law firms, 4.2M case corpus
+AWS Services: Amazon S3 Vectors, Amazon Bedrock, Amazon OpenSearch Serverless, Amazon CloudWatch
+Your role: Head of engineering, Monday 09:18 AM
+Situation: Client-firm senior associate confirms three cited NY Appellate Division cases do not exist. Same question without the jurisdiction filter returns a real, relevant case.

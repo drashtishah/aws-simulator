@@ -1,0 +1,187 @@
+{
+  "id": "027-s3-vectors-filter-rag",
+  "title": "The Filter That Lost the Answer",
+  "summary": "A legal research assistant returns correct cases when asked broadly. Filter by jurisdiction and it starts inventing citations that sound right. The embeddings look fine.",
+  "difficulty": 3,
+  "category": "data",
+  "services": ["s3-vectors", "bedrock", "opensearch-serverless", "cloudwatch"],
+  "tags": ["s3-vectors", "rag", "hnsw", "metadata-filter", "semantic-search", "embeddings"],
+  "estimated_minutes": 40,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:NewSolutions",
+    "DVA-C02:Domain4:Troubleshooting",
+    "AIF-C01:GenAIRetrieval"
+  ],
+  "company": {
+    "name": "Lex Approximate",
+    "industry": "legal research AI",
+    "size": "Series A, 40 lawyers, 12 engineers"
+  },
+  "glossary": {
+    "Amazon S3 Vectors": "A storage option in Amazon S3 that holds vector embeddings for approximate nearest-neighbor search. A vector bucket contains vector indexes; each index supports queries that return the top-K most similar vectors, optionally filtered by metadata.",
+    "Embedding": "A long list of numbers (for example 1,024 or 1,536 floats) that represents the meaning of a piece of text. Two pieces of text with similar meaning have embeddings that are close to each other in this high-dimensional space.",
+    "HNSW": "Hierarchical Navigable Small World, the graph-based algorithm S3 Vectors uses internally to find approximate nearest neighbors quickly. It builds a multi-layer graph where each node is a vector and edges connect vectors that are close.",
+    "Bridge node": "A vector in the HNSW graph that connects dense clusters. Traversal depends on bridge nodes to get from one region of the graph to another. Removing bridges fragments the graph.",
+    "Metadata filter": "A predicate the query applies to a vector's metadata so only matching vectors can be returned. S3 Vectors filters by rejecting non-matching candidates during graph traversal, which can eliminate bridges and leave later steps stranded.",
+    "Pre-filter vs post-filter": "Pre-filter means the index rejects non-matching vectors during traversal, which is fast but can break graph connectivity. Post-filter means the index finds the top-K by vector distance and then discards those that do not match, which preserves graph traversal but may return fewer than K results.",
+    "RAG (retrieval augmented generation)": "A pattern where the assistant retrieves relevant documents via semantic search and passes them to a generator model as context. The quality of the final answer depends on the relevance of the retrieved chunks.",
+    "Quantization": "A compression technique that stores each dimension of a vector in fewer bits (for example 8 bits instead of 32) to save space and speed up comparisons. It adds a small amount of noise to similarity scores."
+  },
+  "system": {
+    "what_broke": "The legal research assistant uses S3 Vectors with pre-filtering on a jurisdiction metadata field. When users ask a question with a jurisdiction filter (for example state=NY), the filter rejects non-New-York vectors during HNSW traversal. The rejection removes bridge nodes that connect the NY subset to the broader graph, so the traversal lands in whatever local cluster it can still reach and returns the top-K vectors from that cluster. Those vectors are NY documents, so the metadata filter reports a match, but they are semantically far from the query. The relevance scores are still reported as high because of 8-bit quantization noise on the distance calculation. The generator model receives plausible-looking but wrong context and produces a confident, wrong answer.",
+    "data_flow": "User question -> Bedrock Titan Embeddings -> S3 Vectors QueryVectors with metadata filter -> top-K returned to the Lambda -> Claude Haiku with the retrieved chunks as context -> final answer to the user. CloudWatch Logs record every query with filter, top-K relevance scores, and the chunks retrieved.",
+    "components": [
+      {
+        "name": "lex-approximate-cases (S3 vector bucket)",
+        "role": "Stores the vectorized corpus of about 4.2 million state and federal case headnotes and holdings. Each vector has metadata for jurisdiction, court level, year, and source document.",
+        "connections": ["Populated by a nightly ingest job from Westlaw and public court sources", "Queried by the lex-approximate-retriever Lambda", "Indexed by HNSW with pre-filtering"],
+        "failure_impact": "If the index's pre-filter removes bridge nodes on a jurisdiction filter, the retrieval quality collapses silently: results still look plausible but are semantically irrelevant."
+      },
+      {
+        "name": "lex-approximate-retriever (Lambda function)",
+        "role": "Embeds the user question with Titan, queries S3 Vectors with optional filter, and returns top-K chunks to the answer-generation Lambda.",
+        "connections": ["Calls bedrock:InvokeModel on Titan Embeddings v2", "Calls s3vectors:QueryVectors with filter on jurisdiction"],
+        "failure_impact": "Silent: the function reports success when S3 Vectors returns K results. It does not distinguish between a healthy traversal and a fragmented one."
+      },
+      {
+        "name": "Claude Haiku on Amazon Bedrock",
+        "role": "Generates the final user-facing answer using the retrieved chunks as context and a system prompt that instructs it to cite only the provided sources.",
+        "connections": ["Invoked by lex-approximate-answerer Lambda"],
+        "failure_impact": "Produces confident answers with correct-looking citations even when the retrieved chunks are semantically off, because it has no independent way to judge relevance."
+      },
+      {
+        "name": "lex-approximate-eval-opensearch (OpenSearch Serverless collection)",
+        "role": "Holds a duplicate of the corpus for offline evaluation runs. Used during ingest to compute baseline recall for a reference set of 500 golden questions.",
+        "connections": ["Populated by the same nightly ingest", "Queried only by the weekly eval job"],
+        "failure_impact": "If eval runs without the production filter configuration, it cannot detect filter-specific degradation."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "s3-vectors",
+      "artifacts": [
+        "artifacts/vector-index-config.json",
+        "artifacts/query-trace.json",
+        "artifacts/retrieval-comparison.json"
+      ],
+      "capabilities": [
+        "get_vector_bucket",
+        "get_index",
+        "query_vectors",
+        "list_vectors"
+      ]
+    },
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/embedding-sample.json"
+      ],
+      "capabilities": [
+        "list_foundation_models",
+        "invoke_model",
+        "get_model_invocation_logging_configuration"
+      ]
+    },
+    {
+      "service": "opensearch-serverless",
+      "artifacts": [
+        "artifacts/opensearch-eval-result.json"
+      ],
+      "capabilities": [
+        "batch_get_collection",
+        "list_indexes",
+        "search"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-logs.txt",
+        "artifacts/retrieval-metrics.csv"
+      ],
+      "capabilities": [
+        "filter_log_events",
+        "get_metric_data",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Users are getting wrong answers only when they filter. Unfiltered queries are fine. What changes between those two code paths?",
+    "Look at the top-K relevance scores for a filtered query and an unfiltered query on the same question. Are the scores different in shape or just in value?",
+    "How does S3 Vectors apply metadata filters during HNSW traversal? What is a bridge node and why would a filter remove it?",
+    "Compare the chunks retrieved by S3 Vectors with what OpenSearch Serverless returns for the same filter on the same question. If they diverge wildly, the issue is index-specific.",
+    "The fix is architectural. Consider whether pre-filtering is the right strategy for a small target subset in a dense graph, and what post-filtering or dual-retrieval patterns would change."
+  ],
+  "resolution": {
+    "root_cause": "The S3 Vectors index uses pre-filtering on the jurisdiction metadata field. When a query filters to a narrow subset (for example state=NY which is about 6% of the corpus), HNSW traversal rejects non-NY vectors it walks through. The rejected vectors included bridge nodes that connected NY clusters to the graph's global structure. With the bridges gone, traversal stalls in a locally dense cluster and returns the top-K vectors from whatever small neighborhood it can still reach. Those vectors are NY (they pass the filter) but they are semantically irrelevant to the query. Quantization noise keeps the reported relevance scores above the threshold, so the retriever and the generator have no way to tell anything went wrong.",
+    "fix_criteria": [
+      {
+        "id": "identify_filter_only_symptom",
+        "description": "Player identifies that the failure reproduces only when a metadata filter is applied, not on the same question without a filter",
+        "required": true
+      },
+      {
+        "id": "identify_score_shape",
+        "description": "Player notices that filtered top-K scores have a narrower, uniform distribution (all close to each other) while unfiltered top-K scores have a wide distribution (clear top result, then a drop-off)",
+        "required": true
+      },
+      {
+        "id": "identify_hnsw_prefilter",
+        "description": "Player identifies that HNSW pre-filtering can eliminate bridge nodes, fragmenting the graph for narrow filters",
+        "required": true
+      },
+      {
+        "id": "propose_architectural_fix",
+        "description": "Player proposes an architectural fix: post-filter at higher K, partition the corpus by jurisdiction into separate indexes, or add a dual-retrieval fallback that reconciles S3 Vectors results with a keyword search",
+        "required": true
+      },
+      {
+        "id": "propose_relevance_floor",
+        "description": "Player proposes a minimum absolute relevance score below which the retriever returns no chunks (and the generator apologizes) rather than confidently hallucinating on bad context",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How HNSW graph traversal and metadata filtering interact, and why pre-filtering can silently degrade narrow filters",
+      "How to diagnose retrieval quality failures by comparing score distributions and cross-validating against a second index",
+      "The architectural options for narrow-filter retrieval: post-filter at higher K, partition by filter field, or dual-retrieval with keyword fallback",
+      "Why a RAG system needs a relevance floor and eval runs that cover filter configurations, not just the unfiltered baseline"
+    ],
+    "sop_steps": [
+      "Reproduce the failure with a controlled test. Pick one question where users complained. Run it twice: once with no filter, once with the jurisdiction filter the user applied. Compare the two top-K result sets side by side. If the filtered results are entirely different documents with similar relevance scores, you have the signature of fragmented HNSW traversal.",
+      "Inspect the relevance-score distribution. For a healthy retrieval, the top-1 result's score is noticeably higher than top-5 and top-10. A flat distribution across the top-K is a red flag. Log the full score vector for both queries and plot them.",
+      "Cross-validate against a second index. Run the same filtered query against the OpenSearch Serverless eval collection. If OpenSearch returns relevant NY cases and S3 Vectors does not, the S3 Vectors index is the layer to fix.",
+      "Confirm it is the filter strategy, not the embeddings. Take a document you know should match, get its vector via list_vectors, and run a cosine similarity against the question's embedding directly. If the similarity is high but the index query did not return this document, the index's traversal is the problem, not the embeddings.",
+      "Switch to post-filtering with a larger K. Retrieve top-100 without a filter, then filter by jurisdiction in application code and trim to top-10. This preserves HNSW traversal and only trades a small amount of latency for correctness. For narrow filters this is often the cleanest fix.",
+      "Alternatively, partition by filter field. Maintain one S3 Vectors index per jurisdiction. Each index's HNSW graph is built from only that jurisdiction's vectors, so every traversal is within a connected component. Ingest is slightly more complex but retrieval quality is uniform across filter values.",
+      "Add a relevance floor to the retriever. If no chunk clears a minimum absolute score (calibrated from the eval set), return an empty context and have the generator apologize rather than confabulate. A confident wrong answer is worse than a 'not enough information' answer in legal research.",
+      "Expand the eval suite. Include at least one filtered-query variant for every golden question. Compare recall and precision with and without the filter for each jurisdiction. Fail the eval run if filtered recall drops by more than a calibrated threshold versus unfiltered."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The embeddings are stale because the ingest job skipped a release of new case law.",
+        "how_it_differs": "Retrieval returns relevant documents in principle, but the corpus does not contain the case the user is asking about, so the assistant confidently cites an older case as if it were current. The filter is fine, HNSW is fine, embeddings are fine; the corpus is incomplete.",
+        "prevention": "Track a freshness metric in CloudWatch: the age of the most recent document for each jurisdiction. Alarm when freshness falls behind the publication cadence. Make ingest job success a deployment gate."
+      },
+      {
+        "scenario": "The retriever truncates long documents at an embedding boundary that cuts a citation in half.",
+        "how_it_differs": "The embedding-time chunking strategy splits documents at a fixed token count. The split sometimes cuts the critical reasoning of a holding in two. The chunk the retriever returns contains the citation but not the reasoning, so the generator has no context to reason about the citation and invents justification.",
+        "prevention": "Use semantic chunking that splits on paragraph or section boundaries rather than a fixed token count. Include overlap between chunks. Evaluate chunk quality on a held-out set of questions whose answer requires multi-paragraph reasoning."
+      },
+      {
+        "scenario": "The generator prompt does not forbid inventing citations and the model obliges.",
+        "how_it_differs": "Retrieval quality is perfect. But the system prompt for Claude does not explicitly forbid generating citations that are not present in the retrieved chunks. On edge cases, the model fills gaps with plausible-sounding case names that do not exist.",
+        "prevention": "Write the system prompt to include an explicit rule: cite only cases that appear verbatim in the provided context. Validate each generated citation against the chunks programmatically; if a citation is not in the context, fail closed and return a no-answer message."
+      }
+    ],
+    "sop_practices": [
+      "Evaluate filter configurations, not just the unfiltered baseline. Filters change retrieval semantics. A RAG system that passes eval at the corpus level can still fail badly on narrow filters. Build filtered variants into every golden-question suite.",
+      "Reach for architectural fixes before parameter tuning. HNSW pre-filtering versus post-filtering, corpus partitioning, and dual-retrieval with keyword fallback are structural choices that determine whether a narrow filter works at all. Raising K or tuning efSearch often cannot compensate for a fragmented graph.",
+      "Require a relevance floor on every retriever. Below the floor, return no context and surface the uncertainty to the user. A confident wrong answer is worse than a calibrated no-answer response, especially in legal, medical, or financial domains.",
+      "Cross-validate with a second index when retrieval quality matters. OpenSearch Serverless keyword search or a separate dense index gives you a cheap consistency check during incidents. Keep it around even if you do not use it for live serving."
+    ]
+  }
+}

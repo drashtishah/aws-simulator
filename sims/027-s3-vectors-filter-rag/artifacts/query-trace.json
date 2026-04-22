@@ -1,0 +1,43 @@
+{
+  "queries": [
+    {
+      "label": "filtered",
+      "question": "When is a merger clause enforceable against parol evidence for a commercial contract dispute?",
+      "filter": {"jurisdiction": "NY"},
+      "topK": 10,
+      "latencyMs": 34,
+      "results": [
+        {"docId": "nycs-1987-0417-01", "score": 0.878, "title": "Meyers v. Eastwood Realty (1987, 2d Dept)", "excerpt": "The merger clause in this commercial lease..."},
+        {"docId": "nycs-1988-0212-17", "score": 0.872, "title": "Brenner v. Holdfast Partners (1988)", "excerpt": "A merger clause in a promissory note..."},
+        {"docId": "nycs-1991-0604-09", "score": 0.871, "title": "Allenwood Co. v. Kim (1991, 2d Dept)", "excerpt": "Parol evidence rule application to residential..."},
+        {"docId": "nycs-1989-0823-22", "score": 0.869, "title": "Darco Inc. v. Sliding Door Associates (1989)", "excerpt": "Boilerplate merger language..."},
+        {"docId": "nycs-1992-0117-04", "score": 0.868, "title": "Pinetree v. Cornmaker (1992)", "excerpt": "Where the clause is clear and unambiguous..."},
+        {"docId": "nycs-1990-1005-11", "score": 0.867, "title": "McAndrews v. Terrace Heights Coop. (1990)", "excerpt": "The Appellate Division affirmed..."},
+        {"docId": "nycs-1989-0212-08", "score": 0.866, "title": "Irving Truax v. Melrose Corp. (1989)", "excerpt": "Parol evidence may not be admitted to..."},
+        {"docId": "nycs-1994-0318-02", "score": 0.865, "title": "Sundstrand v. Four Points Enterprises (1994)", "excerpt": "A commercial contract's merger clause..."},
+        {"docId": "nycs-1988-0905-12", "score": 0.864, "title": "Rhinebeck v. Ulster Bank (1988)", "excerpt": "In the context of a secured transaction..."},
+        {"docId": "nycs-1991-0420-13", "score": 0.863, "title": "Blackwood LLP v. Pine Tree (1991)", "excerpt": "The court declined to apply..."}
+      ]
+    },
+    {
+      "label": "unfiltered",
+      "question": "When is a merger clause enforceable against parol evidence for a commercial contract dispute?",
+      "filter": null,
+      "topK": 10,
+      "latencyMs": 31,
+      "results": [
+        {"docId": "nyca-2021-0907-01", "score": 0.942, "title": "Wynkoop Fund LP v. ADM Holdings (2021, NY Ct of Appeals)", "excerpt": "A merger clause in a heavily negotiated commercial contract..."},
+        {"docId": "fed-2d-2019-0311-22", "score": 0.894, "title": "Nelson Oil v. Third Coast Shipping (2019, 2d Cir)", "excerpt": "Applying New York law, a merger clause..."},
+        {"docId": "nyca-2018-0415-09", "score": 0.881, "title": "Calumet Global v. Iridian (2018, NY Ct of Appeals)", "excerpt": "This court has long held..."},
+        {"docId": "nycs-2020-0612-17", "score": 0.867, "title": "Hartwicke Industries v. Trevon Partners (2020, 1st Dept)", "excerpt": "Where the contract expressly..."},
+        {"docId": "del-chan-2022-0301-02", "score": 0.852, "title": "Kestrel Holdings v. Aprelle LLC (2022, Del Chan)", "excerpt": "Delaware applies a similar rule..."},
+        {"docId": "sup-2017-tri-04", "score": 0.843, "title": "Trinex Corp. v. Calidar (2017, S.D.N.Y.)", "excerpt": "Summary judgment on the merger clause..."},
+        {"docId": "nycs-2019-0217-11", "score": 0.841, "title": "Boone Capital v. Ferrara (2019, 1st Dept)", "excerpt": "A court must first determine..."},
+        {"docId": "nycs-2021-0420-14", "score": 0.839, "title": "Vedanta Inc. v. Cardinal Fund (2021, 1st Dept)", "excerpt": "The parol evidence rule..."},
+        {"docId": "nyca-2023-0118-05", "score": 0.837, "title": "Torridon LLC v. Frost River (2023, NY Ct of Appeals)", "excerpt": "The holding in Wynkoop Fund..."},
+        {"docId": "nycs-2022-1002-12", "score": 0.832, "title": "Elkin Pharma v. Warrick Industries (2022, 1st Dept)", "excerpt": "For a merger clause to bar..."}
+      ]
+    }
+  ],
+  "_observation": "Filtered results: all scores between 0.863 and 0.878 (span 0.015), all documents from 1987-1994. Unfiltered results: scores from 0.832 to 0.942 (span 0.11), with a clear top-1 and recent documents dominating. The filtered distribution is the signature of a fragmented traversal returning from a single old cluster of NY Supreme Court cases."
+}

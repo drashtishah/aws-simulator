@@ -1,0 +1,61 @@
+                    +---------------------+
+                    |  Lex Approximate    |
+                    |  web app            |
+                    +-----------+---------+
+                                |
+                                v
+                    +---------------------+
+                    | API Gateway         |
+                    | api.lexapprox.ai    |
+                    +-----------+---------+
+                                |
+                                v
+                +-----------------------------+
+                | Lambda                      |
+                | lex-approximate-retriever   |
+                | [PROBLEM: passes filter     |
+                |  through as pre-filter,     |
+                |  no post-filter fallback]   |
+                +----+----------------+-------+
+                     |                |
+     Bedrock Titan   |                | s3vectors:QueryVectors
+     Embeddings v2   |                | with filter on
+     (fine)          |                | metadata.jurisdiction
+                     v                v
+        +-----------------+   +------------------------------+
+        | Bedrock         |   | S3 Vectors                   |
+        | Titan Embed v2  |   | lex-approximate-cases-v3     |
+        | (1024 dims)     |   | [PROBLEM: HNSW PRE-FILTER    |
+        +-----------------+   |  FRAGMENTS GRAPH FOR NARROW  |
+                              |  FILTERS LIKE state=NY (6%)] |
+                              | Quantization: int8           |
+                              | ~4.2M vectors                |
+                              +--------------+---------------+
+                                             |
+                                top-K chunks | (all pass filter
+                                             |  but semantically
+                                             |  irrelevant;
+                                             |  scores ~0.87 flat)
+                                             v
+                              +--------------------------------+
+                              | Lambda                         |
+                              | lex-approximate-answerer       |
+                              | [PROBLEM: percentile cutoff,   |
+                              |  no absolute relevance floor]  |
+                              +--------------+-----------------+
+                                             |
+                                             v
+                              +--------------------------------+
+                              | Bedrock Claude Haiku           |
+                              | [PROBLEM: system prompt does   |
+                              |  not require verbatim citation |
+                              |  presence in context]          |
+                              +--------------------------------+
+
+         Off the live path:
+         +----------------------------------------------+
+         | OpenSearch Serverless collection             |
+         | lex-approximate-eval-opensearch              |
+         | [PROBLEM: eval suite has no filtered queries |
+         |  so filter-specific degradation is invisible]|
+         +----------------------------------------------+

@@ -1,0 +1,49 @@
+                    +---------------------+
+                    |  Lex Approximate    |
+                    |  web app            |
+                    +-----------+---------+
+                                |
+                                v
+                    +---------------------+
+                    | API Gateway         |
+                    | api.lexapprox.ai    |
+                    +-----------+---------+
+                                |
+                                v
+                +-----------------------------+
+                | Lambda                      |
+                | lex-approximate-retriever   |
+                +----+----------------+-------+
+                     |                |
+     Bedrock Titan   |                | s3vectors:QueryVectors
+     Embeddings v2   |                | with filter on
+                     |                | metadata.jurisdiction
+                     v                v
+        +-----------------+   +------------------------------+
+        | Bedrock         |   | S3 Vectors                   |
+        | Titan Embed v2  |   | lex-approximate-cases-v3     |
+        | (1024 dims)     |   | HNSW, pre-filter enabled     |
+        +-----------------+   | ~4.2M vectors                |
+                              +--------------+---------------+
+                                             |
+                                top-K chunks |
+                                             v
+                              +--------------------------------+
+                              | Lambda                         |
+                              | lex-approximate-answerer       |
+                              +--------------+-----------------+
+                                             |
+                                             v
+                              +--------------------------------+
+                              | Bedrock Claude Haiku           |
+                              | (system prompt: "cite only     |
+                              |  provided sources")            |
+                              +--------------------------------+
+
+         Off the live path:
+         +----------------------------------------------+
+         | OpenSearch Serverless collection             |
+         | lex-approximate-eval-opensearch              |
+         | Used by nightly eval job (500 unfiltered     |
+         | golden questions)                            |
+         +----------------------------------------------+

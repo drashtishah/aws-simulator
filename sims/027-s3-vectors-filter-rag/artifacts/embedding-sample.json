@@ -1,0 +1,15 @@
+{
+  "_note": "Truncated 1024-dim vectors to the first 8 dimensions for display. Actual values are float32.",
+  "question": "When is a merger clause enforceable against parol evidence for a commercial contract dispute?",
+  "questionEmbedding": {
+    "model": "amazon.titan-embed-text-v2:0",
+    "dim": 1024,
+    "preview": [0.0438, -0.1178, 0.0301, 0.0927, -0.0412, 0.0185, -0.0744, 0.1102]
+  },
+  "directCosineToKnownRelevantCase": {
+    "docId": "nyca-2021-0907-01",
+    "title": "Wynkoop Fund LP v. ADM Holdings (2021, NY Ct of Appeals)",
+    "cosineSimilarity": 0.942,
+    "_interpretation": "The embeddings themselves are fine. A direct cosine similarity between the question embedding and the known-relevant document's embedding is 0.942. But the filtered S3 Vectors query returned this document's score as absent (not in the returned top-K). The index's HNSW traversal is excluding it due to bridge-node removal under pre-filter."
+  }
+}

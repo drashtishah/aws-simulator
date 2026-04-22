@@ -1,0 +1,13 @@
+timestamp,metric_name,value,unit,dimension
+2026-04-21T13:00:00Z,retrieval_score_span_filtered,0.017,ratio,jurisdiction=NY
+2026-04-21T13:00:00Z,retrieval_score_span_unfiltered,0.112,ratio,jurisdiction=NY
+2026-04-21T13:00:00Z,retrieval_score_span_filtered,0.019,ratio,jurisdiction=CA
+2026-04-21T13:00:00Z,retrieval_score_span_unfiltered,0.108,ratio,jurisdiction=CA
+2026-04-21T13:00:00Z,retrieval_top_score_filtered,0.876,ratio,jurisdiction=NY
+2026-04-21T13:00:00Z,retrieval_top_score_unfiltered,0.941,ratio,jurisdiction=NY
+2026-04-21T13:00:00Z,queries_with_filter,3841,Count,jurisdiction=NY
+2026-04-21T13:00:00Z,queries_without_filter,728,Count,jurisdiction=NY
+2026-04-21T13:00:00Z,queries_with_filter,2194,Count,jurisdiction=CA
+2026-04-21T13:00:00Z,queries_without_filter,417,Count,jurisdiction=CA
+2026-04-21T13:00:00Z,user_thumbs_down_rate_filtered,0.081,ratio,
+2026-04-21T13:00:00Z,user_thumbs_down_rate_unfiltered,0.019,ratio,
