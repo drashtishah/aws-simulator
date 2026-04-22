@@ -1,0 +1,14 @@
+{
+  "FunctionName": "tidewater-payments-fn",
+  "Alias": "prod",
+  "FunctionVersion": "47",
+  "SnapStart": {
+    "ApplyOn": "PublishedVersions",
+    "OptimizationStatus": "On"
+  },
+  "Snapshot": {
+    "TakenAt": "2026-04-16T14:02:32Z",
+    "SnapshotId": "ss-4a82c1d97f",
+    "_observation": "This snapshot is reused for every cold start of v47. The static initializer that constructed the DynamoDB client ran once, before 14:02:32, and the credential provider cached an STS token with expiry 2026-04-16T20:02:32Z. After that wall-clock time, every cold start restored from this snapshot inherits expired credentials."
+  }
+}

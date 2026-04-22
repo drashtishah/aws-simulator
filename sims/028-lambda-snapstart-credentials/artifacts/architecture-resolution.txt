@@ -1,0 +1,51 @@
+                +-----------------------+
+                |  Partner marinas      |
+                |  and dealers          |
+                +----------+------------+
+                           |
+                     webhook POST
+                           |
+                           v
+                +-----------------------+
+                | API Gateway           |
+                | api.tidewaterpay.com  |
+                +----------+------------+
+                           |
+                           v
+                +-------------------------------+
+                | Lambda tidewater-payments-fn  |
+                | Version: v47 (alias prod)     |
+                | Runtime: Java 17              |
+                | SnapStart: PublishedVersions  |
+                | [PROBLEM: DynamoDB client     |
+                |  constructed in a static      |
+                |  initializer; credential      |
+                |  provider cache is IN THE     |
+                |  SNAPSHOT]                    |
+                | [PROBLEM: no Core.Runtime     |
+                |  afterRestore hook to refresh |
+                |  on restore]                  |
+                +----+----------+---------------+
+                     |          |
+                     |          |  GetSecretValue
+                     |          v
+                     |  +-------------------------+
+                     |  | Secrets Manager         |
+                     |  +-------------------------+
+                     |
+                     v                       ^
+         +---------------------------+       |
+         | DynamoDB                  |       |
+         | Tidewater-Payments        |       |
+         | Tidewater-Audit           |       |
+         +---------------------------+       |
+                     |                       |
+                     v                       |
+           PutItem fails with                 |
+           ExpiredTokenException -------------+
+           (session token in snapshot
+            expired hours ago)
+
+   [PROBLEM: no CloudWatch metric filter on ExpiredTokenException]
+   [PROBLEM: staging tests run for 15 minutes against a fresh
+             snapshot, never cross the six-hour expiry horizon]

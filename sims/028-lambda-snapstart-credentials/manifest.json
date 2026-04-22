@@ -1,0 +1,198 @@
+{
+  "id": "028-lambda-snapstart-credentials",
+  "title": "Yesterday's Token, Today's Traffic",
+  "summary": "A Java payments Lambda starts failing every morning at six. The code has not changed. The only thing that changed is the cold start got faster.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["lambda", "iam", "sts", "secrets-manager", "cloudwatch"],
+  "tags": ["lambda", "snapstart", "credential-provider", "sdk-cache", "static-initializer", "expired-token"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain4:Troubleshooting",
+    "DVA-C02:Domain1:LambdaDevelopment",
+    "DVA-C02:Domain2:IAMCredentials"
+  ],
+  "company": {
+    "name": "Tidewater Pay",
+    "industry": "B2B vertical SaaS for marinas and boat dealers",
+    "size": "Series B, 65 engineers"
+  },
+  "glossary": {
+    "AWS Lambda SnapStart": "A Lambda feature that takes a snapshot of your function's initialized JVM (or Python, .NET) state and restores that snapshot for subsequent cold starts. Dramatically reduces cold-start latency, from seconds to tens of milliseconds for Java.",
+    "Static initializer": "Code inside a Java class's static {} block or on static fields. Runs once when the class is loaded. Common place to create AWS SDK clients because construction is relatively expensive.",
+    "AWS SDK credential provider chain": "The default way an AWS SDK looks up credentials: environment variables, then the ECS/EKS container provider, then the Lambda-specific provider, then the instance profile. The provider caches the credentials it fetches so it does not call STS on every API call.",
+    "STS credentials": "Temporary AWS credentials issued by AWS Security Token Service. They have an access key, a secret key, and a session token, plus an expiry time (typically 15 minutes to 12 hours).",
+    "Credential expiry": "The moment an STS token stops being accepted. Any API call made after expiry returns ExpiredTokenException. The fix is to fetch fresh credentials.",
+    "Core.Runtime hooks": "SnapStart's pre-checkpoint and post-restore callbacks. Pre-checkpoint runs just before the snapshot; post-restore runs on every restore. They are the place to invalidate caches, reset network connections, and rotate any stored secrets.",
+    "ExpiredTokenException": "The STS error thrown when a request uses a session token whose expiry time is in the past. Returned by every AWS service when it validates the caller's credentials.",
+    "Snapshot reuse": "SnapStart reuses a single snapshot across many restore events. A bad value in the snapshot propagates to every restore, not just one."
+  },
+  "system": {
+    "what_broke": "The payments Lambda's DynamoDB client is constructed in a static field initializer. Constructing the client runs the AWS SDK's credential provider chain, which fetches STS credentials from the Lambda-provided AWS_CONTAINER_CREDENTIALS_FULL_URI endpoint and caches them on the provider instance. SnapStart takes a snapshot after the static init completes. The cached credentials, including their expiry timestamp, are frozen in the snapshot. Every subsequent restore reuses the same snapshot, and therefore the same cached credentials, which have already expired (STS credentials from the Lambda endpoint typically have ~6-hour lifetimes). When traffic spikes at 6 AM and cold starts trigger SnapStart restores, most restored invocations see the expired credentials before the provider refreshes, and every DynamoDB call throws ExpiredTokenException.",
+    "data_flow": "API Gateway receives a payment webhook, invokes the payments Lambda, Lambda reads from the Tidewater-Payments DynamoDB table, writes to Tidewater-Audit, and returns a confirmation. The DynamoDB client is created once in a static field; subsequent invocations reuse it. The SDK's credential provider caches STS credentials on the client, refreshing a few minutes before expiry.",
+    "components": [
+      {
+        "name": "tidewater-payments-fn (Lambda function)",
+        "role": "Processes payment webhooks from marinas and boat dealers. Validates, persists, and returns a confirmation.",
+        "connections": ["Triggered by API Gateway", "Writes to DynamoDB Tidewater-Payments and Tidewater-Audit", "Reads secrets from Secrets Manager TidewaterPaymentsSigningKey"],
+        "failure_impact": "Payments fail with ExpiredTokenException at the DynamoDB call. From the user's perspective, the webhook returns 500 and the payment is not recorded."
+      },
+      {
+        "name": "tidewater-payments-fn:v47 (Lambda version with SnapStart)",
+        "role": "The published version that has SnapStart enabled. SnapStart takes a snapshot of the initialized JVM and restores it on cold start.",
+        "connections": ["Published from Lambda function tidewater-payments-fn", "Snapshot is automatically managed by Lambda"],
+        "failure_impact": "A bad value in the snapshot (for example frozen credentials) is reused on every restore. The blast radius is every cold start that takes place after the credentials in the snapshot expire."
+      },
+      {
+        "name": "tidewater-payments-fn-role (IAM execution role)",
+        "role": "Execution role that provides STS credentials to the Lambda function via the Lambda credentials endpoint.",
+        "connections": ["Trust policy allows lambda.amazonaws.com", "Attached policy grants DynamoDB and Secrets Manager access"],
+        "failure_impact": "Not the cause here, but a reason STS issues time-limited credentials and the SDK caches them."
+      },
+      {
+        "name": "Tidewater-Payments, Tidewater-Audit (DynamoDB tables)",
+        "role": "Primary record-of-truth for payments and the append-only audit trail.",
+        "connections": ["Written by tidewater-payments-fn", "Read by the monthly reconciliation batch job"],
+        "failure_impact": "Writes fail during the incident window, leading to missing payment records. Reconciliation at month-end is the backstop, but in-session users see failures immediately."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json",
+        "artifacts/snapstart-config.json",
+        "artifacts/lambda-handler-code.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_versions_by_function",
+        "get_provisioned_concurrency_config"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/lambda-execution-role.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy"
+      ]
+    },
+    {
+      "service": "sts",
+      "artifacts": [
+        "artifacts/sts-token-metadata.json"
+      ],
+      "capabilities": [
+        "get_caller_identity",
+        "decode_authorization_message"
+      ]
+    },
+    {
+      "service": "secrets-manager",
+      "artifacts": [
+        "artifacts/secrets-manager-config.json"
+      ],
+      "capabilities": [
+        "describe_secret",
+        "get_secret_value",
+        "list_secret_version_ids"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-logs.txt",
+        "artifacts/lambda-error-metrics.csv"
+      ],
+      "capabilities": [
+        "filter_log_events",
+        "get_metric_data",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The error is ExpiredTokenException. Whose token is expired, and when was it issued?",
+    "The function has SnapStart enabled. What is in the snapshot, and what is not?",
+    "When is the DynamoDB client constructed in this code? When are its credentials fetched?",
+    "SnapStart provides Core.Runtime hooks for pre-checkpoint and post-restore. Which one would let you force the SDK to refetch credentials?",
+    "Consider moving the client construction out of the static initializer and into the handler, or using the Core.Runtime hooks to invalidate cached credentials on every restore."
+  ],
+  "resolution": {
+    "root_cause": "The Lambda's DynamoDB client is constructed in a static field. The AWS SDK builds the credential provider chain when the client is first used, and the provider caches the STS credentials it fetches from the Lambda credentials endpoint. SnapStart takes the JVM snapshot after class loading completes, so the cached credentials and their expiry timestamp are frozen into the snapshot. Every restored invocation inherits the same cached credentials. The Lambda credentials endpoint returns credentials with roughly a six-hour lifetime; at production traffic levels the same snapshot is restored across many hours, and by 6 AM local the credentials in the snapshot have expired. Each restored invocation hits DynamoDB, gets ExpiredTokenException, and fails.",
+    "fix_criteria": [
+      {
+        "id": "identify_expired_token_error",
+        "description": "Player identifies ExpiredTokenException in the Lambda logs and that it comes from a DynamoDB call, not Lambda itself",
+        "required": true
+      },
+      {
+        "id": "identify_snapstart_enabled",
+        "description": "Player identifies that SnapStart is enabled on the function and that the symptoms started when it was enabled",
+        "required": true
+      },
+      {
+        "id": "identify_static_init_client",
+        "description": "Player identifies that the DynamoDB client is created in a static initializer, so its cached credentials end up in the snapshot",
+        "required": true
+      },
+      {
+        "id": "propose_runtime_hook_fix",
+        "description": "Player proposes using SnapStart Core.Runtime afterRestore hook to invalidate the SDK client's cached credentials on every restore, OR moves the client out of static init and into the handler",
+        "required": true
+      },
+      {
+        "id": "propose_credential_floor",
+        "description": "Player proposes a CloudWatch alarm on ExpiredTokenException in the function's logs so future credential-expiry bugs are caught automatically",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Lambda SnapStart snapshots JVM state after static initialization, and what that means for anything cached by SDK clients",
+      "How the AWS SDK credential provider chain caches STS credentials and when it refreshes them",
+      "How to use SnapStart Core.Runtime pre-checkpoint and post-restore hooks to invalidate caches, reset connections, and refresh credentials",
+      "Why a function that passes tests in low-traffic staging can fail in high-traffic production even though the code is identical"
+    ],
+    "sop_steps": [
+      "Confirm the error category. Open the Lambda function's CloudWatch log group and filter for ExpiredTokenException or com.amazonaws.services.dynamodbv2 or software.amazon.awssdk.awscore.exception. You should see the exception coming from DynamoDB operations, not from Lambda itself.",
+      "Confirm SnapStart is enabled on the failing alias. In the Lambda console, open the function's published version or alias settings. SnapStart has two states: None (off) and PublishedVersions (on). If it is on, the function's cold starts use snapshots.",
+      "Read the handler code and look for SDK clients constructed in static initializers. Anything like private static final DynamoDbClient client = DynamoDbClient.create() puts the credential-provider cache inside the snapshot. Same for SecretsManagerClient, S3Client, etc.",
+      "Read the SDK credential provider chain. By default, DefaultCredentialsProvider caches credentials on the provider instance. The LambdaCredentialsProvider (the one that reads from AWS_CONTAINER_CREDENTIALS_FULL_URI) has the same behavior. The expiry time it reads comes from the endpoint response.",
+      "Pick a fix strategy. Option A: move the SDK client construction out of the static initializer and into the handler or a lazily-initialized field. This trades a small per-invocation cost for correctness. Option B: keep the static client but register a Core.Runtime afterRestore hook that invalidates the credential provider's cache, so the next API call refetches from STS.",
+      "Implement the afterRestore hook if you picked Option B. Register a runtime hook that calls the SDK client's close() and reconstructs it, or calls the credential provider's reset-cache method. For AWS SDK for Java v2, you can construct a fresh DefaultCredentialsProvider and rebuild the client. For v1, use ProfileCredentialsProvider.refresh() on the chain.",
+      "Redeploy, then republish the SnapStart version. SnapStart snapshots are taken at publish time. Any fix to static init or runtime hooks only takes effect on a newly published version.",
+      "Add a CloudWatch metric filter on ExpiredTokenException in the function's log group. Alarm when the count exceeds zero for five minutes. This is a cheap permanent guardrail against the same class of bug recurring.",
+      "Run a load-representative staging test with SnapStart enabled. Local and small staging tests do not reuse a snapshot across the expiry horizon. A staging test that runs for eight hours under load and then fires cold starts exercises the real failure mode."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The function uses a static HTTP client with a cached connection pool, and every pooled connection dies quietly in the snapshot.",
+        "how_it_differs": "The issue is not credentials, it is connection state. On restore, the HTTP client tries to reuse connections that no longer exist on the other side. Every first API call through the pool fails or hangs. The root cause is the same category (snapshot freezes transient state) but the symptom is TimeoutException or connection-reset errors instead of ExpiredTokenException.",
+        "prevention": "Register a SnapStart Core.Runtime afterRestore hook that resets the HTTP client's connection pool. For Apache HttpClient, call closeIdleConnections and rebuild the pool. For Netty-based SDK clients, rebuild the SDK client entirely."
+      },
+      {
+        "scenario": "A cached secret from Secrets Manager is in the snapshot and the secret was rotated.",
+        "how_it_differs": "The function fetches a signing key from Secrets Manager at static init time and caches it. Between snapshot time and restore time, the secret was rotated. The function keeps using the old secret, payment signatures fail verification downstream, and the function itself sees success but the partner systems reject every payment.",
+        "prevention": "Do not cache secrets across restores. Either fetch the secret in the handler on every invocation (expensive but simple), cache with a short TTL tied to wall-clock time (not to process lifetime), or register an afterRestore hook that refetches the secret."
+      },
+      {
+        "scenario": "A cached database connection or JDBC URL in the snapshot points to a read replica that was decommissioned.",
+        "how_it_differs": "The JDBC URL was chosen at init time from a DNS lookup. Between snapshot and restore the replica was rotated by the database team and the old DNS target no longer exists. Every call fails with ConnectionRefused or UnknownHostException. Credentials are fine; the target is gone.",
+        "prevention": "Do DNS resolution and connection construction in the handler or in an afterRestore hook. Use RDS Proxy or equivalent in front of the database so client-side DNS churn is eliminated."
+      }
+    ],
+    "sop_practices": [
+      "Treat anything initialized before the SnapStart checkpoint as suspect. Credentials, connections, secrets, DNS, random seeds: all are frozen in the snapshot. For each, decide whether to avoid the snapshot (initialize in handler) or refresh on restore (Core.Runtime hook).",
+      "Register Core.Runtime hooks as a standard pattern. Pre-checkpoint clears sensitive data and flushes open connections; post-restore rotates anything time-bound. Even if you do not have a known bug, the hooks are cheap insurance.",
+      "Run SnapStart staging tests that span the credential expiry horizon. A short staging test reuses a fresh snapshot; the bugs this sim covers only show up when the snapshot's cached state is past its expiration.",
+      "Alarm on ExpiredTokenException, ProvisionedThroughputExceededException, and AccessDenied in Lambda log groups. These errors almost always indicate a systemic problem, not a one-off; a zero-threshold alarm is worth the noise."
+    ]
+  }
+}

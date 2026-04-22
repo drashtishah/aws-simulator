@@ -1,0 +1,13 @@
+{
+  "_note": "Synthetic view of the STS credentials embedded in the SnapStart snapshot. Decoded from the provider's internal cache state.",
+  "credentialsProvider": "LambdaContainerCredentialsProvider",
+  "accessKeyId": "ASIAAAAAAAAAAAAAAAAA",
+  "sessionTokenTruncated": "FwoGZXIvYXdzEH...==",
+  "issuedAt": "2026-04-16T14:02:31Z",
+  "expiry": "2026-04-16T20:02:31Z",
+  "snapshotTakenAt": "2026-04-16T14:02:32Z",
+  "snapshotFirstRestoreObservedAt": "2026-04-17T01:14:04Z",
+  "currentTime": "2026-04-22T06:11:00Z",
+  "expiryStatus": "EXPIRED for 130 hours and 8 minutes",
+  "observationOnRestore": "Every container restored from snapshot ss-4a82c1d97f inherits an expiry of 2026-04-16T20:02:31Z. After that wall-clock moment, each restore has already-expired credentials. Warm containers that have already refreshed are fine; cold starts are not."
+}

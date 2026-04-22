@@ -1,0 +1,17 @@
+2026-04-22T06:11:42.441Z INFO  RestoreComplete restore-id=rst-8f6c4b2a from snapshot-id=ss-4a82c1d97f latency_ms=82
+2026-04-22T06:11:42.504Z START RequestId: 3c9b2d88-1e42-4571-9c8d-20af0a78c1b1 Version: 47
+2026-04-22T06:11:42.712Z ERROR software.amazon.awssdk.services.dynamodb.model.DynamoDbException: The security token included in the request is expired (Service: DynamoDb, Status Code: 400, Request ID: 4F9C8A2E9...)
+    at software.amazon.awssdk.services.dynamodb.model.DynamoDbException$BuilderImpl.build(...)
+    at software.amazon.awssdk.core.internal.http.pipeline.stages.AwsServiceExceptionUnmarshaller.unmarshall(...)
+    at com.tidewaterpay.payments.Handler.handleRequest(Handler.java:48)
+    at com.tidewaterpay.payments.Handler.handleRequest(Handler.java:17)
+2026-04-22T06:11:42.734Z END RequestId: 3c9b2d88-1e42-4571-9c8d-20af0a78c1b1
+2026-04-22T06:11:42.734Z REPORT RequestId: 3c9b2d88-1e42-4571-9c8d-20af0a78c1b1 Duration: 230.12 ms  Billed Duration: 231 ms  Memory Size: 1024 MB  Max Memory Used: 412 MB  Restore Duration: 82.00 ms
+2026-04-22T06:12:04.119Z INFO  RestoreComplete restore-id=rst-b3e0a291 from snapshot-id=ss-4a82c1d97f latency_ms=79
+2026-04-22T06:12:04.330Z ERROR software.amazon.awssdk.services.dynamodb.model.DynamoDbException: The security token included in the request is expired
+2026-04-22T06:55:12.004Z INFO  Deploy complete, publishing version v48
+2026-04-22T06:57:33.779Z INFO  RestoreComplete restore-id=rst-cd8e0a1b from snapshot-id=ss-0f1a2b3c4d latency_ms=81
+2026-04-22T06:57:33.998Z INFO  afterRestore hook closed and rebuilt dynamo client
+2026-04-22T06:57:34.014Z START RequestId: 7e2c8b11-9342-4121-a18d-44e0b8c90aaa Version: 48
+2026-04-22T06:57:34.198Z END RequestId: 7e2c8b11-9342-4121-a18d-44e0b8c90aaa
+2026-04-22T06:57:34.198Z REPORT RequestId: 7e2c8b11-9342-4121-a18d-44e0b8c90aaa Duration: 184.00 ms  Billed Duration: 185 ms  Memory Size: 1024 MB  Max Memory Used: 410 MB  Restore Duration: 81.00 ms

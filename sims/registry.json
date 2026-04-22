@@ -380,6 +380,22 @@
       ],
       "estimated_minutes": 40,
       "created": "2026-04-22"
+    },
+    {
+      "id": "028-lambda-snapstart-credentials",
+      "title": "Yesterday's Token, Today's Traffic",
+      "summary": "A Java payments Lambda starts failing every morning at six. The code has not changed. The only thing that changed is the cold start got faster.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "lambda",
+        "iam",
+        "sts",
+        "secrets-manager",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-22"
     }
   ]
 }

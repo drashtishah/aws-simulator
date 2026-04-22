@@ -1,0 +1,44 @@
+                +-----------------------+
+                |  Partner marinas      |
+                |  and dealers          |
+                +----------+------------+
+                           |
+                     webhook POST
+                           |
+                           v
+                +-----------------------+
+                | API Gateway           |
+                | api.tidewaterpay.com  |
+                +----------+------------+
+                           |
+                           v
+                +-------------------------------+
+                | Lambda tidewater-payments-fn  |
+                | Version: $LATEST (alias prod) |
+                | Runtime: Java 17              |
+                | SnapStart: PublishedVersions  |
+                | Memory: 1024MB                |
+                +----+----------+---------------+
+                     |          |
+                     |          |  GetSecretValue
+                     |          v
+                     |  +-------------------------+
+                     |  | Secrets Manager         |
+                     |  | TidewaterPaymentsSigning|
+                     |  +-------------------------+
+                     |
+                     v
+         +---------------------------+
+         | DynamoDB                  |
+         | Tidewater-Payments        |
+         | Tidewater-Audit           |
+         +---------------------------+
+
+   IAM Role: tidewater-payments-fn-role
+     -> Allows: dynamodb:PutItem, GetItem on the two tables
+     -> Allows: secretsmanager:GetSecretValue on the signing secret
+     -> Assumed by lambda.amazonaws.com
+
+   Credential source inside Lambda:
+     -> AWS_CONTAINER_CREDENTIALS_FULL_URI (Lambda-provided)
+     -> Provider fetches STS credentials, caches on the client

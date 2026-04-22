@@ -1,0 +1,46 @@
+{
+  "Role": {
+    "Path": "/",
+    "RoleName": "tidewater-payments-fn-role",
+    "RoleId": "AROAJQABLZS4A3PAY470",
+    "Arn": "arn:aws:iam::604188372211:role/tidewater-payments-fn-role",
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {"Service": "lambda.amazonaws.com"},
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    },
+    "MaxSessionDuration": 3600
+  },
+  "InlinePolicy": {
+    "PolicyName": "PaymentsFnInline",
+    "PolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"],
+          "Resource": [
+            "arn:aws:dynamodb:us-west-2:604188372211:table/Tidewater-Payments",
+            "arn:aws:dynamodb:us-west-2:604188372211:table/Tidewater-Audit"
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": "secretsmanager:GetSecretValue",
+          "Resource": "arn:aws:secretsmanager:us-west-2:604188372211:secret:TidewaterPaymentsSigningKey-*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+          "Resource": "arn:aws:logs:us-west-2:604188372211:log-group:/aws/lambda/tidewater-payments-fn:*"
+        }
+      ]
+    }
+  },
+  "_note": "The role itself is fine. The problem is that the STS credentials it issues to the Lambda runtime are cached inside the SnapStart snapshot."
+}

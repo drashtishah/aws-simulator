@@ -1,0 +1,28 @@
+{
+  "FunctionName": "tidewater-payments-fn",
+  "FunctionArn": "arn:aws:lambda:us-west-2:604188372211:function:tidewater-payments-fn",
+  "Runtime": "java17",
+  "Role": "arn:aws:iam::604188372211:role/tidewater-payments-fn-role",
+  "Handler": "com.tidewaterpay.payments.Handler::handleRequest",
+  "CodeSize": 18421982,
+  "Timeout": 15,
+  "MemorySize": 1024,
+  "Version": "47",
+  "Description": "Process inbound payment webhooks. v47 published after SnapStart enable on 2026-04-16.",
+  "LastModified": "2026-04-16T14:02:11Z",
+  "Architecture": "x86_64",
+  "SnapStart": {
+    "ApplyOn": "PublishedVersions",
+    "OptimizationStatus": "On"
+  },
+  "LoggingConfig": {
+    "LogGroup": "/aws/lambda/tidewater-payments-fn"
+  },
+  "Environment": {
+    "Variables": {
+      "PAYMENTS_TABLE": "Tidewater-Payments",
+      "AUDIT_TABLE": "Tidewater-Audit",
+      "SIGNING_KEY_SECRET_ID": "arn:aws:secretsmanager:us-west-2:604188372211:secret:TidewaterPaymentsSigningKey-4n2Kx1"
+    }
+  }
+}

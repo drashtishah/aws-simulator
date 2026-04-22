@@ -1,0 +1,6 @@
+Company: Tidewater Pay (Series B, 65 engineers)
+Industry: B2B vertical SaaS for marinas and boat dealers
+Users: About 2,400 marinas and 900 boat dealers, ~11,000 payment webhooks per minute at peak
+AWS Services: AWS Lambda (SnapStart), AWS IAM, AWS STS, AWS Secrets Manager, Amazon CloudWatch
+Your role: Overnight on-call engineer, Wednesday 06:11 AM Pacific
+Situation: Payments Lambda's Errors metric climbs to 11% during West Coast traffic pickup, all stack traces identical: ExpiredTokenException on a DynamoDB PutItem call.
