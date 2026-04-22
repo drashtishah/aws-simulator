@@ -1,0 +1,21 @@
+{
+  "agentRuntimeArn": "arn:aws:bedrock-agentcore:us-east-1:498231746283:agent-runtime/brackish-data-insights-agent",
+  "agentRuntimeName": "brackish-data-insights-agent",
+  "agentRuntimeVersion": "8",
+  "description": "Natural-language analytics assistant for the Brackish data lake.",
+  "containerConfiguration": {
+    "containerUri": "498231746283.dkr.ecr.us-east-1.amazonaws.com/brackish/insights-agent:v1-3-0"
+  },
+  "lifecycleConfiguration": {
+    "idleRuntimeSessionTimeout": 900,
+    "maxLifetime": 28800
+  },
+  "roleArn": "arn:aws:iam::498231746283:role/brackish-data-insights-agent-role",
+  "status": "READY",
+  "createdAt": "2026-03-17T18:04:22Z",
+  "environmentVariables": {
+    "INTENDED_BUCKETS": "brackish-analytics-reports",
+    "APP_LEVEL_SCOPE": "analytics-only",
+    "_note": "INTENDED_BUCKETS is just a hint in application config. It does not restrict IAM."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "_note": "Synthetic: IAM Access Analyzer is not enabled on this account. This file shows the findings Access Analyzer WOULD have produced if it were. Useful for the debrief.",
+  "analyzer": "brackish-account-analyzer (would-be)",
+  "findings": [
+    {
+      "findingId": "would-be-0001",
+      "findingType": "UnusedPermission",
+      "resource": "arn:aws:iam::498231746283:role/brackish-data-insights-agent-role",
+      "action": "kms:GenerateDataKey",
+      "lastAccessed": "never",
+      "status": "ACTIVE",
+      "recommendation": "Remove kms:GenerateDataKey from the role. It has never been used since the role was created 35 days ago."
+    },
+    {
+      "findingId": "would-be-0002",
+      "findingType": "UnusedPermission",
+      "resource": "arn:aws:iam::498231746283:role/brackish-data-insights-agent-role",
+      "action": "secretsmanager:GetSecretValue",
+      "lastAccessed": "never",
+      "status": "ACTIVE",
+      "recommendation": "Remove secretsmanager:GetSecretValue from the role. Not used."
+    },
+    {
+      "findingId": "would-be-0003",
+      "findingType": "OverlyPermissiveResource",
+      "resource": "arn:aws:iam::498231746283:role/brackish-data-insights-agent-role",
+      "statementSid": "S3ReadWriteAllBuckets",
+      "detail": "s3:* granted on Resource: *. The role has accessed only 3 of the 27 buckets visible to it in the last 35 days. Consider scoping to the bucket ARNs actually in use.",
+      "bucketsAccessed": [
+        "brackish-analytics-reports",
+        "brackish-payroll-exports",
+        "brackish-customer-pii"
+      ],
+      "recommendation": "Scope s3 actions to arn:aws:s3:::brackish-analytics-reports and arn:aws:s3:::brackish-analytics-reports/*. Review whether access to the other two buckets was intentional."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+Company: Brackish Data (Series A, 30 engineers)
+Industry: B2B data enrichment analytics
+Users: About 240 paying B2B customers (40 enterprise under a no-cross-reads contract), shared data lake
+AWS Services: Amazon Bedrock AgentCore, AWS IAM, AWS CloudTrail, Amazon S3
+Your role: Engineering lead on the insights-agent team, Wednesday 11:47 AM
+Situation: External researcher says the AI assistant answered a question with content that looks like internal payroll data. Follow-up confirms cross-bucket reads.

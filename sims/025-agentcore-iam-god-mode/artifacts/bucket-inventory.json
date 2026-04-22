@@ -1,0 +1,43 @@
+{
+  "Buckets": [
+    {
+      "Name": "brackish-analytics-reports",
+      "CreationDate": "2025-11-08T14:22:07Z",
+      "Owner": "data-platform",
+      "Classification": "internal-analytics",
+      "BucketPolicy": null,
+      "_intent": "This is the bucket the insights agent is supposed to read."
+    },
+    {
+      "Name": "brackish-payroll-exports",
+      "CreationDate": "2024-07-14T09:01:02Z",
+      "Owner": "finance-hr",
+      "Classification": "restricted-hr",
+      "BucketPolicy": null,
+      "_intent": "Monthly payroll CSVs exported from the HRIS. Access intended to be limited to HR tooling roles."
+    },
+    {
+      "Name": "brackish-customer-pii",
+      "CreationDate": "2025-01-22T11:15:33Z",
+      "Owner": "data-platform",
+      "Classification": "restricted-pii",
+      "BucketPolicy": null,
+      "_intent": "Canonical customer records with PII. Access intended to be limited to the billing service role."
+    },
+    {
+      "Name": "brackish-marketing-campaigns",
+      "CreationDate": "2025-09-02T17:44:18Z",
+      "Owner": "marketing",
+      "Classification": "internal-marketing",
+      "BucketPolicy": null
+    },
+    {
+      "Name": "brackish-engineering-postmortems",
+      "CreationDate": "2024-02-01T08:05:19Z",
+      "Owner": "engineering",
+      "Classification": "internal-engineering",
+      "BucketPolicy": null
+    }
+  ],
+  "_observation": "None of the sensitive buckets has a bucket policy. Access is controlled purely by identity-based IAM policies. There is no data perimeter."
+}

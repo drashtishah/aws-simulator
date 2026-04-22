@@ -1,0 +1,40 @@
+                 +-----------------------+
+                 |  Brackish Insights    |
+                 |  web app (users)      |
+                 +----------+------------+
+                            |
+                            v
+                 +-----------------------+
+                 |  Lambda: chat-router  |
+                 +----------+------------+
+                            |
+              InvokeAgentRuntime (runtimeSessionId)
+                            |
+                            v
+          +---------------------------------------+
+          | Bedrock AgentCore Runtime             |
+          | brackish-data-insights-agent          |
+          | Execution role:                       |
+          |   brackish-data-insights-agent-role   |
+          +----+-------------------+--------------+
+               |                   |
+               | every AWS API     |
+               | call uses the     |
+               | execution role    |
+               v                   v
+     +---------------------+ +------------------------+
+     | S3                  | | KMS, Secrets Manager   |
+     | brackish-analytics- | | (account-wide)         |
+     | reports (intended)  | |                        |
+     +---------------------+ +------------------------+
+
+     Also present in the account:
+       arn:aws:s3:::brackish-payroll-exports     (owned by HR)
+       arn:aws:s3:::brackish-customer-pii        (owned by data platform)
+       arn:aws:s3:::brackish-marketing-campaigns (owned by marketing)
+
+     CloudTrail: brackish-prod-trail
+       Management events: all regions
+       S3 data events: enabled on brackish-payroll-exports and brackish-customer-pii
+
+     IAM Access Analyzer: not enabled on this account
