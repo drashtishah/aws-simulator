@@ -320,6 +320,21 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-03-26"
+    },
+    {
+      "id": "024-agentcore-runaway-session",
+      "title": "The Agent That Would Not Stop",
+      "summary": "An AI research assistant keeps thinking long after the user left. The bill climbs by ten dollars a minute and there is no visible way to kill it.",
+      "difficulty": 3,
+      "category": "cost",
+      "services": [
+        "bedrock-agentcore",
+        "bedrock",
+        "cloudwatch",
+        "iam"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-22"
     }
   ]
 }

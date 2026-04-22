@@ -1,0 +1,6 @@
+Company: Lanternfish (seed stage, 9 engineers)
+Industry: Consumer AI research assistant
+Users: About 2,100 weekly active users on a paid seat plan, $400/day typical AWS bill
+AWS Services: Amazon Bedrock AgentCore, Amazon Bedrock, Amazon CloudWatch, AWS IAM
+Your role: Founding engineer on-call, Tuesday 10:02 AM
+Situation: Daily Bedrock spend projected to hit $9,000 today versus $412 yesterday, with no deploy and no traffic change

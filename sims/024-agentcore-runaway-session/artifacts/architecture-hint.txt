@@ -1,0 +1,46 @@
+                       +----------------------+
+                       |  Lanternfish web app |
+                       |    (browser SPA)     |
+                       +----------+-----------+
+                                  |
+                                  v
+                       +----------------------+
+                       |  API Gateway         |
+                       |  api.lanternfish.ai  |
+                       +----------+-----------+
+                                  |
+                                  v
+                       +-----------------------------+
+                       |  Lambda                     |
+                       |  lanternfish-chat-router    |
+                       +----+-----------------+------+
+                            |                 |
+         reads runtimeSessionId          InvokeAgentRuntime
+                            |                 |
+                            v                 v
+              +---------------------+   +--------------------------------+
+              | DynamoDB            |   | Bedrock AgentCore Runtime      |
+              | lanternfish-sessions|   | lanternfish-research-agent     |
+              +---------------------+   | idleRuntimeSessionTimeout:900s |
+                                        | maxLifetime: 28800s            |
+                                        +--------+-----------------------+
+                                                 |
+                                                 v
+                                        +------------------------+
+                                        | Claude Sonnet          |
+                                        | on Amazon Bedrock      |
+                                        +------------------------+
+
+  IAM Role: lanternfish-agent-execution-role
+    -> Allows: bedrock:InvokeModel on claude-sonnet-4 ARN
+    -> Allows: bedrock-agentcore:*  on the research-agent runtime
+    -> Allows: logs:CreateLogStream, logs:PutLogEvents on the agent log group
+
+  Agent container entrypoint
+    -> Python agent loop: plan -> tool call -> reflect -> stop hook
+    -> Stop hook reads the last tool output and decides continue/stop
+
+  CloudWatch
+    -> Log group: /aws/bedrock-agentcore/lanternfish-research-agent
+    -> Metric: AWS/Bedrock InputTokenCount (model=claude-sonnet-4)
+    -> Alarm: BillingAlarm-bedrock-daily (threshold $1,500)

@@ -1,0 +1,21 @@
+2026-04-21T01:12:04.441Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=124 tool=web_search output_bytes=11823
+2026-04-21T01:12:04.512Z ERROR [stop-hook] session=rs-8f6c4b2a0e1d7b39 turn=124 raised UnicodeDecodeError 'utf-8' codec can't decode byte 0xf4 in position 8241
+2026-04-21T01:12:04.514Z WARN  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=124 stop_hook raised; continuing per framework default
+2026-04-21T01:12:04.515Z DEBUG [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=124 scratchpad_append role=tool name=stop_hook content_len=1842
+2026-04-21T01:12:10.208Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=125 planning, input_tokens=4812
+2026-04-21T01:12:13.771Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=125 tool=web_search query="UnicodeDecodeError 0xf4 workaround"
+2026-04-21T01:12:18.552Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=125 tool=web_search output_bytes=9402
+2026-04-21T01:12:18.630Z ERROR [stop-hook] session=rs-8f6c4b2a0e1d7b39 turn=125 raised UnicodeDecodeError 'utf-8' codec can't decode byte 0xf4 in position 7194
+2026-04-21T01:12:18.632Z WARN  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=125 stop_hook raised; continuing per framework default
+2026-04-21T01:12:24.118Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=126 planning, input_tokens=4994
+2026-04-21T10:02:01.004Z INFO  [billing] BillingAlarm-bedrock-daily state transitioned to ALARM at projection $8,940 (threshold $1,500)
+2026-04-21T10:02:14.881Z INFO  [agent-loop] session=rs-8f6c4b2a0e1d7b39 turn=1988 planning, input_tokens=4801
+2026-04-21T10:02:16.330Z INFO  [agent-loop] session=rs-b3e0a291742c88ab turn=1864 planning, input_tokens=4773
+2026-04-21T10:02:17.112Z INFO  [agent-loop] session=rs-1d7f3c88e904ba22 turn=1688 planning, input_tokens=4830
+2026-04-21T10:24:44.772Z INFO  [deploy] UpdateAgentRuntime completed, containerUri=lanternfish/research-agent:v2-7-1, active_sessions_during_update=92
+2026-04-21T10:24:44.774Z WARN  [deploy] 92 active microVMs will keep running with previous image until they go idle or hit maxLifetime
+2026-04-21T10:26:03.118Z INFO  [deploy] UpdateAgentRuntime lifecycleConfiguration.maxLifetime changed from 28800 to 600
+2026-04-21T10:36:42.449Z INFO  [lifecycle] session=rs-8f6c4b2a0e1d7b39 terminated reason=MAX_LIFETIME_REACHED total_input_tokens=9540600 total_output_tokens=2782400
+2026-04-21T10:36:43.001Z INFO  [lifecycle] session=rs-b3e0a291742c88ab terminated reason=MAX_LIFETIME_REACHED total_input_tokens=8948400 total_output_tokens=2611200
+2026-04-21T10:36:43.812Z INFO  [lifecycle] session=rs-1d7f3c88e904ba22 terminated reason=MAX_LIFETIME_REACHED total_input_tokens=8100400 total_output_tokens=2363200
+2026-04-21T10:36:55.033Z INFO  [billing] BillingAlarm-bedrock-daily token rate dropped below alarm threshold

@@ -1,0 +1,73 @@
+{
+  "_note": "Synthetic: AgentCore does not expose a ListSessions API. This list was reconstructed from CloudWatch log filter queries on /aws/bedrock-agentcore/lanternfish-research-agent for unique runtimeSessionId values active in the last 5 minutes.",
+  "queryTimestamp": "2026-04-21T14:07:00Z",
+  "sessions": [
+    {
+      "runtimeSessionId": "rs-8f6c4b2a0e1d7b39",
+      "userId": "u-08224",
+      "startedAt": "2026-04-21T05:42:11Z",
+      "lastEventAt": "2026-04-21T14:06:58Z",
+      "turnCount": 1988,
+      "inputTokensCumulative": 9540600,
+      "outputTokensCumulative": 2782400,
+      "state": "BUSY"
+    },
+    {
+      "runtimeSessionId": "rs-b3e0a291742c88ab",
+      "userId": "u-12177",
+      "startedAt": "2026-04-21T06:14:03Z",
+      "lastEventAt": "2026-04-21T14:06:59Z",
+      "turnCount": 1864,
+      "inputTokensCumulative": 8948400,
+      "outputTokensCumulative": 2611200,
+      "state": "BUSY"
+    },
+    {
+      "runtimeSessionId": "rs-1d7f3c88e904ba22",
+      "userId": "u-04391",
+      "startedAt": "2026-04-21T07:03:55Z",
+      "lastEventAt": "2026-04-21T14:06:57Z",
+      "turnCount": 1688,
+      "inputTokensCumulative": 8100400,
+      "outputTokensCumulative": 2363200,
+      "state": "BUSY"
+    },
+    {
+      "runtimeSessionId": "rs-47ab92cc01f5dde8",
+      "userId": "u-19820",
+      "startedAt": "2026-04-21T08:55:02Z",
+      "lastEventAt": "2026-04-21T14:07:00Z",
+      "turnCount": 1248,
+      "inputTokensCumulative": 5990400,
+      "outputTokensCumulative": 1747200,
+      "state": "BUSY"
+    },
+    {
+      "runtimeSessionId": "rs-e6b0994182c7cddf",
+      "userId": "u-20441",
+      "startedAt": "2026-04-21T13:58:41Z",
+      "lastEventAt": "2026-04-21T14:00:12Z",
+      "turnCount": 4,
+      "inputTokensCumulative": 18800,
+      "outputTokensCumulative": 5400,
+      "state": "IDLE"
+    },
+    {
+      "runtimeSessionId": "rs-4277ae8819b40301",
+      "userId": "u-20442",
+      "startedAt": "2026-04-21T14:01:33Z",
+      "lastEventAt": "2026-04-21T14:02:02Z",
+      "turnCount": 2,
+      "inputTokensCumulative": 8600,
+      "outputTokensCumulative": 2100,
+      "state": "IDLE"
+    }
+  ],
+  "summary": {
+    "totalSessionsTracked": 92,
+    "busySessions": 88,
+    "idleSessions": 4,
+    "currentLoggedInUsers": 7,
+    "observation": "Eighty-eight sessions are emitting output every few seconds. Only seven users are currently logged into the app."
+  }
+}

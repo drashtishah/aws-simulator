@@ -1,0 +1,29 @@
+{
+  "AlarmName": "BillingAlarm-bedrock-daily",
+  "AlarmArn": "arn:aws:cloudwatch:us-east-1:731824962045:alarm:BillingAlarm-bedrock-daily",
+  "AlarmDescription": "Projected daily Bedrock spend exceeds threshold. Pages on-call.",
+  "ActionsEnabled": true,
+  "OKActions": [],
+  "AlarmActions": [
+    "arn:aws:sns:us-east-1:731824962045:lanternfish-oncall"
+  ],
+  "MetricName": "EstimatedCharges",
+  "Namespace": "AWS/Billing",
+  "Statistic": "Maximum",
+  "Dimensions": [
+    {"Name": "ServiceName", "Value": "AmazonBedrock"},
+    {"Name": "Currency", "Value": "USD"}
+  ],
+  "Period": 21600,
+  "EvaluationPeriods": 1,
+  "Threshold": 1500,
+  "ComparisonOperator": "GreaterThanThreshold",
+  "StateValue": "ALARM",
+  "StateReason": "Threshold Crossed: 1 out of the last 1 datapoints [8940.22 (21/04/26 10:02:00)] was greater than the threshold (1500.0)",
+  "StateUpdatedTimestamp": "2026-04-21T10:02:01.004Z",
+  "_notes": [
+    "This alarm fires only once per day, after damage is already done.",
+    "There is no per-runtime session-seconds alarm.",
+    "There is no per-model InputTokenCount alarm."
+  ]
+}

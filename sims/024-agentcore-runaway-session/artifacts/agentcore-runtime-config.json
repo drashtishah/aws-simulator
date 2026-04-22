@@ -1,0 +1,29 @@
+{
+  "agentRuntimeArn": "arn:aws:bedrock-agentcore:us-east-1:731824962045:agent-runtime/lanternfish-research-agent",
+  "agentRuntimeId": "AR-9K3X7P2Q1N",
+  "agentRuntimeName": "lanternfish-research-agent",
+  "agentRuntimeVersion": "14",
+  "description": "Research assistant agent. Plans multi-step web searches and synthesizes answers.",
+  "containerConfiguration": {
+    "containerUri": "731824962045.dkr.ecr.us-east-1.amazonaws.com/lanternfish/research-agent:v2-7-0"
+  },
+  "lifecycleConfiguration": {
+    "idleRuntimeSessionTimeout": 900,
+    "maxLifetime": 28800
+  },
+  "networkConfiguration": {
+    "networkMode": "PUBLIC"
+  },
+  "protocolConfiguration": {
+    "serverProtocol": "HTTP"
+  },
+  "roleArn": "arn:aws:iam::731824962045:role/lanternfish-agent-execution-role",
+  "status": "READY",
+  "createdAt": "2026-04-07T16:02:11Z",
+  "lastUpdatedAt": "2026-04-08T14:15:40Z",
+  "environmentVariables": {
+    "AGENT_MODEL_ID": "anthropic.claude-sonnet-4-20250514-v1:0",
+    "MAX_AGENT_TURNS": "unset",
+    "STOP_HOOK_ENABLED": "true"
+  }
+}

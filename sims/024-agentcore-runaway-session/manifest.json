@@ -1,0 +1,190 @@
+{
+  "id": "024-agentcore-runaway-session",
+  "title": "The Agent That Would Not Stop",
+  "summary": "An AI research assistant keeps thinking long after the user left. The bill climbs by ten dollars a minute and there is no visible way to kill it.",
+  "difficulty": 3,
+  "category": "cost",
+  "services": ["bedrock-agentcore", "bedrock", "cloudwatch", "iam"],
+  "tags": ["agentcore", "runaway-agent", "runtime-session", "idle-timeout", "lifecycle", "cost-overrun"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain4:CostControl",
+    "DVA-C02:Domain4:Troubleshooting",
+    "AIF-C01:GenAIOperations"
+  ],
+  "company": {
+    "name": "Lanternfish",
+    "industry": "consumer AI research assistant",
+    "size": "seed stage, 9 engineers"
+  },
+  "glossary": {
+    "Amazon Bedrock AgentCore": "A managed runtime for hosting AI agents on AWS. Each user conversation runs inside an isolated microVM (a small dedicated virtual machine) that holds the agent's working memory for the life of the session.",
+    "Runtime session": "A single long-running agent conversation inside AgentCore. The session keeps the agent's microVM alive so tools and memory persist across turns. Sessions are billed for active compute and for model tokens consumed.",
+    "idleRuntimeSessionTimeout": "A setting on an AgentCore Runtime that automatically kills a session after it has been idle for the given number of seconds. Defaults to 900 seconds (15 minutes). Minimum 60, maximum 28800.",
+    "maxLifetime": "A setting on an AgentCore Runtime that caps the total lifetime of any session. When the cap is reached the microVM is terminated and replaced. Defaults to 28800 seconds (8 hours).",
+    "Stop hook": "A piece of code that runs at the end of an agent turn to decide whether the agent should continue or stop. If the hook itself fails, its error output may end up back in the prompt, which can trick the agent into continuing.",
+    "Runaway agent": "An agent that keeps reasoning and invoking tools without reaching a stopping condition. It burns model tokens and runtime compute continuously until something external kills it.",
+    "InvokeAgentRuntime": "The Bedrock AgentCore API call that sends a user message into a session. It returns a stream of the agent's response and keeps the session alive.",
+    "UpdateAgentRuntime": "The Bedrock AgentCore API call that ships a new container image or configuration. It does not force-terminate active sessions. New settings apply only after a session goes idle or ends.",
+    "Active session workloads quota": "An AgentCore Runtime limit on how many sessions can run at the same time. When the quota is exhausted, new user requests are rejected even though old runaway sessions are still burning money."
+  },
+  "system": {
+    "what_broke": "A stop hook in the agent container returns an error message on failure, and that error message is concatenated back into the next prompt. The agent interprets the error as new instructions, keeps reasoning, and never reaches an idle state, so AgentCore never triggers idleRuntimeSessionTimeout. The sessions run until maxLifetime (8 hours), consuming model tokens and compute the whole time.",
+    "data_flow": "User chat message arrives at API Gateway, a Lambda wrapper calls InvokeAgentRuntime on the Lanternfish-research-agent AgentCore Runtime, the session's microVM runs the agent loop (plan, tool call, reflect, respond), and the assistant streams output back to the user. Each turn the stop hook evaluates whether the agent should continue.",
+    "components": [
+      {
+        "name": "lanternfish-research-agent (AgentCore Runtime)",
+        "role": "Hosts the research assistant agent. Each user conversation gets its own microVM session.",
+        "connections": ["Invoked by lanternfish-chat-router Lambda via InvokeAgentRuntime", "Calls Anthropic Claude on Amazon Bedrock for reasoning", "Writes logs to /aws/bedrock-agentcore/lanternfish-research-agent log group"],
+        "failure_impact": "If idle timeout is never triggered, sessions run until the 8-hour maxLifetime cap. Cost scales linearly with active session count and with tokens consumed per turn."
+      },
+      {
+        "name": "lanternfish-chat-router (Lambda function)",
+        "role": "Receives user messages from the web app, looks up the runtimeSessionId for the user, and forwards the message to AgentCore.",
+        "connections": ["Invoked by API Gateway", "Calls bedrock-agentcore:InvokeAgentRuntime", "Reads session IDs from DynamoDB table lanternfish-sessions"],
+        "failure_impact": "Does not directly cause the runaway, but its session-reuse logic keeps re-invoking the same long-lived session for the same user even after the user has closed the tab."
+      },
+      {
+        "name": "lanternfish-stop-hook (container entrypoint script)",
+        "role": "Inspects the agent's latest turn output and returns a structured decision: continue, stop, or error. Runs inside the AgentCore microVM as part of the agent loop.",
+        "connections": ["Called by the AgentCore Python SDK after each agent turn", "Writes its output back onto the agent's scratchpad"],
+        "failure_impact": "If the hook raises, the SDK writes the traceback onto the scratchpad as a tool-result message. The agent then reasons about the traceback and keeps going."
+      },
+      {
+        "name": "AWS/Bedrock cost metric namespace",
+        "role": "CloudWatch metrics that expose per-model token counts and AgentCore session-seconds.",
+        "connections": ["Populated by Bedrock and AgentCore", "Consumed by the BillingAlarm-bedrock-daily alarm"],
+        "failure_impact": "When metrics spike without a matching user action, it means sessions are running on their own."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "bedrock-agentcore",
+      "artifacts": [
+        "artifacts/agentcore-runtime-config.json",
+        "artifacts/agentcore-session-list.json",
+        "artifacts/stop-hook-code.txt"
+      ],
+      "capabilities": [
+        "get_agent_runtime",
+        "list_agent_runtime_endpoints",
+        "update_agent_runtime",
+        "describe_lifecycle_configuration"
+      ]
+    },
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/bedrock-usage-metrics.csv"
+      ],
+      "capabilities": [
+        "list_foundation_models",
+        "get_model_invocation_logging_configuration",
+        "describe_model_invocations"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-logs.txt",
+        "artifacts/bedrock-usage-metrics.csv",
+        "artifacts/billing-alarm-config.json"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "describe_alarms",
+        "filter_log_events"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/agent-execution-role.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Costs are rising at a steady rate, not in a spike. What does that pattern usually mean?",
+    "How many AgentCore sessions are active right now, and how does that compare to how many users are on the site?",
+    "AgentCore sessions have two timeouts. Which one controls when an idle session is killed, and which one controls the hard cap?",
+    "A session only counts as idle when the agent stops producing output. What could be causing an agent to keep producing output with nobody on the other end?",
+    "Look at the last forty agent turns for one of the long-lived sessions. Are the turns responding to the user, or are they responding to something else?"
+  ],
+  "resolution": {
+    "root_cause": "The agent's stop hook raises an unhandled exception when it encounters a non-UTF8 character. The SDK catches the exception and writes the Python traceback back onto the agent's scratchpad as a tool result. The agent treats the traceback as new input and continues reasoning. Because the agent never stops producing output, AgentCore's idleRuntimeSessionTimeout (900s) never fires and sessions run until the 8-hour maxLifetime.",
+    "fix_criteria": [
+      {
+        "id": "identify_runaway_sessions",
+        "description": "Player identifies that AgentCore sessions are active and producing output even though no user is connected to them",
+        "required": true
+      },
+      {
+        "id": "identify_idle_timeout_not_firing",
+        "description": "Player understands why the default 900 second idleRuntimeSessionTimeout is not killing these sessions (sessions are never idle because the agent keeps emitting output)",
+        "required": true
+      },
+      {
+        "id": "identify_stop_hook_feedback_loop",
+        "description": "Player traces the cause to the stop hook re-feeding its own error output into the agent scratchpad",
+        "required": true
+      },
+      {
+        "id": "propose_immediate_containment",
+        "description": "Player proposes deploying a new runtime version that raises no such feedback and setting a much shorter maxLifetime so existing sessions drain",
+        "required": true
+      },
+      {
+        "id": "identify_missing_kill_switch",
+        "description": "Player notes that AgentCore does not expose an API to list or force-terminate active sessions and recommends adding their own session registry with a kill endpoint",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Amazon Bedrock AgentCore Runtime sessions are billed and how idleRuntimeSessionTimeout and maxLifetime bound that bill",
+      "Why UpdateAgentRuntime does not immediately stop in-flight sessions and what that means during an incident",
+      "How to build a session registry that lets you enumerate and cap active sessions even when the managed service does not",
+      "How stop hooks or self-reflective agent loops can accidentally create infinite reasoning"
+    ],
+    "sop_steps": [
+      "Confirm the bill is real. Open the CloudWatch metric AWS/Bedrock InvocationClientErrors and InputTokenCount for the model the agent uses. Flat, sustained high values across hours (instead of a single spike) almost always mean sessions are running with no human on the other end.",
+      "Count active sessions. AgentCore does not have a ListSessions API, so you need another source of truth. Check the /aws/bedrock-agentcore/<runtime-name> log group and filter for runtimeSessionId values that have emitted events in the last five minutes. Compare to the number of users currently logged into your app.",
+      "Pick one long-lived session and read the last forty agent turns from CloudWatch Logs. You are looking for whether the agent is responding to user input or to its own previous output. A traceback, a tool-error payload, or a system message appearing in the scratchpad over and over is the signature of a self-feeding loop.",
+      "Find the feedback source. In AgentCore Runtime-hosted agents, the most common sources are stop hooks that raise on edge cases, tool handlers that return their own stderr, and retry loops that treat model refusals as new prompts. Read the container entrypoint code and the hook configuration.",
+      "Stop new sessions from starting in the bad state. Deploy a fixed container image with aws bedrock-agentcore update-agent-runtime. Note that UpdateAgentRuntime does not force-terminate active microVMs. They keep running until they go idle or hit maxLifetime.",
+      "Drain the stuck sessions. Temporarily lower the runtime's maxLifetime (for example from 28800 to 600 seconds) using UpdateAgentRuntime with a new LifecycleConfiguration. AgentCore will terminate the long-running microVMs as they cross the new cap.",
+      "Add a session registry as a permanent guardrail. Write every runtimeSessionId your app creates to a DynamoDB table with a createdAt timestamp. Run a Lambda on an EventBridge schedule that flags any session older than your business-level cap (for example 30 minutes) and marks it for a graceful end-of-turn stop request from your Lambda router.",
+      "Set a billing alarm that pages before the next incident. Create a CloudWatch alarm on the AWS/Bedrock metric InputTokenCount summed across the agent's model, with a threshold tuned to your typical daily volume. Page the on-call when it is breached for 15 minutes.",
+      "Prevent the specific feedback loop. In the agent container, wrap the stop hook in a try/except that returns a structured stop decision with a human-readable reason instead of raising. Never write raw stderr or a traceback back onto the agent scratchpad."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The agent has a working stop hook, but a tool handler returns its own error message and the agent retries the tool forever.",
+        "how_it_differs": "The failure is not in the stop hook; it is in the agent's tool-error handling. Because the tool error looks like a transient problem, the agent keeps retrying the same tool call on every turn. The session stays active, costs climb, and idleRuntimeSessionTimeout never fires for the same reason as the sim.",
+        "prevention": "Cap tool retries at a small number (for example three) in the agent framework configuration. Return a terminal error payload after the cap that clearly tells the agent to give up and summarize the failure to the user. Log retry counts as a CloudWatch metric so you can alarm on runaway retries."
+      },
+      {
+        "scenario": "Users close their browser tab, but the Lambda router keeps the runtimeSessionId alive because sessions are reused across page loads.",
+        "how_it_differs": "The agent itself is not runaway. What keeps the compute running is that nothing sends an explicit end-of-session signal to AgentCore, so the microVM waits for the 15-minute idle timeout on every conversation. Multiplied by thousands of users, this produces a large compute bill without any single runaway session.",
+        "prevention": "Send a page-unload beacon from the web app to an endpoint that calls a graceful end-turn on AgentCore. Lower idleRuntimeSessionTimeout to 120 seconds for short-form assistants. Separate production traffic from long-running analytics traffic into different runtimes with different timeouts."
+      },
+      {
+        "scenario": "The agent execution role has model access for every Bedrock foundation model, and the agent uses the most expensive one by accident.",
+        "how_it_differs": "Costs rise not because sessions are long but because each token is more expensive than it should be. The session count looks normal. The model ID string in the agent's config drifted from a cheap model to Claude Opus or a similar premium tier.",
+        "prevention": "Scope the agent execution role to only the model ARNs the agent is allowed to use. Pin the model ID in the container image and refuse to start the agent if the configured model is not on the allowlist. Add a CloudWatch alarm on per-model input token spend."
+      }
+    ],
+    "sop_practices": [
+      "Design every agent for explicit termination. The agent loop should have a clear exit condition (answer delivered, plan complete, or max-turns reached) and the stop hook should never be the last line of defense. Assume AgentCore's idle timeout will not fire and build a turn cap inside your own code.",
+      "Keep a session registry outside AgentCore. Because AgentCore has no ListSessions or ForceEndSession API, you need your own source of truth. A small DynamoDB table that records runtimeSessionId, userId, createdAt, and lastTurnAt pays for itself the first time you need to answer \"how many sessions are active right now?\"",
+      "Treat the LifecycleConfiguration as a safety cap, not a correctness mechanism. Set maxLifetime and idleRuntimeSessionTimeout to the shortest values that work for your use case. Do not rely on 8 hours as the only backstop, because 8 hours at agent pricing is enough to hurt.",
+      "Guard the scratchpad. Never write raw stderr, raw exception output, or untrusted strings back onto the agent's context. Treat the scratchpad like an input and sanitize what goes into it, because the agent cannot tell the difference between an intentional instruction and an echoed traceback."
+    ]
+  }
+}

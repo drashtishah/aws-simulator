@@ -1,0 +1,35 @@
+# File: /app/agent/hooks/stop_hook.py
+# Image: lanternfish/research-agent:v2-7-0
+# Runs at the end of every agent turn inside the AgentCore microVM.
+
+from agentcore_sdk import StopDecision
+
+def evaluate(tool_output: bytes, scratchpad: list) -> StopDecision:
+    # Decode the latest tool output to a string so the rules engine can scan it.
+    text = tool_output.decode()  # PROBLEM: no errors='replace', raises on non-UTF8 bytes
+
+    # Short-circuit: if the tool already returned a final answer, stop.
+    if "<final-answer>" in text:
+        return StopDecision(stop=True, reason="tool returned final-answer tag")
+
+    # Heuristic: if the last three turns all called the same tool, stop.
+    last_three = scratchpad[-3:]
+    if len(last_three) == 3 and all(t.tool == last_three[0].tool for t in last_three):
+        return StopDecision(stop=True, reason="same tool three turns in a row")
+
+    return StopDecision(stop=False, reason="continue")
+
+
+# Agent framework wrapper (agentcore_sdk/agent_loop.py, simplified)
+# ----------------------------------------------------------------
+# try:
+#     decision = stop_hook.evaluate(last_tool_output, scratchpad)
+# except Exception as exc:
+#     # PROBLEM: traceback gets written onto the scratchpad as a tool-result
+#     # message. The agent reads it next turn and reasons about it.
+#     scratchpad.append({
+#         "role": "tool",
+#         "name": "stop_hook",
+#         "content": f"Hook raised: {exc}\n{traceback.format_exc()}"
+#     })
+#     decision = StopDecision(stop=False, reason="hook raised, continuing")
