@@ -1,0 +1,68 @@
+{
+  "Role": {
+    "Path": "/",
+    "RoleName": "forkfield-devops-agent-role",
+    "RoleId": "AROAJQABLZS4A3QDUDEV0",
+    "Arn": "arn:aws:iam::771204483921:role/forkfield-devops-agent-role",
+    "CreateDate": "2026-02-28T14:22:07Z",
+    "PermissionsBoundary": null,
+    "AssumeRolePolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {"Service": "q-developer.amazonaws.com"},
+          "Action": "sts:AssumeRole",
+          "Condition": {
+            "StringEquals": {"aws:SourceAccount": "771204483921"}
+          }
+        }
+      ]
+    }
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "ForkfieldDevOpsAgentFullCloudFormation",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "cloudformation:*",
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Action": ["ec2:*", "lambda:*", "dynamodb:*", "iam:PassRole", "iam:GetRole", "logs:*"],
+            "Resource": "*"
+          }
+        ]
+      }
+    },
+    {
+      "PolicyName": "ForkfieldProductionGuardPolicy",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "DenyDestructiveOnProd",
+            "Effect": "Deny",
+            "Action": [
+              "cloudformation:DeleteStack",
+              "cloudformation:UpdateStack",
+              "ec2:TerminateInstances",
+              "rds:DeleteDBInstance"
+            ],
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:ResourceTag/Environment": "production"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "_problem": "The role has no permission boundary. The Deny statement uses aws:ResourceTag/Environment, which in IAM evaluation pulls from the caller's request context for this class of action. A caller that supplies Environment=staging bypasses the Deny."
+}

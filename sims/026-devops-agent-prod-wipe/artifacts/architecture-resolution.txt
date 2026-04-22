@@ -1,0 +1,56 @@
+      +-------------------------+
+      |   Engineer in Amazon    |
+      |   Q Developer console   |
+      +------------+------------+
+                   |
+        "Fix drift in forkfield-staging-tracking"
+                   |
+                   v
+      +-------------------------+
+      |  AWS DevOps Agent       |
+      |  Plan title: staging    |
+      |  Working-memory stack:  |
+      |  forkfield-prod-tracking|  [PROBLEM: STALE SUFFIX COPIED]
+      +------------+------------+
+                   |
+           AssumeRole (sts)
+                   |
+                   v
+      +-----------------------------------+
+      |  IAM Role:                        |
+      |  forkfield-devops-agent-role      |
+      |  Attached: cloudformation:*       |
+      |            on Resource: *         |
+      |  Attached: ForkfieldProductionGuard
+      |  Condition: aws:ResourceTag/      |
+      |             Environment           |
+      |  [PROBLEM: REQUEST-CONTEXT TAG,   |
+      |   NOT SERVER-AUTHORITATIVE TAG]   |
+      |  [PROBLEM: NO PERMISSION BOUNDARY]|
+      +------------+----------------------+
+                   |
+                   v
+      +-------------------------+
+      |  CloudFormation API     |
+      +---+--------------+------+
+          |              |
+          v              v
+   +-----------+   +-------------+
+   | forkfield-|   | forkfield-  |
+   | staging-  |   | prod-       |
+   | tracking  |   | tracking    |
+   | (still    |   | [DELETED]   |
+   |  there)   |   | 17 prod     |
+   |           |   | resources   |
+   +-----------+   +-------------+
+
+      +-----------------------------------------+
+      | Systems Manager Change Manager           |
+      | Template: forkfield-prod-approvals       |
+      | [NOT INVOKED: agent self-assessed as     |
+      |  staging, so the gate was never filed]   |
+      +-----------------------------------------+
+
+  CloudTrail: forkfield-prod-trail
+    -> DeleteStack event recorded under agent role
+    -> No alarm on agent-role destructive API calls

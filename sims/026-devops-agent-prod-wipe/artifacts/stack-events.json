@@ -1,0 +1,43 @@
+{
+  "StackEvents": [
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-prod-tracking/abc123",
+      "EventId": "de-00001",
+      "StackName": "forkfield-prod-tracking",
+      "LogicalResourceId": "forkfield-prod-tracking",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "Timestamp": "2026-04-22T06:02:08.341Z",
+      "ResourceStatus": "DELETE_IN_PROGRESS",
+      "ResourceStatusReason": "User Initiated",
+      "_caller": "arn:aws:sts::771204483921:assumed-role/forkfield-devops-agent-role/qdev-session-4a82c1d9"
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-prod-tracking/abc123",
+      "EventId": "de-00002",
+      "StackName": "forkfield-prod-tracking",
+      "LogicalResourceId": "TrackingEventsTable",
+      "ResourceType": "AWS::DynamoDB::Table",
+      "Timestamp": "2026-04-22T06:02:14.778Z",
+      "ResourceStatus": "DELETE_IN_PROGRESS",
+      "_deletionPolicy": "Delete"
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-prod-tracking/abc123",
+      "EventId": "de-00003",
+      "StackName": "forkfield-prod-tracking",
+      "LogicalResourceId": "TrackingKinesisStream",
+      "ResourceType": "AWS::Kinesis::Stream",
+      "Timestamp": "2026-04-22T06:02:22.104Z",
+      "ResourceStatus": "DELETE_IN_PROGRESS"
+    },
+    {
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-prod-tracking/abc123",
+      "EventId": "de-00017",
+      "StackName": "forkfield-prod-tracking",
+      "LogicalResourceId": "forkfield-prod-tracking",
+      "ResourceType": "AWS::CloudFormation::Stack",
+      "Timestamp": "2026-04-22T06:04:18.002Z",
+      "ResourceStatus": "DELETE_COMPLETE"
+    }
+  ]
+}

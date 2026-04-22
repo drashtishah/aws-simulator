@@ -1,0 +1,25 @@
+{
+  "stacks": [
+    {
+      "StackName": "forkfield-prod-tracking",
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-prod-tracking/abc123",
+      "Tags": [
+        {"Key": "Environment", "Value": "production"},
+        {"Key": "Approval", "Value": "required"},
+        {"Key": "Service", "Value": "tracking"},
+        {"Key": "Owner", "Value": "tracking-platform"}
+      ]
+    },
+    {
+      "StackName": "forkfield-staging-tracking",
+      "StackId": "arn:aws:cloudformation:us-east-1:771204483921:stack/forkfield-staging-tracking/def456",
+      "Tags": [
+        {"Key": "Environment", "Value": "staging"},
+        {"Key": "Approval", "Value": "not-required"},
+        {"Key": "Service", "Value": "tracking"},
+        {"Key": "Owner", "Value": "tracking-platform"}
+      ]
+    }
+  ],
+  "_observation": "The live tag on forkfield-prod-tracking is Environment=production. The DevOps Agent's request context at the time of the DeleteStack call carried Environment=staging. The IAM policy evaluator used the request-context value, not the live tag."
+}

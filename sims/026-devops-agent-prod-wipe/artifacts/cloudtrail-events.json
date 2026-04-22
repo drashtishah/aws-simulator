@@ -1,0 +1,37 @@
+{
+  "Events": [
+    {
+      "EventId": "ct-e1f2a3b4",
+      "EventName": "DeleteStack",
+      "EventTime": "2026-04-22T06:02:06Z",
+      "EventSource": "cloudformation.amazonaws.com",
+      "Username": "qdev-session-4a82c1d9",
+      "Resources": [
+        {"ResourceType": "AWS::CloudFormation::Stack", "ResourceName": "forkfield-prod-tracking"}
+      ],
+      "CloudTrailEvent": "{\"userIdentity\":{\"type\":\"AssumedRole\",\"arn\":\"arn:aws:sts::771204483921:assumed-role/forkfield-devops-agent-role/qdev-session-4a82c1d9\",\"accountId\":\"771204483921\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"arn\":\"arn:aws:iam::771204483921:role/forkfield-devops-agent-role\",\"userName\":\"forkfield-devops-agent-role\"},\"attributes\":{\"creationDate\":\"2026-04-22T06:00:02Z\"}}},\"eventSource\":\"cloudformation.amazonaws.com\",\"eventName\":\"DeleteStack\",\"awsRegion\":\"us-east-1\",\"requestParameters\":{\"stackName\":\"forkfield-prod-tracking\"},\"responseElements\":null,\"eventType\":\"AwsApiCall\",\"userAgent\":\"aws-q-developer-devops-agent/2026.04.01\"}"
+    },
+    {
+      "EventId": "ct-e5f6a7b8",
+      "EventName": "DescribeStacks",
+      "EventTime": "2026-04-22T06:00:47Z",
+      "EventSource": "cloudformation.amazonaws.com",
+      "Username": "qdev-session-4a82c1d9",
+      "Resources": [
+        {"ResourceType": "AWS::CloudFormation::Stack", "ResourceName": "forkfield-staging-tracking"}
+      ],
+      "CloudTrailEvent": "{\"userIdentity\":{\"type\":\"AssumedRole\",\"arn\":\"arn:aws:sts::771204483921:assumed-role/forkfield-devops-agent-role/qdev-session-4a82c1d9\"},\"eventName\":\"DescribeStacks\",\"requestParameters\":{\"stackName\":\"forkfield-staging-tracking\"}}"
+    },
+    {
+      "EventId": "ct-c9d0a1b2",
+      "EventName": "DescribeStackResource",
+      "EventTime": "2026-04-22T06:01:42Z",
+      "EventSource": "cloudformation.amazonaws.com",
+      "Username": "qdev-session-4a82c1d9",
+      "Resources": [
+        {"ResourceType": "AWS::CloudFormation::Stack", "ResourceName": "forkfield-prod-tracking"}
+      ],
+      "CloudTrailEvent": "{\"userIdentity\":{\"type\":\"AssumedRole\",\"arn\":\"arn:aws:sts::771204483921:assumed-role/forkfield-devops-agent-role/qdev-session-4a82c1d9\"},\"eventName\":\"DescribeStackResource\",\"requestParameters\":{\"stackName\":\"forkfield-prod-tracking\",\"logicalResourceId\":\"OrderRoutedRule\"}}"
+    }
+  ]
+}

@@ -350,6 +350,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-22"
+    },
+    {
+      "id": "026-devops-agent-prod-wipe",
+      "title": "The Thirteen-Hour Recreation",
+      "summary": "The DevOps agent was asked to fix staging drift. Four minutes later it deletes the production stack. The approval gate that should have caught it never fired.",
+      "difficulty": 3,
+      "category": "operations",
+      "services": [
+        "q-developer",
+        "cloudformation",
+        "iam",
+        "cloudtrail"
+      ],
+      "estimated_minutes": 40,
+      "created": "2026-04-22"
     }
   ]
 }

@@ -1,0 +1,54 @@
+      +-------------------------+
+      |   Engineer in Amazon    |
+      |   Q Developer console   |
+      +------------+------------+
+                   |
+        "Fix drift in forkfield-staging-tracking"
+                   |
+                   v
+      +-------------------------+
+      |  AWS DevOps Agent       |
+      |  (Amazon Q Developer)   |
+      +------------+------------+
+                   |
+           AssumeRole (sts)
+                   |
+                   v
+      +------------------------------+
+      |  IAM Role:                   |
+      |  forkfield-devops-agent-role |
+      |  Attached: cloudformation:*  |
+      |            on Resource: *    |
+      |  Attached:                   |
+      |  ForkfieldProductionGuard    |
+      |  (Deny on aws:ResourceTag/   |
+      |   Environment = production)  |
+      |  Permission boundary: none   |
+      +------------+-----------------+
+                   |
+                   v
+      +-------------------------+
+      |  CloudFormation API     |
+      +---+--------------+------+
+          |              |
+          v              v
+   +-----------+   +-------------+
+   | forkfield-|   | forkfield-  |
+   | staging-  |   | prod-       |
+   | tracking  |   | tracking    |
+   | (drift:   |   | (17 prod    |
+   |  eb rule) |   |  resources) |
+   +-----------+   +-------------+
+
+      +-----------------------------------------+
+      | Systems Manager Change Manager           |
+      | Template: forkfield-prod-approvals       |
+      | Requires: 2 human approvals              |
+      | Triggered by: create-change-request API  |
+      +-----------------------------------------+
+      (Only invoked when the agent's own policy
+       check concludes "production.")
+
+  CloudTrail: forkfield-prod-trail
+    -> Management events all regions
+    -> Destructive action events captured

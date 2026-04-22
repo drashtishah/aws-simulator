@@ -1,0 +1,6 @@
+Company: Forkfield Logistics (Series C, 180 engineers)
+Industry: B2B freight and shipment visibility
+Users: 420 enterprise customers, $380M ARR, 99.95% uptime SLO
+AWS Services: Amazon Q Developer (DevOps Agent), AWS CloudFormation, AWS IAM, AWS CloudTrail
+Your role: Primary SRE on-call, Thursday 06:12 AM, secondary is on PTO
+Situation: forkfield-prod-tracking CloudFormation stack transitioned to DELETE_COMPLETE four minutes ago. The DevOps Agent run that preceded it is marked Completed with a plan titled "Fix drift in forkfield-staging-tracking."

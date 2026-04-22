@@ -1,0 +1,32 @@
+{
+  "PolicyName": "ForkfieldProductionGuardPolicy",
+  "PolicyId": "ANPAJQABLZS4A3PROD00",
+  "Arn": "arn:aws:iam::771204483921:policy/ForkfieldProductionGuardPolicy",
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "DenyDestructiveOnProd",
+        "Effect": "Deny",
+        "Action": [
+          "cloudformation:DeleteStack",
+          "cloudformation:UpdateStack",
+          "ec2:TerminateInstances",
+          "rds:DeleteDBInstance"
+        ],
+        "Resource": "*",
+        "Condition": {
+          "StringEquals": {
+            "aws:ResourceTag/Environment": "production"
+          }
+        }
+      }
+    ]
+  },
+  "_review_notes": [
+    "The intent is to block destructive actions on production stacks.",
+    "The Condition key aws:ResourceTag/Environment is evaluated against the tags present in the request context, which the DevOps Agent populates from its planning state.",
+    "For true server-authoritative tag checks on CloudFormation stacks, the policy must route through a Lambda authorizer that calls DescribeStacks on the target and reads the live Tags array.",
+    "Recommendation: supplement this policy with an EventBridge rule on cloudformation:DeleteStack that invokes a Lambda before the API succeeds. The Lambda reads the live Environment tag and explicitly denies or approves."
+  ]
+}
