@@ -2,15 +2,6 @@
 name: test
 description: Run agent-driven test layers (browser specs, evals) and extend them with new specs. Use when user says "run tests", "add test", "new spec", or "extend test".
 effort: medium
-paths:
-  - web/test-specs/**
-  - scripts/**
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write"
-      hooks:
-        - type: command
-          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/test/ownership.json"
 references_system_vault: true
 ---
 
