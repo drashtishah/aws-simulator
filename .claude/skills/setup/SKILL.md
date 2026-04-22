@@ -2,14 +2,6 @@
 name: setup
 description: Initialize the local workspace for a new player. Creates the learning directory, profile, vault, and feedback files. Verifies sim packages and MCP configuration. Use when user says "setup", "initialize", or on first clone.
 effort: low
-paths:
-  - learning/**
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write"
-      hooks:
-        - type: command
-          command: "npx tsx .claude/hooks/guard-write.ts --ownership .claude/skills/setup/ownership.json"
 references_system_vault: true
 ---
 
