@@ -1,0 +1,190 @@
+{
+  "id": "040-eventbridge-cross-account-drop",
+  "title": "The Events Nobody Sent",
+  "summary": "A new product account's EventBridge rule fires and Invocations climb, but the central audit Lambda is never invoked. FailedInvocations is zero. No DLQ. No errors.",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["eventbridge", "iam", "cloudwatch", "cloudtrail"],
+  "tags": ["eventbridge", "cross-account", "event-pattern", "event-source", "organizations", "event-bus"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "SOA-C02:Domain3:MonitoringLogging",
+    "DVA-C02:Domain1:DevelopmentWithAWSServices"
+  ],
+  "company": {
+    "name": "Quillmark Publishing",
+    "industry": "Digital media and publishing platform",
+    "size": "Mid-size, 9-account AWS Organization, central audit pipeline in place for six months"
+  },
+  "glossary": {
+    "EventBridge Event Bus": "A pipeline that receives events from sources and routes them to targets based on rules. Custom event buses can accept events from cross-account sources when a resource policy permits it.",
+    "EventPattern": "A JSON document that describes which events a rule should match. Supports exact-string matching, prefix matching, and other content-based filter operators.",
+    "Prefix matching": "An EventBridge EventPattern operator written as {\"prefix\": \"string\"} that matches any value starting with the given string. An entry written as a plain string is an exact match only.",
+    "TriggeredRules": "A CloudWatch metric in the AWS/Events namespace that counts how many times a rule's EventPattern matched an event on the bus. Zero means no event matched the rule, not that no events arrived.",
+    "FailedInvocations": "A CloudWatch metric in the AWS/Events namespace counting target invocations that failed. Zero FailedInvocations on the source-account rule means cross-account delivery succeeded; it says nothing about whether the destination bus rule matched.",
+    "Cross-account event delivery": "An EventBridge pattern where a rule in account A targets an event bus in account B. Delivery requires: (1) the source rule's target IAM role permits events:PutEvents on the destination bus, and (2) the destination bus resource policy permits events:PutEvents from the source account or principal. Once delivered, events are evaluated by the destination bus's own rules independently.",
+    "PutEvents": "The EventBridge API call used to send one or more events to a bus. A failedEntryCount of 0 in the response means all entries were accepted by the bus, not that they matched a rule."
+  },
+  "system": {
+    "what_broke": "The new product team's application emits audit events with source set to \"quillmark.product-audit\". The central audit account's consolidation rule (consolidate-all-accounts) uses EventPattern: {\"source\": [{\"prefix\": \"quillmark.audit.\"}]}, a convention all 8 existing account teams follow (e.g., quillmark.audit.identity, quillmark.audit.billing). The new account's source value does not begin with quillmark.audit., so the prefix match fails. Events are delivered to the central bus without error (IAM role and resource policy both correct), but the consolidation Lambda is never invoked. FailedInvocations stays at zero. TriggeredRules on the central consolidation rule stays at zero. 48 hours of audit events silently vanish.",
+    "data_flow": "Each of Quillmark Publishing's 8 existing product accounts runs an EventBridge rule that forwards application events to the central audit bus in account 111122223333. Each rule targets arn:aws:events:us-east-1:111122223333:event-bus/audit-bus using a cross-account IAM role. The central bus runs a single consolidation rule (consolidate-all-accounts) that matches all events whose source prefix is quillmark.audit. and invokes the audit-consolidation Lambda. The ninth account (444455556666, onboarded 2026-04-21) follows the same wiring but uses source quillmark.product-audit instead of the Organization convention.",
+    "components": [
+      {
+        "name": "audit-forward-rule (source account 444455556666)",
+        "role": "EventBridge rule on the default bus in the new product account. Matches events with source quillmark.product-audit and detail-type AccessEvent. Targets the central audit bus via a cross-account IAM role.",
+        "connections": ["Assumes eventbridge-cross-account-role to call events:PutEvents on audit-bus", "Invocations metric rising; FailedInvocations=0"],
+        "failure_impact": "Rule fires successfully. Events reach the central bus. No error is raised. The failure is invisible from the source-account side."
+      },
+      {
+        "name": "audit-bus (central account 111122223333)",
+        "role": "Custom EventBridge bus that receives forwarded audit events from all 9 product accounts. Resource policy permits events:PutEvents from all account principals including 444455556666.",
+        "connections": ["Receives PutEvents calls from all product account cross-account roles", "Runs consolidate-all-accounts rule which filters by source prefix"],
+        "failure_impact": "Bus accepts every event (failedEntryCount=0 in PutEvents response). Silently discards events that do not match any rule, including all events from the new account."
+      },
+      {
+        "name": "consolidate-all-accounts rule (central account 111122223333)",
+        "role": "EventBridge rule on audit-bus. EventPattern requires source to match prefix quillmark.audit. Invokes audit-consolidation Lambda on match.",
+        "connections": ["Invokes arn:aws:lambda:us-east-1:111122223333:function:audit-consolidation", "TriggeredRules metric stays at zero for the new account's events"],
+        "failure_impact": "No events from the new account match. Lambda is never invoked. 48 hours of audit records are lost with no error signal."
+      },
+      {
+        "name": "eventbridge-cross-account-role (source account 444455556666)",
+        "role": "IAM role assumed by the EventBridge service to deliver events cross-account. Inline policy grants events:PutEvents on the central audit bus. Trust policy allows events.amazonaws.com.",
+        "connections": ["Used by audit-forward-rule as the delivery role", "Correctly configured; not the failure point"],
+        "failure_impact": "Red herring. This role is correctly configured and does not contribute to the silent drop."
+      },
+      {
+        "name": "audit-consolidation (Lambda, central account 111122223333)",
+        "role": "Function that processes matched audit events, writes them to a consolidated audit store, and emits compliance records.",
+        "connections": ["Triggered by consolidate-all-accounts EventBridge rule", "Invocations=0 for 48-hour window"],
+        "failure_impact": "Never invoked for the new account's events. Invocations CloudWatch metric stays at zero. No error is produced because no invocation is attempted."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "eventbridge",
+      "artifacts": [
+        "artifacts/source-rule.json",
+        "artifacts/target-bus-resource-policy.json",
+        "artifacts/central-consolidation-rule.json"
+      ],
+      "capabilities": [
+        "describe_rule",
+        "list_rules",
+        "list_targets_by_rule",
+        "describe_event_bus"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/source-iam-role.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "list_attached_policies"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "list_metrics"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The source account rule is Enabled and shows Invocations rising. FailedInvocations is zero. Cross-account delivery to the central bus is not the failure point.",
+    "Check CloudTrail in the central account for PutEvents calls from the new account's cross-account role. The responseElements show failedEntryCount: 0. Events are reaching the central bus.",
+    "If events reach the bus but the consolidation Lambda is never invoked: inspect the central consolidation rule's EventPattern. What source prefix does it require?",
+    "The central rule EventPattern is {\"source\": [{\"prefix\": \"quillmark.audit.\"}]}. The CloudTrail requestParameters show the new account sends source: quillmark.product-audit. The prefix does not match.",
+    "Fix: update the new account's application to emit events with source quillmark.audit.product, following the Organization convention. Verify by checking TriggeredRules on the central consolidation rule after the next event batch."
+  ],
+  "resolution": {
+    "root_cause": "The new product account's application emits EventBridge events with source set to quillmark.product-audit. The central consolidation rule on audit-bus uses an EventPattern with a prefix filter: {\"source\": [{\"prefix\": \"quillmark.audit.\"}]}. The string quillmark.product-audit does not begin with quillmark.audit., so the prefix match fails for every event from the new account. EventBridge silently discards events that match no rule on a bus; there is no error metric on either side. The source-account rule successfully delivers events (FailedInvocations=0), and the central bus accepts them (failedEntryCount=0 in PutEvents response), but the consolidation rule never fires (TriggeredRules=0) and the Lambda is never invoked (Invocations=0). 48 hours of audit events are lost without any alert.",
+    "fix_criteria": [
+      {
+        "id": "identify_source_rule_healthy",
+        "description": "Player confirms source account rule is Enabled, Invocations rising, FailedInvocations=0 over 48 hours, ruling out cross-account delivery failure",
+        "required": true
+      },
+      {
+        "id": "identify_events_reach_central_bus",
+        "description": "Player checks CloudTrail PutEvents in the central account and confirms failedEntryCount=0, establishing that events land on the central bus",
+        "required": true
+      },
+      {
+        "id": "identify_pattern_mismatch",
+        "description": "Player compares the central consolidation rule EventPattern prefix (quillmark.audit.) against the source value in CloudTrail requestParameters (quillmark.product-audit) and names the mismatch as the root cause",
+        "required": true
+      },
+      {
+        "id": "propose_source_naming_fix",
+        "description": "Player proposes updating the new account's event source to quillmark.audit.product (or another quillmark.audit. prefix) to match the central rule convention, OR widening the central rule pattern to also match quillmark.product-audit",
+        "required": true
+      },
+      {
+        "id": "propose_guardrail",
+        "description": "Player proposes a guardrail such as a schema registry entry validating source prefix on PutEvents, an EventBridge Pipes transform normalizing source values, or an onboarding runbook requiring new accounts to register their source prefix before go-live",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "EventBridge cross-account delivery success (FailedInvocations=0) does not mean events are processed: they must also match a rule on the destination bus.",
+      "When events reach a bus but no rule matches, there is no error signal on the source side; diagnosis requires checking destination-side metrics (TriggeredRules, Lambda Invocations).",
+      "EventBridge EventPattern prefix matching uses {\"prefix\": \"...\"} syntax; a simple string entry is an exact match only.",
+      "How to trace a cross-account event flow end-to-end: source rule metrics, CloudTrail PutEvents responses at the destination, destination-rule CloudWatch metrics.",
+      "Standardized event source naming conventions prevent silent drops in multi-account Organizations; enforce via schema registry or onboarding runbooks."
+    ],
+    "sop_steps": [
+      "Confirm the source-account rule is healthy. In account 444455556666, call DescribeRule on audit-forward-rule and check State=ENABLED. Pull CloudWatch metrics AWS/Events Invocations and FailedInvocations for RuleName=audit-forward-rule over the 48-hour window. Invocations rising with FailedInvocations=0 means the rule fired and cross-account delivery succeeded. The failure is not on the source side.",
+      "Confirm events reach the central bus. In account 111122223333, call DescribeEventBus on audit-bus to verify it exists and has a resource policy. Pull CloudTrail in the central account and filter for eventName=PutEvents and eventSource=events.amazonaws.com from the new account's cross-account role. Check responseElements.failedEntryCount in each event. Zero means the bus accepted every event.",
+      "Read the requestParameters in the CloudTrail PutEvents records. Each entry's source field shows what value the new account is sending. Note the value: quillmark.product-audit.",
+      "Inspect the central consolidation rule's EventPattern. In account 111122223333, call DescribeRule on consolidate-all-accounts on event bus audit-bus. Read the EventPattern field. It contains {\"source\": [{\"prefix\": \"quillmark.audit.\"}]}. Compare the required prefix with the source value from step 3: quillmark.product-audit does not start with quillmark.audit.",
+      "Confirm the destination-side metrics. Pull CloudWatch AWS/Events TriggeredRules for RuleName=consolidate-all-accounts on audit-bus over 48 hours. Value is zero. Pull AWS/Lambda Invocations for FunctionName=audit-consolidation. Also zero. This confirms the rule never matched and the Lambda was never called.",
+      "Identify the fix options. Option A: update the new account's application configuration to emit events with source quillmark.audit.product (or any quillmark.audit. prefix). This aligns with the Organization convention. Option B: widen the central consolidation rule's EventPattern to also match quillmark.product-audit, or replace the prefix filter with a broader pattern. Option A is preferred because it standardizes the convention rather than complicating the central rule.",
+      "Apply the fix. Update the new account's application to use source quillmark.audit.product. Deploy the config change and emit a test event. In account 111122223333, watch TriggeredRules on consolidate-all-accounts; it should increment within the next event batch. Verify Lambda Invocations also rises.",
+      "Replay missed events if needed. If the application logged the 48 hours of missed events to a durable store (S3, SQS DLQ, application logs), replay them through the corrected source value. If no replay store exists, document the data gap in the incident record.",
+      "Add a guardrail. Register the new account's source prefix in an EventBridge schema registry so PutEvents calls with unregistered prefixes are flagged at publish time. Alternatively, add an onboarding checklist step: every new account team must submit a source prefix for review and register it in the org-wide registry before their rule goes live.",
+      "Add a monitoring alarm. Create a CloudWatch alarm on AWS/Lambda Invocations for audit-consolidation with a threshold of zero invocations over a 1-hour period. An alarm fires if the Lambda goes silent, catching future silent drops regardless of cause."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Resource policy on the destination bus is missing the new account's principal.",
+        "how_it_differs": "In that case, PutEvents in the central account's CloudTrail would show failedEntryCount > 0, or the PutEvents call would be rejected with an AccessDeniedException in the source account's CloudTrail. FailedInvocations on the source rule would be nonzero. The symptom is an explicit error, not a silent drop.",
+        "prevention": "Review the destination bus resource policy during cross-account onboarding. Use a standardized Terraform module that always appends the new account's ARN to the resource policy before enabling the forwarding rule."
+      },
+      {
+        "scenario": "The cross-account IAM role in the source account lacks events:PutEvents on the destination bus.",
+        "how_it_differs": "The source rule's FailedInvocations metric would be nonzero. EventBridge would report a target invocation failure when trying to assume the role or call PutEvents. The difference from the prefix-mismatch scenario is that errors surface on the source side.",
+        "prevention": "Validate the cross-account role's inline policy using IAM Policy Simulator against the destination bus ARN before enabling the forwarding rule."
+      },
+      {
+        "scenario": "Central rule EventPattern uses an exact-string source match instead of a prefix, and the sending account changes its minor source value (e.g., quillmark.audit.identity-v2 instead of quillmark.audit.identity).",
+        "how_it_differs": "Prefix matching handles minor source variations as long as the prefix is stable. Exact-string matching breaks on any source value change. Symptom is the same silent drop, but the fix is to change the central rule's pattern from a string to a prefix operator, not to align the source value.",
+        "prevention": "Use prefix matching in central aggregation rules whenever multiple accounts or services contribute events with slightly varying source values. Document the convention and version it in the schema registry."
+      }
+    ],
+    "sop_practices": [
+      "Cross-account EventBridge delivery has two independent layers: source-rule target invocation (measured by FailedInvocations on the source rule) and destination-bus rule evaluation (measured by TriggeredRules on the destination rule). Zero FailedInvocations means only the first layer succeeded. Always check the second layer before concluding events are processed.",
+      "Add a CloudWatch alarm on the central consolidation Lambda's Invocations metric. If it drops to zero for a sustained period, something in the pipeline broke regardless of whether source-side metrics look healthy.",
+      "Establish and enforce a source-prefix naming convention across all accounts in the Organization before any cross-account event routing is built. Register prefixes in an EventBridge schema registry or a shared config store. Enforce on onboarding, not after the fact.",
+      "Enable CloudTrail data events on custom event buses for central audit pipelines. PutEvents is a data event, not a management event, so it is not captured by default. Without data event logging, you cannot inspect requestParameters to diagnose source-value mismatches."
+    ]
+  }
+}

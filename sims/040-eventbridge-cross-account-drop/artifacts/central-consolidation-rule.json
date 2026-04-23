@@ -1,0 +1,20 @@
+{
+  "DescribeRuleResponse": {
+    "Name": "consolidate-all-accounts",
+    "Arn": "arn:aws:events:us-east-1:111122223333:rule/audit-bus/consolidate-all-accounts",
+    "EventPattern": "{\"source\":[{\"prefix\":\"quillmark.audit.\"}]}",
+    "State": "ENABLED",
+    "Description": "Invoke audit-consolidation Lambda for all Organization audit events",
+    "EventBusName": "audit-bus",
+    "CreatedBy": "111122223333"
+  },
+  "ListTargetsByRuleResponse": {
+    "Targets": [
+      {
+        "Id": "audit-consolidation-lambda",
+        "Arn": "arn:aws:lambda:us-east-1:111122223333:function:audit-consolidation"
+      }
+    ]
+  },
+  "_note": "prefix 'quillmark.audit.' requires source to begin with that string; 'quillmark.product-audit' does not match"
+}
