@@ -43,3 +43,4 @@ tags:
 | 033 | [[033-app-runner-vpc-egress/story\|The Service That Went Quiet]] | 2 - Associate | Networking | app-runner, rds, vpc, secrets-manager | 30 min |
 | 034 | [[034-memorydb-acl-flushdb/story\|The Key the Cache Would Not Drop]] | 3 - Professional | Reliability | memorydb, ec2, iam, cloudwatch | 30 min |
 | 035 | [[035-transfer-family-scope-down/story\|The Partner Who Saw Too Much]] | 3 - Professional | Security | transfer-family, iam, s3, cloudtrail | 35 min |
+| 036 | [[036-s3-vpce-policy-lockout/story\|The Lock You Wrote Yourself]] | 3 - Professional | Security | s3, vpc, iam, cloudtrail | 35 min |

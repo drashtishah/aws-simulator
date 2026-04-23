@@ -501,6 +501,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-23"
+    },
+    {
+      "id": "036-s3-vpce-policy-lockout",
+      "title": "The Lock You Wrote Yourself",
+      "summary": "Admin self-locks out of S3 bucket by writing a Deny policy on aws:SourceVpce that blocks non-VPC traffic, including the AWS Console",
+      "difficulty": 3,
+      "category": "security",
+      "services": [
+        "s3",
+        "vpc",
+        "iam",
+        "cloudtrail"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
     }
   ]
 }

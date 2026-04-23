@@ -1,0 +1,40 @@
+LARKSPUR HEALTH - INCIDENT BRIEFING
+====================================
+Time:     Thursday 14:22 ET
+Bucket:   larkspur-phi-archive (PHI archive, versioning on, SSE-KMS)
+Region:   us-east-1
+Account:  123456789012
+
+SYMPTOM
+-------
+AWS Console returns AccessDenied on all S3 operations against larkspur-phi-archive.
+Affected since approximately 14:18 ET.
+
+WHAT IS WORKING
+---------------
+- Application EC2 instances (private subnet, larkspur-app VPC) read and write normally.
+- No KMS key rotation, no public access block change, no CloudFormation drift.
+
+WHAT CHANGED TODAY
+------------------
+- 09:47 ET: Bucket policy updated by larkspur-infra-admin to enforce VPC-only access.
+
+YOUR ROLE
+---------
+- IAM role: larkspur-infra-admin (AdministratorAccess managed policy attached)
+- Access method: AWS SSO session from corporate workstation
+- You wrote the bucket policy this morning.
+
+VPC ENDPOINT
+------------
+- ID:     vpce-0a1b2c3d4e5f67890
+- Type:   Gateway (S3)
+- VPC:    vpc-0f1e2d3c4b5a6978 (larkspur-app)
+- Status: Available
+- Policy: Full access (allows all S3 actions)
+
+CLOUDTRAIL
+----------
+- Trail:        larkspur-org-trail (organization trail, all regions)
+- S3 data events: enabled on larkspur-phi-archive
+- Management events: enabled (read + write)

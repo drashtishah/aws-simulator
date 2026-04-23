@@ -1,0 +1,18 @@
+{
+  "VpcEndpointId": "vpce-0a1b2c3d4e5f67890",
+  "VpcEndpointType": "Gateway",
+  "ServiceName": "com.amazonaws.us-east-1.s3",
+  "State": "available",
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": "*",
+        "Action": "*",
+        "Resource": "*"
+      }
+    ]
+  },
+  "Note": "The VPC endpoint policy is fully permissive. It does not restrict any S3 actions. The lockout is NOT caused by this policy. Investigate the bucket policy instead."
+}
