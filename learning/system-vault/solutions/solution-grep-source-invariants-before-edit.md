@@ -4,8 +4,8 @@ kind: solution
 title: Grep the test tree for source-invariant assertions before planning an edit
 tags: [kind/solution, scope/pipeline, stage/planner, cost/trivial]
 created: 2026-04-15
-updated: 2026-04-15
-source_issues: [#276]
+updated: 2026-04-23
+source_issues: [#276, #322]
 confidence: observed
 summary: Before finalizing a plan, grep the test tree for readFileSync/execSync/string-literal references to each edited file and reconcile flipped assertions
 applies_to: [problem-plan-ignores-source-invariant-tests]
@@ -28,15 +28,23 @@ tests.
 3. For every hit, read the assertion. State in the plan whether the
    planned change flips the assertion. If yes, add the test to
    Files-to-change with an `old:` / `new:` block.
-4. Critic: when reviewing a plan, spot-check one edited file by
+4. After the first hit, broaden the grep. Search the tree for any
+   numeric count, category name, or header string referenced by the
+   hit assertion. One header "60 checks" often pairs with multiple
+   test assertions on the same count and stale doc mentions; do not
+   stop at one match. Treat file-header counts as stale until
+   verified by actual count.
+5. Critic: when reviewing a plan, spot-check one edited file by
    running the grep from step 1. Fail the plan if a flipped
    assertion is not addressed.
 
 ## Why trivial
 One ripgrep per edited file at plan time. In #276 the skipped grep
-cost the implementer two test-fix commits and a self-correction
-reflection. Catching it at plan time keeps the implementer's diff
-scoped to what the plan promised.
+cost two test-fix commits. In #322 a narrow grep found one
+assertion; stopping there cost two plan revisions to surface three
+more count assertions and two stale doc mentions. Catching both at
+plan time keeps the implementer's diff scoped to what the plan
+promised.
 
 ## Related
 - [[problem-plan-ignores-source-invariant-tests]] the failure mode
