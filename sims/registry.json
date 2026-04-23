@@ -501,6 +501,20 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-23"
+    },
+    {
+      "id": "041-fargate-ephemeral-exhaust",
+      "title": "Twenty Gigabytes Is Not Enough",
+      "summary": "A computer-vision inference service fails to start new tasks Friday morning. Existing tasks run fine. The fix is one missing field.",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": [
+        "ecs",
+        "ecr",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 25,
+      "created": "2026-04-23"
     }
   ]
 }
