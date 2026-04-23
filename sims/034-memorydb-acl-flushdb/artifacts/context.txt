@@ -1,0 +1,6 @@
+Company: Drifter Analytics (Series A, 31 engineers)
+Industry: Mobile game analytics SaaS
+Users: 240 game studios, ~18,000 dashboard logins per day, 22 open support tickets for 'invalid session'
+AWS Services: Amazon MemoryDB for Redis, Amazon EC2 (ECS), AWS IAM, Amazon CloudWatch
+Your role: Platform on-call, Monday 10:14 Eastern
+Situation: Players keep getting logged out; MemoryDB is at 94 percent memory and evicting session keys; two enterprise accounts escalated

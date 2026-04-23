@@ -1,0 +1,206 @@
+{
+  "id": "034-memorydb-acl-flushdb",
+  "title": "The Key the Cache Would Not Drop",
+  "summary": "A nightly cleanup job dies the first time it runs on the new durable cache. The cache is up, connection is fine, the command is refused.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["memorydb", "ec2", "iam", "cloudwatch"],
+  "tags": ["memorydb", "redis", "acl", "noperm", "command-category"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerforming",
+    "DVA-C02:Domain2:Security"
+  ],
+  "company": {
+    "name": "Drifter Analytics",
+    "industry": "Mobile game analytics SaaS",
+    "size": "Series A, 31 engineers, 240 game studios as customers"
+  },
+  "glossary": {
+    "Amazon MemoryDB for Redis": "A managed AWS service that offers a Redis-compatible data store with multi-AZ durability: writes are synchronously replicated to a distributed transaction log before the client sees a success. Unlike Amazon ElastiCache for Redis (which is an in-memory cache), MemoryDB is meant to be used as a primary database.",
+    "Redis ACL": "A Redis 6+ feature that defines users, each with their own rules about which commands they can run, which keys they can touch, and what password they use. MemoryDB always has ACLs enabled: every connection authenticates as a named user whose rules the broker enforces on every command.",
+    "ACL rule": "A compact string describing a MemoryDB/Redis user's permissions. Example: 'on ~* +@all -@dangerous' means the user is enabled, can access any key pattern, can run any command category, except commands in the @dangerous category.",
+    "Command category (@read, @write, @dangerous)": "Redis groups commands into categories so ACLs can grant or deny families of commands without listing them one at a time. @read covers GET, MGET, HGET; @write covers SET, HSET; @dangerous covers destructive commands like FLUSHALL, FLUSHDB, SHUTDOWN, CONFIG, KEYS, DEBUG.",
+    "FLUSHDB": "Deletes every key in the currently selected database. In the @dangerous category because it is irrecoverable in MemoryDB except by restoring from a snapshot.",
+    "FLUSHALL": "Deletes every key in every database on the node. Also in @dangerous.",
+    "NOPERM error": "The error MemoryDB returns when an authenticated user attempts a command the ACL rules do not permit. Looks like '(error) NOPERM this user has no permissions to run the FLUSHDB command'.",
+    "MemoryDB user and ACL separation": "MemoryDB separates the authenticated identity (a 'user', created with CreateUser) from the ACL policy (an 'ACL', created with CreateACL). An ACL lists one or more users and attaches to the cluster at cluster creation time.",
+    "ElastiCache open-access mode": "The historical ElastiCache default where any client that could reach the cluster over the network could run any command. No authentication, no per-command authorization. MemoryDB does not support this mode."
+  },
+  "system": {
+    "what_broke": "Drifter Analytics migrated their session-state store from Amazon ElastiCache for Redis (open-access mode) to Amazon MemoryDB for Redis so session state would survive a node failure. The migration wizard in the MemoryDB console generated a user called drifter-app with the ACL rules 'on ~* +@read +@write +@connect -@dangerous'. The nightly scratch-space cleanup job, which has been running unchanged for 18 months, calls FLUSHDB against a dedicated ephemeral database (db 5) to clean up throwaway pre-aggregation keys. FLUSHDB is in the @dangerous category. Every night at 02:00, the job connects, authenticates as drifter-app, calls FLUSHDB, and receives NOPERM. It retries three times with exponential backoff, fails, and exits non-zero. The next morning the scratch database has last night's residue plus tonight's, and so on. Within a week the scratch keys are using 2.3 GB of cluster memory and push normal session state into eviction, causing session-login failures and customer complaints.",
+    "data_flow": "Drifter's session-state service runs on ECS Fargate, writes session snapshots to MemoryDB on db 0 using keys like session:<token>:<userId>. A separate pre-aggregation service writes intermediate per-event aggregation state to db 5 with keys like scratch:<gameId>:<minute>. Every night at 02:00 UTC, a scheduled ECS task (cleanup-scratch) connects to MemoryDB, issues SELECT 5 to switch to the scratch database, and calls FLUSHDB. Under ElastiCache this ran fine for 18 months. Under MemoryDB, the FLUSHDB is refused.",
+    "components": [
+      {
+        "name": "drifter-memorydb-cluster (MemoryDB cluster)",
+        "role": "Primary session-state and pre-aggregation store. Two shards, three replicas each, across three AZs. MemoryDB 7.0, durable write path, snapshot schedule of 24 hours retained 7 days.",
+        "connections": ["Accessed by drifter-session-svc, drifter-preagg-svc, and cleanup-scratch ECS tasks", "Snapshots written to S3 bucket drifter-memorydb-snapshots"],
+        "failure_impact": "If a cleanup script cannot run, scratch data accumulates and evicts real data, causing session failures."
+      },
+      {
+        "name": "drifter-memorydb-acl (MemoryDB ACL)",
+        "role": "The ACL attached to the cluster at creation time. Lists the users allowed to connect and the rules applied to each.",
+        "connections": ["Created via CreateACL", "Attached to drifter-memorydb-cluster", "Contains users: drifter-app, drifter-admin, default-off"],
+        "failure_impact": "Rules that are too tight produce NOPERM on legitimate operations; too loose and the cluster is exposed to destructive commands."
+      },
+      {
+        "name": "drifter-app (MemoryDB user)",
+        "role": "The user that every application ECS task authenticates as. Shared by session-svc, preagg-svc, and the cleanup task.",
+        "connections": ["Rules: 'on ~* +@read +@write +@connect -@dangerous'", "Authentication: IAM-based (cluster has IAMAuthentication enabled)"],
+        "failure_impact": "A single user for every workload means the most restrictive workload's permissions gate all of them."
+      },
+      {
+        "name": "cleanup-scratch (ECS scheduled task)",
+        "role": "Runs nightly at 02:00 UTC. Connects to MemoryDB, selects db 5, issues FLUSHDB, disconnects. Three retries with 5s/20s/60s backoff.",
+        "connections": ["Authenticates as drifter-app", "Target: MemoryDB cluster endpoint on TCP 6379 (TLS)", "Execution role: cleanup-scratch-task-role"],
+        "failure_impact": "If the cleanup does not run, scratch data accumulates and interferes with the primary session-state workload."
+      },
+      {
+        "name": "drifter-session-svc (ECS service)",
+        "role": "Persists session tokens issued during player login. Reads and writes to db 0. The service that starts failing when MemoryDB runs low on memory.",
+        "connections": ["Authenticates as drifter-app", "Calls HSET, HGET, EXPIRE on session:* keys"],
+        "failure_impact": "Login flow depends on this. Eviction of real session keys manifests as 'invalid session token' errors to players."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "memorydb",
+      "artifacts": [
+        "artifacts/memorydb-acl.json",
+        "artifacts/memorydb-cluster.json",
+        "artifacts/redis-client-session-log.txt"
+      ],
+      "capabilities": [
+        "describe_cluster",
+        "describe_acl",
+        "describe_user",
+        "list_allowed_node_type_updates"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/cleanup-task-config.json"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_security_groups"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/cleanup-task-role.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/memorydb-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "filter_log_events"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Session logins are failing with 'invalid session token'. The session-state cluster is running. What is happening to memory usage there?",
+    "Memory is climbing. Eviction count is climbing. Something is writing more than it is freeing. Who writes to MemoryDB and how is it cleaned up?",
+    "The nightly cleanup task has been failing since the cluster was migrated from ElastiCache to MemoryDB. What is the error in its logs?",
+    "NOPERM is a MemoryDB ACL message. The user can connect and read and write, but not run a specific command. Which ACL rules are in effect?",
+    "Redis groups commands into categories. @dangerous covers FLUSHDB, FLUSHALL, SHUTDOWN, CONFIG, KEYS, DEBUG. The ACL excludes @dangerous with -@dangerous. FLUSHDB is blocked."
+  ],
+  "resolution": {
+    "root_cause": "The Redis ACL rule attached to the drifter-app user on drifter-memorydb-cluster is 'on ~* +@read +@write +@connect -@dangerous'. The last fragment, '-@dangerous', removes an entire category of commands from the user's allowed set. FLUSHDB (and FLUSHALL, SHUTDOWN, CONFIG, KEYS, DEBUG) belong to the @dangerous category. The nightly cleanup-scratch task needs FLUSHDB on the scratch database, so every run returns NOPERM and the task fails. Scratch keys accumulate over days, consume cluster memory, push real session keys into eviction, and surface as login failures for end users. The migration wizard generated this ACL rule by default; nobody ran the existing cleanup task against the new cluster before cutover.",
+    "fix_criteria": [
+      {
+        "id": "identify_session_login_failures",
+        "description": "Player identifies the end-user symptom (session-login failures) and traces it to MemoryDB memory pressure and eviction",
+        "required": true
+      },
+      {
+        "id": "identify_cleanup_task_failing",
+        "description": "Player identifies that the nightly cleanup-scratch task has been failing since the migration and that scratch keys are the source of memory growth",
+        "required": true
+      },
+      {
+        "id": "identify_noperm_in_logs",
+        "description": "Player finds the NOPERM error in the cleanup task's client logs when it tries to FLUSHDB",
+        "required": true
+      },
+      {
+        "id": "identify_acl_dangerous_exclusion",
+        "description": "Player identifies that the drifter-app ACL rule excludes the @dangerous command category, which includes FLUSHDB, and that this is the cause of the NOPERM error",
+        "required": true
+      },
+      {
+        "id": "propose_minimal_acl_fix",
+        "description": "Player proposes a minimal ACL change that permits the cleanup task's FLUSHDB without broadly reopening @dangerous: either add '+flushdb' to the drifter-app rule (permits FLUSHDB globally for this user), or create a dedicated cleanup user with rules scoped to that single command",
+        "required": true
+      },
+      {
+        "id": "propose_separate_cleanup_user",
+        "description": "Player proposes creating a dedicated MemoryDB user for the cleanup task whose ACL rules permit exactly the destructive commands it needs, rather than widening permissions on the shared drifter-app user",
+        "required": false
+      },
+      {
+        "id": "propose_cleanup_alarm",
+        "description": "Player proposes an alarm on the cleanup task's exit code and on MemoryDB DatabaseMemoryUsagePercentage so the same failure mode is caught within a day next time",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Amazon MemoryDB for Redis differs from ElastiCache for Redis, including always-on ACLs and durable write semantics",
+      "The Redis ACL rule grammar: categories, key patterns, passwords, and the on/off flag",
+      "The @dangerous command category and why FLUSHDB, FLUSHALL, KEYS, CONFIG, and DEBUG are grouped together",
+      "The security principle of separate users per operational role, rather than a single shared application user",
+      "How silent cleanup failures cause memory pressure that evicts primary workload data in a durable cache"
+    ],
+    "sop_steps": [
+      "Start at the user-visible symptom. 'Invalid session token' during login is the primary complaint. Trace the session-state path: player login service -> MemoryDB HGET on session:<token>. If the key is missing, you see invalid session.",
+      "Check MemoryDB memory pressure. Look at CloudWatch metrics under AWS/MemoryDB for DatabaseMemoryUsagePercentage and Evictions per shard. If DatabaseMemoryUsagePercentage is over 90 and Evictions is nonzero, real session keys are being evicted to make room.",
+      "Identify what is using the memory. Use the MemoryDB console's 'Memory' tab or run MEMORY USAGE / DBSIZE on each database. In this sim, db 5 (scratch) has grown from ~50 MB to over 2 GB.",
+      "Find what writes to db 5 and what cleans it up. db 5 is written by the pre-aggregation service and cleaned nightly by the cleanup-scratch ECS scheduled task. Check the ECS task's latest run logs.",
+      "Read the cleanup task's error. The Redis client will print '(error) NOPERM this user has no permissions to run the FLUSHDB command'. That message is MemoryDB's way of saying: the user is authenticated, but the ACL rule blocks this specific command.",
+      "Read the ACL attached to the cluster. Run DescribeACL or open the Access Control Lists tab in the MemoryDB console. Find the rule for drifter-app. You will see 'on ~* +@read +@write +@connect -@dangerous'.",
+      "Decide on the right fix. Three options:",
+      "Option A (broad): Add +flushdb to the drifter-app rule: 'on ~* +@read +@write +@connect -@dangerous +flushdb'. Redis ACLs apply rules left to right; +flushdb after -@dangerous re-adds just FLUSHDB. Simple but means every workload authenticating as drifter-app can now FLUSHDB. Not ideal.",
+      "Option B (scoped): Create a dedicated MemoryDB user, drifter-cleanup, with rules 'on ~* +ping +select +flushdb'. Update the cleanup-scratch ECS task to authenticate as drifter-cleanup. Keep drifter-app tight. Slightly more work but much better security posture.",
+      "Option C (no-FLUSHDB): Rewrite the cleanup task to use UNLINK or DEL with a key pattern (SCAN + UNLINK in batches) instead of FLUSHDB. This avoids touching the ACL at all but is slower and a larger code change.",
+      "Ship option B for this sim. Create drifter-cleanup user via CreateUser. Add the user to a new or existing ACL via UpdateACL. Update the cleanup-scratch task definition to reference a Secrets Manager secret holding the new user's password (or configure IAM auth for the user). Test in staging first.",
+      "After the fix, manually run the cleanup once. db 5 drops from 2+ GB to near zero. DatabaseMemoryUsagePercentage falls below 70 percent. Evictions stop. Session logins recover.",
+      "Add alarms. (1) On the cleanup-scratch ECS scheduled task's FailedInvocations. (2) On MemoryDB DatabaseMemoryUsagePercentage over 80 for 15 minutes. (3) On MemoryDB Evictions being nonzero for 10 minutes."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The ACL rule is correct for FLUSHDB but the user's key pattern is ~session:* only, so SELECT 5 + FLUSHDB fails because the command targets keys outside the permitted pattern.",
+        "how_it_differs": "NOPERM is returned, but the error message references the key pattern, not the command category. The rule allowed +flushdb but scoped keys to the session database. FLUSHDB acts on the current database, so it is blocked by the key pattern check.",
+        "prevention": "When scoping key patterns with Redis ACLs, confirm every administrative command that operates on a whole database also has a matching pattern allowance, or create a dedicated user with ~* for admin operations."
+      },
+      {
+        "scenario": "The cleanup task is authenticating as the default user, and the default user is disabled on MemoryDB.",
+        "how_it_differs": "Redis default behavior allows connections as a special 'default' user. MemoryDB disables 'default' by default. If the cleanup task does not pass credentials, it fails at authentication before any command is attempted. Symptom is WRONGPASS or 'NOAUTH Authentication required', not NOPERM.",
+        "prevention": "Always explicitly configure credentials in MemoryDB clients. Never rely on default-user behavior. If a legacy script does, detect it early by failing fast on startup rather than at the first command."
+      },
+      {
+        "scenario": "The cluster has IAMAuthentication enabled, and the task's IAM policy does not grant memorydb:Connect, so the connection never establishes.",
+        "how_it_differs": "The failure is at the TCP/TLS connection stage. The client sees a connection error or a NOAUTH message immediately, not a NOPERM on a specific command. This is an IAM problem, not an ACL problem, even though MemoryDB uses both.",
+        "prevention": "When using IAM authentication for MemoryDB, every task role that needs to connect must have an IAM policy granting memorydb:Connect on the cluster resource, in addition to the Redis ACL rules for command-level permissions."
+      }
+    ],
+    "sop_practices": [
+      "Create a dedicated MemoryDB user per operational role (application read-write, cleanup, admin). Do not share one user across workloads. A shared user forces the ACL to be as permissive as the most permissive workload needs, which is exactly the opposite of least privilege.",
+      "Review the full ACL rule for every user after the migration wizard generates it. Wizards tend to pick a safe default like '+@read +@write +@connect -@dangerous' which is right for a normal app but wrong for any user that runs maintenance commands.",
+      "Alarm on MemoryDB DatabaseMemoryUsagePercentage over 80 percent sustained, and on Evictions being nonzero. The cache-eviction symptom surfaces upstream as application errors long before it looks like a cache problem.",
+      "Alarm on scheduled cleanup task exit code. An ECS scheduled task that silently fails every night is a deceptively common failure mode, because the task is green in the console (it ran) but the work it was supposed to do is not done."
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "Role": {
+    "RoleName": "cleanup-scratch-task-role",
+    "RoleId": "AROA3XJ9PXY2RLNMOQWVZ",
+    "Arn": "arn:aws:iam::112233445566:role/cleanup-scratch-task-role",
+    "Description": "Execution role for the nightly cleanup-scratch ECS task. Grants the ability to connect to the MemoryDB cluster via IAM auth."
+  },
+  "AssumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "ecs-tasks.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "MemoryDBConnect",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "ConnectAsDrifterApp",
+            "Effect": "Allow",
+            "Action": "memorydb:Connect",
+            "Resource": [
+              "arn:aws:memorydb:us-east-2:112233445566:cluster/drifter-memorydb-cluster",
+              "arn:aws:memorydb:us-east-2:112233445566:user/drifter-app"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "_note": "The IAM side of MemoryDB auth is correct: this role can assume-connect as drifter-app. The failure is in the Redis ACL layer, not in IAM. MemoryDB uses BOTH an IAM policy (for connection) and a Redis ACL rule (for commands)."
+}

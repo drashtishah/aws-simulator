@@ -1,0 +1,58 @@
+                  +-------------------+
+                  | drifter-session-  |
+                  | svc (ECS Fargate) |
+                  | [EVICTED KEYS =   |
+                  |  LOST SESSIONS]   |
+                  +----------+--------+
+                             |
+                             v
+         +-------------------------------------+
+         |     Amazon MemoryDB for Redis       |
+         |     drifter-memorydb-cluster        |
+         |                                     |
+         |  DatabaseMemoryUsage: 94%           |
+         |  Evictions: nonzero since Sun       |
+         |  db 0 (session): pressured          |
+         |  db 5 (scratch): 2.1 GB, bloated    |
+         |                                     |
+         |  ACL drifter-memorydb-acl           |
+         |    user drifter-app                 |
+         |    [RULE: on ~* +@read +@write      |
+         |          +@connect -@dangerous]     |
+         |    [BLOCKS: FLUSHDB, FLUSHALL,      |
+         |     CONFIG, KEYS, DEBUG, SHUTDOWN]  |
+         +---+-------------+----------+--------+
+             |             ^                ^
+             |             | writes daily   | reads db 0
+             |             | (uncapped)     | (pressured)
+             |             |                |
+             |    +---------------------+   |
+             |    | drifter-preagg-svc  |   |
+             |    +---------------------+   |
+             |                              |
+             | (02:00 UTC)                  |
+             | FLUSHDB  -> NOPERM           |
+             | task exits non-zero          |
+             v
+   +---------------------------+
+   | cleanup-scratch           |
+   | [FAILS 7 NIGHTS IN A ROW  |
+   |  NO ALARM ON EXIT CODE]   |
+   +---------------------------+
+
+  Problem 1: ACL rule -@dangerous blocks FLUSHDB
+             cleanup-scratch task authenticates as drifter-app
+             -> every nightly run returns NOPERM and exits non-zero
+
+  Problem 2: Shared user drifter-app for every workload
+             forces the ACL to be the union of every workload's needs
+             -> either too tight (this sim) or too loose
+
+  Problem 3: No alarm on scheduled-task exit code
+             no alarm on DatabaseMemoryUsagePercentage < 95
+             no alarm on Evictions > 0
+             -> six days of silent memory growth before user impact
+
+  Fix: Create dedicated user drifter-cleanup with
+         on ~* +ping +select +flushdb
+       Attach to ACL, update ECS task auth, keep drifter-app tight.

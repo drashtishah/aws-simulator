@@ -1,0 +1,37 @@
+{
+  "Cluster": {
+    "Name": "drifter-memorydb-cluster",
+    "Status": "available",
+    "NodeType": "db.r6g.large",
+    "NumberOfShards": 2,
+    "NumberOfReplicasPerShard": 2,
+    "EngineVersion": "7.0",
+    "EnginePatchVersion": "7.0.7",
+    "ParameterGroupName": "default.memorydb-redis7",
+    "ParameterGroupStatus": "in-sync",
+    "SubnetGroupName": "drifter-memorydb-subnets",
+    "TLSEnabled": true,
+    "ACLName": "drifter-memorydb-acl",
+    "ARN": "arn:aws:memorydb:us-east-2:112233445566:cluster/drifter-memorydb-cluster",
+    "ClusterEndpoint": {
+      "Address": "clustercfg.drifter-memorydb-cluster.abcdef.memorydb.us-east-2.amazonaws.com",
+      "Port": 6379
+    },
+    "AutoMinorVersionUpgrade": true,
+    "SnapshotRetentionLimit": 7,
+    "SnapshotWindow": "07:00-08:00",
+    "MaintenanceWindow": "sun:08:00-sun:09:00",
+    "DataTiering": "false",
+    "MaxMemoryPolicy": "allkeys-lru",
+    "IAMAuthentication": "enabled",
+    "CreatedAt": "2026-04-14T23:14:02Z"
+  },
+  "DatabaseUsage": [
+    { "Database": 0, "Keys": 184520, "MemoryUsageMB": 824, "Description": "session:* (primary session state)" },
+    { "Database": 5, "Keys": 48122, "MemoryUsageMB": 2140, "Description": "scratch:* (pre-aggregation; should be emptied nightly)" }
+  ],
+  "ShardMemoryUsage": [
+    { "ShardName": "shard-0001", "UsedMemoryMB": 2987, "MaxMemoryMB": 3200, "UsagePercent": 93.3 },
+    { "ShardName": "shard-0002", "UsedMemoryMB": 3022, "MaxMemoryMB": 3200, "UsagePercent": 94.4 }
+  ]
+}

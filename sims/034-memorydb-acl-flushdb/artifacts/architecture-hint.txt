@@ -1,0 +1,48 @@
+                  +-------------------+
+                  | drifter-session-  |
+                  | svc (ECS Fargate) |
+                  +----------+--------+
+                             |
+                             | HSET/HGET/EXPIRE
+                             | session:<token>:<userId>
+                             | (db 0)
+                             v
+         +-------------------------------------+
+         |     Amazon MemoryDB for Redis       |
+         |     drifter-memorydb-cluster        |
+         |                                     |
+         |  2 shards x (1 primary + 2 replica) |
+         |  cache.r6g.large, MemoryDB 7.0      |
+         |  TLS in-transit, IAM auth           |
+         |  ACL: drifter-memorydb-acl          |
+         |    user drifter-app                 |
+         |    rule: on ~* +@read +@write       |
+         |          +@connect -@dangerous      |
+         +---+-------------+----------+--------+
+             |             |          |
+     SET     |             |  BG WRITES scratch:*
+     SCAN    |             |  (db 5)
+     DBSIZE  |             v
+             |    +---------------------+
+             |    | drifter-preagg-svc  |
+             |    | (ECS Fargate)       |
+             |    +---------------------+
+             |
+             | (cron 02:00 UTC)
+             | SELECT 5; FLUSHDB
+             v
+   +---------------------------+
+   | cleanup-scratch           |
+   | (ECS Scheduled Task)      |
+   | execution role:           |
+   |   cleanup-scratch-task-role|
+   | authenticates as drifter- |
+   |   app (shared user)       |
+   +---------------------------+
+
+   Snapshot schedule: daily, 7-day retention, to S3 drifter-memorydb-snapshots.
+
+   Migration history:
+     2026-04-14 22:00  cutover begins (ElastiCache -> MemoryDB)
+     2026-04-14 23:48  cutover completes
+     2026-04-15 02:00  first nightly cleanup under MemoryDB (result unobserved)
