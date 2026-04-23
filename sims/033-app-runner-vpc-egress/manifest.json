@@ -1,0 +1,198 @@
+{
+  "id": "033-app-runner-vpc-egress",
+  "title": "The Service That Went Quiet",
+  "summary": "Attaching a VPC connector fixes database access and breaks everything else. Stripe calls time out, Slack is silent, nobody expected this.",
+  "difficulty": 2,
+  "category": "networking",
+  "services": ["app-runner", "rds", "vpc", "secrets-manager"],
+  "tags": ["app-runner", "vpc-connector", "nat-gateway", "egress"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResilientArchitectures",
+    "DVA-C02:Domain3:Deployment"
+  ],
+  "company": {
+    "name": "Parable Health",
+    "industry": "Telehealth for chronic care",
+    "size": "Series A, 22 engineers, 8,400 active patients"
+  },
+  "glossary": {
+    "AWS App Runner": "A managed AWS service that runs containerized web applications directly from a container image or a source repo, without exposing the player to ECS tasks, load balancers, or auto-scaling groups. App Runner handles TLS, scaling, and DNS for you.",
+    "VPC connector": "An App Runner configuration object that attaches an App Runner service to a VPC through elastic network interfaces in specified subnets. Once attached, the service's outbound network traffic originates from those subnets.",
+    "EgressConfiguration.EgressType": "The App Runner NetworkConfiguration setting that controls how outbound traffic leaves the service. Set to DEFAULT, outbound traffic uses App Runner's managed public internet egress. Set to VPC, ALL outbound traffic routes through the attached VPC connector, including traffic to public AWS APIs and public internet endpoints.",
+    "NAT Gateway": "A managed AWS service that lets resources in a private subnet make outbound connections to the internet while remaining unreachable from the internet. A NAT Gateway lives in a public subnet and has a route-table entry in the private subnets it serves.",
+    "Private subnet": "A VPC subnet whose route table does not have a direct route to the internet gateway. Resources in a private subnet can reach the internet only through a NAT Gateway or a VPC endpoint.",
+    "VPC endpoint (interface/gateway)": "A private network entry point for an AWS service inside a VPC. Lets resources reach AWS services (like S3, Secrets Manager, Bedrock) without going to the public internet.",
+    "Stripe webhook / outbound call": "An HTTPS POST to https://api.stripe.com that App Runner's payment service makes to capture authorized charges. Needs to reach a public endpoint from inside the App Runner service."
+  },
+  "system": {
+    "what_broke": "The parable-billing App Runner service had EgressType=DEFAULT and made Stripe charge-capture calls over App Runner's managed public egress. When the team added RDS Proxy for a new Postgres-backed admin portal, they attached a VPC connector and flipped EgressType to VPC. All outbound traffic, not just RDS traffic, now leaves through the VPC subnets. Those subnets are private subnets routed through a single NAT Gateway that was already handling other workloads, and the Stripe API endpoint had been deliberately blocked by a bucket of security-group egress rules scoped to 'internal prod ranges only' that did not include api.stripe.com's public IP ranges. Every Stripe capture now fails with a connect timeout. Slack notifications (which also go out to the public internet) fail for the same reason. The RDS connection itself works because it is in-VPC.",
+    "data_flow": "A patient completes a visit, parable-billing App Runner service is called, it reads billing metadata from RDS via RDS Proxy (in-VPC), then calls Stripe's capture endpoint to charge the patient. On success it sends a Slack notification to the billing team channel. RDS calls go through the VPC connector into parable-rds-proxy, which pools connections to the prod Postgres cluster. Stripe and Slack calls must reach the public internet.",
+    "components": [
+      {
+        "name": "parable-billing (App Runner service)",
+        "role": "The billing API. Handles visit finalization, charge capture, refund processing, and billing-related webhooks. Containerized Node 20 app on App Runner 2 vCPU / 4 GB.",
+        "connections": ["Attached to VPC connector parable-apprunner-connector", "Calls RDS Proxy parable-rds-proxy on port 5432", "Calls api.stripe.com and hooks.slack.com on port 443"],
+        "failure_impact": "Any outbound path that is broken fails every charge capture and notification. There is no fallback."
+      },
+      {
+        "name": "parable-apprunner-connector (App Runner VPC connector)",
+        "role": "Attaches the App Runner service to two private subnets in the parable-prod-vpc via service-managed elastic network interfaces.",
+        "connections": ["Places ENIs in subnet-priv-a (10.12.32.0/24) and subnet-priv-b (10.12.48.0/24)", "Inherits security group sg-parable-apprunner"],
+        "failure_impact": "Once attached and NetworkConfiguration.EgressConfiguration.EgressType is set to VPC, ALL outbound traffic from the App Runner service uses these subnets. Traffic destinations that require public internet reachability now depend on the subnets' route table and egress."
+      },
+      {
+        "name": "subnet-priv-a, subnet-priv-b (private VPC subnets)",
+        "role": "The two subnets the VPC connector uses for outbound traffic. Their route tables point 0.0.0.0/0 at parable-prod-nat-az-a and parable-prod-nat-az-b respectively.",
+        "connections": ["Route 0.0.0.0/0 -> nat-gateway", "Route 10.12.0.0/16 -> local (intra-VPC)", "No route to igw-"],
+        "failure_impact": "Resources here reach the internet only via NAT. If NAT is unreachable, or if egress security groups block the destination, public endpoints appear down."
+      },
+      {
+        "name": "sg-parable-apprunner (security group)",
+        "role": "Controls egress for the App Runner ENIs in the VPC connector. Egress rules deliberately restrict outbound to 'internal prod ranges' (10.12.0.0/16 and the AWS service ranges for us-east-1).",
+        "connections": ["Attached to VPC connector ENIs", "Allows outbound TCP 5432 to sg-parable-rds-proxy; Allows outbound TCP 443 to prefix list pl-02cd2c6b (com.amazonaws.us-east-1.s3); Denies everything else implicitly"],
+        "failure_impact": "Any destination not covered by an explicit allow rule is silently dropped at the ENI. api.stripe.com lives outside the AWS us-east-1 prefix list and is not allowed."
+      },
+      {
+        "name": "parable-rds-proxy (RDS Proxy)",
+        "role": "Connection pool in front of the parable-prod Postgres cluster. Keeps warm connections so short-lived App Runner requests do not exhaust Postgres's max_connections.",
+        "connections": ["Fronts parable-prod-pg on port 5432", "Secret referenced: parable/rds-proxy/admin-creds in Secrets Manager"],
+        "failure_impact": "Works correctly in this sim; it is the reason the VPC connector was added in the first place."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "app-runner",
+      "artifacts": [
+        "artifacts/app-runner-service-config.json",
+        "artifacts/app-runner-application-logs.txt"
+      ],
+      "capabilities": [
+        "describe_service",
+        "describe_vpc_connector",
+        "list_operations"
+      ]
+    },
+    {
+      "service": "rds",
+      "artifacts": [
+        "artifacts/rds-proxy-config.json"
+      ],
+      "capabilities": [
+        "describe_db_proxies",
+        "describe_db_proxy_targets",
+        "describe_db_clusters"
+      ]
+    },
+    {
+      "service": "vpc",
+      "artifacts": [
+        "artifacts/vpc-subnet-route-tables.json",
+        "artifacts/security-group-rules.json"
+      ],
+      "capabilities": [
+        "describe_subnets",
+        "describe_route_tables",
+        "describe_security_groups",
+        "describe_nat_gateways",
+        "describe_prefix_lists"
+      ]
+    },
+    {
+      "service": "secrets-manager",
+      "artifacts": [
+        "artifacts/secrets-manager-audit.json"
+      ],
+      "capabilities": [
+        "describe_secret",
+        "list_secret_version_ids",
+        "get_resource_policy"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "RDS calls work. Stripe calls fail. What do those two destinations have in common and not have in common?",
+    "How does outbound traffic leave the App Runner service today? Read the NetworkConfiguration on the service.",
+    "When App Runner uses a VPC connector with EgressType=VPC, ALL outbound traffic routes through the VPC, including traffic to public endpoints.",
+    "If outbound goes through the VPC, the subnet's route table decides whether public traffic can reach the internet. What is the 0.0.0.0/0 route target?",
+    "The subnet can reach the NAT Gateway. The security group on the connector's ENIs may still be blocking. Read the egress rules."
+  ],
+  "resolution": {
+    "root_cause": "The parable-billing App Runner service has NetworkConfiguration.EgressConfiguration.EgressType=VPC with parable-apprunner-connector attached. That routes ALL outbound traffic (not just RDS) through the VPC subnets. The security group attached to the connector's ENIs (sg-parable-apprunner) allows egress only to 10.12.0.0/16, to the RDS Proxy security group, and to the com.amazonaws.us-east-1.s3 prefix list. It has no rule allowing outbound 443 to general internet destinations. api.stripe.com and hooks.slack.com therefore cannot be reached. RDS connectivity works because it is covered by an explicit allow rule to the RDS Proxy's security group.",
+    "fix_criteria": [
+      {
+        "id": "identify_egresstype_vpc_semantics",
+        "description": "Player identifies that EgressType=VPC routes ALL outbound traffic through the VPC, not just traffic destined for in-VPC resources",
+        "required": true
+      },
+      {
+        "id": "identify_egress_blocking_layer",
+        "description": "Player identifies whether the block is at the route table (no internet path) or at the security group (no outbound rule) or at both",
+        "required": true
+      },
+      {
+        "id": "identify_security_group_missing_rule",
+        "description": "Player identifies that sg-parable-apprunner has no egress rule that permits outbound 443 to general internet destinations (Stripe, Slack)",
+        "required": true
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes either adding an egress allow rule to the security group for 0.0.0.0/0:443 (or a managed prefix list covering the Stripe/Slack endpoints) OR reverting to EgressType=DEFAULT if the service does not actually need VPC egress",
+        "required": true
+      },
+      {
+        "id": "identify_nat_cost_note",
+        "description": "Player identifies that once EgressType=VPC, every byte that used to egress through App Runner's managed path now traverses the NAT Gateway and incurs per-GB NAT processing charges",
+        "required": false
+      },
+      {
+        "id": "identify_no_hybrid",
+        "description": "Player identifies that App Runner does not support per-destination routing; the choice is binary (DEFAULT or VPC) for the whole service",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How AWS App Runner integrates with a VPC via VPC connectors and what EgressType=VPC means for outbound traffic",
+      "The critical distinction that VPC connector routing is all-or-nothing (no split routing per destination)",
+      "How private-subnet egress depends on both a route table path (NAT Gateway) and security group rules",
+      "Why adding an App Runner VPC connector can cause previously-working public API calls to start timing out",
+      "The cost implications of pushing all outbound traffic through a NAT Gateway"
+    ],
+    "sop_steps": [
+      "Reproduce the failure deliberately. From a short-lived App Runner container, make three kinds of outbound calls: one to the in-VPC RDS Proxy, one to a VPC endpoint (S3), and one to a general internet destination (api.stripe.com). Record which succeed. This tells you the block surface.",
+      "Read the service's network configuration. In the App Runner console, open the service, click Networking, and look at EgressConfiguration. If EgressType is VPC, confirm you are in all-outbound-via-VPC mode.",
+      "Trace the destination path. For the failing destination (api.stripe.com), the packet leaves the App Runner ENI, enters the subnet, hits the subnet's route table (0.0.0.0/0 -> NAT Gateway), traverses the NAT, exits through the internet gateway, and reaches the internet. Any break at any step is the symptom.",
+      "Check the subnet route table. Confirm a 0.0.0.0/0 route exists and points at a healthy NAT Gateway in the same AZ. If this is missing, the packet is dropped by the VPC with no feedback.",
+      "Check the NAT Gateway health. In the VPC console, confirm state=available and that the NAT's associated EIP is attached. A NAT Gateway in a non-available state silently drops traffic.",
+      "Check the security group attached to the App Runner ENI. App Runner creates ENIs in the subnets for the connector, and they are governed by whatever security group the connector specifies. Open the egress rules. For Stripe and Slack, you need an outbound rule allowing TCP 443 to either 0.0.0.0/0 or to a managed prefix list that covers those destinations.",
+      "Decide on the right fix, not just the fastest one. Three options, from most to least preferable: 1) If the service genuinely needs VPC egress (for example, to call in-VPC RDS Proxy), keep EgressType=VPC and add a security-group egress rule allowing TCP 443 to a managed prefix list that covers your public dependencies, or to 0.0.0.0/0 if you accept that risk. 2) If the service only uses RDS Proxy as its in-VPC dependency and all other calls are to public AWS services, consider keeping EgressType=DEFAULT and reaching RDS Proxy via its public endpoint with SSL (requires enabling RDS Proxy's public access and is generally discouraged). 3) Move the service back to EgressType=DEFAULT and replace the RDS Proxy dependency with a public AWS service (DynamoDB, Aurora Data API). App Runner does not support split routing per destination.",
+      "If you keep VPC egress, budget the NAT cost. Every byte of Stripe traffic, Slack traffic, npm package download, and third-party API call now flows through the NAT Gateway and costs approximately $0.045 per GB on top of the NAT hourly charge. For high-egress services this can add hundreds of dollars per month.",
+      "Alarm on the App Runner service's 5xx rate as an approximation of 'outbound failing'. App Runner does not publish an explicit outbound-failure metric, so a sudden rise in application errors is the signal. Use CloudWatch anomaly detection on 5xxCount for each service."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The VPC connector subnets have a route to the internet gateway instead of a NAT Gateway, so they are actually public subnets.",
+        "how_it_differs": "Instead of failing closed, the service behaves correctly for outbound traffic. The hazard is that the App Runner ENIs get real public IPs attached and could be reachable from the internet (if any security group ever becomes permissive). It is a security risk, not a connectivity failure.",
+        "prevention": "Audit that VPC connector subnets are private (no igw route in their route table). Use a Config rule with the managed rule 'subnet-auto-assign-public-ip-disabled' plus a custom rule that denies attachment to subnets with an igw route."
+      },
+      {
+        "scenario": "Security group is correct, route table is correct, but the NAT Gateway has reached its port-allocation limit.",
+        "how_it_differs": "The subnet route and security group allow the traffic, but the NAT Gateway cannot open new source ports because existing flows are using them all. Symptom is intermittent connect timeouts and the CloudWatch metric ErrorPortAllocation is nonzero.",
+        "prevention": "Alarm on NAT Gateway's ErrorPortAllocation and IdleTimeoutCount. For high-throughput workloads split long-lived connections across multiple NAT Gateways, or consider using a Network Load Balancer-based egress pattern."
+      },
+      {
+        "scenario": "App Runner service has EgressType=VPC but the service-to-RDS call fails because App Runner automatically assigns a security group that the RDS Proxy does not allow as a source.",
+        "how_it_differs": "RDS Proxy traffic fails, Stripe traffic works, and the incident narrative is inverted. The VPC connector security group allows outbound 5432 but the RDS Proxy's own security group does not list the connector's SG as an allowed source.",
+        "prevention": "When wiring up a new VPC connector, explicitly add the connector's security group as an allowed source in every resource SG it needs to reach. Avoid relying on open CIDRs."
+      }
+    ],
+    "sop_practices": [
+      "App Runner routing with a VPC connector is all-or-nothing. There is no per-destination split. Make the architectural decision up front: does this service need to be in-VPC for some dependency, and can we live with all outbound traffic traversing NAT? If the answer is not yes to both, pick the other end of the spectrum.",
+      "Treat a VPC connector's security group like a tiny firewall policy and write explicit egress rules for every class of destination: intra-VPC databases, AWS service endpoints (prefer VPC endpoints), and public internet calls. Silently defaulting to 'allow all egress' is a common footgun.",
+      "Prefer VPC endpoints over NAT Gateway traversal for AWS services your App Runner service calls. Gateway endpoints for S3 and DynamoDB are free; interface endpoints for Secrets Manager, KMS, and STS are cheaper in bytes than NAT and avoid a public IP dependency.",
+      "Test a VPC-connector change in a staging App Runner service with a representative sample of outbound calls before enabling it in production. Most App Runner outbound bugs look like 'the app itself is fine' on the surface."
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+Company: Parable Health (Series A, 22 engineers)
+Industry: Telehealth for chronic care
+Users: 8,400 active patients, ~650 visits per business day
+AWS Services: AWS App Runner, Amazon RDS, Amazon VPC, AWS Secrets Manager
+Your role: Platform on-call, Tuesday 16:08 Eastern
+Situation: Stripe captures and Slack notifications from the billing service have been failing since last night's deploy; RDS access is perfect

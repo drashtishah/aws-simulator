@@ -1,0 +1,35 @@
+{
+  "DBProxies": [
+    {
+      "DBProxyName": "parable-rds-proxy",
+      "DBProxyArn": "arn:aws:rds:us-east-1:901234567890:db-proxy:prx-02b931a8c7df6e495",
+      "Status": "available",
+      "EngineFamily": "POSTGRESQL",
+      "VpcId": "vpc-parable-prod",
+      "VpcSecurityGroupIds": ["sg-parable-rds-proxy"],
+      "VpcSubnetIds": ["subnet-priv-a", "subnet-priv-b", "subnet-priv-c"],
+      "Auth": [
+        {
+          "AuthScheme": "SECRETS",
+          "SecretArn": "arn:aws:secretsmanager:us-east-1:901234567890:secret:parable/rds-proxy/admin-creds-tF3g4x",
+          "IAMAuth": "DISABLED",
+          "Description": "Admin credentials for parable-prod-pg"
+        }
+      ],
+      "RoleArn": "arn:aws:iam::901234567890:role/rds-proxy-parable-role",
+      "Endpoint": "parable-rds-proxy.proxy-c0xlabcdef.us-east-1.rds.amazonaws.com",
+      "RequireTLS": true,
+      "IdleClientTimeout": 1800
+    }
+  ],
+  "DBProxyTargets": [
+    {
+      "Endpoint": "parable-prod-pg.cluster-c0xlabcdef.us-east-1.rds.amazonaws.com",
+      "Port": 5432,
+      "RdsResourceId": "cluster-ABCD1234",
+      "Type": "TRACKED_CLUSTER",
+      "TargetHealth": { "State": "AVAILABLE" }
+    }
+  ],
+  "_note": "RDS Proxy is healthy and working. The admin portal successfully connects via the VPC connector and queries the database. This is not the broken piece."
+}

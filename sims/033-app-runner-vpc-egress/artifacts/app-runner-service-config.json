@@ -1,0 +1,56 @@
+{
+  "Service": {
+    "ServiceName": "parable-billing",
+    "ServiceId": "ce-arn-bil-614ab2fe",
+    "ServiceArn": "arn:aws:apprunner:us-east-1:901234567890:service/parable-billing/ce-arn-bil-614ab2fe",
+    "ServiceUrl": "https://7c3b1a9e2d.us-east-1.awsapprunner.com",
+    "Status": "RUNNING",
+    "CreatedAt": "2025-08-12T19:02:10Z",
+    "UpdatedAt": "2026-04-21T02:47:32Z",
+    "SourceConfiguration": {
+      "ImageRepository": {
+        "ImageIdentifier": "901234567890.dkr.ecr.us-east-1.amazonaws.com/parable-billing:v48.7",
+        "ImageConfiguration": { "Port": "8080" },
+        "ImageRepositoryType": "ECR"
+      },
+      "AutoDeploymentsEnabled": false
+    },
+    "InstanceConfiguration": {
+      "Cpu": "2 vCPU",
+      "Memory": "4 GB",
+      "InstanceRoleArn": "arn:aws:iam::901234567890:role/parable-billing-instance-role"
+    },
+    "NetworkConfiguration": {
+      "EgressConfiguration": {
+        "EgressType": "VPC",
+        "VpcConnectorArn": "arn:aws:apprunner:us-east-1:901234567890:vpcconnector/parable-apprunner-connector/1/0a4fb3c72ed91c846"
+      },
+      "IngressConfiguration": {
+        "IsPubliclyAccessible": true
+      }
+    },
+    "HealthCheckConfiguration": {
+      "Protocol": "HTTP",
+      "Path": "/healthz",
+      "Interval": 10,
+      "Timeout": 5,
+      "HealthyThreshold": 1,
+      "UnhealthyThreshold": 5
+    }
+  },
+  "VpcConnector": {
+    "VpcConnectorName": "parable-apprunner-connector",
+    "VpcConnectorArn": "arn:aws:apprunner:us-east-1:901234567890:vpcconnector/parable-apprunner-connector/1/0a4fb3c72ed91c846",
+    "Subnets": ["subnet-priv-a", "subnet-priv-b"],
+    "SecurityGroups": ["sg-parable-apprunner"],
+    "Status": "ACTIVE"
+  },
+  "_change_history": [
+    {
+      "time": "2026-04-21T02:36:08Z",
+      "operation": "UpdateService",
+      "change": "Added VPC connector parable-apprunner-connector; flipped EgressType DEFAULT -> VPC",
+      "actor": "arn:aws:iam::901234567890:role/codepipeline-parable-apprunner"
+    }
+  ]
+}

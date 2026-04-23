@@ -1,0 +1,57 @@
+{
+  "SecurityGroups": [
+    {
+      "GroupId": "sg-parable-apprunner",
+      "GroupName": "parable-apprunner-connector-sg",
+      "Description": "Egress policy for the parable-apprunner-connector VPC connector ENIs. Inherits the company's standard 'tight egress, explicit allows only' pattern from the EKS workloads.",
+      "VpcId": "vpc-parable-prod",
+      "IpPermissions": [],
+      "IpPermissionsEgress": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 5432,
+          "ToPort": 5432,
+          "UserIdGroupPairs": [
+            { "GroupId": "sg-parable-rds-proxy", "Description": "RDS Proxy connection" }
+          ]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 443,
+          "ToPort": 443,
+          "PrefixListIds": [
+            { "PrefixListId": "pl-63a5400a", "Description": "com.amazonaws.us-east-1.s3" }
+          ]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 443,
+          "ToPort": 443,
+          "PrefixListIds": [
+            { "PrefixListId": "pl-0f4e9c12", "Description": "com.amazonaws.us-east-1.secretsmanager" }
+          ]
+        }
+      ]
+    },
+    {
+      "GroupId": "sg-parable-rds-proxy",
+      "GroupName": "parable-rds-proxy-sg",
+      "Description": "RDS Proxy security group",
+      "IpPermissions": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 5432,
+          "ToPort": 5432,
+          "UserIdGroupPairs": [
+            { "GroupId": "sg-parable-apprunner", "Description": "Allow from App Runner connector" },
+            { "GroupId": "sg-parable-bastion", "Description": "Allow from bastion for human admin access" }
+          ]
+        }
+      ],
+      "IpPermissionsEgress": [
+        { "IpProtocol": "-1", "FromPort": -1, "ToPort": -1, "IpRanges": [{ "CidrIp": "0.0.0.0/0" }] }
+      ]
+    }
+  ],
+  "_note": "sg-parable-apprunner has NO egress rule that permits TCP 443 to general internet destinations (0.0.0.0/0 or a Stripe/Slack prefix list). api.stripe.com and hooks.slack.com are therefore dropped at the ENI egress."
+}

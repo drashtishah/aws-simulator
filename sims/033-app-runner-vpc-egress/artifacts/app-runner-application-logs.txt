@@ -1,0 +1,15 @@
+2026-04-22T13:08:42.104Z INFO  [parable-billing] Visit ZIP-40081 finalized (amount_usd=248.00, stripe_auth=pi_3ObnkX2eZvKYlo2C)
+2026-04-22T13:08:42.208Z INFO  [parable-billing] rds-proxy connection acquired (rtt=7ms) for SELECT billing_metadata WHERE visit_id=$1
+2026-04-22T13:08:42.341Z INFO  [parable-billing] rds-proxy query returned 1 row in 12ms
+2026-04-22T13:08:42.354Z INFO  [parable-billing] Calling api.stripe.com/v1/payment_intents/pi_3ObnkX2eZvKYlo2C/capture
+2026-04-22T13:09:12.401Z ERROR [parable-billing] Stripe capture failed: FetchError: request to https://api.stripe.com/v1/payment_intents/pi_3ObnkX2eZvKYlo2C/capture failed, reason: connect ETIMEDOUT 3.18.72.194:443
+2026-04-22T13:09:12.402Z ERROR [parable-billing] Slack notification failed: FetchError: request to https://hooks.slack.com/services/T00/B00/xxx failed, reason: connect ETIMEDOUT 52.84.120.209:443
+2026-04-22T13:09:12.403Z WARN  [parable-billing] Visit ZIP-40081 finalized but capture failed; queued to billing-retry-queue
+2026-04-22T13:12:58.221Z INFO  [parable-billing] Visit ZIP-40082 finalized (amount_usd=96.50, stripe_auth=pi_3ObnkY2eZvKYlo2D)
+2026-04-22T13:12:58.308Z INFO  [parable-billing] rds-proxy query returned 1 row in 9ms
+2026-04-22T13:12:58.319Z INFO  [parable-billing] Calling api.stripe.com/v1/payment_intents/pi_3ObnkY2eZvKYlo2D/capture
+2026-04-22T13:13:28.502Z ERROR [parable-billing] Stripe capture failed: FetchError: request to https://api.stripe.com/v1/payment_intents/pi_3ObnkY2eZvKYlo2D/capture failed, reason: connect ETIMEDOUT 3.18.72.194:443
+2026-04-22T13:20:11.001Z INFO  [parable-billing] /healthz OK (rds-proxy: healthy, stripe: ERRORED at 13:09:12)
+2026-04-22T13:20:11.002Z WARN  [parable-billing] Health check does not fail the service when downstream Stripe is erroring; this is by design
+2026-04-22T13:22:50.701Z INFO  [parable-billing] Calling hooks.slack.com/services/T00/B00/xxx (billing-ops daily summary)
+2026-04-22T13:23:20.911Z ERROR [parable-billing] Slack notification failed: FetchError: request to https://hooks.slack.com/services/T00/B00/xxx failed, reason: connect ETIMEDOUT 52.84.120.209:443

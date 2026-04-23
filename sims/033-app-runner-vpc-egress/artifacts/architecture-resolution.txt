@@ -1,0 +1,48 @@
+                           +-----------------------+
+                           | Patient browser / app |
+                           +----------+------------+
+                                      | HTTPS (unaffected)
+                                      v
+                           +-----------------------+
+                           | AWS App Runner        |
+                           | parable-billing       |
+                           | [EgressType=VPC,      |
+                           |  ALL OUTBOUND via     |
+                           |  VPC connector]       |
+                           +----+------------------+
+                                |
+                                v
+         +--------------------------------+
+         | VPC connector                  |
+         | parable-apprunner-connector    |
+         | SG: sg-parable-apprunner       |
+         | [EGRESS RULES DO NOT PERMIT    |
+         |  PUBLIC 443 TRAFFIC]           |
+         +--+-----------+---------+-------+
+            |           |         |
+     RDS    |    S3/SM  |   Stripe/Slack
+     OK     v    OK     v   BLOCKED x
+     +-------+   +--------+  +-------------------+
+     | RDS   |   | VPC    |  | api.stripe.com    |
+     | Proxy |   | endp.  |  | hooks.slack.com   |
+     +-------+   +--------+  | [SILENT TIMEOUT   |
+                             |  AT ENI EGRESS]   |
+                             +-------------------+
+
+   Subnet route tables: fine
+     0.0.0.0/0 -> nat-gateway (healthy, available)
+
+   NAT Gateway: fine, not the blocker
+
+   Problem: sg-parable-apprunner egress rules allow only:
+     tcp  5432  -> sg-parable-rds-proxy
+     tcp   443  -> prefix list com.amazonaws.us-east-1.s3
+     tcp   443  -> prefix list com.amazonaws.us-east-1.secretsmanager
+
+     NOTHING permits outbound 443 to the general internet.
+     api.stripe.com IPs are not in any of the permitted prefix lists.
+     ENI drops the packets, client sees connect: timeout.
+
+   Invisible compounding issue: EgressType=VPC pushes ALL outbound
+   through the VPC connector, not only RDS-bound traffic. The team
+   thought adding the VPC connector only affected RDS reachability.

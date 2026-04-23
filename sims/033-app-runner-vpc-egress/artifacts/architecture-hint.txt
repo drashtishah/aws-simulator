@@ -1,0 +1,53 @@
+                           +-----------------------+
+                           | Patient browser / app |
+                           +----------+------------+
+                                      | HTTPS
+                                      v
+                           +-----------------------+
+                           | AWS App Runner        |
+                           | parable-billing       |
+                           | (Node 20, 2 vCPU)     |
+                           | EgressType=VPC        |
+                           +----+----------+-------+
+                                |          |
+         all outbound via       |          |  App Runner managed
+         VPC connector          |          |  ingress (public TLS)
+                                v          ^
+         +--------------------------------+
+         | VPC connector                  |
+         | parable-apprunner-connector    |
+         | ENIs in subnet-priv-a,         |
+         |            subnet-priv-b       |
+         | SG: sg-parable-apprunner       |
+         +-------+--------------+---------+
+                 |              |
+    allow 5432   |              |  allow 443
+    to RDS Proxy |              |  to S3 + Secrets Manager
+    SG           |              |  prefix lists
+                 v              v
+       +---------------+   +---------------------+
+       | RDS Proxy     |   | VPC endpoints       |
+       | parable-rds   |   | s3, secretsmanager, |
+       | -proxy        |   | kms                 |
+       +-------+-------+   +---------------------+
+               |
+               v
+       +---------------+
+       | RDS Aurora    |
+       | parable-prod  |
+       | -pg           |
+       +---------------+
+
+   Subnet route tables (subnet-priv-a, subnet-priv-b):
+     10.12.0.0/16     local
+     0.0.0.0/0        nat-gateway (parable-prod-nat-az-a / -az-b)
+
+   sg-parable-apprunner egress rules:
+     tcp  5432  -> sg-parable-rds-proxy
+     tcp   443  -> prefix list com.amazonaws.us-east-1.s3
+     tcp   443  -> prefix list com.amazonaws.us-east-1.secretsmanager
+
+   Public endpoints the billing service calls at runtime:
+     api.stripe.com          (charge capture, refund)
+     hooks.slack.com         (billing operations notifications)
+     registry.npmjs.org      (runtime package install if needed)

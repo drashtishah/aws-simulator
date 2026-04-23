@@ -1,0 +1,59 @@
+{
+  "Subnets": [
+    {
+      "SubnetId": "subnet-priv-a",
+      "CidrBlock": "10.12.32.0/24",
+      "AvailabilityZone": "us-east-1a",
+      "MapPublicIpOnLaunch": false,
+      "RouteTableAssociationId": "rtbassoc-priv-a"
+    },
+    {
+      "SubnetId": "subnet-priv-b",
+      "CidrBlock": "10.12.48.0/24",
+      "AvailabilityZone": "us-east-1b",
+      "MapPublicIpOnLaunch": false,
+      "RouteTableAssociationId": "rtbassoc-priv-b"
+    }
+  ],
+  "RouteTables": [
+    {
+      "RouteTableId": "rtb-priv-a",
+      "VpcId": "vpc-parable-prod",
+      "Associations": [{ "SubnetId": "subnet-priv-a" }],
+      "Routes": [
+        { "DestinationCidrBlock": "10.12.0.0/16", "GatewayId": "local", "State": "active" },
+        { "DestinationCidrBlock": "0.0.0.0/0", "NatGatewayId": "nat-gateway-parable-prod-az-a", "State": "active" }
+      ]
+    },
+    {
+      "RouteTableId": "rtb-priv-b",
+      "VpcId": "vpc-parable-prod",
+      "Associations": [{ "SubnetId": "subnet-priv-b" }],
+      "Routes": [
+        { "DestinationCidrBlock": "10.12.0.0/16", "GatewayId": "local", "State": "active" },
+        { "DestinationCidrBlock": "0.0.0.0/0", "NatGatewayId": "nat-gateway-parable-prod-az-b", "State": "active" }
+      ]
+    }
+  ],
+  "NatGateways": [
+    {
+      "NatGatewayId": "nat-gateway-parable-prod-az-a",
+      "SubnetId": "subnet-pub-a",
+      "State": "available",
+      "FailureCode": null,
+      "NatGatewayAddresses": [
+        { "AllocationId": "eipalloc-aa1122bb", "NetworkInterfaceId": "eni-nat-a-xyz", "PublicIp": "54.243.102.11" }
+      ]
+    },
+    {
+      "NatGatewayId": "nat-gateway-parable-prod-az-b",
+      "SubnetId": "subnet-pub-b",
+      "State": "available",
+      "FailureCode": null,
+      "NatGatewayAddresses": [
+        { "AllocationId": "eipalloc-cc3344dd", "NetworkInterfaceId": "eni-nat-b-zyx", "PublicIp": "54.243.108.49" }
+      ]
+    }
+  ],
+  "_note": "Both subnets have a valid 0.0.0.0/0 route to a healthy NAT Gateway. The subnet-level path to the internet is not the blocker."
+}
