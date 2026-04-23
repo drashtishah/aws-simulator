@@ -510,7 +510,7 @@
       "label": "validateStartup()",
       "file_type": "code",
       "source_file": "web/server.ts",
-      "source_location": "L50",
+      "source_location": "L52",
       "id": "server_validatestartup",
       "community": 34,
       "norm_label": "validatestartup()"
@@ -519,7 +519,7 @@
       "label": "readJSON()",
       "file_type": "code",
       "source_file": "web/server.ts",
-      "source_location": "L67",
+      "source_location": "L69",
       "id": "server_readjson",
       "community": 34,
       "norm_label": "readjson()"
@@ -528,7 +528,7 @@
       "label": "startServer()",
       "file_type": "code",
       "source_file": "web/server.ts",
-      "source_location": "L493",
+      "source_location": "L495",
       "id": "server_startserver",
       "community": 34,
       "norm_label": "startserver()"
@@ -537,7 +537,7 @@
       "label": "cleanupLock()",
       "file_type": "code",
       "source_file": "web/server.ts",
-      "source_location": "L528",
+      "source_location": "L530",
       "id": "server_cleanuplock",
       "community": 34,
       "norm_label": "cleanuplock()"
@@ -3693,6 +3693,15 @@
       "norm_label": "formatfailedfilessummary()"
     },
     {
+      "label": "rerun-post-session.ts",
+      "file_type": "code",
+      "source_file": "scripts/rerun-post-session.ts",
+      "source_location": "L1",
+      "id": "scripts_rerun_post_session_ts",
+      "community": 129,
+      "norm_label": "rerun-post-session.ts"
+    },
+    {
       "label": "eval-runner.ts",
       "file_type": "code",
       "source_file": "scripts/eval-runner.ts",
@@ -4580,7 +4589,7 @@
       "source_file": "scripts/model-config.ts",
       "source_location": "L1",
       "id": "scripts_model_config_ts",
-      "community": 129,
+      "community": 130,
       "norm_label": "model-config.ts"
     },
     {
@@ -5182,7 +5191,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 130,
+      "community": 131,
       "norm_label": "mcp integration (aws knowledge)",
       "id": "readme_mcp_integration"
     },
@@ -5325,7 +5334,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 131,
+      "community": 132,
       "norm_label": "sim-test runner pain points",
       "id": "feedback_sim_test_pain"
     },
@@ -5351,7 +5360,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 132,
+      "community": 133,
       "norm_label": "extract_paths.py mutates working tree",
       "id": "feedback_extract_paths_mutation"
     },
@@ -5819,7 +5828,7 @@
       "captured_at": "2026-04-11",
       "author": null,
       "contributor": null,
-      "community": 133,
+      "community": 134,
       "norm_label": "problem: shell scripts pass on macos, fail in linux ci due to bsd vs gnu drift",
       "id": "problem-shell-bsd-gnu-drift"
     },
@@ -6495,7 +6504,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 134,
+      "community": 135,
       "norm_label": "compile pending log",
       "id": "compile_pending_log"
     },
@@ -6599,7 +6608,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 135,
+      "community": 136,
       "norm_label": "environment variables",
       "id": "environment_variables"
     },
@@ -6612,7 +6621,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 136,
+      "community": 137,
       "norm_label": "instance profile",
       "id": "instance_profile"
     },
@@ -6625,7 +6634,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 137,
+      "community": 138,
       "norm_label": "oidc federation",
       "id": "oidc_federation"
     },
@@ -6755,7 +6764,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 138,
+      "community": 139,
       "norm_label": "needs-triage label",
       "id": "labels_needs_triage"
     },
@@ -6781,7 +6790,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 139,
+      "community": 140,
       "norm_label": "text-only label",
       "id": "labels_text_only"
     },
@@ -6859,7 +6868,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 140,
+      "community": 141,
       "norm_label": "decomposed-from label",
       "id": "labels_decomposed_from"
     },
@@ -6872,7 +6881,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 141,
+      "community": 142,
       "norm_label": "pipeline-failed label",
       "id": "labels_pipeline_failed"
     },
@@ -6898,7 +6907,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 142,
+      "community": 143,
       "norm_label": "blocked label",
       "id": "labels_blocked"
     },
@@ -6911,7 +6920,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 143,
+      "community": 144,
       "norm_label": "cancel label",
       "id": "labels_cancel"
     },
@@ -6924,7 +6933,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 144,
+      "community": 145,
       "norm_label": "needs-human label",
       "id": "labels_needs_human"
     },
@@ -6950,7 +6959,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 145,
+      "community": 146,
       "norm_label": "vault query protocol (planner)",
       "id": "planner_vault_query_protocol"
     },
@@ -7171,7 +7180,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 146,
+      "community": 147,
       "norm_label": "agent sdk tool names",
       "id": "tool_registry_agent_sdk"
     },
@@ -7327,7 +7336,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 147,
+      "community": 148,
       "norm_label": "pre-commit-ui-tests hook",
       "id": "agent_index_hook_pre_commit_ui_tests"
     },
@@ -7353,7 +7362,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 148,
+      "community": 149,
       "norm_label": "build-agent-index.ts script",
       "id": "agent_index_build_agent_index_script"
     },
@@ -7457,7 +7466,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 149,
+      "community": 150,
       "norm_label": "hexad signals",
       "id": "vault_hexad_signals"
     },
@@ -7899,7 +7908,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 150,
+      "community": 151,
       "norm_label": "transient files",
       "id": "workspace_map_transient_files"
     },
@@ -8094,7 +8103,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 151,
+      "community": 152,
       "norm_label": "reflector stage (opus)",
       "id": "gha_pipeline_reflector_stage"
     },
@@ -8302,7 +8311,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 152,
+      "community": 153,
       "norm_label": "permission bypass registry (auto-generated)",
       "id": "testing_permission_bypass_registry"
     },
@@ -8666,7 +8675,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 153,
+      "community": 154,
       "norm_label": "cleanup (branch, issues, ephemeral artifacts, doctor)",
       "id": "core_workflow_cleanup"
     },
@@ -9472,7 +9481,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 154,
+      "community": 155,
       "norm_label": "target group slow start mode",
       "id": "sim013_slow_start_mode"
     },
@@ -9485,7 +9494,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 155,
+      "community": 156,
       "norm_label": "cross-zone load balancing",
       "id": "sim013_cross_zone_load_balancing"
     },
@@ -11942,7 +11951,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 156,
+      "community": 157,
       "norm_label": "scaleoutcooldown period",
       "id": "sim023_cooldown_period"
     },
@@ -12267,7 +12276,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 157,
+      "community": 158,
       "norm_label": "aws control tower",
       "id": "sim020_aws_control_tower"
     },
@@ -13395,7 +13404,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "web/server.ts",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0,
       "_src": "web_server_ts",
       "_tgt": "server_validatestartup",
@@ -13407,7 +13416,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "web/server.ts",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0,
       "_src": "web_server_ts",
       "_tgt": "server_readjson",
@@ -13419,7 +13428,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "web/server.ts",
-      "source_location": "L493",
+      "source_location": "L495",
       "weight": 1.0,
       "_src": "web_server_ts",
       "_tgt": "server_startserver",
@@ -13431,7 +13440,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "web/server.ts",
-      "source_location": "L528",
+      "source_location": "L530",
       "weight": 1.0,
       "_src": "web_server_ts",
       "_tgt": "server_cleanuplock",

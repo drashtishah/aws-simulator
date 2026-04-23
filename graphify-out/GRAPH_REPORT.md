@@ -1,7 +1,7 @@
-# Graph Report - .  (2026-04-17)
+# Graph Report - .  (2026-04-23)
 
 ## Corpus Check
-- 128 files · ~206,525 words
+- 128 files · ~242,207 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -1068,11 +1068,11 @@ Nodes (1): AWS Control Tower
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Amazon CloudWatch` connect `Community 0` to `Community 9`, `Community 10`, `Community 1`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
-- **Why does `SAA-C03 Solutions Architect Associate Exam` connect `Community 0` to `Community 8`, `Community 9`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+  _High betweenness centrality (0.033) - this node is a cross-community bridge._
 - **Why does `round()` connect `Community 3` to `Community 16`, `Community 18`, `Community 11`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+  _High betweenness centrality (0.016) - this node is a cross-community bridge._
+- **Why does `updateProfileFromClassification()` connect `Community 11` to `Community 3`, `Community 7`?**
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **What connects `A single path reference found in a source file.`, `Walk the repo tree and return scannable files.`, `Clean and normalize a raw extracted path string.      Returns None if the string` to the rest of the system?**
   _320 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
