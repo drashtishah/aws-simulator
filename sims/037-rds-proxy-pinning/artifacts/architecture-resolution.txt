@@ -1,0 +1,25 @@
+Finch Ledger invoice-processing architecture (post-fix, healthy state)
+
+  SQS: invoice-creation-queue
+         |
+         | (event source mapping, 400 concurrent pollers)
+         v
+  Lambda: invoice-processor (x400 concurrent)
+  [nextval() call removed from transaction; column uses DEFAULT nextval() server-side]
+         |
+         | (TCP :5432, proxy endpoint)
+         v
+  RDS Proxy: finch-proxy
+         |
+         | [~60:1 MULTIPLEX] - 400 Lambda sessions share ~7 real connections
+         v
+  Aurora PostgreSQL 15: finch-invoicing-cluster (writer)
+  db.t4g.medium | max_connections=450 | connections=~7 (healthy)
+         |
+         +-- invoices table (invoice_number column: DEFAULT nextval('invoice_number_seq'))
+         +-- invoice_number_seq  (called server-side during INSERT, no proxy pin)
+
+Root cause: migration_20260417_invoice_sequence.sql added
+  SELECT nextval('invoice_number_seq') inside the proxied Lambda transaction.
+  RDS Proxy pins a connection on any sequence function call.
+  Fix: moved nextval() to a server-side column DEFAULT so the proxy never sees it.

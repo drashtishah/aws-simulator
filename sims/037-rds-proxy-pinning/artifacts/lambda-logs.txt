@@ -1,0 +1,58 @@
+--- CloudWatch Logs: /aws/lambda/invoice-processor ---
+--- Log stream: 2026/04/20/[$LATEST]a1b2c3d4e5f6 (sample, 14:22-14:31 UTC) ---
+
+START RequestId: f1e2d3c4-b5a6-7890-abcd-ef1234567890 Version: $LATEST
+2026-04-20T14:22:03.112Z f1e2d3c4 INFO  Connecting to finch-proxy:5432
+2026-04-20T14:22:03.118Z f1e2d3c4 INFO  Connection established (borrow_latency=1.2ms)
+2026-04-20T14:22:03.121Z f1e2d3c4 INFO  BEGIN
+2026-04-20T14:22:03.124Z f1e2d3c4 INFO  SELECT nextval('invoice_number_seq') -> 100847
+2026-04-20T14:22:03.128Z f1e2d3c4 INFO  INSERT INTO invoices ... invoice_number=100847 OK
+2026-04-20T14:22:03.131Z f1e2d3c4 INFO  COMMIT
+END RequestId: f1e2d3c4 Duration: 122.4ms Billed Duration: 123ms
+
+START RequestId: a9b8c7d6-e5f4-3210-fedc-ba9876543210 Version: $LATEST
+2026-04-20T14:27:14.003Z a9b8c7d6 INFO  Connecting to finch-proxy:5432
+2026-04-20T14:27:14.892Z a9b8c7d6 ERROR Failed to acquire connection from proxy after 892ms
+2026-04-20T14:27:14.893Z a9b8c7d6 ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:27:14.893Z a9b8c7d6 ERROR Retrying connection (attempt 1/3, backoff=1000ms)
+2026-04-20T14:27:15.898Z a9b8c7d6 ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:27:15.898Z a9b8c7d6 ERROR Retrying connection (attempt 2/3, backoff=2000ms)
+2026-04-20T14:27:17.899Z a9b8c7d6 ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:27:17.900Z a9b8c7d6 ERROR Max retries exceeded. Raising exception.
+END RequestId: a9b8c7d6 Duration: 3897.2ms Billed Duration: 3898ms
+
+START RequestId: 11223344-5566-7788-99aa-bbccddeeff00 Version: $LATEST
+2026-04-20T14:28:01.441Z 11223344 INFO  Connecting to finch-proxy:5432
+2026-04-20T14:28:22.003Z 11223344 ERROR Task timed out after 29.00 seconds
+END RequestId: 11223344 Duration: 29000.0ms Billed Duration: 29000ms
+
+START RequestId: deadbeef-cafe-babe-f00d-0123456789ab Version: $LATEST
+2026-04-20T14:28:44.002Z deadbeef INFO  Connecting to finch-proxy:5432
+2026-04-20T14:28:45.887Z deadbeef ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:28:45.887Z deadbeef ERROR Retrying connection (attempt 1/3, backoff=1000ms)
+2026-04-20T14:28:46.888Z deadbeef ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:28:46.888Z deadbeef ERROR Retrying connection (attempt 2/3, backoff=2000ms)
+2026-04-20T14:28:48.890Z deadbeef ERROR psycopg2.OperationalError: FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-04-20T14:28:48.891Z deadbeef ERROR Max retries exceeded. Raising exception.
+END RequestId: deadbeef Duration: 4889.1ms Billed Duration: 4890ms
+
+--- Log stream: 2026/04/20/[$LATEST]b2c3d4e5f6a7 (sample, 14:29 UTC) ---
+
+START RequestId: c0ffee00-1234-5678-9abc-def012345678 Version: $LATEST
+2026-04-20T14:29:00.101Z c0ffee00 INFO  Connecting to finch-proxy:5432
+2026-04-20T14:29:29.101Z c0ffee00 ERROR Task timed out after 29.00 seconds
+END RequestId: c0ffee00 Duration: 29000.0ms Billed Duration: 29000ms
+
+--- CloudWatch Logs Insights query result (14:22-14:31 UTC) ---
+filter @message like /FATAL/ or @message like /timed out/
+stats count() as error_count by bin(1m)
+| 14:22 | 3   |
+| 14:23 | 18  |
+| 14:24 | 67  |
+| 14:25 | 142 |
+| 14:26 | 289 |
+| 14:27 | 400 |
+| 14:28 | 400 |
+| 14:29 | 400 |
+| 14:30 | 400 |
+| 14:31 | 400 |
