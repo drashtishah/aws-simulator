@@ -503,6 +503,21 @@
       "created": "2026-04-23"
     },
     {
+      "id": "037-rds-proxy-pinning",
+      "title": "The Proxy That Stopped Sharing",
+      "summary": "For 8 months, RDS Proxy multiplexed 400 Lambda sessions into 20 database connections. Monday afternoon every Lambda times out with connection-slots exhausted. No deployment happened.",
+      "difficulty": 3,
+      "category": "performance",
+      "services": [
+        "rds-proxy",
+        "lambda",
+        "rds",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-23"
+    },
+    {
       "id": "038-aurora-serverless-deep-sleep",
       "title": "Thirty Seconds of Silence",
       "summary": "A niche B2B reporting tool migrated to Aurora Serverless v2 with min_capacity=0. Every Monday morning the first customer login hangs for 30 seconds and API Gateway returns 504. The database shows no errors.",
