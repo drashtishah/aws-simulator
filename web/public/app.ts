@@ -1,9 +1,6 @@
 /* AWS Incident Simulator - Frontend Application */
 
-import { CollapsibleBlock, renderMermaidIn } from './reveal.js';
-import { stripNarratorMarkers } from './narrator-markers.js';
 import { filterAvailableSims } from './sim-picker-filter.js';
-import { renderPolygon, renderNextRank, renderRankProgression, formatRankId } from './rank-display.js';
 import { $, getSetting, setSetting, loadUiTheme, fetchJSON, escapeHtml, escapeAttr } from './dom-helpers.js';
 import { ModalConfig, ModalAction, showConfirmModal, hideConfirmModal } from './modals.js';
 import { SelectOption, initCustomSelect, loadSettings, formatThemeName } from './settings-pane.js';
