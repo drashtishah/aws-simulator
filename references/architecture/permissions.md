@@ -13,7 +13,6 @@ Source of truth: `web/lib/agent-policies.ts`.
 | Play narrator | Read, Write | default | `learning/sessions/{simId}/` |
 | Post-session analysis (Tier 1, classifier) | Read, Write | default | `learning/sessions/{simId}/` |
 | Post-session (Tier 2, renderer) | (none, Node fs direct) | n/a | `learning/player-vault/`, `learning/profile.json` |
-| generate-openings | (none) | default | none (Node fs.writeFileSync direct) |
 | agent-test-runner | (none) | default | none (single-turn grader) |
 
 ## Evaluation order
