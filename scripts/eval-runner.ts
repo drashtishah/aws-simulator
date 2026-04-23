@@ -244,9 +244,7 @@ const sessionRules: Record<string, SessionRuleFn> = {
     if (zones != null && Array.isArray(zones) && zones.length === 0 && (session.debrief_questions_asked ?? 0) > 0)
       return { pass: false, reason: 'debrief happened but no zones explored' };
     return { pass: true };
-  },
-  // TODO: refine with real play data
-  depth_score_correlates_with_exploration(): RuleResult { return { pass: true }; }
+  }
 };
 
 // Transcript rules: each returns { pass, reason? }
@@ -280,18 +278,6 @@ const transcriptRules: Record<string, TranscriptRuleFn> = {
     if (emojiPattern.test(narText)) return { pass: false, reason: 'emoji found in narrator text' };
     return { pass: true };
   },
-  // TODO: all stubs below pass by default, refine with real play data
-  console_markers_wellformed(): RuleResult { return { pass: true }; },
-  coaching_follows_unproductive(): RuleResult { return { pass: true }; },
-  coaching_refs_correct_service(): RuleResult { return { pass: true }; },
-  no_coaching_on_productive(): RuleResult { return { pass: true }; },
-  hints_in_order(): RuleResult { return { pass: true }; },
-  hints_skip_queried_services(): RuleResult { return { pass: true }; },
-  max_one_hint_per_turn(): RuleResult { return { pass: true }; },
-  hint_refs_relevant_service(): RuleResult { return { pass: true }; },
-  no_hints_before_turn_3(): RuleResult { return { pass: true }; },
-  debrief_follows_investigation(): RuleResult { return { pass: true }; },
-  debrief_has_seed_questions(): RuleResult { return { pass: true }; }
 };
 
 // Keyword table for classification axes. Sourced from
