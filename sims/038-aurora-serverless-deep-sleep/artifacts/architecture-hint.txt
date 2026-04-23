@@ -1,0 +1,34 @@
+Plover Analytics - Reporting Architecture (current state)
+
+  [Customer Browser]
+       |
+       | HTTPS POST /report
+       v
+  [API Gateway REST API]
+  plover-api (us-east-1)
+  Integration timeout: 29s (maximum)
+       |
+       | Lambda proxy integration
+       v
+  [Lambda Function]
+  plover-report-fn
+  Runtime: Node.js 20.x
+  Memory: 512 MB
+  Timeout: 29s
+  Connection: direct pg driver (no pool, no proxy)
+       |
+       | PostgreSQL wire protocol, port 5432
+       v
+  [Aurora Serverless v2 Cluster]
+  plover-reporting-db (us-east-1, PostgreSQL 15.4)
+  MinCapacity: 0
+  MaxCapacity: 16
+  SecondsUntilAutoPause: 300
+  Status: [PAUSED > 24H, DEEP SLEEP]
+  ServerlessDatabaseCapacity: 0 ACU
+  Last active: Friday 2026-04-17 17:45 UTC
+  Paused since: Friday 2026-04-17 17:50 UTC
+
+NOTE: Cluster is NOT crashed. Storage and data are intact.
+      Resume is triggered by next connection attempt (~15 seconds).
+      Auto-pause is enabled because MinCapacity=0.

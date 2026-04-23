@@ -1,0 +1,20 @@
+Company: Plover Analytics
+Industry: B2B financial reporting SaaS
+Size: 12-person startup
+Clients: ~80 small business clients (wholesalers, distributors, boutique retailers)
+Product: hosted weekly reporting dashboards; clients log in Monday mornings to review prior-week sales summaries
+
+Infrastructure:
+- Single-region deployment (us-east-1)
+- API Gateway REST API -> Lambda (Node.js 20.x) -> Aurora Serverless v2 (PostgreSQL 15.4)
+- No RDS Proxy; Lambda opens direct pg driver connections
+- Migrated from RDS t3.small to Aurora Serverless v2 in March 2026 to reduce overnight costs
+
+Incident:
+- Date: Monday, 2026-04-20, 09:00 UTC
+- First symptom: four client emails reporting a 30-second hang on first login of the week
+- Automated alerts: none fired (no CloudWatch alarm on Aurora capacity or API Gateway 5xx)
+- Duration of impact: approximately 30 seconds (09:00:12 to 09:00:41 UTC)
+- All requests after 09:00:45 UTC succeeded normally
+- No data loss; no extended outage
+- Pattern: same symptoms reported by clients every Monday since the March migration
