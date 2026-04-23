@@ -1,0 +1,79 @@
+        +-----------------------+
+        | Partner SFTP client   |
+        | acme-bev-bottles      |
+        | [USED RELATIVE PATH   |
+        |  TRAVERSAL TO REACH   |
+        |  OTHER CUSTOMERS]     |
+        +----------+------------+
+                   |
+                   | "cd ../../customers/other-customer"
+                   v
+        +-----------------------+
+        | AWS Transfer Family   |
+        | server: ironfoam-sftp |
+        | [HomeDirectoryType    |
+        |  = LOGICAL: makes     |
+        |  other folders        |
+        |  INVISIBLE in UX      |
+        |  but does NOT enforce |
+        |  access control]      |
+        +----------+------------+
+                   |
+                   v
+        +-----------------------+
+        | IAM Role              |
+        | ironfoam-sftp-partner |
+        | -role                 |
+        | [Role's permissions   |
+        |  cover all customer   |
+        |  folders - fine]      |
+        +----------+------------+
+                   |
+                   | applied with scope-down
+                   v
+        +-----------------------+
+        | Scope-down policy on  |
+        | acme-bev-bottles user |
+        | [RESOURCE IS          |
+        |  customers/*          |
+        |  WITH NO              |
+        |  ${transfer:UserName} |
+        |  - MATCHES EVERY      |
+        |  CUSTOMER FOLDER]     |
+        +----------+------------+
+                   |
+                   v
+        +-----------------------+
+        | S3 bucket             |
+        | ironfoam-invoices-    |
+        | shared                |
+        | [1,187 GetObject +    |
+        |  43 ListBucket calls  |
+        |  to OTHER CUSTOMERS'  |
+        |  prefixes]            |
+        +----------+------------+
+                   |
+                   v
+        +-----------------------+
+        | AWS CloudTrail        |
+        | S3 data events:       |
+        | - 43 ListBucket       |
+        |   across customer/*   |
+        | - 1,187 GetObject     |
+        |   on unrelated files  |
+        | All role-session-name |
+        | = acme-bev-bottles    |
+        +-----------------------+
+
+  Problem 1: Scope-down policy Resource is customers/* not
+             customers/${transfer:UserName}/*
+             -> every user's scope-down matches every folder
+
+  Problem 2: Trusted HomeDirectoryType=LOGICAL as a security boundary
+             -> it is only a filesystem view; IAM is the real control
+
+  Problem 3: No bucket-policy Deny as defense in depth
+             -> a single scope-down mistake exposes everything
+
+  Problem 4: Same broken template cloned to all 270 users
+             -> every user could have done the same thing

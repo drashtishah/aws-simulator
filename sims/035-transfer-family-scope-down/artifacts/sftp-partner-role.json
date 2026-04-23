@@ -1,0 +1,46 @@
+{
+  "Role": {
+    "RoleName": "ironfoam-sftp-partner-role",
+    "RoleId": "AROA9QTR1LKMBPXYZ8ABC",
+    "Arn": "arn:aws:iam::884412345678:role/ironfoam-sftp-partner-role",
+    "CreateDate": "2024-11-03T09:12:40Z",
+    "Description": "Shared IAM role assumed by every Transfer Family service-managed user. Grants maximum S3 permissions any user can ever have; per-user scope-down is expected to narrow access to the user's own folder."
+  },
+  "AssumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "transfer.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "ironfoam-sftp-partner-access",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "ListTheSharedBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::ironfoam-invoices-shared"
+          },
+          {
+            "Sid": "ReadWriteAllCustomerFolders",
+            "Effect": "Allow",
+            "Action": [
+              "s3:GetObject",
+              "s3:PutObject",
+              "s3:DeleteObject"
+            ],
+            "Resource": "arn:aws:s3:::ironfoam-invoices-shared/customers/*"
+          }
+        ]
+      }
+    }
+  ],
+  "_note": "This role sets the ceiling for what any Transfer Family user can ever do: read/write ANY customer folder. The per-user scope-down is what is supposed to slice this down to the user's own folder. If the scope-down is missing a per-user constraint, the user gets the full ceiling. This is why the role must be as narrow as practical."
+}

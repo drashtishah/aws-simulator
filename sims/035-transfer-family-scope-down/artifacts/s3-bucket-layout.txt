@@ -1,0 +1,22 @@
+s3://ironfoam-invoices-shared/
+  customers/
+    acme-bev-bottles/
+      2026-01/invoices-2026-01.csv
+      2026-02/invoices-2026-02.csv
+      2026-03/invoices-2026-03.csv
+    birchcreek-taps/              [BREACHED: read by acme-bev-bottles]
+      2026-02/invoices-2026-02.csv
+      2026-03/invoices-2026-03.csv
+    canopy-cellars/               [BREACHED]
+      2026-03/invoices-2026-03.csv
+    driftwood-distributors/       [BREACHED]
+    ... 266 other customer folders (43 BREACHED)
+
+Storage class: STANDARD
+Versioning: Enabled
+Default encryption: SSE-S3 (AES-256)
+Block Public Access: ALL ON (account-level + bucket-level)
+Bucket policy: none currently (recommended: add a Deny for cross-customer access)
+Server access logging: enabled to s3://ironfoam-audit-logs/access-logs/
+Object Lock: not configured
+Lifecycle: transition to Glacier after 395 days

@@ -1,0 +1,198 @@
+{
+  "id": "035-transfer-family-scope-down",
+  "title": "The Partner Who Saw Too Much",
+  "summary": "An external supplier's SFTP account was only supposed to see its own folder. CloudTrail says it read every customer's folder last night.",
+  "difficulty": 3,
+  "category": "security",
+  "services": ["transfer-family", "iam", "s3", "cloudtrail"],
+  "tags": ["transfer-family", "sftp", "scope-down-policy", "policy-variables", "iam"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SCS-C02:Domain4:IdentityAccessManagement",
+    "SAP-C02:Domain3:Migration"
+  ],
+  "company": {
+    "name": "Ironfoam Beverage",
+    "industry": "Regional craft beverage distribution",
+    "size": "Family-owned, 120 employees, 4 warehouses, 270 retail customers"
+  },
+  "glossary": {
+    "AWS Transfer Family": "A managed AWS service for running SFTP, FTPS, and FTP endpoints backed by Amazon S3 or Amazon EFS. Users authenticate with SSH keys, passwords, or an AWS IAM identity provider; their file operations map to S3 (or EFS) API calls using an IAM role the user assumes.",
+    "Service-managed user": "A Transfer Family user whose identity and keys are stored inside Transfer Family itself (not Okta/AD). Each user has a Role (the IAM role the user assumes), a HomeDirectory, and an optional scope-down policy.",
+    "Role": "The IAM role the Transfer Family server assumes on behalf of the user after authentication. The role's attached policies set the maximum permissions the user can ever have. The scope-down policy can only subtract from this.",
+    "Scope-down policy": "An inline IAM policy attached to a Transfer Family user that further restricts what the user's assumed role can do. The user's effective permissions are the intersection of (role policies) AND (scope-down policy). If the scope-down does not restrict, the user gets everything the role permits.",
+    "HomeDirectory": "The S3 prefix or EFS path the user is 'chrooted' into when they log in to the SFTP server. Controls what the user sees in the logical file tree, not what they can actually access at the IAM layer. HomeDirectory is a viewing convention; the scope-down policy is the actual access control.",
+    "HomeDirectoryType (LOGICAL)": "A Transfer Family mode where HomeDirectoryMappings rewrites how the filesystem appears to the user. For example, mapping / -> /invoices-shared/partners/acme exposes only that prefix. Does NOT by itself restrict access to other prefixes if the underlying IAM permissions allow them.",
+    "${transfer:UserName}": "A policy variable that is replaced at evaluation time with the authenticated Transfer Family user's name. Used to scope a single policy document to a per-user directory (e.g., arn:aws:s3:::bucket/prefix/${transfer:UserName}/*).",
+    "${transfer:HomeDirectory}": "A policy variable that resolves to the user's configured HomeDirectory. Less commonly used than ${transfer:UserName}; useful when the HomeDirectory path is not a simple function of the username."
+  },
+  "system": {
+    "what_broke": "The scope-down policy attached to the acme-bev-bottles service-managed user grants s3:ListBucket and s3:GetObject on the wrong Resource. The Resource line reads 'arn:aws:s3:::ironfoam-invoices-shared/customers/*' with no ${transfer:UserName} scoping. That string matches every customer folder, not only acme-bev-bottles's. The HomeDirectoryMappings entry does chroot the user's logical view to /customers/acme-bev-bottles/, which made the test user's login appear correctly scoped during QA, but the IAM layer permits any path under customers/*. A curious partner admin ran 'cd /../other-customer/2026-03/' in their SFTP client and got a listing. The Transfer server let every SFTP LIST and GET through because the IAM evaluation allowed it, despite the home directory chroot saying otherwise.",
+    "data_flow": "Ironfoam collects end-of-month invoice CSV files from each of its 270 retail customers for reconciliation. Customers log in to sftp.ironfoam.example over SFTP on port 22, each as their own Transfer Family service-managed user. They drop files into their home directory, which is logically rooted at /customers/<userName>/. Behind the scenes, each user's SFTP session assumes the ironfoam-sftp-partner-role IAM role and performs s3:PutObject, s3:GetObject, and s3:ListBucket against the ironfoam-invoices-shared bucket, restricted by the user's scope-down policy. A nightly AWS Glue job crawls new files under customers/* and runs reconciliation reports.",
+    "components": [
+      {
+        "name": "ironfoam-invoices-shared (S3 bucket)",
+        "role": "The shared bucket holding invoice CSVs from every retail customer, namespaced by folder (customers/<customerName>/<yyyy-mm>/*.csv). Holds ~18 months of historical data and is the source of truth for monthly reconciliation.",
+        "connections": ["Written by SFTP users via Transfer Family", "Read by AWS Glue reconciliation crawler and ironfoam finance staff"],
+        "failure_impact": "A scope-down policy misconfiguration exposes one customer's invoices to another. Data breach notification obligations apply."
+      },
+      {
+        "name": "ironfoam-sftp (Transfer Family server)",
+        "role": "The SFTP endpoint that customer staff connect to. Service-managed identity provider. Protocol SFTP only. Public endpoint with IP allow-list via security groups.",
+        "connections": ["Backed by ironfoam-invoices-shared S3 bucket", "Each user assumes ironfoam-sftp-partner-role with their individual scope-down policy"],
+        "failure_impact": "A misconfigured user or scope-down policy immediately affects production customer data. There is no staging SFTP server."
+      },
+      {
+        "name": "ironfoam-sftp-partner-role (IAM role)",
+        "role": "The shared IAM role every Transfer Family user assumes. Grants broad access to the ironfoam-invoices-shared bucket (ListBucket on the bucket, GetObject/PutObject on customers/*). Intended to be sliced per-user by the scope-down policy.",
+        "connections": ["Trust policy: allows transfer.amazonaws.com to AssumeRole", "Attached policy: ironfoam-sftp-partner-access", "Effective permissions per user = intersection with the user's scope-down"],
+        "failure_impact": "If a user's scope-down does not properly narrow the role, the user gets the full role's permissions: every customer folder."
+      },
+      {
+        "name": "acme-bev-bottles (Transfer Family user, service-managed)",
+        "role": "The SFTP identity for the Acme Beverage Bottles partner. Configured with HomeDirectoryType LOGICAL, HomeDirectoryMappings rewriting / to /customers/acme-bev-bottles, and an inline scope-down policy meant to restrict S3 access to that prefix only.",
+        "connections": ["Authenticates via SSH key 'acme-bev-bottles.pub' registered with Transfer Family", "Assumes ironfoam-sftp-partner-role when logged in", "Scope-down policy is the per-user slicing mechanism"],
+        "failure_impact": "If the scope-down does not include a ${transfer:UserName} path constraint on the S3 Resource, the user can list and read every other customer's folder despite the logical directory mapping."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "transfer-family",
+      "artifacts": [
+        "artifacts/transfer-user.json",
+        "artifacts/transfer-server.json",
+        "artifacts/sftp-session-log.txt"
+      ],
+      "capabilities": [
+        "describe_server",
+        "describe_user",
+        "list_users",
+        "list_security_policies"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/sftp-partner-role.json",
+        "artifacts/user-scope-down-policy.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy",
+        "simulate_custom_policy"
+      ]
+    },
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/s3-bucket-layout.txt",
+        "artifacts/s3-access-logs.txt"
+      ],
+      "capabilities": [
+        "list_objects_v2",
+        "get_bucket_policy",
+        "get_bucket_acl",
+        "get_bucket_logging"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status",
+        "get_event_selectors"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "A partner SFTP user accessed files outside their home directory. The server let them. Why?",
+    "Transfer Family's HomeDirectory only changes the filesystem view. The actual access control is IAM: the role the user assumes, plus the scope-down policy.",
+    "Read the scope-down policy. What S3 Resource does it grant access to? Does that Resource include the user's name, or does it cover every customer folder?",
+    "The role grants access to customers/*. The scope-down narrows the role. For the narrowing to be per-user, the scope-down's Resource must include ${transfer:UserName} or an equivalent per-user path.",
+    "The fix is to rewrite the scope-down Resource to include ${transfer:UserName} in the path: arn:aws:s3:::ironfoam-invoices-shared/customers/${transfer:UserName}/*. The HomeDirectory mapping is a UX convention, not a security boundary."
+  ],
+  "resolution": {
+    "root_cause": "The scope-down policy attached to the acme-bev-bottles Transfer Family user grants s3:GetObject on Resource 'arn:aws:s3:::ironfoam-invoices-shared/customers/*' without ${transfer:UserName} or any other per-user constraint. It grants s3:ListBucket on the bucket ARN with a Prefix condition of 'customers/*', again unscoped. The user's effective permissions are therefore every customer folder, not just their own. The HomeDirectoryType=LOGICAL mapping only controls what the user sees in the SFTP filesystem view; it does not prevent the user from typing a relative path that resolves to a different prefix. CloudTrail S3 data events show the partner administrator ran LIST and GET operations across 43 other customer folders overnight, totaling 1,187 CSV files.",
+    "fix_criteria": [
+      {
+        "id": "identify_breach_scope",
+        "description": "Player identifies from CloudTrail S3 data events that the acme-bev-bottles user read files from multiple other customer folders, not just their own",
+        "required": true
+      },
+      {
+        "id": "identify_home_dir_is_not_security",
+        "description": "Player identifies that HomeDirectoryType=LOGICAL is a filesystem view convention, not an access-control boundary; the real boundary is the IAM scope-down policy",
+        "required": true
+      },
+      {
+        "id": "identify_missing_username_variable",
+        "description": "Player identifies that the scope-down policy's Resource field uses 'customers/*' without incorporating ${transfer:UserName}, which is why it matches every customer folder",
+        "required": true
+      },
+      {
+        "id": "propose_scope_down_fix",
+        "description": "Player proposes rewriting the scope-down policy so both the GetObject/PutObject Resource and the ListBucket condition explicitly include ${transfer:UserName} in the path (e.g., customers/${transfer:UserName}/*)",
+        "required": true
+      },
+      {
+        "id": "propose_audit_and_notification",
+        "description": "Player proposes auditing CloudTrail for the full breach timeline, revoking and rotating the partner's SSH key, and notifying the 43 affected customers",
+        "required": true
+      },
+      {
+        "id": "propose_guardrail",
+        "description": "Player proposes a guardrail such as an S3 bucket policy with a Deny statement that forbids any caller's access unless aws:PrincipalTag/customer-name matches the prefix, an AWS Config rule that flags Transfer Family users whose scope-down is missing ${transfer:UserName}, or a Verified Permissions/Cedar policy enforced at the Transfer Family logical layer",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How AWS Transfer Family's IAM model works: users assume a shared role, and the scope-down policy narrows that role per user",
+      "That HomeDirectory mappings are UX conventions, not security boundaries",
+      "How Transfer Family policy variables like ${transfer:UserName} make a single scope-down template per-user",
+      "How to read CloudTrail S3 data events to determine the exact blast radius of a data exposure",
+      "The defense-in-depth pattern of pairing a tight scope-down with a bucket-policy Deny that enforces per-caller path scoping"
+    ],
+    "sop_steps": [
+      "Confirm the unauthorized access from CloudTrail. Enable S3 data events on the ironfoam-invoices-shared bucket if they are not already on (management events alone do not show GetObject calls). Filter for the acme-bev-bottles IAM role-session-name and scan the resourceName values. If you see prefixes other than customers/acme-bev-bottles/, you have confirmed the breach.",
+      "Revoke the partner's SFTP access immediately. The fastest way is to delete the user's SSH public key from their Transfer Family user configuration, which prevents future logins without affecting other users. Do not delete the user itself yet; you need the user present for the scope-down fix to be verifiable.",
+      "Read the Transfer Family user's configuration. Call DescribeUser on the acme-bev-bottles user. Note the Role, the HomeDirectoryType, the HomeDirectoryMappings, and the inline scope-down Policy.",
+      "Read the scope-down policy. The document is a JSON IAM policy returned inside the user config. Look at every Resource field. For any Resource under the shared bucket's customers/ prefix, check whether the path includes ${transfer:UserName} or some other per-user constraint. In this sim, neither the GetObject/PutObject Resource nor the ListBucket condition has that constraint.",
+      "Rewrite the scope-down policy. The correct template narrows to the user's own folder: ListBucket with a condition on Prefix customers/${transfer:UserName}/*, GetObject/PutObject on Resource arn:aws:s3:::ironfoam-invoices-shared/customers/${transfer:UserName}/*. Deploy the update via UpdateUser (or through Terraform or CloudFormation if managed as code).",
+      "Verify with the IAM policy simulator. Run simulate-custom-policy with the user's effective policy and check that GetObject on a different customer's path evaluates to Deny. Do the same for ListBucket with a prefix outside the user's folder.",
+      "Add the defense-in-depth bucket policy. Attach a bucket policy to ironfoam-invoices-shared that denies s3:GetObject and s3:PutObject for Transfer Family role sessions whose role session name does not match the first path component after customers/. This is a belt-and-suspenders pattern so a future scope-down mistake does not expose customers.",
+      "Roll the fix across every Transfer Family user. The scope-down was copied as a template; every other user has the same defect. Use a script or Terraform refactor to update every user at once, then verify with a spot-check simulate-custom-policy run against a sample of users.",
+      "Audit the full exposure window. Pull CloudTrail S3 data events for the last 30 days, group by user-role-session-name, extract prefix from resourceName, and flag any access that is not to the user's own prefix. Build the per-customer exposure list: which Ironfoam customers had how many files read by which partner, and when.",
+      "Notify affected customers per legal and contract obligations. For the 43 customers whose invoices were read, draft the breach notification in coordination with legal. Rotate the acme-bev-bottles SSH key and issue new credentials under the corrected scope-down policy.",
+      "Add guardrails. AWS Config custom rule that flags any Transfer Family user whose scope-down policy's S3 Resource does not include ${transfer:UserName}. Log all SFTP LIST and GET operations to an immutable trail. Alarm on unusual LIST-to-GET ratios per user (a partner who normally GETs their own files does not usually LIST."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The role itself is too broad and the scope-down policy has a subtle Allow that broadens further.",
+        "how_it_differs": "IAM scope-down can only subtract from the role's permissions, so a scope-down cannot grant more than the role allows. But if the role is over-granted (say it allows s3:*), even a correct scope-down can be rendered ineffective by a misconfigured role or a second attached policy. Symptom is the same: cross-customer access.",
+        "prevention": "Keep the role tightly scoped to exactly the intersection of what all Transfer Family users should ever need. Use IAM Access Analyzer on the role to flag wildcard actions or resources and review any changes."
+      },
+      {
+        "scenario": "Scope-down policy uses ${transfer:UserName}, but the user's name contains an unexpected character that breaks the path match.",
+        "how_it_differs": "User is named 'Acme Beverage Bottles' with a space. The scope-down Resource becomes arn:aws:s3:::bucket/customers/Acme Beverage Bottles/*, which is technically valid but fragile. The user accidentally still ends up able to list other folders because the path match has whitespace edge cases in their client.",
+        "prevention": "Enforce a naming convention for Transfer Family users: lowercase, kebab-case, ASCII only, matching the expected S3 prefix. Validate on CreateUser. Never let customer display names flow through verbatim."
+      },
+      {
+        "scenario": "HomeDirectoryMappings and the scope-down are inconsistent: LOGICAL chroot to /customers/acme-bev-bottles/, but scope-down allows customers/acme/* (short for 'acme' matching too many).",
+        "how_it_differs": "The LOGICAL chroot appears to the user as their own folder, but any S3 API call they make through the SFTP LIST uses the scope-down, which matches 'acme*' and exposes any customer whose name starts with acme. It looks like defense in depth but the two layers disagree.",
+        "prevention": "Use the same UserName variable in both the HomeDirectoryMappings and the scope-down. Treat the two as one contract and enforce identical paths in code review."
+      }
+    ],
+    "sop_practices": [
+      "The HomeDirectory setting on Transfer Family is a filesystem view; the scope-down policy is the access boundary. Never rely on HomeDirectory for security. Always scope the scope-down policy's S3 Resources with ${transfer:UserName} or an equivalent per-user constraint.",
+      "Pair every Transfer Family scope-down with a belt-and-suspenders bucket policy Deny that enforces the same per-caller path constraint. A bucket policy is evaluated even when the scope-down is missing, so it catches misconfiguration.",
+      "Always enable S3 data events on buckets that back Transfer Family. Management-event CloudTrail alone cannot reconstruct what the partner actually read. Without data events, a breach is uninvestigable.",
+      "Treat the Transfer Family IAM role as a shared blast-radius. Limit its actions to the minimum set any user ever needs and use IAM Access Analyzer to flag drift. Individual users can only be as safe as the role they all assume."
+    ]
+  }
+}

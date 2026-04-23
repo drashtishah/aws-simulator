@@ -1,0 +1,44 @@
+{
+  "Events": [
+    {
+      "EventId": "f32a1b77-9c12-4db3-8f04-216e4df9a218",
+      "EventName": "ListObjects",
+      "EventTime": "2026-04-21T22:14:58Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "acme-bev-bottles",
+      "Resources": [
+        { "ResourceType": "AWS::S3::Bucket", "ResourceName": "ironfoam-invoices-shared" }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA9QTR1LKMBPXYZ8ABC:acme-bev-bottles\",\"arn\":\"arn:aws:sts::884412345678:assumed-role/ironfoam-sftp-partner-role/acme-bev-bottles\",\"accountId\":\"884412345678\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"arn\":\"arn:aws:iam::884412345678:role/ironfoam-sftp-partner-role\",\"userName\":\"ironfoam-sftp-partner-role\"}}},\"eventTime\":\"2026-04-21T22:14:58Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"ListObjects\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"203.0.113.88\",\"userAgent\":\"aws-sdk-java/2.24.6\",\"requestParameters\":{\"bucketName\":\"ironfoam-invoices-shared\",\"prefix\":\"customers/\",\"delimiter\":\"/\"},\"responseElements\":null,\"requestID\":\"E7A2DC88B1D5EC13\",\"eventType\":\"AwsApiCall\"}"
+    },
+    {
+      "EventId": "a118c2e3-7745-48b9-aae2-30c19b7611ef",
+      "EventName": "GetObject",
+      "EventTime": "2026-04-21T22:15:12Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "acme-bev-bottles",
+      "Resources": [
+        { "ResourceType": "AWS::S3::Object", "ResourceName": "ironfoam-invoices-shared/customers/birchcreek-taps/2026-03/invoices-2026-03.csv" }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA9QTR1LKMBPXYZ8ABC:acme-bev-bottles\",\"arn\":\"arn:aws:sts::884412345678:assumed-role/ironfoam-sftp-partner-role/acme-bev-bottles\",\"accountId\":\"884412345678\"},\"eventTime\":\"2026-04-21T22:15:12Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"GetObject\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"203.0.113.88\",\"userAgent\":\"aws-sdk-java/2.24.6\",\"requestParameters\":{\"bucketName\":\"ironfoam-invoices-shared\",\"key\":\"customers/birchcreek-taps/2026-03/invoices-2026-03.csv\"},\"responseElements\":null,\"requestID\":\"81FC2E94A0B3DA15\",\"eventType\":\"AwsApiCall\"}"
+    },
+    {
+      "EventId": "4b8d01ce-6f21-4c13-9e90-ad55c88f0711",
+      "EventName": "GetObject",
+      "EventTime": "2026-04-21T22:21:43Z",
+      "EventSource": "s3.amazonaws.com",
+      "Username": "acme-bev-bottles",
+      "Resources": [
+        { "ResourceType": "AWS::S3::Object", "ResourceName": "ironfoam-invoices-shared/customers/acme-bev-bottles/2026-03/invoices-2026-03.csv" }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA9QTR1LKMBPXYZ8ABC:acme-bev-bottles\",\"arn\":\"arn:aws:sts::884412345678:assumed-role/ironfoam-sftp-partner-role/acme-bev-bottles\"},\"eventTime\":\"2026-04-21T22:21:43Z\",\"eventSource\":\"s3.amazonaws.com\",\"eventName\":\"GetObject\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"203.0.113.88\",\"userAgent\":\"aws-sdk-java/2.24.6\",\"requestParameters\":{\"bucketName\":\"ironfoam-invoices-shared\",\"key\":\"customers/acme-bev-bottles/2026-03/invoices-2026-03.csv\"},\"responseElements\":null,\"requestID\":\"92AB71C8F4D1FA22\",\"eventType\":\"AwsApiCall\"}"
+    }
+  ],
+  "_summary": {
+    "session_duration_hours": 2.28,
+    "unique_customer_prefixes_listed": 44,
+    "objects_read_outside_own_prefix": 1187,
+    "objects_read_inside_own_prefix": 3,
+    "total_bytes_transferred": 52480023
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "ServerId": "s-0a12f93bc4d5e6708",
+  "UserName": "acme-bev-bottles",
+  "Arn": "arn:aws:transfer:us-east-1:884412345678:user/s-0a12f93bc4d5e6708/acme-bev-bottles",
+  "HomeDirectoryType": "LOGICAL",
+  "HomeDirectoryMappings": [
+    {
+      "Entry": "/",
+      "Target": "/ironfoam-invoices-shared/customers/acme-bev-bottles"
+    }
+  ],
+  "Role": "arn:aws:iam::884412345678:role/ironfoam-sftp-partner-role",
+  "Policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"ListAllCustomerFolders\",\n      \"Effect\": \"Allow\",\n      \"Action\": \"s3:ListBucket\",\n      \"Resource\": \"arn:aws:s3:::ironfoam-invoices-shared\",\n      \"Condition\": {\n        \"StringLike\": { \"s3:prefix\": [\"customers/*\"] }\n      }\n    },\n    {\n      \"Sid\": \"ReadWriteAllCustomerObjects\",\n      \"Effect\": \"Allow\",\n      \"Action\": [\"s3:GetObject\", \"s3:PutObject\", \"s3:DeleteObject\"],\n      \"Resource\": \"arn:aws:s3:::ironfoam-invoices-shared/customers/*\"\n    }\n  ]\n}",
+  "SshPublicKeys": [
+    {
+      "SshPublicKeyId": "key-0a4f8b12c39e2d617",
+      "SshPublicKeyBody": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOIeVcDwA4Kx3c0xYFgOyZy4E6tVcYrCZALdqoTU9n5Z acme-bev-bottles@acmebeverage.example",
+      "DateImported": "2026-04-01T14:22:08Z"
+    }
+  ],
+  "Tags": [
+    { "Key": "customer", "Value": "Acme Beverage Bottles" },
+    { "Key": "onboarded-by", "Value": "platform-eng" },
+    { "Key": "template-version", "Value": "v1-copied-from-blog" }
+  ],
+  "_note": "The inline Policy is missing ${transfer:UserName} in both the ListBucket prefix condition and the GetObject/PutObject Resource. Every one of the 270 Transfer Family users has an identically-shaped policy (the bug is not specific to this user)."
+}

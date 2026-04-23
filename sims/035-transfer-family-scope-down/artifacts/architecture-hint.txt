@@ -1,0 +1,70 @@
+        +-----------------------+
+        | Partner SFTP clients  |
+        | (270 external users)  |
+        +----------+------------+
+                   |
+                   | SSH/SFTP, port 22
+                   v
+        +-----------------------+
+        | AWS Transfer Family   |
+        | server: ironfoam-sftp |
+        | Protocol: SFTP only   |
+        | Identity: service-    |
+        |   managed             |
+        | Per user:             |
+        |   HomeDirectoryType   |
+        |   = LOGICAL           |
+        |   HomeDirectoryMappings|
+        |   Role                |
+        |   Policy (scope-down) |
+        +----------+------------+
+                   |
+                   | STS AssumeRole (sts:AssumeRole)
+                   | role session name = Transfer user name
+                   v
+        +-----------------------+
+        | IAM Role              |
+        | ironfoam-sftp-partner |
+        | -role                 |
+        | Policy:               |
+        |   s3:ListBucket on    |
+        |     ironfoam-invoices |
+        |     -shared           |
+        |   s3:GetObject,       |
+        |   PutObject on        |
+        |     customers/*       |
+        | (scope-down narrows   |
+        |  per user)            |
+        +----------+------------+
+                   |
+                   | S3 API calls
+                   v
+        +-----------------------+
+        | S3 bucket             |
+        | ironfoam-invoices-    |
+        | shared                |
+        |   customers/          |
+        |     acme-bev-bottles/ |
+        |     birchcreek-taps/  |
+        |     canopy-cellars/   |
+        |     ... (270 folders) |
+        +----------+------------+
+                   |
+                   v
+        +-----------------------+
+        | AWS CloudTrail        |
+        | - mgmt events         |
+        | - S3 data events      |
+        |   (enabled on this    |
+        |    bucket)            |
+        +-----------------------+
+
+  Per-user scope-down policy pattern (intended):
+    Allow s3:ListBucket on bucket
+      condition s3:prefix = "customers/${transfer:UserName}/*"
+    Allow s3:GetObject/PutObject on
+      arn:aws:s3:::.../customers/${transfer:UserName}/*
+
+  Every user is supposed to be isolated to their own folder by
+  the scope-down, with the role providing only the maximum
+  permissions the scope-down is allowed to grant.

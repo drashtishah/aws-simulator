@@ -1,0 +1,20 @@
+2026-04-21T22:14:03Z ironfoam-sftp sshd[22178] Accepted publickey for acme-bev-bottles from 203.0.113.88 port 51002 ssh2: ED25519 SHA256:lC2D4eZvKYlo2FabCDEfgH8iJkLmN3OpQrStUvWxYz
+2026-04-21T22:14:04Z ironfoam-sftp[22178] user acme-bev-bottles session-id a0c45e9e-b2a1-4e0a-9b98-6c7a1321f811 home /customers/acme-bev-bottles
+2026-04-21T22:14:11Z ironfoam-sftp[22178] REALPATH /
+2026-04-21T22:14:11Z ironfoam-sftp[22178] OPENDIR /
+2026-04-21T22:14:12Z ironfoam-sftp[22178] OPENDIR /customers/acme-bev-bottles/2026-03/
+2026-04-21T22:14:12Z ironfoam-sftp[22178] READDIR ok (listing 14 entries)
+2026-04-21T22:14:58Z ironfoam-sftp[22178] OPENDIR /../
+2026-04-21T22:14:58Z ironfoam-sftp[22178] READDIR ok (listing 270 entries)
+2026-04-21T22:15:03Z ironfoam-sftp[22178] OPENDIR /../birchcreek-taps/2026-03/
+2026-04-21T22:15:03Z ironfoam-sftp[22178] READDIR ok (listing 8 entries)
+2026-04-21T22:15:12Z ironfoam-sftp[22178] OPEN /../birchcreek-taps/2026-03/invoices-2026-03.csv
+2026-04-21T22:15:12Z ironfoam-sftp[22178] READ start
+2026-04-21T22:15:13Z ironfoam-sftp[22178] READ complete (42812 bytes)
+2026-04-21T22:15:24Z ironfoam-sftp[22178] OPENDIR /../canopy-cellars/2026-03/
+2026-04-21T22:15:25Z ironfoam-sftp[22178] OPEN /../canopy-cellars/2026-03/invoices-2026-03.csv
+2026-04-21T22:15:25Z ironfoam-sftp[22178] READ complete (51004 bytes)
+...
+2026-04-22T00:29:41Z ironfoam-sftp[22178] OPEN /../willowbrook-hops/2026-02/invoices-2026-02.csv
+2026-04-22T00:29:42Z ironfoam-sftp[22178] READ complete (47102 bytes)
+2026-04-22T00:31:02Z ironfoam-sftp[22178] session-closed by client

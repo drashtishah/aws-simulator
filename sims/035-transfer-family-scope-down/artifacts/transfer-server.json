@@ -1,0 +1,21 @@
+{
+  "Server": {
+    "ServerId": "s-0a12f93bc4d5e6708",
+    "Arn": "arn:aws:transfer:us-east-1:884412345678:server/s-0a12f93bc4d5e6708",
+    "Domain": "S3",
+    "EndpointType": "PUBLIC",
+    "IdentityProviderType": "SERVICE_MANAGED",
+    "Protocols": ["SFTP"],
+    "State": "ONLINE",
+    "UserCount": 270,
+    "LoggingRole": "arn:aws:iam::884412345678:role/CloudWatchLoggingRole",
+    "StructuredLogDestinations": ["arn:aws:logs:us-east-1:884412345678:log-group:/aws/transfer/ironfoam-sftp:*"],
+    "HostKeyFingerprint": "SHA256:lC2D4eZvKYlo2FabCDEfgH8iJkLmN3OpQrStUvWxYz",
+    "SecurityPolicyName": "TransferSecurityPolicy-2022-03",
+    "Tags": [
+      { "Key": "environment", "Value": "production" },
+      { "Key": "owner",       "Value": "platform-eng" }
+    ]
+  },
+  "_note": "Identity provider is SERVICE_MANAGED: Transfer Family holds each partner's SSH public key. Every user assumes the same role (ironfoam-sftp-partner-role) and is supposed to be sliced per-user via their inline scope-down policy."
+}

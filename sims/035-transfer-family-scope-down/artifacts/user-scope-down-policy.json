@@ -1,0 +1,49 @@
+{
+  "_description": "The inline scope-down policy attached to the acme-bev-bottles Transfer Family user (same template is on all 270 users).",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListAllCustomerFolders",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::ironfoam-invoices-shared",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["customers/*"]
+        }
+      }
+    },
+    {
+      "Sid": "ReadWriteAllCustomerObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::ironfoam-invoices-shared/customers/*"
+    }
+  ],
+  "_correct_version_for_reference": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "ListOwnFolderOnly",
+        "Effect": "Allow",
+        "Action": "s3:ListBucket",
+        "Resource": "arn:aws:s3:::ironfoam-invoices-shared",
+        "Condition": {
+          "StringLike": {
+            "s3:prefix": ["customers/${transfer:UserName}/*"]
+          }
+        }
+      },
+      {
+        "Sid": "ReadWriteOwnFolderOnly",
+        "Effect": "Allow",
+        "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+        "Resource": "arn:aws:s3:::ironfoam-invoices-shared/customers/${transfer:UserName}/*"
+      }
+    ]
+  }
+}
