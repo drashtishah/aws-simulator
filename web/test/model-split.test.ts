@@ -9,18 +9,18 @@ import * as claudeProcess from '../lib/claude-process.ts';
 const ROOT = path.join(__dirname, '..', '..');
 
 describe('model split', () => {
-  it('PLAY_SESSION_MODEL is claude-opus-4-6', () => {
-    assert.equal(claudeProcess.PLAY_SESSION_MODEL, 'claude-opus-4-6');
+  it('PLAY_SESSION_MODEL is claude-sonnet-4-6', () => {
+    assert.equal(claudeProcess.PLAY_SESSION_MODEL, 'claude-sonnet-4-6');
   });
 
-  it('POST_SESSION_MODEL is claude-opus-4-6', () => {
-    assert.equal(claudeProcess.POST_SESSION_MODEL, 'claude-opus-4-6');
+  it('POST_SESSION_MODEL is claude-opus-4-7', () => {
+    assert.equal(claudeProcess.POST_SESSION_MODEL, 'claude-opus-4-7');
   });
 
-  it('model-config.json: play=opus, post_session=opus', () => {
+  it('model-config.json: play=sonnet, post_session=opus', () => {
     const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts', 'model-config.json'), 'utf8'));
-    assert.equal(cfg.play.model, 'claude-opus-4-6');
-    assert.equal(cfg.post_session.model, 'claude-opus-4-6');
+    assert.equal(cfg.play.model, 'claude-sonnet-4-6');
+    assert.equal(cfg.post_session.model, 'claude-opus-4-7');
   });
 });
 

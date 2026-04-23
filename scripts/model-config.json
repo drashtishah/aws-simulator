@@ -1,10 +1,10 @@
 {
   "planner":           { "model": "claude-sonnet-4-6", "effort": "high" },
-  "critic":            { "model": "claude-opus-4-6",   "effort": "medium" },
+  "critic":            { "model": "claude-opus-4-7",   "effort": "high" },
   "implementer":       { "model": "claude-sonnet-4-6", "effort": "medium" },
   "verifier":          { "model": "claude-sonnet-4-6", "effort": "high" },
-  "evaluator":         { "model": "claude-opus-4-6",   "effort": "medium" },
-  "play":              { "model": "claude-opus-4-6",   "effort": null },
-  "post_session":      { "model": "claude-opus-4-6",   "effort": "medium" },
+  "evaluator":         { "model": "claude-opus-4-7",   "effort": "high" },
+  "play":              { "model": "claude-sonnet-4-6", "effort": "medium" },
+  "post_session":      { "model": "claude-opus-4-7",   "effort": "high" },
   "agent_test_runner": { "model": "claude-sonnet-4-6", "effort": "low" }
 }

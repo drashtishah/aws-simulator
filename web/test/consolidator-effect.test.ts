@@ -14,7 +14,7 @@ describe('runConsolidator success path', () => {
 
     async function* fakeSpawn(input: { prompt: string; options: Record<string, unknown> }): AsyncGenerator<unknown> {
       calls.push(input);
-      yield { type: 'system', subtype: 'init', session_id: 'fake', model: 'claude-opus-4-6' };
+      yield { type: 'system', subtype: 'init', session_id: 'fake', model: 'claude-opus-4-7' };
       yield {
         type: 'assistant',
         message: {
@@ -43,7 +43,7 @@ describe('runConsolidator success path', () => {
     );
     assert.equal(
       (call!.options as { model: string }).model,
-      'claude-opus-4-6',
+      'claude-opus-4-7',
       'consolidator must run on opus'
     );
   });

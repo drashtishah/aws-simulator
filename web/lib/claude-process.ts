@@ -22,7 +22,7 @@ import {
 import type { PlayerProfile, Progression } from './post-session-renderer.js';
 import jsYaml from 'js-yaml';
 
-// Play uses Opus with no effort (thinking disabled). Per-stage model and
+// Play uses Sonnet at medium effort for latency. Per-stage model and
 // effort live in scripts/model-config.json.
 export const PLAY_SESSION_MODEL = MODEL_CONFIG.play.model;
 export const POST_SESSION_MODEL = MODEL_CONFIG.post_session.model;

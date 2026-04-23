@@ -66,7 +66,7 @@ export async function runConsolidator(n: number, opts?: ConsolidatorOptions): Pr
     allowedTools: policy.allowedTools,
     permissionMode: policy.permissionMode,
     canUseTool: policy.canUseTool,
-    model: 'claude-opus-4-6',
+    model: 'claude-opus-4-7',
     maxTurns: 30,
   };
 

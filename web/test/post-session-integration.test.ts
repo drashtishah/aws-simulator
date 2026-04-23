@@ -29,7 +29,7 @@ const sdkMockState: {
 async function* mockQuery(input: { prompt: string; options: Record<string, unknown> }): AsyncGenerator<unknown> {
   sdkMockState.lastPrompt = input.prompt;
   sdkMockState.lastOptions = input.options;
-  yield { type: 'system', subtype: 'init', session_id: 'mock-session', model: 'claude-opus-4-6' };
+  yield { type: 'system', subtype: 'init', session_id: 'mock-session', model: 'claude-opus-4-7' };
   yield {
     type: 'assistant',
     message: {
@@ -127,7 +127,7 @@ describe('runPostSessionAgent integration', () => {
     assert.ok(typeof result.tier1_duration_ms === 'number', 'result must include tier1_duration_ms');
     assert.ok(typeof result.tier2_duration_ms === 'number', 'result must include tier2_duration_ms');
     assert.ok(sdkMockState.lastPrompt?.includes('post-session analysis agent'), 'prompt must flag post-session role');
-    assert.equal((sdkMockState.lastOptions as { model: string }).model, 'claude-opus-4-6', 'post-session must run on opus');
+    assert.equal((sdkMockState.lastOptions as { model: string }).model, 'claude-opus-4-7', 'post-session must run on opus');
     assert.equal((sdkMockState.lastOptions as { allowedTools: string[] }).allowedTools.join(','), 'Read,Write,Bash', 'post-session may Read, Write, and Bash (scoped to the verifier command by canUseTool)');
   });
 

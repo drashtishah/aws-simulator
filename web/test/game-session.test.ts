@@ -182,7 +182,7 @@ describe('buildPostSessionPrompt', () => {
     assert.ok(prompt.includes('classification.jsonl'), 'should reference classification.jsonl output path');
   });
 
-  it('specifies model as claude-opus-4-6', () => {
+  it('specifies model as claude-opus-4-7', () => {
     const prompt = buildPostSessionPrompt('001-ec2-unreachable');
     // The prompt itself should indicate the model, but we test the config separately
     assert.ok(prompt.length > 0, 'prompt should not be empty');

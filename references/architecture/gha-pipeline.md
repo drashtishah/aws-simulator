@@ -47,10 +47,10 @@ the planner splits it: keeps one concern in the current issue, creates child iss
 | Stage | Model | Max turns |
 |---|---|---|
 | Planner | claude-sonnet-4-6 | 5 |
-| Critic | claude-opus-4-6 | 5 |
+| Critic | claude-opus-4-7 | 5 |
 | Implementer | claude-sonnet-4-6 | 15 |
 | Verifier | claude-sonnet-4-6 | 8 |
-| Reflector | claude-opus-4-6 | 10 |
+| Reflector | claude-opus-4-7 | 10 |
 
 ## Tool allowlists per stage
 

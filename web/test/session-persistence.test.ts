@@ -58,8 +58,8 @@ describe('persistSession', () => {
       claudeSessionId: 'claude-def',
       simId: testSimId,
       themeId: 'calm-mentor',
-      model: 'opus',
-      modelId: 'claude-opus-4-6',
+      model: 'sonnet',
+      modelId: 'claude-sonnet-4-6',
       startedAt: new Date('2026-04-04T10:00:00Z'),
       turnCount: 5
     });
@@ -68,8 +68,8 @@ describe('persistSession', () => {
     assert.equal(data.claudeSessionId, 'claude-def');
     assert.equal(data.simId, testSimId);
     assert.equal(data.themeId, 'calm-mentor');
-    assert.equal(data.model, 'opus');
-    assert.equal(data.modelId, 'claude-opus-4-6');
+    assert.equal(data.model, 'sonnet');
+    assert.equal(data.modelId, 'claude-sonnet-4-6');
     assert.equal(data.turnCount, 5);
     assert.ok(data.startedAt);
   });

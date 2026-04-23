@@ -36,7 +36,7 @@ describe('shouldRunConsolidator', () => {
 describe('runConsolidator error handling', () => {
   it('swallows errors from the spawned agent and resolves normally', async () => {
     async function* throwingSpawn(): AsyncGenerator<unknown> {
-      yield { type: 'system', subtype: 'init', session_id: 'mock', model: 'claude-opus-4-6' };
+      yield { type: 'system', subtype: 'init', session_id: 'mock', model: 'claude-opus-4-7' };
       throw new Error('simulated agent failure');
     }
     const spawnFn = throwingSpawn as unknown as Parameters<typeof runConsolidator>[1] extends { spawnFn?: infer S } ? S : never;
