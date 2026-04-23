@@ -1,0 +1,44 @@
+Plover Analytics - Reporting Architecture (after fix: MinCapacity raised to 0.5 ACU)
+
+  [Customer Browser]
+       |
+       | HTTPS POST /report
+       v
+  [API Gateway REST API]
+  plover-api (us-east-1)
+  Integration timeout: 29s
+       |
+       | Lambda proxy integration
+       v
+  [Lambda Function]
+  plover-report-fn
+  Runtime: Node.js 20.x
+  Memory: 512 MB
+  Timeout: 29s
+       |
+       | PostgreSQL wire protocol, port 5432
+       v
+  [Aurora Serverless v2 Cluster]
+  plover-reporting-db (us-east-1, PostgreSQL 15.4)
+  MinCapacity: 0.5   <-- CHANGED (was 0)
+  MaxCapacity: 16
+  SecondsUntilAutoPause: 300 (no longer applies; auto-pause requires MinCapacity=0)
+  Status: RUNNING
+  ServerlessDatabaseCapacity: 0.5 ACU (always-on minimum)
+
+Fix applied:
+  aws rds modify-db-cluster \
+    --db-cluster-identifier plover-reporting-db \
+    --serverless-v2-scaling-configuration MinCapacity=0.5,MaxCapacity=16
+
+Change: MinCapacity 0 -> 0.5
+Effect: auto-pause disabled; cluster remains warm at 0.5 ACU continuously
+Cost delta: approximately +$43/month (0.5 ACU * $0.12/ACU-hour * 730 hours)
+No reboot required. Change effective within ~5 minutes.
+
+Added CloudWatch alarm:
+  Metric: ServerlessDatabaseCapacity
+  Cluster: plover-reporting-db
+  Condition: < 0.1 for 15 consecutive minutes
+  Action: SNS alert to on-call channel
+  Purpose: detect any future regression (e.g., Terraform drift setting MinCapacity back to 0)

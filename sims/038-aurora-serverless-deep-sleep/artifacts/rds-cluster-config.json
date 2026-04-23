@@ -1,0 +1,44 @@
+{
+  "DBClusters": [
+    {
+      "DBClusterIdentifier": "plover-reporting-db",
+      "DBClusterArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db",
+      "Status": "available",
+      "Engine": "aurora-postgresql",
+      "EngineVersion": "15.4",
+      "EngineMode": "provisioned",
+      "ServerlessV2ScalingConfiguration": {
+        "MinCapacity": 0,
+        "MaxCapacity": 16,
+        "SecondsUntilAutoPause": 300
+      },
+      "Endpoint": "plover-reporting-db.cluster-cabcdefghijk.us-east-1.rds.amazonaws.com",
+      "ReaderEndpoint": "plover-reporting-db.cluster-ro-cabcdefghijk.us-east-1.rds.amazonaws.com",
+      "Port": 5432,
+      "MasterUsername": "plover_admin",
+      "DatabaseName": "plover",
+      "DBSubnetGroup": "plover-db-subnet-group",
+      "VpcSecurityGroups": [
+        {
+          "VpcSecurityGroupId": "sg-0a1b2c3d4e5f67890",
+          "Status": "active"
+        }
+      ],
+      "MultiAZ": false,
+      "StorageEncrypted": true,
+      "KmsKeyId": "arn:aws:kms:us-east-1:123456789012:key/mrk-abc123def456",
+      "BackupRetentionPeriod": 7,
+      "PreferredBackupWindow": "03:00-04:00",
+      "PreferredMaintenanceWindow": "sun:05:00-sun:06:00",
+      "DeletionProtection": true,
+      "HttpEndpointEnabled": false,
+      "CopyTagsToSnapshot": true,
+      "CrossAccountClone": false,
+      "TagList": [
+        {"Key": "Environment", "Value": "production"},
+        {"Key": "Service", "Value": "reporting"},
+        {"Key": "ManagedBy", "Value": "terraform"}
+      ]
+    }
+  ]
+}
