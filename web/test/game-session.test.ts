@@ -157,7 +157,7 @@ describe('updateGameSession', () => {
 
 describe('runPostSessionAgent', () => {
   // require() preserved: must run after AWS_SIMULATOR_SESSIONS_DIR is set above.
-  const { runPostSessionAgent } = require('../lib/claude-process');
+  const { runPostSessionAgent } = require('../../scripts/post-session-orchestrator');
 
   it('function exists and is exported', () => {
     assert.ok(typeof runPostSessionAgent === 'function', 'runPostSessionAgent should be a function');
