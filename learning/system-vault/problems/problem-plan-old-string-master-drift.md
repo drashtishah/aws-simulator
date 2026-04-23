@@ -17,7 +17,7 @@ related_problems: []
 ## Symptom
 Text-only issue #201 ran 4 planner passes and 4 critic rounds. On pass
 3 the critic caught that the plan's Edit C `old_string` for
-`references/pipeline/reflector.md` still contained `[skip ci]`, which
+`references/pipeline/evaluator.md` (formerly `reflector.md`) still contained `[skip ci]`, which
 sibling PR #204 had removed mid-revision (commit c376288). The planner
 had copy-pasted its own pass-2 block instead of re-reading master HEAD.
 Two failure modes were live at once: the literal `old_string` would no
