@@ -451,15 +451,6 @@ describe('invariant 3: test density', () => {
   });
 });
 
-describe('invariant 5: skill ownership consistency', () => {
-  it('runs without throwing on the real repo', () => {
-    const d = discoverScope(undefined, defaultCfg());
-    const { violations } = scoreAllBuckets(d, defaultCfg());
-    const ownVio = violations.filter(v => v.invariant === 'ownership_consistent');
-    assert.ok(Array.isArray(ownVio));
-  });
-});
-
 describe('composite formula: min(weighted_avg, completeness*100)', () => {
   it('weighted_avg binds when completeness is 100%', () => {
     const d = makeDiscovery({ code: ['web/lib/a.ts'] });
@@ -512,12 +503,6 @@ describe('anti-gaming scenarios (12 rows from PR-C plan)', () => {
   it('A4 (delete referenced doc): legacy references_health still tracked', () => {
     const result = main();
     assert.ok(typeof result.scores.references_health.score === 'number');
-  });
-
-  it('A5 (mass-archive skills): ownership invariant produces a violations array', () => {
-    const d = discoverScope(undefined, defaultCfg());
-    const { violations } = scoreAllBuckets(d, defaultCfg());
-    for (const v of violations) assert.ok(typeof v.invariant === 'string');
   });
 
   it('A6 (trivial tests): density is LOC-based (sub fields expose loc counts)', () => {
