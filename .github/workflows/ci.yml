@@ -77,6 +77,14 @@ jobs:
           # Compare: fail if any bucket regressed
           npx tsx scripts/health-regression-check.ts /tmp/pr-health.jsonl /tmp/base-health.jsonl
 
+      - name: restore git hooks from PR checkout (Issue #343)
+        # The health-regression step above runs `npm ci` inside a worktree at
+        # BASE_SHA. Its postinstall re-runs install-git-hooks.ts which writes
+        # into the SHARED `.git/hooks/` dir (resolved via --git-common-dir),
+        # overwriting the PR's post-commit with the base version. Re-install
+        # from the PR checkout so the doctor check below sees the PR version.
+        run: npm run install-git-hooks
+
       - name: seed per-user state for doctor
         run: |
           # learning/system-vault/ is gitignored (per-user state). The doctor
