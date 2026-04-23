@@ -1,0 +1,19 @@
+{
+  "PolicyName": "AdministratorAccess",
+  "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess",
+  "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "*",
+        "Resource": "*"
+      }
+    ]
+  },
+  "AttachedTo": {
+    "RoleName": "larkspur-infra-admin",
+    "RoleArn": "arn:aws:iam::123456789012:role/larkspur-infra-admin",
+    "AttachmentNote": "This role has AdministratorAccess. IAM allows s3:* on all resources. The bucket policy Deny overrides this Allow."
+  }
+}
