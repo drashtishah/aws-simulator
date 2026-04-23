@@ -1,0 +1,49 @@
+{
+  "Events": [
+    {
+      "EventId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "EventName": "CreateTransitGatewayRoute",
+      "ReadOnly": "false",
+      "EventTime": "2025-10-23T09:14:00Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "nweng-jdoe",
+      "Resources": [
+        {
+          "ResourceType": "AWS::EC2::TransitGatewayRouteTable",
+          "ResourceName": "tgw-rtb-0aabbccddee11f2f3"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJQABLZS4A3QDU576Q\",\"arn\":\"arn:aws:iam::234567890123:user/nweng-jdoe\",\"accountId\":\"234567890123\",\"userName\":\"nweng-jdoe\"},\"eventTime\":\"2025-10-23T09:14:00Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"CreateTransitGatewayRoute\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.4.82\",\"userAgent\":\"aws-cli/2.15.30 Python/3.11.8\",\"requestParameters\":{\"transitGatewayRouteTableId\":\"tgw-rtb-0aabbccddee11f2f3\",\"destinationCidrBlock\":\"10.19.0.0/16\",\"blackhole\":true},\"responseElements\":{\"route\":{\"destinationCidrBlock\":\"10.19.0.0/16\",\"type\":\"static\",\"state\":\"blackhole\"}},\"requestID\":\"8B2CFA1E03F5B842\",\"eventID\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"234567890123\"}"
+    },
+    {
+      "EventId": "b2c3d4e5-f6a7-8901-bcde-fa2345678901",
+      "EventName": "CreateTransitGatewayVpcAttachment",
+      "ReadOnly": "false",
+      "EventTime": "2026-04-23T13:30:00Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "nweng-msmith",
+      "Resources": [
+        {
+          "ResourceType": "AWS::EC2::TransitGatewayAttachment",
+          "ResourceName": "tgw-attach-0new12345abcdef01"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJQABLZS4A3QDU576R\",\"arn\":\"arn:aws:iam::234567890123:user/nweng-msmith\",\"accountId\":\"234567890123\",\"userName\":\"nweng-msmith\"},\"eventTime\":\"2026-04-23T13:30:00Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"CreateTransitGatewayVpcAttachment\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.4.91\",\"userAgent\":\"aws-cli/2.17.12 Python/3.12.2\",\"requestParameters\":{\"transitGatewayId\":\"tgw-0abc1234def56789a\",\"vpcId\":\"vpc-new\",\"subnetIds\":[\"subnet-0new1a2b3c4d5e6f7\",\"subnet-0new2a3b4c5d6e7f8\"],\"options\":{\"dnsSupport\":\"enable\",\"ipv6Support\":\"disable\"}},\"responseElements\":{\"transitGatewayVpcAttachment\":{\"transitGatewayAttachmentId\":\"tgw-attach-0new12345abcdef01\",\"transitGatewayId\":\"tgw-0abc1234def56789a\",\"vpcId\":\"vpc-new\",\"state\":\"pending\"}},\"requestID\":\"9C3DFB2F14G6C953\",\"eventID\":\"b2c3d4e5-f6a7-8901-bcde-fa2345678901\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"234567890123\"}"
+    },
+    {
+      "EventId": "c3d4e5f6-a7b8-9012-cdef-ab3456789012",
+      "EventName": "StartNetworkInsightsAnalysis",
+      "ReadOnly": "false",
+      "EventTime": "2026-04-23T14:00:00Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "nweng-msmith",
+      "Resources": [
+        {
+          "ResourceType": "AWS::EC2::NetworkInsightsAnalysis",
+          "ResourceName": "nia-0abc123456789def0"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJQABLZS4A3QDU576R\",\"arn\":\"arn:aws:iam::234567890123:user/nweng-msmith\",\"accountId\":\"234567890123\",\"userName\":\"nweng-msmith\"},\"eventTime\":\"2026-04-23T14:00:00Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"StartNetworkInsightsAnalysis\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.4.91\",\"userAgent\":\"aws-cli/2.17.12 Python/3.12.2\",\"requestParameters\":{\"networkInsightsPathId\":\"nip-0def123456789abc0\"},\"responseElements\":{\"networkInsightsAnalysis\":{\"networkInsightsAnalysisId\":\"nia-0abc123456789def0\",\"networkInsightsPathId\":\"nip-0def123456789abc0\",\"status\":\"running\",\"networkPathFound\":false}},\"requestID\":\"AD4EGC3G25H7D064\",\"eventID\":\"c3d4e5f6-a7b8-9012-cdef-ab3456789012\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"234567890123\"}"
+    }
+  ]
+}
