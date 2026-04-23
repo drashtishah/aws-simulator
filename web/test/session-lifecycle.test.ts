@@ -75,16 +75,16 @@ describe('session lifecycle: claude-stream completion path', () => {
 });
 
 describe('session lifecycle: tier-2 renderer is the only completed flip', () => {
-  it('claude-process.ts contains exactly one session.status = completed assignment (tier-2)', () => {
-    const processSrc = fs.readFileSync(
-      path.join(REPO_ROOT, 'web', 'lib', 'claude-process.ts'),
+  it('post-session-orchestrator.ts contains exactly one session.status = completed assignment (tier-2)', () => {
+    const orchestratorSrc = fs.readFileSync(
+      path.join(REPO_ROOT, 'scripts', 'post-session-orchestrator.ts'),
       'utf8'
     );
-    const matches = processSrc.match(/session\.status\s*=\s*'completed'/g) ?? [];
+    const matches = orchestratorSrc.match(/session\.status\s*=\s*'completed'/g) ?? [];
     assert.equal(
       matches.length,
       1,
-      'exactly one site in claude-process.ts may flip session.status to completed (the Tier 2 renderer)'
+      'exactly one site in post-session-orchestrator.ts may flip session.status to completed (the Tier 2 renderer)'
     );
   });
 

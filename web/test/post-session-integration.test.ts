@@ -71,6 +71,7 @@ require.cache[resolvedSdkPath] = {
 
 // Load modules under test AFTER env vars and SDK intercept are in place.
 const claudeProcess = require('../lib/claude-process');
+const orchestrator = require('../../scripts/post-session-orchestrator');
 
 describe('runPostSessionAgent integration', () => {
   const testSimId = '001-ec2-unreachable';
@@ -122,7 +123,7 @@ describe('runPostSessionAgent integration', () => {
 
   it('runPostSessionAgent returns success when the SDK completes normally', async () => {
     sdkMockState.nextResult = 'success';
-    const result = await claudeProcess.runPostSessionAgent(testSimId);
+    const result = await orchestrator.runPostSessionAgent(testSimId);
     assert.ok(result.success, 'result.success must be true');
     assert.ok(typeof result.tier1_duration_ms === 'number', 'result must include tier1_duration_ms');
     assert.ok(typeof result.tier2_duration_ms === 'number', 'result must include tier2_duration_ms');
@@ -134,7 +135,7 @@ describe('runPostSessionAgent integration', () => {
   it('runPostSessionAgent throws when the SDK returns an error result', async () => {
     sdkMockState.nextResult = 'error';
     await assert.rejects(
-      () => claudeProcess.runPostSessionAgent(testSimId),
+      () => orchestrator.runPostSessionAgent(testSimId),
       /Post-session agent failed/,
       'error results must surface as a thrown error'
     );

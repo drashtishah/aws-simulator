@@ -1,4 +1,4 @@
-import { runPostSessionAgent } from '../web/lib/claude-process';
+import { runPostSessionAgent } from './post-session-orchestrator.js';
 
 const simId = process.argv[2];
 if (!simId) {
