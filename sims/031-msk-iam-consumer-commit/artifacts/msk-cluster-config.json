@@ -1,0 +1,66 @@
+{
+  "ClusterInfo": {
+    "ClusterArn": "arn:aws:kafka:us-east-1:742108355610:cluster/linden-msk-prod/f4c6a8e9-1d2b-4abc-9e7f-110022334455-1",
+    "ClusterName": "linden-msk-prod",
+    "ClusterType": "PROVISIONED",
+    "State": "ACTIVE",
+    "CurrentVersion": "K3AEGXETSR30VB",
+    "CreationTime": "2024-04-12T15:18:02Z",
+    "Provisioned": {
+      "BrokerNodeGroupInfo": {
+        "InstanceType": "kafka.m5.large",
+        "ClientSubnets": [
+          "subnet-0a3f1b92c4d5e6078",
+          "subnet-0b7c2e83d0a9f1645",
+          "subnet-0c1d4e92f83a5b739"
+        ],
+        "SecurityGroups": ["sg-0f8a2c93b1d4e5a60"],
+        "StorageInfo": { "EbsStorageInfo": { "VolumeSize": 1000 } }
+      },
+      "ClientAuthentication": {
+        "Sasl": {
+          "Iam": { "Enabled": true },
+          "Scram": { "Enabled": false }
+        },
+        "Tls": { "Enabled": true, "CertificateAuthorityArnList": [] },
+        "Unauthenticated": { "Enabled": false }
+      },
+      "EncryptionInfo": {
+        "EncryptionInTransit": {
+          "ClientBroker": "TLS",
+          "InCluster": true
+        }
+      },
+      "NumberOfBrokerNodes": 3,
+      "KafkaVersion": "3.6.0"
+    }
+  },
+  "BootstrapBrokers": {
+    "BootstrapBrokerStringSaslIam": "b-1.lindenmskprod.abc123.c3.kafka.us-east-1.amazonaws.com:9098,b-2.lindenmskprod.abc123.c3.kafka.us-east-1.amazonaws.com:9098,b-3.lindenmskprod.abc123.c3.kafka.us-east-1.amazonaws.com:9098",
+    "BootstrapBrokerString": null
+  },
+  "TopicConfig": {
+    "Name": "linden-orders",
+    "Partitions": 12,
+    "ReplicationFactor": 3,
+    "RetentionMs": 604800000,
+    "CleanupPolicy": "delete"
+  },
+  "ConsumerGroupSummary": [
+    {
+      "GroupId": "order-processor",
+      "State": "Stable",
+      "Members": 6,
+      "PartitionsAssigned": 12,
+      "CommittedOffsetsAge": "4 days, 18 hours",
+      "Note": "COMMITTED OFFSETS HAVE NOT ADVANCED SINCE 2026-04-17T18:17:02Z"
+    },
+    {
+      "GroupId": "analytics-etl",
+      "State": "Stable",
+      "Members": 1,
+      "PartitionsAssigned": 12,
+      "CommittedOffsetsAge": "3 seconds"
+    }
+  ]
+}

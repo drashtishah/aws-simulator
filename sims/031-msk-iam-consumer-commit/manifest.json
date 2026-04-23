@@ -1,0 +1,200 @@
+{
+  "id": "031-msk-iam-consumer-commit",
+  "title": "Every Order, Again",
+  "summary": "Consumers are processing the same orders over and over. The Kafka cluster is fine, the code did not change, but offsets never stick.",
+  "difficulty": 3,
+  "category": "data",
+  "services": ["msk", "iam", "ec2", "cloudwatch"],
+  "tags": ["msk", "kafka", "iam-auth", "consumer-group", "offset-commit"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:NewSolutions",
+    "SCS-C02:Domain4:IdentityAccessManagement"
+  ],
+  "company": {
+    "name": "Linden Goods",
+    "industry": "Direct-to-consumer home goods",
+    "size": "Series B, 120 engineers, 14k orders per day"
+  },
+  "glossary": {
+    "Amazon MSK": "A managed Apache Kafka service on AWS. Kafka is a distributed log: producers append messages to topics (each split into partitions), and consumers read them in order. MSK runs the Kafka brokers and ZooKeeper or KRaft for you.",
+    "Kafka consumer group": "A group of consumer processes that share the work of reading from a topic. Each partition is read by exactly one consumer in the group at a time. The group tracks how far each consumer has read by committing offsets back to the cluster.",
+    "Offset commit": "When a consumer finishes processing a message, it records the position (offset) it has reached by sending a commit to the broker. If the consumer dies, another consumer picks up from the committed offset. If commits never succeed, every restart re-reads from the last successful commit, which may be the beginning of the topic.",
+    "MSK IAM access control": "An authentication and authorization mode for MSK where Kafka clients sign requests using AWS IAM credentials (SigV4) instead of traditional username/password. The MSK broker checks the caller's IAM policy for specific kafka-cluster:* actions on the cluster, topic, and consumer-group resources before allowing the operation.",
+    "SASL/SCRAM": "A username/password authentication mode for Kafka where credentials are stored in AWS Secrets Manager. The older alternative to MSK IAM access control. SASL/SCRAM has no concept of fine-grained actions: a user who can connect can generally produce, consume, and commit unless ACLs are set up separately.",
+    "kafka-cluster:AlterGroup": "The IAM action that authorizes committing offsets and joining or leaving a consumer group. Without this action on the consumer-group resource, a client can read records but cannot record its progress back to the cluster.",
+    "kafka-cluster:ReadData": "The IAM action that authorizes fetching records from a topic partition. Without this, consumers cannot even see messages.",
+    "Consumer lag": "The number of messages a consumer has not yet read from a partition. Under normal operation, lag goes up when traffic spikes and comes back down as the consumer catches up. Lag that never decreases, or that periodically resets to the total topic size, is a strong sign that commits are failing.",
+    "auto.commit.interval.ms": "The Kafka client setting that controls how often the consumer automatically commits the latest offset. When auto-commit is enabled, the client silently ignores commit failures by default and logs a WARN."
+  },
+  "system": {
+    "what_broke": "The Linden Goods order-processor consumer group was migrated from SASL/SCRAM to MSK IAM access control last Friday. The new IAM policy attached to the consumer's EC2 instance role grants kafka-cluster:Connect, kafka-cluster:DescribeCluster, kafka-cluster:DescribeTopic, kafka-cluster:ReadData, and kafka-cluster:DescribeGroup. It does not grant kafka-cluster:AlterGroup on the consumer-group resource. The consumer connects, joins the group, fetches records, and processes them; every offset commit is rejected by the broker with a TopicAuthorizationException (mapped as GROUP_AUTHORIZATION_FAILED on commit). The consumer's auto-commit loop logs a WARN and keeps going. On every consumer restart, or every time the consumer group rebalances, the group resets to the committed offset, which is still the offset from before the SASL migration. The same backlog of orders gets replayed, and the Fulfillment service sends a real charge for each one.",
+    "data_flow": "Checkout service writes an OrderPlaced event to the orders MSK topic (12 partitions, 3 brokers, kafka.t3.small). The order-processor EC2 Auto Scaling group runs Java consumers using the aws-msk-iam-auth SASL/OAuthBearer plugin to authenticate as the consumer-order-processor-role IAM role. Each consumer claims a partition, fetches records, processes them through the Fulfillment service (which charges the customer and writes to DynamoDB), and auto-commits offsets every 5 seconds. A separate analytics Lambda reads the same topic through a different consumer group and is not affected.",
+    "components": [
+      {
+        "name": "linden-orders (MSK topic)",
+        "role": "The single source of truth for placed orders. Checkout service produces to this topic; order-processor and analytics consume from it.",
+        "connections": ["12 partitions, replication factor 3", "Produced to by linden-checkout-svc", "Consumed by consumer groups order-processor and analytics-etl"],
+        "failure_impact": "If consumers cannot commit offsets, every restart replays the entire retained window (7 days)."
+      },
+      {
+        "name": "order-processor (Kafka consumer group)",
+        "role": "The consumer group that processes new orders into shipments and customer charges. Runs on an EC2 Auto Scaling group of 6 instances.",
+        "connections": ["Reads from linden-orders topic on the msk-prod cluster", "Commits offsets to the order-processor consumer group resource", "Calls Fulfillment service per processed order"],
+        "failure_impact": "Duplicate processing results in duplicate charges and duplicate shipments. Customer support ticket volume rises sharply."
+      },
+      {
+        "name": "consumer-order-processor-role (IAM role)",
+        "role": "The IAM role attached to the order-processor EC2 instances. Its inline policy lists the kafka-cluster:* actions that the MSK broker will authorize for clients signing requests with this role's credentials.",
+        "connections": ["Assumed by EC2 instances via the instance profile", "Allows a set of kafka-cluster:* actions on the linden-orders topic and order-processor consumer group"],
+        "failure_impact": "Missing or extra actions here silently succeed at Kafka client connect and fail at the action that needs them. The client receives GROUP_AUTHORIZATION_FAILED on commit and keeps consuming."
+      },
+      {
+        "name": "msk-prod (Amazon MSK cluster)",
+        "role": "The Kafka cluster. Three brokers (kafka.m5.large), IAM access control enabled, TLS encryption in transit, in us-east-1 across 3 AZs.",
+        "connections": ["Receives produce and fetch requests from the Linden services over TLS on port 9098", "Authorizes every request against the caller's IAM policy"],
+        "failure_impact": "If IAM access control is misconfigured across every service, the cluster behaves as if it works at connect time but drops requests per-action."
+      },
+      {
+        "name": "Fulfillment service (internal HTTP API)",
+        "role": "Takes an OrderPlaced event and produces a real shipment plus a real customer charge. Has no idempotency key support at this layer.",
+        "connections": ["Called by order-processor per consumed message", "Writes to shipping partner API and Stripe"],
+        "failure_impact": "Every duplicate OrderPlaced delivered here produces a duplicate charge and a duplicate shipment."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "msk",
+      "artifacts": [
+        "artifacts/msk-cluster-config.json",
+        "artifacts/kafka-consumer-logs.txt",
+        "artifacts/msk-consumer-lag.csv"
+      ],
+      "capabilities": [
+        "describe_cluster_v2",
+        "list_client_vpc_connections",
+        "get_bootstrap_brokers",
+        "list_nodes"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/consumer-iam-policy.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/consumer-ec2-instance.json"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_instance_attribute",
+        "describe_security_groups"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv",
+        "artifacts/kafka-consumer-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "filter_log_events",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Customer support says customers are being charged twice. The Fulfillment service itself has not changed. What does it see coming in?",
+    "Look at the MSK consumer-group metrics. How does the consumer group's lag behave over time? Is it climbing, falling, or resetting?",
+    "The consumer logs say the consumer is processing messages and committing offsets. Are the commits actually succeeding? Read the WARN entries.",
+    "The cluster was migrated from SASL/SCRAM to IAM access control last week. What kafka-cluster:* IAM actions does the consumer role actually have?",
+    "Compare the policy to the list of IAM actions MSK checks on a consumer. kafka-cluster:ReadData authorizes fetching. What authorizes committing?"
+  ],
+  "resolution": {
+    "root_cause": "The IAM policy attached to the order-processor consumer role is missing kafka-cluster:AlterGroup on the order-processor consumer group resource. The policy grants ReadData and DescribeGroup but not AlterGroup. AlterGroup is the IAM action MSK checks when a consumer attempts to commit offsets or rebalance within a group. Without it, consumers connect, fetch, and process normally, but every offset commit fails with GROUP_AUTHORIZATION_FAILED. The Java client's default auto-commit loop catches the error, logs a WARN, and continues. On every consumer restart or rebalance, the group resets to the last successful committed offset, which is stuck where it was before the SASL to IAM migration. The same backlog of orders is processed repeatedly, producing duplicate charges.",
+    "fix_criteria": [
+      {
+        "id": "identify_duplicate_processing",
+        "description": "Player identifies that the same OrderPlaced messages are being consumed and processed multiple times, which is the cause of duplicate charges",
+        "required": true
+      },
+      {
+        "id": "identify_lag_reset_pattern",
+        "description": "Player identifies the characteristic pattern of consumer group lag periodically resetting to a high value, which indicates offset commits are not sticking",
+        "required": true
+      },
+      {
+        "id": "read_commit_failure_warnings",
+        "description": "Player finds the WARN log entries from the Kafka client showing GROUP_AUTHORIZATION_FAILED or TopicAuthorizationException on commit",
+        "required": true
+      },
+      {
+        "id": "identify_missing_altergroup",
+        "description": "Player identifies that the IAM policy attached to the consumer is missing kafka-cluster:AlterGroup on the consumer-group resource, which is the action MSK checks on offset commit",
+        "required": true
+      },
+      {
+        "id": "propose_policy_update",
+        "description": "Player proposes adding kafka-cluster:AlterGroup on the consumer-group ARN to the consumer role's IAM policy and confirms that DescribeGroup alone is not sufficient",
+        "required": true
+      },
+      {
+        "id": "propose_reconciliation",
+        "description": "Player proposes reconciling the duplicate orders: identifying which orders were charged more than once, refunding, and manually advancing the consumer group offset to the correct position using kafka-consumer-groups.sh or an AWS Lambda reset job",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Amazon MSK IAM access control differs from SASL/SCRAM and what kafka-cluster:* actions mean",
+      "Why a missing authorization action surfaces as a silent commit failure rather than a client-visible error in the default Kafka consumer configuration",
+      "The difference between ReadData, DescribeGroup, and AlterGroup on a Kafka consumer group resource",
+      "How to read MSK consumer lag metrics to detect non-sticking commits",
+      "Why duplicate processing in an at-least-once consumer requires idempotency at the application layer"
+    ],
+    "sop_steps": [
+      "Confirm the symptom from the business side. Ask Fulfillment for the IDs of the duplicated orders and cross-reference them against the MSK topic. If the same OrderPlaced record has been consumed multiple times, this is a consumer-side offset problem, not a producer-side duplicate.",
+      "Check the consumer group state. Run kafka-consumer-groups.sh --describe --group order-processor or call the MSK console's consumer group view. A healthy group shows each partition with a CURRENT-OFFSET that is advancing and LAG that rises and falls. A broken group shows CURRENT-OFFSET stuck at the same value over minutes and LAG resetting to the full topic size every restart.",
+      "Pull the consumer's logs. Grep for 'commit' and 'WARN'. The aws-msk-iam-auth SASL plugin surfaces the broker's authorization failure as TopicAuthorizationException with the group resource in the error message. If auto-commit is enabled, the error is only logged, not raised to the application.",
+      "Check the IAM policy attached to the consumer's execution role. For MSK IAM access control, the broker authorizes each operation with a specific kafka-cluster:* action on a specific resource ARN. The canonical set for a consumer is kafka-cluster:Connect on the cluster; kafka-cluster:DescribeCluster on the cluster; kafka-cluster:DescribeTopic and kafka-cluster:ReadData on the topic; kafka-cluster:DescribeGroup and kafka-cluster:AlterGroup on the consumer group. Missing AlterGroup on the group resource is the smoking gun here.",
+      "Apply the fix. Add kafka-cluster:AlterGroup to the consumer-group resource in the IAM policy (Resource: arn:aws:kafka:<region>:<account>:group/<cluster-name>/<cluster-uuid>/<group-name>). Deploy through whatever pipeline owns the policy; do not hand-edit the production role in the console.",
+      "Verify offsets are now sticking. Watch the consumer group lag chart in CloudWatch. It should drop from its current high value toward zero as the consumer works through the backlog, and the log should stop producing commit warnings.",
+      "Clean up the duplicate side effects. Pull the week's worth of OrderPlaced events, compare against the Fulfillment service's charge log, identify duplicates, refund the extra charges, and send a customer notification. Where possible cancel duplicate shipments before they leave the warehouse.",
+      "Stop auto-commit from hiding commit failures in the future. Either switch to synchronous commit with explicit error handling, or set the Kafka client property enable.auto.commit=false and commit in the application code after each successful side effect. At minimum alarm on the Kafka client metric commit-rate going to zero or commit-latency-max rising above a threshold.",
+      "Alarm on consumer lag resets. A CloudWatch alarm on SumOffsetLag that fires when lag jumps by more than a threshold in a single minute catches future occurrences of this failure mode."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "IAM policy has all the right actions but the Resource ARN is slightly wrong so nothing matches.",
+        "how_it_differs": "The actions are correct, but the Resource field uses a cluster UUID from a different cluster, or includes the wildcard /* where a specific group ARN is required. The policy silently authorizes nothing. Symptoms look similar: commits fail. Reading the authorization failure message tells you the resource the policy was expected to cover.",
+        "prevention": "Generate the Resource ARNs with a shared helper (Terraform module, CDK construct) that takes the cluster ARN and the group name as inputs. Never type the ARN by hand."
+      },
+      {
+        "scenario": "Consumer cannot even connect because the security group on the broker does not allow inbound from the consumer subnet on port 9098.",
+        "how_it_differs": "You never see fetches or commits at all. The Kafka client is stuck in a reconnect loop and produces ConnectionException or timeout messages. IAM is not even consulted yet.",
+        "prevention": "Confirm network reachability before suspecting IAM. A quick openssl s_client -connect broker:9098 from the consumer EC2 host distinguishes an IAM issue (TLS handshake succeeds, authorization fails) from a network issue (TLS handshake fails)."
+      },
+      {
+        "scenario": "Two consumer groups share the same group name across environments, so development consumers are committing into the production group.",
+        "how_it_differs": "Commits succeed, but offsets get clobbered by a consumer that is processing different or stale records. In MSK IAM control, this is especially easy if the dev account assumes a role in the prod account for some cross-environment tooling and someone forgot to namespace the group name.",
+        "prevention": "Enforce a naming convention (env-service-purpose, e.g., prod-order-processor) and use an SCP or Verified Permissions policy that denies kafka-cluster:AlterGroup where the consumer-group ARN does not start with the caller's environment prefix."
+      }
+    ],
+    "sop_practices": [
+      "Treat every distinct IAM action MSK checks as a separate capability in your threat model. Producers need kafka-cluster:WriteData. Consumers need kafka-cluster:ReadData AND kafka-cluster:AlterGroup. Management tools need kafka-cluster:AlterCluster or AlterTopic. Copy-pasting a partial policy from a blog post is the most common source of silent authorization failures.",
+      "Turn off Kafka client auto-commit in production, or at minimum set isolation.level=read_committed plus explicit commitSync() calls. Auto-commit is a debugging nightmare because it suppresses authorization failures.",
+      "Alarm on the consumer group's offset-commit success rate via CloudWatch Container Insights or a JMX scrape, not just on lag. A group with zero committed offsets over a minute is suspicious even if lag looks fine.",
+      "Roll out MSK authentication mode changes with a dark-launch consumer. Bring up a canary consumer using the new auth mode consuming from an unused group, verify commits succeed end-to-end against a low-risk topic, and only then migrate the production consumers."
+    ]
+  }
+}

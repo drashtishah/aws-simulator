@@ -1,0 +1,6 @@
+Company: Linden Goods (Series B, 120 engineers)
+Industry: Direct-to-consumer home goods
+Users: 14,000 orders per business day, ~340 customers charged multiple times since Friday
+AWS Services: Amazon MSK, AWS IAM, Amazon EC2, Amazon CloudWatch
+Your role: Platform on-call, Monday 08:50 Eastern
+Situation: Customer support has 41 tickets for duplicate charges and duplicate shipments; Stripe has flagged the merchant account for abnormal refund patterns

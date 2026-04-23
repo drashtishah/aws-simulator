@@ -1,0 +1,51 @@
+                                 +-----------------------+
+                                 | linden-checkout-svc   |
+                                 | (ECS Fargate)         |
+                                 +----------+------------+
+                                            |
+                                            | produce OrderPlaced
+                                            v
+              +-------------------------------------------------------+
+              |                Amazon MSK cluster                     |
+              |                linden-msk-prod                        |
+              |                                                       |
+              |   Topic: linden-orders                                |
+              |   Consumer group: order-processor                     |
+              |   [COMMITS REJECTED: GROUP_AUTHORIZATION_FAILED]      |
+              |                                                       |
+              |   Auth: IAM access control                            |
+              +---------+-------------------------------+-------------+
+                        |                               |
+                        | fetch succeeds                | fetch
+                        | commit FAILS silently         | (unaffected)
+                        v                               v
+          +----------------------------+       +----------------------+
+          | order-processor ASG        |       | analytics-etl Lambda |
+          | [reprocesses same orders   |       | (has AlterGroup)     |
+          |  on every restart]         |       +----------------------+
+          +------------+---------------+
+                       |
+                       | OrderPlaced (DUPLICATED)
+                       v
+          +----------------------------+
+          | linden-fulfillment-svc     |
+          | [NO IDEMPOTENCY KEY,       |
+          |  charges every duplicate]  |
+          +------------+---------------+
+                       |
+                       v
+          +----------------------------+    +----------------------+
+          | Stripe (DUPLICATE CHARGES) |    | Shipping partner API |
+          |                            |    | (DUPLICATE SHIPMENTS)|
+          +----------------------------+    +----------------------+
+
+  Problem 1: IAM policy on consumer-order-processor-role is MISSING
+             kafka-cluster:AlterGroup on the consumer group resource
+             -> every offset commit returns GROUP_AUTHORIZATION_FAILED
+
+  Problem 2: Kafka client has enable.auto.commit=true
+             -> commit failures are logged as WARN and swallowed
+             -> application has no signal that anything is wrong
+
+  Problem 3: linden-fulfillment-svc has no idempotency key
+             -> every duplicate OrderPlaced becomes a real charge

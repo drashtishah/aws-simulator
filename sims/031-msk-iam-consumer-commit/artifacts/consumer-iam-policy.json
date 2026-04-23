@@ -1,0 +1,62 @@
+{
+  "Role": {
+    "RoleName": "consumer-order-processor-role",
+    "RoleId": "AROAXY7PCT8LJB39VK5ZR",
+    "Arn": "arn:aws:iam::742108355610:role/consumer-order-processor-role",
+    "CreateDate": "2024-09-14T11:02:37Z",
+    "Description": "EC2 instance role for order-processor Kafka consumers. Migrated from SASL/SCRAM to MSK IAM access control 2026-04-17."
+  },
+  "AssumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "ec2.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "MSKConsumerAccess",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "ConnectAndDescribeCluster",
+            "Effect": "Allow",
+            "Action": [
+              "kafka-cluster:Connect",
+              "kafka-cluster:DescribeCluster"
+            ],
+            "Resource": "arn:aws:kafka:us-east-1:742108355610:cluster/linden-msk-prod/f4c6a8e9-1d2b-4abc-9e7f-110022334455-1"
+          },
+          {
+            "Sid": "ReadOrdersTopic",
+            "Effect": "Allow",
+            "Action": [
+              "kafka-cluster:DescribeTopic",
+              "kafka-cluster:ReadData"
+            ],
+            "Resource": "arn:aws:kafka:us-east-1:742108355610:topic/linden-msk-prod/f4c6a8e9-1d2b-4abc-9e7f-110022334455-1/linden-orders"
+          },
+          {
+            "Sid": "DescribeConsumerGroup",
+            "Effect": "Allow",
+            "Action": "kafka-cluster:DescribeGroup",
+            "Resource": "arn:aws:kafka:us-east-1:742108355610:group/linden-msk-prod/f4c6a8e9-1d2b-4abc-9e7f-110022334455-1/order-processor"
+          }
+        ]
+      }
+    }
+  ],
+  "_change_history": [
+    {
+      "date": "2026-04-17T18:02:11Z",
+      "actor": "arn:aws:iam::742108355610:user/renata-platform",
+      "action": "replaced SASL/SCRAM secret access with kafka-cluster:* IAM actions",
+      "source": "terraform apply in linden-platform repo commit 9b2c1d4"
+    }
+  ],
+  "_note_to_self": "Confirmed: the policy grants read and describe but NOT kafka-cluster:AlterGroup. AlterGroup is the action MSK checks on every OffsetCommit. Compare against the AWS doc 'MSK IAM access control: actions' table."
+}

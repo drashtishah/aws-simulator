@@ -1,0 +1,14 @@
+2026-04-21T12:48:02.104Z INFO  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Successfully joined group order-processor with generation 11472
+2026-04-21T12:48:02.221Z INFO  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Setting offset for partition linden-orders-7 to the committed offset FetchPosition{offset=142871104, offsetEpoch=Optional[42]}
+2026-04-21T12:48:02.319Z INFO  [com.linden.order.Processor] [order-processor-host-3] Processing OrderPlaced orderId=ORD-9871624 customerId=C-00412 total=148.22
+2026-04-21T12:48:02.482Z INFO  [com.linden.order.Processor] [order-processor-host-3] Called fulfillment.charge() result=success stripeChargeId=ch_3Obe9H2eZvKYlo2C
+2026-04-21T12:48:07.023Z WARN  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Asynchronous auto-commit of offsets {linden-orders-7=OffsetAndMetadata{offset=142871105, leaderEpoch=null, metadata=''}} failed: org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access group: order-processor
+2026-04-21T12:48:07.024Z INFO  [com.linden.order.Processor] [order-processor-host-3] Processing OrderPlaced orderId=ORD-9871625 customerId=C-05017 total=63.40
+2026-04-21T12:48:07.171Z INFO  [com.linden.order.Processor] [order-processor-host-3] Called fulfillment.charge() result=success stripeChargeId=ch_3Obe9I2eZvKYlo2D
+2026-04-21T12:48:12.041Z WARN  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Asynchronous auto-commit of offsets {linden-orders-7=OffsetAndMetadata{offset=142871106, leaderEpoch=null, metadata=''}} failed: org.apache.kafka.common.errors.TopicAuthorizationException: Not authorized to access group: order-processor
+2026-04-21T12:52:18.308Z INFO  [o.a.k.c.c.internals.AbstractCoordinator] [order-processor-host-3] Group coordinator b-2.lindenmskprod:9098 (id: 2147483645 rack: null) is unavailable or invalid due to cause: coordinator unavailable. isDisconnected: false. Rediscovery will be attempted.
+2026-04-21T12:52:18.512Z INFO  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Revoke previously assigned partitions linden-orders-7
+2026-04-21T12:52:18.834Z INFO  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Successfully joined group order-processor with generation 11473
+2026-04-21T12:52:19.001Z INFO  [o.a.k.c.c.internals.ConsumerCoordinator] [order-processor-host-3] Setting offset for partition linden-orders-7 to the committed offset FetchPosition{offset=141203781, offsetEpoch=Optional[41]}
+2026-04-21T12:52:19.104Z INFO  [com.linden.order.Processor] [order-processor-host-3] Processing OrderPlaced orderId=ORD-9712003 customerId=C-07184 total=219.95
+2026-04-21T12:52:19.267Z INFO  [com.linden.order.Processor] [order-processor-host-3] Called fulfillment.charge() result=success stripeChargeId=ch_3Obf2Q2eZvKYlo2E

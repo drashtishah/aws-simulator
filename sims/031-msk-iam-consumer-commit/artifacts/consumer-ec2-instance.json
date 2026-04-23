@@ -1,0 +1,55 @@
+{
+  "Reservations": [
+    {
+      "Instances": [
+        {
+          "InstanceId": "i-0a3f71c92bd5e4087",
+          "InstanceType": "m5.large",
+          "State": { "Name": "running" },
+          "PrivateDnsName": "ip-10-42-18-210.ec2.internal",
+          "PrivateIpAddress": "10.42.18.210",
+          "VpcId": "vpc-0e74a132cf8b1d295",
+          "SubnetId": "subnet-0a3f1b92c4d5e6078",
+          "IamInstanceProfile": {
+            "Arn": "arn:aws:iam::742108355610:instance-profile/consumer-order-processor-role",
+            "Id": "AIPAXY7PCT8LJB39V9NPR"
+          },
+          "SecurityGroups": [
+            { "GroupId": "sg-0c4a1e82d7f3b9406", "GroupName": "linden-consumer-sg" }
+          ],
+          "Tags": [
+            { "Key": "Name", "Value": "order-processor-asg/i-0a3f71c92bd5e4087" },
+            { "Key": "aws:autoscaling:groupName", "Value": "order-processor-asg" },
+            { "Key": "linden:service", "Value": "order-processor" },
+            { "Key": "linden:env", "Value": "prod" }
+          ],
+          "Monitoring": { "State": "enabled" },
+          "LaunchTime": "2026-04-21T05:14:32Z"
+        }
+      ]
+    }
+  ],
+  "SecurityGroups": [
+    {
+      "GroupId": "sg-0c4a1e82d7f3b9406",
+      "GroupName": "linden-consumer-sg",
+      "IpPermissionsEgress": [
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 9098,
+          "ToPort": 9098,
+          "UserIdGroupPairs": [
+            { "GroupId": "sg-0f8a2c93b1d4e5a60", "Description": "MSK brokers" }
+          ]
+        },
+        {
+          "IpProtocol": "tcp",
+          "FromPort": 443,
+          "ToPort": 443,
+          "IpRanges": [{ "CidrIp": "0.0.0.0/0", "Description": "AWS APIs via VPC endpoints" }]
+        }
+      ]
+    }
+  ],
+  "_note": "Network path to MSK brokers is fine. TLS handshakes succeed; the issue is not connectivity. Confirm by running: openssl s_client -connect b-1.lindenmskprod:9098 -servername b-1.lindenmskprod.abc123.c3.kafka.us-east-1.amazonaws.com"
+}

@@ -1,0 +1,59 @@
+                                 +-----------------------+
+                                 | linden-checkout-svc   |
+                                 | (ECS Fargate)         |
+                                 +----------+------------+
+                                            |
+                                            | produce OrderPlaced
+                                            v
+              +-------------------------------------------------------+
+              |                Amazon MSK cluster                     |
+              |                linden-msk-prod                        |
+              |                                                       |
+              |   Topic: linden-orders                                |
+              |     partitions: 12                                    |
+              |     replication: 3                                    |
+              |     retention: 7d                                     |
+              |                                                       |
+              |   Consumer group: order-processor                     |
+              |   Consumer group: analytics-etl (unaffected)          |
+              |                                                       |
+              |   Auth: IAM access control (SASL/OAUTHBEARER)         |
+              |   Port: 9098 (TLS)                                    |
+              +---------+-------------------------------+-------------+
+                        |                               |
+                        | fetch + commit offsets        | fetch
+                        v                               v
+          +----------------------------+       +----------------------+
+          | order-processor ASG        |       | analytics-etl Lambda |
+          | 6 x m5.large EC2           |       | (separate IAM role)  |
+          | instance profile:          |       +----------------------+
+          | consumer-order-processor   |
+          | -role                      |
+          +------------+---------------+
+                       |
+                       | Fulfillment API (HTTP)
+                       v
+          +----------------------------+
+          | linden-fulfillment-svc     |
+          | (no idempotency key)       |
+          +------------+---------------+
+                       |
+                       v
+          +----------------------------+    +----------------------+
+          | Stripe charges API         |    | Shipping partner API |
+          +----------------------------+    +----------------------+
+
+  IAM policy on consumer-order-processor-role (inline):
+    kafka-cluster:Connect         on msk-prod cluster ARN
+    kafka-cluster:DescribeCluster on msk-prod cluster ARN
+    kafka-cluster:DescribeTopic   on linden-orders topic ARN
+    kafka-cluster:ReadData        on linden-orders topic ARN
+    kafka-cluster:DescribeGroup   on order-processor group ARN
+
+  Kafka client config (java):
+    bootstrap.servers   = <iam-public-endpoint>:9098
+    security.protocol   = SASL_SSL
+    sasl.mechanism      = AWS_MSK_IAM
+    enable.auto.commit  = true
+    auto.commit.interval.ms = 5000
+    isolation.level     = read_uncommitted
