@@ -277,16 +277,13 @@ function hasArchivedFrontmatter(absPath: string): boolean {
 
 function loadActivityPaths(rawJsonlPath: string, sinceMs: number): Set<string> {
   const refs = new Set<string>();
-  try {
-    if (!fs.existsSync(rawJsonlPath)) return refs;
-    const body = fs.readFileSync(rawJsonlPath, 'utf8');
-    for (const line of body.split('\n')) {
+  const loadLines = (content: string) => {
+    for (const line of content.split('\n')) {
       if (!line.trim()) continue;
       let evt: any;
       try { evt = JSON.parse(line); } catch { continue; }
       const ts = evt.ts ? Date.parse(evt.ts) : (evt.timestamp ? Date.parse(evt.timestamp) : NaN);
       if (!Number.isFinite(ts) || ts < sinceMs) continue;
-      // Walk values for path-like strings.
       const stack: any[] = [evt];
       while (stack.length) {
         const v = stack.pop();
@@ -297,6 +294,15 @@ function loadActivityPaths(rawJsonlPath: string, sinceMs: number): Set<string> {
         }
       }
     }
+  };
+  try {
+    if (fs.existsSync(rawJsonlPath)) loadLines(fs.readFileSync(rawJsonlPath, 'utf8'));
+    const dir = path.dirname(rawJsonlPath);
+    const archives = fs.readdirSync(dir)
+      .filter(n => n.startsWith('activity-archive-') && n.endsWith('.jsonl'))
+      .sort().reverse();
+    const latest = archives[0];
+    if (latest) loadLines(fs.readFileSync(path.join(dir, latest), 'utf8'));
   } catch {}
   return refs;
 }
