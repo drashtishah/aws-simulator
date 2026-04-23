@@ -1,0 +1,61 @@
+{
+  "DBProxies": [
+    {
+      "DBProxyName": "finch-proxy",
+      "DBProxyArn": "arn:aws:rds:us-east-1:123456789012:db-proxy:prx-0a1b2c3d4e5f67890",
+      "Status": "available",
+      "Endpoint": "finch-proxy.proxy-abc123def456.us-east-1.rds.amazonaws.com",
+      "EngineFamily": "POSTGRESQL",
+      "Auth": [
+        {
+          "AuthScheme": "SECRETS",
+          "SecretArn": "arn:aws:secretsmanager:us-east-1:123456789012:secret:finch-db-proxy-credentials-AbCdEf",
+          "IAMAuth": "DISABLED"
+        }
+      ],
+      "RoleArn": "arn:aws:iam::123456789012:role/finch-rds-proxy-role",
+      "VpcId": "vpc-0abc12345def67890",
+      "VpcSubnetIds": ["subnet-0abc1234", "subnet-0def5678", "subnet-0ghi9012"],
+      "RequireTLS": true,
+      "IdleClientTimeout": 1800,
+      "DebugLogging": false,
+      "InitQuery": null,
+      "CreatedDate": "2025-08-14T10:22:31.000Z",
+      "UpdatedDate": "2025-08-14T10:22:31.000Z"
+    }
+  ],
+  "DBProxyTargetGroups": [
+    {
+      "DBProxyName": "finch-proxy",
+      "TargetGroupName": "default",
+      "TargetGroupArn": "arn:aws:rds:us-east-1:123456789012:target-group:prx-tg-0a1b2c3d4e5f67890",
+      "IsDefault": true,
+      "Status": "available",
+      "ConnectionPoolConfig": {
+        "MaxConnectionsPercent": 100,
+        "MaxIdleConnectionsPercent": 50,
+        "ConnectionBorrowTimeout": 120,
+        "InitQuery": null,
+        "SessionPinningFilters": []
+      },
+      "CreatedDate": "2025-08-14T10:22:31.000Z",
+      "UpdatedDate": "2025-08-14T10:22:31.000Z"
+    }
+  ],
+  "DBProxyTargets": [
+    {
+      "TargetArn": "arn:aws:rds:us-east-1:123456789012:cluster:finch-invoicing-cluster",
+      "Endpoint": "finch-invoicing-cluster.cluster-abc123def456.us-east-1.rds.amazonaws.com",
+      "TrackedClusterId": "finch-invoicing-cluster",
+      "Type": "TRACKED_CLUSTER",
+      "Port": 5432,
+      "RdsResourceId": "finch-invoicing-cluster",
+      "Role": "READ_WRITE",
+      "TargetHealth": {
+        "State": "AVAILABLE",
+        "Reason": "",
+        "Description": ""
+      }
+    }
+  ]
+}
