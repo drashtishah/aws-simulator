@@ -133,8 +133,8 @@ references/architecture/gha-pipeline.md,.github/workflows/close-foreign-issues.y
 references/architecture/permissions.md,web/lib/agent-policies.ts,7
 references/architecture/permissions.md,learning/player-vault/,15
 references/architecture/permissions.md,learning/profile.json,15
-references/architecture/permissions.md,web/lib/agent-policies.ts,29
-references/architecture/permissions.md,web/test/agent-policies.test.ts,45
+references/architecture/permissions.md,web/lib/agent-policies.ts,28
+references/architecture/permissions.md,web/test/agent-policies.test.ts,44
 references/architecture/test-schemas.md,web/lib/schemas/,3
 references/architecture/test-schemas.md,web/test/test-schemas.test.ts,3
 references/architecture/test-schemas.md,web/test/test-selftest.test.ts,3

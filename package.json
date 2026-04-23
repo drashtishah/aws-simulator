@@ -24,6 +24,7 @@
     "postinstall": "tsx scripts/install-git-hooks.ts && python3 scripts/extract_paths.py && tsx scripts/audit-permissions.ts",
     "build-agent-index": "tsx scripts/build-agent-index.ts",
     "agent-browser-summary": "tsx scripts/agent-browser-summarize.ts",
+    "rerun-post-session": "tsx scripts/rerun-post-session.ts",
     "upload": "tsx scripts/upload-youtube.ts"
   },
   "dependencies": {
