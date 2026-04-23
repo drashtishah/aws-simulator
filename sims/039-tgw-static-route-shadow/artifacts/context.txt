@@ -1,0 +1,5 @@
+Company: Marsh Street Bank (mid-size regional commercial bank)
+Infrastructure: 14 production VPCs, AWS Transit Gateway hub-and-spoke topology
+AWS Services: Amazon VPC (Transit Gateway), AWS CloudTrail, Amazon CloudWatch
+Your role: Network incident responder, 14:30 local time
+Situation: Payroll VPC (10.19.0.0/16) cannot reach shared-services VPC (10.0.0.0/16). AD authentication, DNS, and monitoring agents are failing. A Reachability Analyzer path check run 30 minutes ago during new-VPC routing setup returned not-reachable with explanation code TGW_RTB_HIGHER_PRIORITY_ROUTE.

@@ -1,0 +1,41 @@
+{
+  "MetricDataResults": [
+    {
+      "Id": "m1",
+      "Label": "PacketDropCountBlackhole",
+      "Namespace": "AWS/TransitGateway",
+      "MetricName": "PacketDropCountBlackhole",
+      "Dimensions": [
+        {
+          "Name": "TransitGatewayAttachment",
+          "Value": "tgw-attach-0payroll1234abcdef"
+        }
+      ],
+      "Timestamps": [
+        "2025-10-23T12:00:00Z",
+        "2025-11-15T12:00:00Z",
+        "2025-12-01T12:00:00Z",
+        "2026-01-10T12:00:00Z",
+        "2026-02-14T12:00:00Z",
+        "2026-03-20T12:00:00Z",
+        "2026-04-23T12:00:00Z",
+        "2026-04-23T13:00:00Z",
+        "2026-04-23T14:00:00Z"
+      ],
+      "Values": [
+        1247,
+        8934,
+        11203,
+        9871,
+        10442,
+        12318,
+        9203,
+        8741,
+        4382
+      ],
+      "StatusCode": "Complete",
+      "Period": 3600
+    }
+  ],
+  "Messages": []
+}
