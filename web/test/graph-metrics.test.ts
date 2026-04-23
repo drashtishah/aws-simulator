@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { proseDuplication, danglingReferences, activityFreshness, skillOwnershipIntegrity, dedupeOwnershipFindings } from '../../scripts/lib/graph-metrics';
+import { proseDuplication, danglingReferences, activityFreshness } from '../../scripts/lib/graph-metrics';
 'use strict';
 
 // Tests for scripts/lib/graph-metrics.ts (PR-D Layers 3+4).
@@ -201,89 +201,3 @@ describe('activityFreshness', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// skillOwnershipIntegrity
-// ---------------------------------------------------------------------------
-
-describe('skillOwnershipIntegrity', () => {
-  it('finds overlapping dir claims (positive)', () => {
-    const root = mkTmp('soi-pos');
-    try {
-      writeFile(root, 'a/ownership.json', JSON.stringify({ files: [], dirs: ['shared/'] }));
-      writeFile(root, 'b/ownership.json', JSON.stringify({ files: [], dirs: ['shared/'] }));
-      const findings = skillOwnershipIntegrity(root);
-      assert.ok(findings.some((f: any) => f.kind === 'overlap'));
-    } finally { rmTmp(root); }
-  });
-
-  it('returns no findings on clean ownership (negative)', () => {
-    const root = mkTmp('soi-neg');
-    try {
-      writeFile(root, 'a/ownership.json', JSON.stringify({ files: [], dirs: ['only-a/'] }));
-      writeFile(root, 'b/ownership.json', JSON.stringify({ files: [], dirs: ['only-b/'] }));
-      assert.deepEqual(skillOwnershipIntegrity(root), []);
-    } finally { rmTmp(root); }
-  });
-
-  it('returns empty for missing dir (edge)', () => {
-    assert.deepEqual(skillOwnershipIntegrity('/tmp/does-not-exist-xyz-pr-d'), []);
-  });
-});
-
-describe('dedupeOwnershipFindings', () => {
-  it('collapses two findings with same kind/dir/skill-set into one regardless of skill order', () => {
-    const input = [
-      { kind: 'overlap', detail: 'dir foo claimed by a, b', dir: '.claude/skills/foo', skills: ['a', 'b'] },
-      { kind: 'overlap', detail: 'dir foo claimed by b, a', dir: '.claude/skills/foo', skills: ['b', 'a'] },
-    ];
-    const out = dedupeOwnershipFindings(input);
-    assert.equal(out.length, 1);
-  });
-
-  it('keeps findings with same dir but different skill sets', () => {
-    const input = [
-      { kind: 'overlap', detail: 'd1', dir: '.claude/skills/foo', skills: ['a', 'b'] },
-      { kind: 'overlap', detail: 'd2', dir: '.claude/skills/foo', skills: ['a', 'c'] },
-    ];
-    assert.equal(dedupeOwnershipFindings(input).length, 2);
-  });
-
-  it('keeps findings with same skill set but different dirs', () => {
-    const input = [
-      { kind: 'orphan', detail: 'd1', dir: '.claude/skills/foo', skills: ['a'] },
-      { kind: 'orphan', detail: 'd2', dir: '.claude/skills/bar', skills: ['a'] },
-    ];
-    assert.equal(dedupeOwnershipFindings(input).length, 2);
-  });
-
-  it('keeps findings with same dir + skills but different kinds', () => {
-    const input = [
-      { kind: 'overlap', detail: 'd1', dir: '.claude/skills/foo', skills: ['a'] },
-      { kind: 'orphan', detail: 'd2', dir: '.claude/skills/foo', skills: ['a'] },
-    ];
-    assert.equal(dedupeOwnershipFindings(input).length, 2);
-  });
-
-  it('preserves the first finding when collapsing duplicates', () => {
-    const first = { kind: 'overlap', detail: 'first', dir: '.claude/skills/foo', skills: ['a', 'b'] };
-    const second = { kind: 'overlap', detail: 'second', dir: '.claude/skills/foo', skills: ['b', 'a'] };
-    const out = dedupeOwnershipFindings([first, second]);
-    assert.equal(out.length, 1);
-    assert.equal(out[0].detail, 'first');
-  });
-});
-
-describe('skillOwnershipIntegrity dedup integration', () => {
-  it('returned findings are already deduped at the source', () => {
-    // The function should never return two findings with the same
-    // (kind, dir, skill-set) tuple even if the detail string differs.
-    const root = mkTmp('soi-dedup');
-    try {
-      writeFile(root, 'a/ownership.json', JSON.stringify({ files: [], dirs: ['shared/'] }));
-      writeFile(root, 'b/ownership.json', JSON.stringify({ files: [], dirs: ['shared/'] }));
-      const findings = skillOwnershipIntegrity(root);
-      const sharedFindings = findings.filter((f: any) => f.dir === 'shared');
-      assert.equal(sharedFindings.length, 1);
-    } finally { rmTmp(root); }
-  });
-});

@@ -1,22 +1,12 @@
 #!/usr/bin/env npx tsx
-// PreToolUse guard: context-aware file protection.
-// Global mode (no --ownership flag): checks NEVER_WRITABLE only.
-// Skill mode (--ownership path): also checks skill-scoped ownership.
-// Two-layer execution: settings.local.json registers this hook globally (baseline),
-// and each SKILL.md registers it again with --ownership for per-skill scoping.
+// Checks NEVER_WRITABLE and NEVER_WRITABLE_DIRS; run globally via settings.local.json.
 
-import fs from 'node:fs';
 import path from 'node:path';
 
 interface HookInput {
   tool_name?: string;
   tool_input?: Record<string, unknown>;
   [key: string]: unknown;
-}
-
-interface Ownership {
-  files?: string[];
-  dirs?: string[];
 }
 
 interface AccessResult {
@@ -45,7 +35,7 @@ const NEVER_WRITABLE_DIRS: string[] = [
   'learning/player-vault'
 ];
 
-function checkAccess(filePath: string, ownership: Ownership | null, root: string): AccessResult {
+function checkAccess(filePath: string, root: string): AccessResult {
   // As of Claude Code v2.1.89, file_path arrives as absolute for Write/Edit/Read.
   // path.resolve handles both: relative -> joined with root; absolute -> returned as-is.
   const resolved: string = path.resolve(root, filePath);
@@ -73,34 +63,7 @@ function checkAccess(filePath: string, ownership: Ownership | null, root: string
     return { allowed: true };
   }
 
-  // If no ownership provided (global mode / dev mode), allow everything else
-  if (!ownership) {
-    return { allowed: true };
-  }
-
-  // Test files not editable during skill execution
-  const testDir: string = path.join(root, 'web', 'test');
-  if (resolved.startsWith(testDir + path.sep)) {
-    return { allowed: false, reason: 'Test files are not editable during skill execution.' };
-  }
-
-  // Check owned files
-  const ownedFiles: string[] = (ownership.files || []).map(f => path.join(root, f));
-  if (ownedFiles.some(p => resolved === p)) {
-    return { allowed: true };
-  }
-
-  // Check owned directories
-  const ownedDirs: string[] = (ownership.dirs || []).map(d => path.resolve(root, d));
-  if (ownedDirs.some(d => resolved.startsWith(d + path.sep) || resolved === d)) {
-    return { allowed: true };
-  }
-
-  return {
-    allowed: false,
-    reason: 'Skill does not own ' + path.relative(root, resolved) +
-      '. Allowed: ' + (ownership.files || []).concat(ownership.dirs || []).join(', ')
-  };
+  return { allowed: true };
 }
 
 // Main execution
@@ -114,15 +77,7 @@ process.stdin.on('end', () => {
 
     const root: string = process.cwd();
 
-    // Read ownership from --ownership flag if provided
-    let ownership: Ownership | null = null;
-    const ownershipIdx: number = process.argv.indexOf('--ownership');
-    if (ownershipIdx !== -1 && process.argv[ownershipIdx + 1]) {
-      const ownershipPath: string = path.resolve(root, process.argv[ownershipIdx + 1]!);
-      ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf8')) as Ownership;
-    }
-
-    const result: AccessResult = checkAccess(filePath, ownership, root);
+    const result: AccessResult = checkAccess(filePath, root);
     if (!result.allowed) {
       process.stderr.write('BLOCKED: ' + result.reason);
       process.exit(2);

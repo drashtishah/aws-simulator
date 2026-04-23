@@ -3,7 +3,7 @@ Something is wrong somewhere in the codebase and we should fix it eventually may
 
 ## Bucket and metric
 - Bucket: skill
-- Metric: ownership_integrity
+- Metric: freshness
 - Current score: 80
 - Expected score after fix: ?
 - Point gain: ?

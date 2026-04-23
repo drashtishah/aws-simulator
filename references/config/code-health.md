@@ -19,7 +19,7 @@ PR-C delivers Layers 1 and 2 of the four-layer scorer:
 |-------|----------------|--------|
 | 1     | Scope discovery via `git ls-files` plus pure `classify(path)` | done (PR-C) |
 | 2     | Per-bucket scoring, completeness, composite, invariants, floors | done (PR-C) |
-| 3     | Bucket-specific metrics: frontmatter_valid, manifest_schema_valid, recently_used, ownership_consistent, freshness, inbound_link_count | PR-D |
+| 3     | Bucket-specific metrics: frontmatter_valid, manifest_schema_valid, recently_used, freshness, inbound_link_count | PR-D |
 | 4     | Aggregation, graph metrics, doc feedback loop | PR-D |
 
 The legacy seven-metric scorer (modularity, encapsulation, size_balance,
@@ -106,8 +106,7 @@ gitignored; the guard is forward-looking.)
 | 2 | Every healthignore entry has a non-empty reason | scorer throws |
 | 3 | `test_loc / code_loc` cannot drop without proportional code shrink | zeros test bucket |
 | 4 | Per-bucket file-count floor is monotonic | zeros bucket on drop |
-| 5 | Every skill dir has `ownership.json` | violation recorded |
-| 6 | `learning/logs/health-scores.jsonl` is never deleted | pre-commit refuses |
+| 5 | `learning/logs/health-scores.jsonl` is never deleted | pre-commit refuses |
 
 ## Anti-gaming scenario table
 
@@ -119,7 +118,7 @@ Each row has a dedicated test in `web/test/code-health.test.ts`.
 | A2 | Delete tests to raise the test bucket | `test_density` invariant: empty test set scores 0; LOC-ratio history check zeros the bucket if ratio drops without code shrink. |
 | A3 | Add a file to `healthignore` to silence a finding | `healthignore` entries require `reason`; snapshot test makes additions visible. |
 | A4 | Delete a referenced doc to fix a dangling-ref finding | Legacy `references_health` still penalizes; PR-D adds an "orphan removal" inverse penalty so net is zero. |
-| A5 | Mass-archive skills to silence "unused skill" findings | `recently_used` (PR-D) only forgives `archived: true` skills with no recent edits and no references. Layer 1+2 surfaces missing `ownership.json`. |
+| A5 | Mass-archive skills to silence "unused skill" findings | `recently_used` (PR-D) only forgives `archived: true` skills with no recent edits and no references. |
 | A6 | Add trivial tests to inflate ratio | `test_density` is LOC-based, not file-count. Trivial tests don't move LOC. |
 | A7 | Lower the bar in `metrics.config.json` | `code-health-config.test.ts` snapshots all weights and structural fields; any change is a visible diff. |
 | A8 | Bypass the scorer by editing `code-health.ts` | The scorer file lives in the `code` bucket and is itself scored. Behavior is unit-tested for fixed inputs. |

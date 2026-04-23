@@ -13,14 +13,12 @@ import {
   proseDuplication,
   danglingReferences,
   activityFreshness,
-  skillOwnershipIntegrity,
 } from './lib/graph-metrics';
 import type {
   ScopedFile,
   ProseCluster,
   DanglingFinding,
   FreshnessFinding,
-  OwnershipFinding,
 } from './lib/graph-metrics';
 
 const ROOT: string = path.resolve(__dirname, '..');
@@ -934,30 +932,6 @@ function applyFloors(
   return { newFloors, violations };
 }
 
-/**
- * Invariant 5: Every skill dir has an ownership.json AND every ownership.json
- * lives in a real skill dir.
- */
-function checkOwnershipConsistency(): InvariantViolation[] {
-  const skillsDir = path.join(ROOT, '.claude', 'skills');
-  if (!fs.existsSync(skillsDir)) return [];
-  const violations: InvariantViolation[] = [];
-  const dirs = fs.readdirSync(skillsDir, { withFileTypes: true })
-    .filter(e => e.isDirectory())
-    .map(e => e.name);
-  for (const d of dirs) {
-    const op = path.join(skillsDir, d, 'ownership.json');
-    if (!fs.existsSync(op)) {
-      violations.push({
-        invariant: 'ownership_consistent',
-        bucket: 'skill',
-        detail: `skill ${d} missing ownership.json`,
-      });
-    }
-  }
-  return violations;
-}
-
 interface HistoryEntry {
   ts: string;
   composite: number;
@@ -1044,7 +1018,7 @@ export function scoreBucket(
 /** Unified ranked finding shape. Fight-team (PR-H) consumes this from --json. */
 export interface RankedFinding {
   bucket: Bucket;
-  metric: 'prose_duplication' | 'dangling_reference' | 'activity_freshness' | 'ownership_integrity';
+  metric: 'prose_duplication' | 'dangling_reference' | 'activity_freshness';
   file: string;
   line: number;
   current_score: number;
@@ -1059,7 +1033,6 @@ export interface Layer34Result {
   prose: ProseCluster[];
   dangling: DanglingFinding[];
   freshness: FreshnessFinding[];
-  ownership: OwnershipFinding[];
 }
 
 /**
@@ -1092,15 +1065,12 @@ export function scoreLayer34(
     now,
     rootDir
   );
-  const ownership = skillOwnershipIntegrity(path.join(rootDir, '.claude', 'skills'));
-
   // Per-metric per-bucket caps so a single noisy metric cannot tank a bucket.
   const PER_METRIC_CAP = 10;
   const metricCost: Record<string, Record<string, number>> = {
     prose_duplication: {},
     dangling_reference: {},
     activity_freshness: {},
-    ownership_integrity: {},
   };
   const addCost = (metric: string, b: string, c: number): number => {
     const used = metricCost[metric]![b] || 0;
@@ -1166,28 +1136,6 @@ export function scoreLayer34(
     });
   }
 
-  // Ownership integrity: 2 per finding against skill bucket, capped at 10.
-  // The file key includes the disputed dir when available so two findings
-  // about different dirs claimed by the same skill set produce visually
-  // distinct lines in the top-10 ranker (issue #71).
-  for (const o of ownership) {
-    const applied = addCost('ownership_integrity', 'skill', 2);
-    perBucketCost.skill = (perBucketCost.skill || 0) + applied;
-    const skillFile = o.skills[0]
-      ? `.claude/skills/${o.skills[0]}/ownership.json`
-      : '.claude/skills';
-    const fileKey = o.dir ? `${skillFile} (${o.dir})` : skillFile;
-    findings.push({
-      bucket: 'skill',
-      metric: 'ownership_integrity',
-      file: fileKey,
-      line: 1,
-      current_score: scoresBefore.skill?.score ?? 0,
-      expected_gain_if_fixed: applied,
-      description: `${o.kind}: ${o.detail}`,
-    });
-  }
-
   // Sort findings by point impact descending, then file/line stable.
   findings.sort((a, b) => {
     if (b.expected_gain_if_fixed !== a.expected_gain_if_fixed) {
@@ -1197,7 +1145,7 @@ export function scoreLayer34(
     return a.line - b.line;
   });
 
-  return { perBucketCost, findings, prose, dangling, freshness, ownership };
+  return { perBucketCost, findings, prose, dangling, freshness };
 }
 
 export function scoreAllBuckets(
@@ -1222,9 +1170,6 @@ export function scoreAllBuckets(
       throw new Error(`code-health: healthignore entry ${e.path} missing required "reason" field`);
     }
   }
-
-  // Invariant 5: ownership consistency.
-  violations.push(...checkOwnershipConsistency());
 
   // Invariant 4: floor monotonicity.
   const floorResult = applyFloors(discovery.byBucket, cfg.floors || {}, options.rebaseFloors === true);
@@ -1381,7 +1326,7 @@ function main(args: string[] = process.argv.slice(2)): HealthReport {
     .reduce((sum, [k, w]) => sum + (scores[k as keyof HealthScores] ? scores[k as keyof HealthScores].score : 0) * w, 0);
 
   // New: Layer 1+2 bucket scoring with completeness + invariants. Layer 3+4
-  // (graph metrics + freshness + ownership) is computed inside scoreAllBuckets
+  // (graph metrics + freshness) is computed inside scoreAllBuckets
   // and returned via layer34.
   const discovery = discoverScope(undefined, cfg);
   const { report: bucketReport, floors: newFloors, violations, layer34 } = scoreAllBuckets(discovery, cfg, { rebaseFloors });
