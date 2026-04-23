@@ -546,6 +546,21 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-04-23"
+    },
+    {
+      "id": "039-tgw-static-route-shadow",
+      "title": "The Route That Was Never There",
+      "summary": "A static blackhole route in the TGW route table has silently dropped payroll VPC east-west traffic for six months. Discovered via Reachability Analyzer during new-VPC routing setup.",
+      "difficulty": 3,
+      "category": "networking",
+      "services": [
+        "transit-gateway",
+        "vpc",
+        "cloudtrail",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
     }
   ]
 }

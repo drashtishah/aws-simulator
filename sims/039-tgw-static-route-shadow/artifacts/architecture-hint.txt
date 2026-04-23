@@ -1,0 +1,42 @@
+Marsh Street Bank - Transit Gateway Hub-and-Spoke (selected VPCs)
+
+  shared-services-vpc (10.0.0.0/16)          payroll-vpc (10.19.0.0/16)
+  vpc-shared                                  vpc-payroll
+  +-----------------------------+             +-----------------------------+
+  | AD, DNS, Monitoring         |             | Payroll processing          |
+  | eni-0shared1aa1234567       |             | eni-0payroll1aa1234567      |
+  | 10.0.1.45                   |             | 10.19.2.10                  |
+  +------------+----------------+             +----------------+------------+
+               |                                               |
+               | tgw-attach-0shared1234abcdef                  | tgw-attach-0payroll1234abcdef
+               |                                               |
+               +--------------------+  +---------------------+
+                                    |  |
+                           +--------+--+--------+
+                           |  msb-tgw-01        |
+                           |  (Transit Gateway) |
+                           |  tgw-0abc1234def   |
+                           |                    |
+                           |  Route table:      |
+                           |  tgw-rtb-main      |
+                           |                    |
+                           |  10.0.0.0/16  ->   |
+                           |    tgw-attach-     |
+                           |    0shared...      |
+                           |                    |
+                           |  10.19.0.0/16 ->   |
+                           |    (see route      |
+                           |     table)         |
+                           |                    |
+                           |  10.42.0.0/16 ->   |
+                           |    tgw-attach-     |
+                           |    0new...         |
+                           +--------+-----------+
+                                    |
+                                    | tgw-attach-0new12345abcdef01
+                                    |
+                           +--------+------------+
+                           |  new-vpc            |
+                           |  (10.42.0.0/16)     |
+                           |  vpc-new            |
+                           +---------------------+
