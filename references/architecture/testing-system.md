@@ -280,3 +280,7 @@ A common failure mode after a file rename: `path-registry.test.ts` reports `refe
 - **Dashboard/progression invariants:** the hexagon SVG viewBox, axis names, and theme files must stay in sync across `app.ts`, `progression.yaml`, and the `themes/` directory.
 
 These tests catch the most common breakage class: a refactor on one side of the codebase that silently invalidates a selector, class name, or path on the other side.
+
+### Recovery
+
+- `npm run rerun-post-session <sim-id>`: re-run post-session tiering (classification + vault render) after an interrupted sim.
