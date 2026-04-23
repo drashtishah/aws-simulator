@@ -1,7 +1,7 @@
 ---
 tags: [kind/index, scope/vault]
 updated: 2026-04-23
-note_count: 33
+note_count: 35
 ---
 # system-vault index
 
@@ -22,6 +22,7 @@ for the per-stage version of this protocol.
 - [[problem-orphaned-rule-targets-absent-field]] scope/pipeline stage/implementer signal/regression tool/eval-runner: removing fieldMap entry without grepping eval-scoring.yaml leaves orphan rules that silently pass
 - [[problem-plan-ignores-source-invariant-tests]] scope/pipeline stage/planner signal/self-correction: plan edits collide with pre-existing tests that assert on source content, flipping green tests red post-impl
 - [[problem-plan-targets-gitignored-path]] scope/pipeline stage/planner signal/loop: plan targets a gitignored path, implementer produces zero committable diff
+- [[problem-unenforced-schema-drifts-from-plan]] scope/pipeline stage/implementer signal/insight: schema with additionalProperties false is not loaded by any test, so plans demand out-of-schema fields and impl ships them silently
 ## solutions
 - [[solution-baseline-via-worktree]] cost/trivial: git worktree add master to compare pre-existing test failures without leaving the main clone dirty
 - [[solution-doctor-skip-integration-on-ci]] cost/trivial: DOCTOR_SKIP_INTEGRATION=1 in ci.yml so the 12s web-server boot check does not flake on cold runners
@@ -40,6 +41,7 @@ for the per-stage version of this protocol.
 - [[solution-critic-check-gitignore-for-plan-paths]] cost/trivial: run git check-ignore on every Files-to-change path before reviewing plan content
 
 ## playbooks
+- [[playbook-sim-verifier-cross-checks-artifact-timestamps]] scope/sim-content stage/verifier signal/insight: cross-reference timestamps across every artifact (cloudwatch CSV, rds-events, api-gateway-logs) before PASS on sim content
 
 ## patterns
 - [[pattern-pin-third-party-before-planning]] scope/pipeline stage/planner: plans installing third-party tools must pin exact commit SHA before writing the plan
