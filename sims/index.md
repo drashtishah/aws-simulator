@@ -44,3 +44,4 @@ tags:
 | 034 | [[034-memorydb-acl-flushdb/story\|The Key the Cache Would Not Drop]] | 3 - Professional | Reliability | memorydb, ec2, iam, cloudwatch | 30 min |
 | 035 | [[035-transfer-family-scope-down/story\|The Partner Who Saw Too Much]] | 3 - Professional | Security | transfer-family, iam, s3, cloudtrail | 35 min |
 | 037 | [[037-rds-proxy-pinning/story\|The Proxy That Stopped Sharing]] | 3 - Professional | Performance | rds-proxy, lambda, rds, cloudwatch | 30 min |
+| 038 | [[038-aurora-serverless-deep-sleep/story\|Thirty Seconds of Silence]] | 3 - Professional | Performance | aurora, rds, lambda, cloudwatch | 30 min |

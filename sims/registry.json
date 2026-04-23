@@ -516,6 +516,21 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-04-23"
+    },
+    {
+      "id": "038-aurora-serverless-deep-sleep",
+      "title": "Thirty Seconds of Silence",
+      "summary": "A niche B2B reporting tool migrated to Aurora Serverless v2 with min_capacity=0. Every Monday morning the first customer login hangs for 30 seconds and API Gateway returns 504. The database shows no errors.",
+      "difficulty": 3,
+      "category": "performance",
+      "services": [
+        "aurora",
+        "rds",
+        "lambda",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-23"
     }
   ]
 }
