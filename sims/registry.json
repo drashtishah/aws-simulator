@@ -501,6 +501,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-23"
+    },
+    {
+      "id": "037-rds-proxy-pinning",
+      "title": "The Proxy That Stopped Sharing",
+      "summary": "For 8 months, RDS Proxy multiplexed 400 Lambda sessions into 20 database connections. Monday afternoon every Lambda times out with connection-slots exhausted. No deployment happened.",
+      "difficulty": 3,
+      "category": "performance",
+      "services": [
+        "rds-proxy",
+        "lambda",
+        "rds",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-23"
     }
   ]
 }
