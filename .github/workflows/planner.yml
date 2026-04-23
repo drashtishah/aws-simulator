@@ -116,6 +116,7 @@ jobs:
           prompt: ${{ steps.setup.outputs.prompt }}
 
       - name: Auto-apply type label
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
