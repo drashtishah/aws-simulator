@@ -1,0 +1,42 @@
+{
+  "_comment": "Decoded sample ID token claims returned by the Okta authorization server aus0abcd1234EFGH56 for user miri.okafor@hollowfield.com. Retrieved 2026-04-21T16:35:02Z via the Okta admin console token preview.",
+  "issuer": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56",
+  "authorization_server_id": "aus0abcd1234EFGH56",
+  "authorization_server_name": "hollowfield-internal-apps",
+  "claims_emitted_in_id_token": {
+    "sub": "00u1abcde2fgh3i4j56",
+    "name": "Miri Okafor",
+    "email": "miri.okafor@hollowfield.com",
+    "email_verified": true,
+    "employeeId": "E-00412",
+    "group_membership": [
+      "hollowfield-engineering",
+      "hollowfield-platform",
+      "hollowfield-all-employees"
+    ],
+    "iat": 1713717144,
+    "exp": 1713720744,
+    "aud": "0oa12abcde67fghij58",
+    "iss": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56"
+  },
+  "claims_not_emitted": [
+    "groups",
+    "cognito:groups",
+    "roles"
+  ],
+  "authorization_server_custom_claims": [
+    {
+      "name": "employeeId",
+      "value_type": "User profile",
+      "value": "user.employeeId",
+      "scope": "profile"
+    },
+    {
+      "name": "group_membership",
+      "value_type": "Groups",
+      "filter": "MATCHES_REGEX ^hollowfield-",
+      "scope": "groups"
+    }
+  ],
+  "notes": "The claim named 'groups' was never configured on this authorization server. The equivalent claim is 'group_membership'. A previous Cognito user pool emitted the claim under the name 'cognito:groups' which was later renamed to 'groups' via pre-token triggers. That renaming does not apply to Okta."
+}

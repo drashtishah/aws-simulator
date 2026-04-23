@@ -1,0 +1,53 @@
+                          +-----------------------+
+                          |  Employee browser     |
+                          |  admin.hollowfield    |
+                          |  .internal            |
+                          +-----------+-----------+
+                                      |
+                                      | HTTPS (public DNS)
+                                      v
+                          +-----------------------+
+                          | Verified Access       |
+                          | endpoint              |
+                          | hollowfield-admin-vae |
+                          +-----------+-----------+
+                                      |
+                  +-------------------+-------------------+
+                  |                                       |
+                  | OIDC auth redirect                    | Allowed requests
+                  v                                       v
+        +---------------------+                 +---------------------+
+        | Okta tenant         |                 | Internal ALB        |
+        | hollowfield.okta    |                 | admin-portal-ilb    |
+        | .com                |                 | (private subnets)   |
+        +----------+----------+                 +----------+----------+
+                   |                                       |
+                   | ID token                              | HTTP
+                   v                                       v
+        +---------------------+                 +---------------------+
+        | Verified Access     |                 | ECS Fargate tasks   |
+        | trust provider      |                 | admin-portal-svc    |
+        | hollowfield-okta-tp |                 +---------------------+
+        +----------+----------+
+                   |
+                   | claim mapping
+                   v
+        +---------------------+
+        | Verified Access     |
+        | group               |
+        | hollowfield         |
+        | -internal-apps      |
+        | (Cedar policy)      |
+        +---------------------+
+
+  Trust provider claim mappings (hollowfield-okta-tp):
+    email       -> context.okta.email
+    sub         -> context.okta.sub
+    groups      -> context.okta.groups
+    employeeId  -> context.okta.employee_id
+
+  Cedar policy (hollowfield-internal-apps):
+    permit (principal, action, resource)
+    when   context.okta.groups.contains("hollowfield-engineering");
+
+  Access logs: CloudWatch Logs /aws/verified-access/hollowfield-admin-vae

@@ -1,0 +1,29 @@
+{
+  "VerifiedAccessTrustProviderId": "vatp-0a7c4e21b3d8f9115",
+  "Description": "Okta OIDC trust provider for Hollowfield internal apps. Replaces the previous Cognito trust provider (vatp-08b1f3e4527c6a9d2, detached 2026-04-18T19:12:04Z).",
+  "TrustProviderType": "user",
+  "UserTrustProviderType": "oidc",
+  "PolicyReferenceName": "okta",
+  "CreationTime": "2026-04-18T19:04:22Z",
+  "LastUpdatedTime": "2026-04-18T19:04:22Z",
+  "OidcOptions": {
+    "Issuer": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56",
+    "AuthorizationEndpoint": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56/v1/authorize",
+    "TokenEndpoint": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56/v1/token",
+    "UserInfoEndpoint": "https://hollowfield.okta.com/oauth2/aus0abcd1234EFGH56/v1/userinfo",
+    "ClientId": "0oa12abcde67fghij58",
+    "Scope": "openid profile email groups"
+  },
+  "ClaimMappings": [
+    { "ClaimName": "email",      "MappedTo": "context.okta.email",       "DataType": "string" },
+    { "ClaimName": "sub",        "MappedTo": "context.okta.sub",         "DataType": "string" },
+    { "ClaimName": "name",       "MappedTo": "context.okta.name",        "DataType": "string" },
+    { "ClaimName": "groups",     "MappedTo": "context.okta.groups",      "DataType": "stringList" },
+    { "ClaimName": "employeeId", "MappedTo": "context.okta.employee_id", "DataType": "string" }
+  ],
+  "Tags": [
+    { "Key": "owner",       "Value": "platform-eng" },
+    { "Key": "migration",   "Value": "cognito-to-okta-2026-04-18" },
+    { "Key": "environment", "Value": "production" }
+  ]
+}

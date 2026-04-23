@@ -1,0 +1,62 @@
+                          +-----------------------+
+                          |  Employee browser     |
+                          |  admin.hollowfield    |
+                          |  .internal            |
+                          +-----------+-----------+
+                                      |
+                                      | HTTPS (public DNS)
+                                      v
+                          +-----------------------+
+                          | Verified Access       |
+                          | endpoint              |
+                          | hollowfield-admin-vae |
+                          | [ALL REQUESTS DENIED] |
+                          +-----------+-----------+
+                                      |
+                  +-------------------+-------------------+
+                  |                                       |
+                  | OIDC auth redirect                    | Allowed requests
+                  v                                       v (never reached)
+        +---------------------+                 +---------------------+
+        | Okta tenant         |                 | Internal ALB        |
+        | hollowfield.okta    |                 | admin-portal-ilb    |
+        | .com                |                 | (healthy, idle)     |
+        | emits claim:        |                 +---------------------+
+        |   "group_membership"|
+        +----------+----------+
+                   |
+                   | ID token (contains group_membership, NOT groups)
+                   v
+        +---------------------+
+        | Verified Access     |
+        | trust provider      |
+        | hollowfield-okta-tp |
+        | [MAPS groups ->     |
+        |  context.okta.      |
+        |  groups, BUT Okta   |
+        |  DOES NOT SEND      |
+        |  "groups" FIELD]    |
+        +----------+----------+
+                   |
+                   | context.okta.groups = null
+                   v
+        +---------------------+
+        | Verified Access     |
+        | group               |
+        | hollowfield         |
+        | -internal-apps      |
+        | [Cedar permit rule  |
+        |  uses .contains()   |
+        |  on null - false]   |
+        +---------------------+
+
+  Problem 1: Trust provider claim mapping sources from "groups"
+             Okta emits the claim as "group_membership"
+             -> context.okta.groups is null on every request
+
+  Problem 2: Cedar policy does not use has() guard
+             contains() on null silently evaluates to false
+             -> every request falls through to the implicit deny
+
+  Access logs show: decision=deny, matchedStatement=<none>,
+                    context.okta.groups=null

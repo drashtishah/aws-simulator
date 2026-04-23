@@ -1,0 +1,6 @@
+Company: Hollowfield Labs (Series C, 280 engineers across 6 offices)
+Industry: Enterprise AI research
+Users: 280 internal engineers and operators, ~1,400 authenticated admin portal sessions per business day
+AWS Services: AWS Verified Access, AWS IAM, Amazon Cognito, AWS CloudTrail
+Your role: Platform Engineering on-call, Tuesday 09:12 Pacific
+Situation: Every employee is locked out of the internal admin portal; the portal itself is healthy and nothing in it changed

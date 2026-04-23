@@ -1,0 +1,52 @@
+{
+  "Role": {
+    "RoleName": "HollowfieldVerifiedAccessServiceRole",
+    "RoleId": "AROAZX4CQVT7A9VKMN2BU",
+    "Arn": "arn:aws:iam::614522301847:role/HollowfieldVerifiedAccessServiceRole",
+    "CreateDate": "2025-11-02T14:18:55Z",
+    "Description": "Service role for AWS Verified Access to write access logs and publish CloudWatch metrics."
+  },
+  "AssumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "verified-access.amazonaws.com" },
+        "Action": "sts:AssumeRole",
+        "Condition": {
+          "StringEquals": { "aws:SourceAccount": "614522301847" }
+        }
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {
+      "PolicyName": "HollowfieldVerifiedAccessLogging",
+      "PolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "WriteAccessLogsToCloudWatch",
+            "Effect": "Allow",
+            "Action": [
+              "logs:CreateLogStream",
+              "logs:PutLogEvents",
+              "logs:DescribeLogStreams"
+            ],
+            "Resource": "arn:aws:logs:us-west-2:614522301847:log-group:/aws/verified-access/*"
+          },
+          {
+            "Sid": "PublishCloudWatchMetrics",
+            "Effect": "Allow",
+            "Action": "cloudwatch:PutMetricData",
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": { "cloudwatch:namespace": "AWS/VerifiedAccess" }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "_note": "This service role is used by Verified Access itself. It has nothing to do with request authorization. Request decisions are made by the Cedar policy on the Verified Access group, not by this IAM role."
+}

@@ -1,0 +1,191 @@
+{
+  "id": "030-verified-access-lockout",
+  "title": "The Door That Read the Wrong Name",
+  "summary": "An internal admin portal denies every employee at once. The zero-trust policy compiles, evaluates, and turns everyone away.",
+  "difficulty": 3,
+  "category": "security",
+  "services": ["verified-access", "iam", "cognito", "cloudtrail"],
+  "tags": ["verified-access", "zero-trust", "cedar-policy", "oidc", "claim-mapping"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SCS-C02:Domain4:IdentityAccessManagement",
+    "SAP-C02:Domain1:OrganizationalComplexity"
+  ],
+  "company": {
+    "name": "Hollowfield Labs",
+    "industry": "Enterprise AI research",
+    "size": "Series C, 280 engineers, 6 offices"
+  },
+  "glossary": {
+    "AWS Verified Access": "A service that puts AWS in front of internal web applications and decides for each request whether the user is allowed in. It takes the place of a classic VPN and can inspect who the user is, what device they are on, and which group they belong to before letting any request reach the application.",
+    "Trust provider": "The external identity source Verified Access talks to in order to learn who the user is. It can be an OIDC identity provider (like Okta, Azure AD, or Amazon Cognito) or a device posture provider (like Jamf or CrowdStrike). Verified Access fetches a user's claims from the trust provider and makes them available to policies.",
+    "OIDC claims": "Key/value pairs the identity provider returns about the user, such as their email, name, and group memberships. Each claim comes from a specific field in the OIDC ID token. Verified Access exposes these claims to policies under the name context.<trust-provider-alias>.",
+    "Cedar policy": "The policy language Verified Access uses to decide whether a request is allowed. A Cedar policy is a small rule like 'permit (principal, action, resource) when context.okta.groups.contains(\"admins\");'. If no permit rule matches, the request is denied.",
+    "Verified Access group": "A collection of Verified Access endpoints that share the same policy. Every endpoint in the group is evaluated against the group's policy before requests reach the underlying application.",
+    "Verified Access endpoint": "The Verified Access equivalent of a front door for a specific internal application. It maps a public hostname to an internal ALB or network interface and runs the group policy plus any endpoint-specific policy on every request.",
+    "Claim mapping": "The rule that says 'copy this field of the OIDC ID token into a Verified Access context variable'. If the mapping is wrong, Verified Access sees a different value than the identity provider issued, or sees nothing at all.",
+    "Access logs": "Records Verified Access writes for every request it evaluated, including the user, the policy decision, the matched rule, and the values of the claims that were visible during evaluation. Stored in CloudWatch Logs, Amazon S3, or Firehose."
+  },
+  "system": {
+    "what_broke": "The trust provider's claim mapping for the 'groups' OIDC claim was edited last night to rename the source field from 'cognito:groups' to 'groups' during a migration from Amazon Cognito to Okta. The new trust provider does emit a top-level 'groups' claim, but as a JSON array under a different name ('group_membership'). The Verified Access context now reports context.okta.groups as null on every request. The Cedar policy's permit rule requires context.okta.groups.contains(\"hollowfield-engineering\"), so with a null groups claim, no permit rule matches and every request is denied.",
+    "data_flow": "An employee opens admin.hollowfield.internal in their browser. DNS resolves to the Verified Access endpoint. Verified Access redirects to Okta for authentication. Okta returns an OIDC ID token with the user's claims. Verified Access applies the trust provider claim mapping, builds a context object (context.okta.email, context.okta.groups, etc.), and evaluates the Cedar policy for the Verified Access group. If a permit rule matches, the request is forwarded to the internal ALB. If not, Verified Access returns 403 and writes an access log entry with the denial reason.",
+    "components": [
+      {
+        "name": "hollowfield-admin-portal (internal web app)",
+        "role": "Internal admin console for cluster provisioning, feature flag management, and billing overrides. Fronted by an internal Application Load Balancer with no public IP.",
+        "connections": ["Receives requests from the Verified Access endpoint", "Talks to internal services over PrivateLink"],
+        "failure_impact": "If Verified Access blocks all requests, the app is unreachable even though it is running fine."
+      },
+      {
+        "name": "hollowfield-admin-vae (Verified Access endpoint)",
+        "role": "The public-facing front door for the admin portal. Accepts HTTPS, authenticates users via the Okta trust provider, evaluates the group policy, and forwards allowed requests to the internal ALB.",
+        "connections": ["Attached to the hollowfield-internal-apps Verified Access group", "Points at the admin portal's internal ALB as the origin"],
+        "failure_impact": "A policy change or trust provider change on this endpoint immediately affects every user of the admin portal. There is no gradual rollout."
+      },
+      {
+        "name": "hollowfield-okta-tp (Verified Access trust provider)",
+        "role": "Tells Verified Access how to talk to Okta and how to translate Okta's ID token claims into the policy context variables. Holds the client ID, authorization endpoint, token endpoint, and the claim mapping table.",
+        "connections": ["Exchanges codes and tokens with Okta OIDC", "Publishes claims to Verified Access policies as context.okta.<claim>"],
+        "failure_impact": "If a claim mapping references a field that Okta does not send, the corresponding context variable is null. Any policy that reads that variable fails silently."
+      },
+      {
+        "name": "hollowfield-internal-apps (Verified Access group)",
+        "role": "Collects all Verified Access endpoints that share the same access policy. Holds the Cedar policy document. Every endpoint in the group evaluates every request against this policy.",
+        "connections": ["Binds the Okta trust provider to the admin portal and four other internal-apps endpoints", "Applies one Cedar policy to all bound endpoints"],
+        "failure_impact": "A policy change in this group simultaneously locks out or lets in users on every bound endpoint. Blast radius is every internal app behind Verified Access."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "verified-access",
+      "artifacts": [
+        "artifacts/verified-access-policy.cedar",
+        "artifacts/verified-access-trust-provider.json",
+        "artifacts/verified-access-logs.json"
+      ],
+      "capabilities": [
+        "describe_verified_access_group",
+        "get_verified_access_group_policy",
+        "describe_verified_access_trust_provider",
+        "describe_verified_access_endpoint"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/vae-service-role.json"
+      ],
+      "capabilities": [
+        "get_role",
+        "get_role_policy",
+        "simulate_principal_policy"
+      ]
+    },
+    {
+      "service": "cognito",
+      "artifacts": [
+        "artifacts/okta-idp-metadata.json"
+      ],
+      "capabilities": [
+        "describe_user_pool",
+        "list_identity_providers",
+        "get_identity_provider_by_identifier"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The app is up. The ALB is healthy. Something between the user and the ALB is rejecting the request.",
+    "Verified Access writes an access log entry every time it evaluates a policy. What does it say the decision was, and why?",
+    "The access log shows the full policy context that was visible during evaluation. What values did the policy actually see for the user?",
+    "Cedar policies fail to match if a referenced attribute is null or missing. What is the value of context.okta.groups right now?",
+    "The trust provider's claim mapping tells Verified Access which field of the Okta ID token to expose as which context variable. Did the Okta ID token's group field name change during the migration?"
+  ],
+  "resolution": {
+    "root_cause": "The Verified Access trust provider's claim mapping for 'groups' points at an Okta ID token field that does not exist. After the Cognito to Okta migration, the trust provider was reconfigured with a mapping that expects a top-level claim called 'groups', but Okta issues the field under the name 'group_membership'. Verified Access therefore sees context.okta.groups as null on every request. The Cedar policy's only permit rule requires context.okta.groups.contains(\"hollowfield-engineering\"), which evaluates to false for a null value, so every request falls through to the default deny.",
+    "fix_criteria": [
+      {
+        "id": "identify_denial_source",
+        "description": "Player identifies that Verified Access is the service denying the requests, not the ALB or the internal app itself",
+        "required": true
+      },
+      {
+        "id": "read_access_log_policy_trace",
+        "description": "Player inspects a Verified Access access log entry and reads the policy evaluation trace, including the values of the context variables",
+        "required": true
+      },
+      {
+        "id": "identify_null_groups_claim",
+        "description": "Player identifies that context.okta.groups is null at evaluation time, which is what causes the Cedar contains(...) expression to evaluate to false",
+        "required": true
+      },
+      {
+        "id": "identify_claim_mapping_wrong",
+        "description": "Player identifies that the trust provider's claim mapping references an Okta ID token field ('groups') that does not match the field Okta actually issues ('group_membership')",
+        "required": true
+      },
+      {
+        "id": "propose_fix_claim_mapping",
+        "description": "Player proposes updating the trust provider claim mapping to source the groups context variable from the correct Okta ID token field, or adding the 'groups' claim to the Okta authorization server's token customization so Okta emits it",
+        "required": true
+      },
+      {
+        "id": "propose_policy_defensive_check",
+        "description": "Player proposes adding a has(context.okta.groups) defensive check to the Cedar policy so future claim mapping drift produces an explicit denial with a clear reason instead of a silent deny",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How AWS Verified Access evaluates requests using a trust provider and a Cedar policy instead of a VPN",
+      "The shape of Verified Access access logs, including the policy evaluation trace and visible context variables",
+      "How OIDC claim mappings turn identity-provider token fields into Cedar context variables",
+      "Why a silent policy denial is the normal behavior when a referenced context attribute is null or missing",
+      "How to make Cedar policies resilient to claim drift by using has() guards"
+    ],
+    "sop_steps": [
+      "Confirm the application and its load balancer are actually up. Open the internal ALB's target group in the console and verify all targets are healthy. In this sim, the admin portal is fine. The denial is happening one layer up, at Verified Access.",
+      "Open the Verified Access access log for the affected endpoint. Every policy evaluation writes an entry with the user principal, the decision (allow or deny), the matched policy statement, and the full context object the policy saw. CloudWatch Logs, Amazon S3, or Firehose is the delivery target, depending on how the endpoint was configured.",
+      "Read the deny entry's evaluation trace. You are looking for two things: what context variables did the policy reference, and what value did each one hold. In this sim you will see the permit rule references context.okta.groups, and the trace shows context.okta.groups is null.",
+      "Figure out why the claim is null. Open the Verified Access trust provider configuration and look at the claim mapping table. Each row maps a field of the identity provider's ID token to a context variable name. Compare the source field name in the mapping against the actual field names the identity provider emits. In this sim the mapping says 'groups' and Okta emits 'group_membership'.",
+      "Cross-check by decoding an actual ID token from Okta. Use https://jwt.io or the Okta admin console's token preview feature to see the exact claim names. Confirm the mismatch.",
+      "Fix the mapping. Update the Verified Access trust provider so the groups context variable sources from the correct Okta field. Either edit the claim mapping to point at 'group_membership', or go to the Okta authorization server and add a custom claim called 'groups' that copies the user's group memberships into the token under that name.",
+      "Test with a single user. Open a fresh browser session (to force a new OIDC flow) and load the admin portal. Verify that the Verified Access access log now shows an allow decision with the expected groups value in the context.",
+      "Add a defensive guard to the Cedar policy. Rewrite the permit rule to read 'permit (...) when has(context.okta.groups) && context.okta.groups.contains(\"hollowfield-engineering\");'. The behavior is unchanged when the claim is present, but if the mapping breaks again, the evaluation trace will show has(context.okta.groups) = false, which points straight at the claim layer instead of looking like a policy logic bug.",
+      "Set up an alarm on the endpoint's denial rate. Verified Access publishes CloudWatch metrics per endpoint; an unexplained jump in denials after a configuration change is the earliest signal that a claim mapping or policy drift has locked users out."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "The Cedar policy is written correctly, but the Verified Access group policy is empty (not published yet), so the group defaults to deny-all.",
+        "how_it_differs": "The claim mapping is fine. The problem is that someone started drafting a new policy in the console but never clicked Save. Verified Access treats a missing policy as an implicit deny-all. The access log trace shows no matched statement, not a statement that evaluated to false.",
+        "prevention": "Use a CI pipeline to manage Verified Access group policies as code. Every policy change goes through a pull request, Terraform or CloudFormation applies the change, and the apply step verifies a canary user can still reach a known endpoint."
+      },
+      {
+        "scenario": "The trust provider's signing key has rotated and Verified Access has not yet picked up the new key, so every token is rejected before any policy evaluates.",
+        "how_it_differs": "The request never even reaches the policy. Access logs show a token validation failure, not a policy denial. Users see a generic 401 or an Okta error page, not the Verified Access 403.",
+        "prevention": "Configure the trust provider to use Okta's JWKS endpoint rather than a static key. Verified Access then fetches the current signing keys automatically. On any identity provider rotation, test one endpoint end-to-end within the rotation window."
+      },
+      {
+        "scenario": "The policy is correct, the claim mapping is correct, but the device posture trust provider reports the user's laptop as non-compliant and the Cedar policy requires compliant=true.",
+        "how_it_differs": "Verified Access can take multiple trust providers at once: one for user identity (Okta) and one for device posture (Jamf, CrowdStrike). The denial is logged, but the failing context variable is context.jamf.compliant, not context.okta.groups. It looks identical on the surface.",
+        "prevention": "When writing a Cedar policy that references multiple trust providers, write the permit rule as the conjunction of the readable conditions, then write a deny rule per reason (deny when !context.jamf.compliant, deny when !context.okta.groups.contains(...)) so the access log tells you which condition failed."
+      }
+    ],
+    "sop_practices": [
+      "Write Cedar policies defensively. Always guard attribute references with has(context.<provider>.<attribute>) so a missing claim surfaces as a clearly identified reason rather than a silent false. This is the single most useful habit for Verified Access operators.",
+      "Roll out identity provider migrations to Verified Access behind a canary endpoint. Keep the old trust provider active and add the new one on a single test endpoint; cut over the production endpoints only after a real user session through the canary succeeds.",
+      "Enable Verified Access access logs on every endpoint and ship them to a CloudWatch log group with 90-day retention. The evaluation trace is the only complete picture of what the policy actually saw. Without access logs, debugging a silent deny is guesswork.",
+      "Alarm on the Verified Access endpoint denial rate. A sudden jump in denials (for example, denial rate over 25 percent for 3 consecutive minutes) is the earliest signal that a trust provider or policy change has gone wrong. Page the oncall."
+    ]
+  }
+}
