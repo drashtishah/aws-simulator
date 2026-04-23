@@ -14,7 +14,7 @@ counter_examples: []
 
 ## Rule
 Skills that consume vault knowledge get READ access. Only one stage
-(currently the reflector in GHA) gets WRITE access. Read-side and
+(currently the evaluator in GHA) gets WRITE access. Read-side and
 write-side rules are tracked separately and never collapsed into a
 single "vault access" permission.
 
@@ -31,7 +31,7 @@ category error at design time.
    READ-side or WRITE-side explicitly.
 2. READ-side: free for any skill that needs it; just inline the
    query protocol from `references/pipeline/planner.md` Vault Query.
-3. WRITE-side: must run from GHA reflector, or commit a documented
+3. WRITE-side: must run from GHA evaluator, or commit a documented
    exception to `guard-write.ts` `NEVER_WRITABLE_DIRS`. Local skills
    that touch the vault via Bash bypass the Edit/Write hook by
    design (setup uses this path); be deliberate about it.
