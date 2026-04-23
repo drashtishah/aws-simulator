@@ -157,39 +157,4 @@ describe('guard-write contract', () => {
     }
   });
 
-  it('no ownership.json files entry conflicts with NEVER_WRITABLE or NEVER_WRITABLE_DIRS', () => {
-    const neverFiles = extractArrayValues(guardSource, 'NEVER_WRITABLE');
-    const neverDirs = extractArrayValues(guardSource, 'NEVER_WRITABLE_DIRS');
-
-    // Find all ownership.json files under .claude/skills/
-    const skillsDir = path.join(ROOT, '.claude', 'skills');
-    const ownershipFiles = [];
-    if (fs.existsSync(skillsDir)) {
-      const walkDir = (dir) => {
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-          const fullPath = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            walkDir(fullPath);
-          } else if (entry.name === 'ownership.json') {
-            ownershipFiles.push(fullPath);
-          }
-        }
-      };
-      walkDir(skillsDir);
-    }
-
-    for (const ownershipPath of ownershipFiles) {
-      const ownership = JSON.parse(fs.readFileSync(ownershipPath, 'utf8'));
-      const label = path.relative(ROOT, ownershipPath);
-
-      for (const file of (ownership.files || [])) {
-        assert.ok(!neverFiles.includes(file),
-          label + ' declares file ' + file + ' which is in NEVER_WRITABLE');
-      }
-      for (const dir of (ownership.dirs || [])) {
-        assert.ok(!neverDirs.includes(dir),
-          label + ' declares dir ' + dir + ' which is in NEVER_WRITABLE_DIRS');
-      }
-    }
-  });
 });

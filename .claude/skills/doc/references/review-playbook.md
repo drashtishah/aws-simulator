@@ -41,43 +41,41 @@ drives synthesis.
 
 ```json
 {
-  "bucket": "skill",
-  "metric": "ownership_integrity",
-  "file": ".claude/skills/play/ownership.json",
+  "bucket": "memory_link",
+  "metric": "freshness",
+  "file": "learning/logs/raw.jsonl",
   "line": 1,
   "current_score": 88,
   "expected_gain_if_fixed": 12,
-  "description": "overlap with setup ownership.json on a shared file"
+  "description": "last activity entry is 62 days old, threshold is 30 days"
 }
 ```
 
 ### Challenger lens
 
-Finding 1: skill/ownership_integrity at .claude/skills/play/ownership.json:1.
-Two ownership.json files claim the same dir; the scorer counts this twice and
-the bucket composite drops twelve points. Stricter test: assert that no two
-ownership.json files declare the same file path. Proposed fix: edit
-.claude/skills/play/ownership.json line 1 to drop the duplicate entry.
-Evidence cites both ownership.json files at line 1 with absolute paths.
+Finding 1: memory_link/freshness at learning/logs/raw.jsonl:1.
+The learning log has not been updated in 62 days; the freshness threshold is
+30 days. The scorer emits a freshness finding and subtracts twelve points from
+the memory_link bucket. Proposed fix: run /play to generate a new session and
+update raw.jsonl. Evidence cites raw.jsonl at line 1 with an absolute path.
 
 ### Defender lens
 
-Finding 1: skill/ownership_integrity at .claude/skills/play/ownership.json:1.
-Overlap was claimed to be intentional because both skills write session notes.
-Counter-example: grep across .claude/skills/play/ shows zero writes to the
-disputed target; the SKILL.md line cited by Defender describes a planned
-contract, not an implemented one. Gameability check against Anti-gaming table:
-dropping the entry without migrating the documented append contract would
-silently lose the contract, so the fix must be paired. Conceded on overlap.
-Priority: high (gameability check passed once fix is paired).
+Finding 1: memory_link/freshness at learning/logs/raw.jsonl:1.
+Inactivity was claimed to be intentional during a planned hiatus. Counter:
+the scorer has no exemption for planned pauses; the threshold applies
+unconditionally. Gameability check against Anti-gaming table: marking a file
+as archived does not apply to log files. Conceded on freshness.
+Priority: high (no exemption path available without a code change).
 
 ### Steelman pass
 
 For the top high finding: attempt to steelman "this finding is gameable or
-redundant". Steelman: the fix is gameable if the SKILL.md contract is not
-updated simultaneously. Counter-steelman: the paired fix (ownership.json edit
-+ SKILL.md update) is not gameable. Steelman is not plausible for the paired
-approach. Keep as priority:high.
+redundant". Steelman: the fix is gameable if the player runs /play with
+trivial input just to reset the timestamp. Counter-steelman: the scorer is
+LOC-based for test density and freshness is time-based, so trivial sessions
+do advance the timestamp legitimately. Steelman is not plausible as a gaming
+vector. Keep as priority:high.
 
 ### Final Issue body
 
