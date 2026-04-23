@@ -28,7 +28,7 @@ describe('rank-display.ts exports expected symbols', () => {
 // --- 1. CSS class coverage ---
 
 describe('CSS class coverage: app.ts classes exist in style.css', () => {
-  const appJs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
+  const appJs = ['web/public/app.ts', 'web/public/dom-helpers.ts', 'web/public/modals.ts', 'web/public/settings-pane.ts', 'web/public/chat-renderer.ts', 'web/public/dashboard.ts', 'web/public/rank-display.ts'].map(f => readFile(f)).join('\n');
   const styleCss = readFile('web/public/style.css');
 
   // Extract class selectors from CSS (e.g. .foo-bar)
@@ -113,6 +113,7 @@ describe('no stale theme references', () => {
 
   const files = [
     'web/public/app.ts',
+    'web/public/settings-pane.ts',
     'web/server.ts',
     '.claude/skills/play/SKILL.md',
     'references/operations/web-app-checklist.md',
@@ -157,11 +158,11 @@ describe('app.ts fallback axes match progression.yaml', () => {
   const configAxes = axisNames(config).sort();
 
   it('hardcoded axisNames in loadDashboard fallback match config', () => {
-    const appJs = readFile('web/public/app.ts');
+    const appJs = readFile('web/public/dashboard.ts');
 
     // Find the axisNames array in the fallback object
     const match = appJs.match(/axisNames:\s*\[([^\]]+)\]/);
-    assert.ok(match, 'app.ts must contain a hardcoded axisNames fallback array');
+    assert.ok(match, 'dashboard.ts must contain a hardcoded axisNames fallback array');
 
     const fallbackAxes = [];
     for (const m of match[1].matchAll(/'([a-z_]+)'/g)) {
@@ -178,7 +179,7 @@ describe('app.ts fallback axes match progression.yaml', () => {
 
 describe('playtester mode removed', () => {
   const indexHtml = readFile('web/public/index.html');
-  const appJs = readFile('web/public/app.ts');
+  const appJs = ['web/public/app.ts', 'web/public/dom-helpers.ts', 'web/public/settings-pane.ts'].map(f => readFile(f)).join('\n');
 
   it('index.html does not have playtest select element', () => {
     assert.ok(!indexHtml.includes('select-playtest'), 'settings modal should not have playtest dropdown');
@@ -206,7 +207,7 @@ describe('test CLI commands', () => {
 // --- 8. Dashboard rendering correctness ---
 
 describe('dashboard rendering correctness', () => {
-  const appJs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
+  const appJs = ['web/public/app.ts', 'web/public/chat-renderer.ts', 'web/public/dashboard.ts', 'web/public/rank-display.ts'].map(f => readFile(f)).join('\n');
   const indexHtml = readFile('web/public/index.html');
 
   it('hexagon SVG viewBox has room for labels beyond the grid', () => {
@@ -385,7 +386,7 @@ describe('YAML browser spec selector drift', () => {
 
   const indexHtml = readFile('web/public/index.html');
   const styleCss = readFile('web/public/style.css');
-  const appTs = readFile('web/public/app.ts') + readFile('web/public/rank-display.ts');
+  const appTs = ['web/public/app.ts', 'web/public/dom-helpers.ts', 'web/public/modals.ts', 'web/public/settings-pane.ts', 'web/public/chat-renderer.ts', 'web/public/dashboard.ts', 'web/public/rank-display.ts'].map(f => readFile(f)).join('\n');
 
   // Allowlisted selectors (dynamic content, not in static HTML)
   const allowlist = [

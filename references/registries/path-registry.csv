@@ -104,7 +104,7 @@ file,path,line_number
 .claude/skills/test/ownership.json,web/test-results/,3
 CLAUDE.md,references/guidelines/karpathy.md,16
 CLAUDE.md,graphify-out/,31
-package.json,scripts/check-budget.sh,23
+package.json,scripts/check-budget.sh,24
 references/architecture/core-workflow.md,references/architecture/gha-pipeline.md,13
 references/architecture/core-workflow.md,.github/workflows/ci.yml,32
 references/architecture/core-workflow.md,.github/workflows/ci.yml,38
