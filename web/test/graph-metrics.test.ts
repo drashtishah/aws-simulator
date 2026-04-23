@@ -167,6 +167,23 @@ describe('activityFreshness', () => {
     } finally { rmTmp(root); }
   });
 
+  it('returns paths from most recent activity-archive-*.jsonl when raw.jsonl is empty', () => {
+    const root = mkTmp('af-archive');
+    try {
+      const rawJsonl = path.join(root, 'raw.jsonl');
+      fs.writeFileSync(rawJsonl, ''); // empty
+      const recentTs = new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString();
+      const archiveEntry = JSON.stringify({ ts: recentTs, target: 'scripts/lib/graph-metrics.ts' });
+      fs.writeFileSync(path.join(root, 'activity-archive-2026-04-23.jsonl'), archiveEntry + '\n');
+      const oldTs = Date.now() - 200 * 24 * 3600 * 1000;
+      const stalePath = writeFile(root, 'scripts/lib/graph-metrics.ts', 'export const x = 1;');
+      fs.utimesSync(stalePath, new Date(oldTs), new Date(oldTs));
+      const files = [{ path: 'scripts/lib/graph-metrics.ts', bucket: 'code', abs: stalePath }];
+      const findings = activityFreshness(files, rawJsonl, Date.now(), root);
+      assert.equal(findings.length, 0, 'archive reference should suppress stale finding');
+    } finally { rmTmp(root); }
+  });
+
   it('caps cost at -10 per bucket (edge)', () => {
     const root = mkTmp('af-cap');
     try {
