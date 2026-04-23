@@ -1,0 +1,33 @@
+{
+  "FunctionName": "fulfill-order",
+  "FunctionArn": "arn:aws:lambda:us-east-1:503214986723:function:fulfill-order",
+  "Runtime": "nodejs20.x",
+  "Role": "arn:aws:iam::503214986723:role/fulfill-order-role",
+  "Handler": "index.handler",
+  "CodeSize": 3842914,
+  "Description": "Creates a pick ticket with the 3PL and writes an entry to the order-ledger DynamoDB table.",
+  "Timeout": 20,
+  "MemorySize": 512,
+  "LastModified": "2026-04-18T14:25:06.000+0000",
+  "Version": "17",
+  "State": "Active",
+  "StateReason": "The function is ready to be invoked.",
+  "PackageType": "Zip",
+  "Architectures": ["arm64"],
+  "EphemeralStorage": { "Size": 512 },
+  "Environment": {
+    "Variables": {
+      "LEDGER_TABLE": "order-ledger",
+      "THREE_PL_API_BASE": "https://api.coastal3pl.example.com/v2",
+      "THREE_PL_API_KEY_SECRET_ARN": "arn:aws:secretsmanager:us-east-1:503214986723:secret:threepl/prod/api-key-aK9Rf2"
+    }
+  },
+  "ReservedConcurrentExecutions": 25,
+  "_recent_invocation_summary": {
+    "last_invocation": "2026-04-21T18:32:14Z (pre-Pipes cutover)",
+    "invocations_last_24h": 0,
+    "errors_last_24h": 0,
+    "throttles_last_24h": 0,
+    "note": "The Lambda has not been invoked since the EventBridge Pipes cutover at 22:30 on 2026-04-21. Its config and permissions are fine; it is simply never being reached."
+  }
+}

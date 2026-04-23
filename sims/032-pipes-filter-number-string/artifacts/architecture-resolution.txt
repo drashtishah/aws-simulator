@@ -1,0 +1,48 @@
+            +----------------------+
+            | saltmarsh-checkout   |
+            | -svc (ECS Fargate)   |
+            | [emits amount as     |
+            |  JSON STRING]        |
+            +----------+-----------+
+                       |
+                       | SendMessage {"amount": "49.99", ...}
+                       v
+            +----------------------+
+            | Amazon SQS queue     |
+            | saltmarsh-new-orders |
+            +----------+-----------+
+                       |
+                       | poll
+                       v
+            +----------------------+
+            | EventBridge Pipe     |
+            | saltmarsh-fulfillment|
+            | -pipe                |
+            | [FILTER USES NUMERIC |
+            |  OPERATOR ON A       |
+            |  STRING-TYPED FIELD] |
+            | FilteredEvents=100%  |
+            +----------+-----------+
+                       |
+                       | (NEVER invokes target,
+                       |  messages deleted as
+                       |  filter-rejected)
+                       v
+            +----------------------+
+            | Lambda function      |
+            | fulfill-order        |
+            | [ZERO INVOCATIONS    |
+            |  ZERO ERRORS         |
+            |  looks healthy]      |
+            +----------------------+
+
+  Problem 1: Pipe filter expects {"amount":[{"numeric":[">",0]}]}
+             Messages contain {"amount": "49.99"} as JSON string
+             -> every event fails the numeric match, filtered out
+
+  Problem 2: Filter rejections are silent
+             No DLQ entry, no error metric, no log
+             Only FilteredEvents CloudWatch metric indicates the drop
+
+  Problem 3: Lambda dashboard shows green (zero errors, zero invocations)
+             With no alarm on Invocations dropping to zero, this goes unnoticed

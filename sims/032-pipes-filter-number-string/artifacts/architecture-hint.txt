@@ -1,0 +1,53 @@
+            +----------------------+
+            | saltmarsh-checkout   |
+            | -svc (ECS Fargate)   |
+            +----------+-----------+
+                       |
+                       | SendMessage
+                       v
+            +----------------------+
+            | Amazon SQS queue     |
+            | saltmarsh-new-orders |
+            | - standard queue     |
+            | - retention: 4 days  |
+            | - visibility: 30 s   |
+            +----------+-----------+
+                       |
+                       | poll (batch size 10)
+                       v
+            +----------------------+
+            | EventBridge Pipe     |
+            | saltmarsh-fulfillment|
+            | -pipe                |
+            |                      |
+            | filter:              |
+            |   body.status paid   |
+            |   body.amount > 0    |
+            |   (numeric)          |
+            +----------+-----------+
+                       |
+                       | InvokeFunction on match
+                       v
+            +----------------------+
+            | Lambda function      |
+            | fulfill-order        |
+            | (node20, 512 MB)     |
+            +----------+-----------+
+                       |
+              +--------+---------+
+              |                  |
+              v                  v
+        +------------+  +------------------+
+        | 3PL API    |  | DynamoDB table   |
+        | (external) |  | order-ledger     |
+        +------------+  +------------------+
+
+  Pipe IAM role:
+    sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes on saltmarsh-new-orders
+    lambda:InvokeFunction on fulfill-order
+
+  CloudWatch metrics published by Pipes under AWS/Pipes namespace:
+    EventsProcessed     - matched by filter and forwarded
+    FilteredEvents      - rejected by filter
+    TargetInvoked       - target invocation attempts
+    TargetInvocationsFailed - target retries exhausted

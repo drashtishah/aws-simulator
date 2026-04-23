@@ -1,0 +1,189 @@
+{
+  "id": "032-pipes-filter-number-string",
+  "title": "The Pipe That Said No to Everything",
+  "summary": "A fulfillment pipeline stops working the moment it is migrated to EventBridge Pipes. SQS has messages, Lambda is idle, nothing errors.",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["eventbridge-pipes", "sqs", "lambda", "cloudwatch"],
+  "tags": ["eventbridge-pipes", "content-filter", "event-pattern", "silent-drop"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain1:EventDriven",
+    "SAP-C02:Domain2:NewSolutions"
+  ],
+  "company": {
+    "name": "Saltmarsh Supply",
+    "industry": "B2B wholesale grocery",
+    "size": "Series A, 38 engineers, 2,100 orders per day"
+  },
+  "glossary": {
+    "Amazon EventBridge Pipes": "A managed AWS service that connects a source (like an SQS queue, Kinesis stream, or DynamoDB stream) directly to a target (like a Lambda function or Step Functions workflow) without writing glue code. Pipes can apply filtering, batching, enrichment, and transformation as part of the pipe.",
+    "EventBridge content filter": "The filter stage of a Pipe (and of EventBridge rules). Written as a JSON pattern that matches incoming events. Events that match pass through to the next stage. Events that do not match are dropped without invoking the target and without sending anything to a DLQ.",
+    "Dead-letter queue (DLQ)": "A secondary queue where messages land when they have been processed unsuccessfully and retries have been exhausted. Pipes only send a message to the DLQ when the TARGET invocation fails. Filter rejections never reach the DLQ.",
+    "numeric match": "An EventBridge filter pattern that matches JSON numbers against a comparison, for example {\"amount\": [{\"numeric\": [\">\", 0]}]}. The pattern is strict about type: a string value never matches a numeric operator, even if the string happens to represent a number.",
+    "content-based filtering": "The general idea of matching an event against a structural pattern rather than just its source. EventBridge uses a specific JSON pattern language. Matches are computed based on key paths and typed operators.",
+    "Pipe target invocation": "The act of passing a filtered event to the configured Pipe target, such as a Lambda function. Success or failure metrics for the target are published to CloudWatch. Filtered-out events are not target invocations and have their own metric.",
+    "FilteredEvents / EventsProcessed": "The two CloudWatch metrics under the AWS/Pipes namespace that tell you what is happening. FilteredEvents counts events the filter rejected. EventsProcessed counts events the filter matched and the pipe passed on toward the target."
+  },
+  "system": {
+    "what_broke": "The new fulfillment pipeline uses EventBridge Pipes to read OrderPlaced events from an SQS queue, filter for paid orders with a positive amount, and invoke a fulfillment Lambda. The filter pattern is {\"body\":{\"status\":[\"paid\"],\"amount\":[{\"numeric\":[\">\",0]}]}}. The checkout service writes the amount as a JSON string (for example, \"amount\": \"49.99\") because that is what the legacy order-schema enforces and the new Pipes-based pipeline did not re-validate types. EventBridge content filters are strictly typed: a numeric comparison on a string value never matches. Every event fails the filter. Pipes drops the event silently (no DLQ, no Lambda invocation, no error log). The FilteredEvents metric climbs to 100 percent of incoming events. The target Lambda never runs; its error count is zero and its invocation count is zero.",
+    "data_flow": "Checkout service writes OrderPlaced events to the saltmarsh-new-orders SQS queue with body {orderId, status, amount (string), items, customerId}. EventBridge Pipes polls the queue, applies the filter pattern, and for matching events invokes the fulfill-order Lambda. Lambda calls the 3PL API to create a pick ticket and writes a row to the DynamoDB order-ledger. A legacy pipeline that Lambda-polls the same queue was decommissioned at the cutover.",
+    "components": [
+      {
+        "name": "saltmarsh-new-orders (SQS queue)",
+        "role": "Holds OrderPlaced events produced by the Checkout service until the fulfillment pipeline processes them. Standard queue, 4-day retention, 30-second visibility timeout.",
+        "connections": ["Written by saltmarsh-checkout-svc", "Read by saltmarsh-fulfillment-pipe"],
+        "failure_impact": "If consumers fall behind, messages accumulate up to retention limit and are eventually lost."
+      },
+      {
+        "name": "saltmarsh-fulfillment-pipe (EventBridge Pipes)",
+        "role": "Connects the SQS queue to the fulfillment Lambda. Applies the filter {\"body\":{\"status\":[\"paid\"],\"amount\":[{\"numeric\":[\">\",0]}]}} before invoking the target.",
+        "connections": ["Reads from saltmarsh-new-orders", "Invokes fulfill-order Lambda on matches", "Publishes FilteredEvents and TargetInvoked CloudWatch metrics"],
+        "failure_impact": "A filter that rejects every event produces no visible failure. Target Lambda shows zero invocations and zero errors."
+      },
+      {
+        "name": "fulfill-order (Lambda function)",
+        "role": "Handles an OrderPlaced event: calls the 3PL API to create a pick ticket and writes an entry to the order-ledger DynamoDB table.",
+        "connections": ["Invoked by saltmarsh-fulfillment-pipe", "Calls 3PL API (external)", "Writes to order-ledger"],
+        "failure_impact": "If never invoked, no orders are fulfilled; but the Lambda itself looks healthy in the console because its error rate is zero."
+      },
+      {
+        "name": "order-ledger (DynamoDB table)",
+        "role": "Source of truth for processed orders, consumed by accounting and customer-facing APIs.",
+        "connections": ["Written by fulfill-order Lambda", "Read by accounting and customer-API services"],
+        "failure_impact": "An empty ledger surfaces downstream as 'where is my order' tickets, because Checkout succeeded but nothing downstream saw the order."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "eventbridge-pipes",
+      "artifacts": [
+        "artifacts/pipe-config.json",
+        "artifacts/pipe-metrics.csv"
+      ],
+      "capabilities": [
+        "describe_pipe",
+        "get_pipe_filter",
+        "list_pipes"
+      ]
+    },
+    {
+      "service": "sqs",
+      "artifacts": [
+        "artifacts/sqs-sample-message.json"
+      ],
+      "capabilities": [
+        "get_queue_attributes",
+        "receive_message",
+        "get_queue_url"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json",
+        "artifacts/lambda-invocation-metrics.csv"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_invocations"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/pipe-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "filter_log_events"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The 3PL dashboard shows no new pick tickets since the cutover. The SQS queue is not draining. What is the pipe doing with the messages?",
+    "Pipes publishes per-pipe metrics to CloudWatch. Compare EventsProcessed against FilteredEvents over the last hour.",
+    "Every event the pipe sees is getting filtered out. What does the pipe's filter pattern require, and what do the messages actually look like?",
+    "Read the filter pattern and a sample SQS message side by side. Pay attention to the type of each field referenced by the filter.",
+    "EventBridge numeric operators match only against JSON numbers, never against strings. If the producer sends amount as a string, every numeric comparison in the filter is false."
+  ],
+  "resolution": {
+    "root_cause": "The EventBridge Pipes filter pattern uses a numeric operator ({\"amount\":[{\"numeric\":[\">\",0]}]}) against a field that the Checkout service sends as a JSON string (\"amount\": \"49.99\"). EventBridge content filters are strictly typed: numeric operators do not implicitly coerce strings. Every event fails the filter, is dropped silently, and never reaches the fulfillment Lambda. Neither the Lambda error metric nor the dead-letter queue shows activity because filter rejections are the pipe's normal behavior, not a failure. The CloudWatch metric FilteredEvents on the pipe is the only signal, and no alarm was configured on it.",
+    "fix_criteria": [
+      {
+        "id": "identify_zero_invocations",
+        "description": "Player identifies that the fulfill-order Lambda is receiving zero invocations despite the SQS queue having messages",
+        "required": true
+      },
+      {
+        "id": "identify_filtering_is_100_percent",
+        "description": "Player identifies that the EventBridge Pipes FilteredEvents metric matches the incoming message rate, meaning every event is being rejected by the filter",
+        "required": true
+      },
+      {
+        "id": "identify_type_mismatch",
+        "description": "Player identifies the mismatch between the numeric filter operator and the string-typed amount field in the actual SQS message payload",
+        "required": true
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes either fixing the producer to emit amount as a number, or changing the filter to use a string-based pattern (anything-but empty string, or a string pattern)",
+        "required": true
+      },
+      {
+        "id": "propose_replay_backlog",
+        "description": "Player proposes draining the SQS queue of the accumulated backlog (either by fixing the filter and allowing Pipes to process it, or by running a one-time batch job)",
+        "required": false
+      },
+      {
+        "id": "propose_alarm",
+        "description": "Player proposes adding a CloudWatch alarm on the pipe's FilteredEvents-to-EventsProcessed ratio so a filter mismatch is detected within minutes next time",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How EventBridge Pipes connects sources to targets with inline filtering",
+      "That EventBridge content filters are strictly typed: numeric patterns do not match string values",
+      "That filter-rejected events are silently dropped and do not appear in the dead-letter queue",
+      "The CloudWatch metrics EventBridge Pipes publishes and why FilteredEvents vs EventsProcessed is the key ratio to alarm on",
+      "Why schema validation at producer boundaries matters more, not less, when filter logic moves into infrastructure"
+    ],
+    "sop_steps": [
+      "Start from the business symptom. Customers paid, the fulfillment system sees nothing. Walk backwards from the missing side effect (no pick tickets, no DynamoDB writes) to the step that is not firing.",
+      "Check the target first. Look at the fulfill-order Lambda's invocation count in CloudWatch. If the Lambda has never been invoked, the target is not being reached, which narrows the problem to the pipe itself or its source.",
+      "Check the source is not empty. Look at the SQS queue's ApproximateNumberOfMessages. If it is nonzero and the age of the oldest message is climbing, messages are arriving but not being consumed.",
+      "Check the pipe's filter metrics. EventBridge Pipes publishes two key per-pipe metrics: EventsProcessed (matched and forwarded) and FilteredEvents (rejected by the filter). If FilteredEvents equals the incoming rate and EventsProcessed is zero, the filter is rejecting everything.",
+      "Inspect the filter pattern and a real sample message side by side. Pull a message body from the SQS queue (either by peek-receiving one or via the pipe's console sample). Compare every field the filter references against the message. Pay particular attention to JSON types: a numeric operator expects a JSON number, a prefix/suffix operator expects a string, an exists operator expects any value, and so on.",
+      "For a numeric pattern against a string payload, decide who should change. If the producer owns the schema, fix the producer to emit the field as a number and document the schema. If the producer is a legacy system you cannot change, change the filter to match the string form (e.g., {\"anything-but\": \"\"} to require non-empty, plus a custom business rule).",
+      "Drain the backlog. If the SQS backlog matters, one option is to simply fix the filter and let Pipes process the accumulated messages (they stay in the queue until successfully processed or retention expires). A second option is a one-time Lambda that drains the queue in parallel while the pipe handles steady-state traffic.",
+      "Add a CloudWatch alarm on the ratio FilteredEvents / (FilteredEvents + EventsProcessed). An alarm that fires when the ratio exceeds 50 percent for 3 consecutive data points catches the case where a filter or schema change causes mass silent drops. A second alarm on the target Lambda's Invocations metric dropping to zero (when it historically was not zero) is a complementary catch.",
+      "Treat this incident as a schema contract failure. Add JSON Schema validation at the producer, or add a Pipes input transformer that normalizes the amount field, or move type enforcement into the filter itself using multiple patterns joined by $or."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Filter is correct but messages are redacted by the Pipe's source transformer so the filter sees fields that are not in the original message.",
+        "how_it_differs": "The producer sends amount as a number, the filter expects a number, but a Pipe source transformer runs before the filter and removes or renames fields. The filter sees a reshaped object that does not match. You have to read the source transformer before the filter.",
+        "prevention": "Avoid unnecessary source transformers. When you use one, add explicit end-to-end tests: a unit test that feeds a known event through the transformer and asserts the shape matches the filter pattern."
+      },
+      {
+        "scenario": "Filter is correct, producer is correct, but the Pipe's IAM role does not have permission to invoke the Lambda target.",
+        "how_it_differs": "FilteredEvents is low, EventsProcessed is low, TargetInvocationsFailed is high. The Lambda shows zero invocations because it is never reached. The pipe's error metric and the Lambda's Throttles or Errors metrics diverge. Pipes retries with backoff, and if a DLQ is configured on the pipe, the event lands there.",
+        "prevention": "Use the AWS-managed service role generator for Pipes when first creating the pipe. If you write a custom role, grant exactly lambda:InvokeFunction on the target ARN plus the minimum source-read permissions (sqs:ReceiveMessage, sqs:DeleteMessage, sqs:GetQueueAttributes)."
+      },
+      {
+        "scenario": "Target Lambda is invoked but concurrency is capped at 0 (reserved concurrency misconfigured), so every invocation is throttled.",
+        "how_it_differs": "EventsProcessed is high. TargetInvocationsFailed is also high. Lambda throttle metric is high. Events go to the DLQ after retries. Customer impact looks similar (orders not fulfilled), but the signal path is completely different: the pipe is doing its job, the target is deliberately blocked.",
+        "prevention": "Alarm on Lambda ThrottledInvocations as well as on Pipes TargetInvocationsFailed. Never set reserved concurrency to zero except to intentionally disable a function, and treat such a change as needing the same rollout discipline as a production deploy."
+      }
+    ],
+    "sop_practices": [
+      "Always configure a Pipes DLQ even though it does not catch filter rejections. It still catches target invocation failures, and that is valuable signal. Without a DLQ a retry-exhausted failure is lost.",
+      "Alarm on the ratio of FilteredEvents to EventsProcessed. A sudden swing in this ratio is the earliest signal of a schema drift or filter misconfiguration. Cover both directions (too much filtering, too little filtering) if your filter enforces a business rule.",
+      "Treat the EventBridge filter pattern as part of a producer-consumer contract. When you edit either the filter or the producer schema, run a test that replays a captured sample event through the pipe and asserts the expected decision (match vs drop). Automate this in CI.",
+      "Prefer strict producer schema validation over clever filters. A filter that tries to pattern-match around producer sloppiness will fail silently the first time the producer emits something unexpected. Validate at the edge, not at the pipe."
+    ]
+  }
+}

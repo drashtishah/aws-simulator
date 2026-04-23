@@ -1,0 +1,36 @@
+{
+  "Name": "saltmarsh-fulfillment-pipe",
+  "Arn": "arn:aws:pipes:us-east-1:503214986723:pipe/saltmarsh-fulfillment-pipe",
+  "DesiredState": "RUNNING",
+  "CurrentState": "RUNNING",
+  "StateReason": "User initiated",
+  "CreationTime": "2026-04-21T22:30:12Z",
+  "LastModifiedTime": "2026-04-21T22:30:12Z",
+  "Source": "arn:aws:sqs:us-east-1:503214986723:saltmarsh-new-orders",
+  "SourceParameters": {
+    "SqsQueueParameters": {
+      "BatchSize": 10,
+      "MaximumBatchingWindowInSeconds": 1
+    },
+    "FilterCriteria": {
+      "Filters": [
+        {
+          "Pattern": "{\"body\":{\"status\":[\"paid\"],\"amount\":[{\"numeric\":[\">\",0]}]}}"
+        }
+      ]
+    }
+  },
+  "Target": "arn:aws:lambda:us-east-1:503214986723:function:fulfill-order",
+  "TargetParameters": {
+    "LambdaFunctionParameters": {
+      "InvocationType": "REQUEST_RESPONSE"
+    }
+  },
+  "RoleArn": "arn:aws:iam::503214986723:role/service-role/Amazon_EventBridge_Pipe_saltmarsh-fulfillment",
+  "Enrichment": null,
+  "Tags": {
+    "owner": "platform-eng",
+    "migration": "sqs-lambda-to-pipes-2026-04-21"
+  },
+  "_note": "Filter uses a numeric comparison against amount. The producer schema for saltmarsh-new-orders emits amount as a JSON string (the legacy checkout schema). Every event fails this filter. Either change the filter to {\"body\":{\"status\":[\"paid\"],\"amount\":[{\"anything-but\":[\"\"]}]}} or change the producer to emit amount as a number."
+}

@@ -1,0 +1,34 @@
+{
+  "Messages": [
+    {
+      "MessageId": "8d14b9a7-39e2-4812-b1a0-c4b8e7d9125f",
+      "ReceiptHandle": "AQEB/7bK2U9z...truncated",
+      "MD5OfBody": "1f7e99120c8d82f71b8e7f43d00c9a32",
+      "Body": "{\"orderId\":\"SMS-48102\",\"customerId\":\"cust-A-014\",\"status\":\"paid\",\"amount\":\"389.45\",\"currency\":\"USD\",\"items\":[{\"sku\":\"SAL-OLV-01\",\"qty\":12},{\"sku\":\"SAL-FLR-04\",\"qty\":6}],\"stripeChargeId\":\"ch_3Obj4D2eZvKYlo2F\",\"placedAt\":\"2026-04-22T15:02:11Z\"}",
+      "Attributes": {
+        "SentTimestamp": "1713797011000",
+        "ApproximateFirstReceiveTimestamp": "1713797012000",
+        "ApproximateReceiveCount": "142"
+      }
+    },
+    {
+      "MessageId": "ac87f3e1-5211-4099-9e7c-08d2b4c6a1f0",
+      "ReceiptHandle": "AQEB/8cL3V0a...truncated",
+      "MD5OfBody": "b420f9c88a3ce14cd79b5d3fa5c29801",
+      "Body": "{\"orderId\":\"SMS-48103\",\"customerId\":\"cust-A-008\",\"status\":\"paid\",\"amount\":\"49.99\",\"currency\":\"USD\",\"items\":[{\"sku\":\"SAL-NUT-12\",\"qty\":3}],\"stripeChargeId\":\"ch_3Obj4E2eZvKYlo2G\",\"placedAt\":\"2026-04-22T15:02:34Z\"}",
+      "Attributes": {
+        "SentTimestamp": "1713797034000",
+        "ApproximateFirstReceiveTimestamp": "1713797035000",
+        "ApproximateReceiveCount": "141"
+      }
+    }
+  ],
+  "_QueueAttributes": {
+    "ApproximateNumberOfMessages": "640",
+    "ApproximateNumberOfMessagesNotVisible": "10",
+    "ApproximateAgeOfOldestMessage": "9122",
+    "CreatedTimestamp": "1701287400",
+    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:503214986723:saltmarsh-new-orders-dlq\",\"maxReceiveCount\":10}"
+  },
+  "_note": "Notice the body's amount field is a JSON string, not a number. The EventBridge Pipes filter uses a {\"numeric\": [\">\", 0]} operator which only matches JSON numbers. Every one of these messages fails the filter and is dropped."
+}

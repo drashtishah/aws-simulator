@@ -1,0 +1,6 @@
+Company: Saltmarsh Supply (Series A, 38 engineers)
+Industry: B2B wholesale grocery
+Users: ~2,100 orders per business day, 640 orders stuck since this morning
+AWS Services: Amazon EventBridge Pipes, Amazon SQS, AWS Lambda, Amazon CloudWatch
+Your role: Platform on-call, Wednesday 11:42
+Situation: 3PL warehouse reports zero pick tickets today; SQS queue is accepting messages but the fulfill Lambda is never invoked
