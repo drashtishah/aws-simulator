@@ -411,6 +411,96 @@
       ],
       "estimated_minutes": 25,
       "created": "2026-04-22"
+    },
+    {
+      "id": "030-verified-access-lockout",
+      "title": "The Door That Read the Wrong Name",
+      "summary": "An internal admin portal denies every employee at once. The zero-trust policy compiles, evaluates, and turns everyone away.",
+      "difficulty": 3,
+      "category": "security",
+      "services": [
+        "verified-access",
+        "iam",
+        "cognito",
+        "cloudtrail"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
+    },
+    {
+      "id": "031-msk-iam-consumer-commit",
+      "title": "Every Order, Again",
+      "summary": "Consumers are processing the same orders over and over. The Kafka cluster is fine, the code did not change, but offsets never stick.",
+      "difficulty": 3,
+      "category": "data",
+      "services": [
+        "msk",
+        "iam",
+        "ec2",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
+    },
+    {
+      "id": "032-pipes-filter-number-string",
+      "title": "The Pipe That Said No to Everything",
+      "summary": "A fulfillment pipeline stops working the moment it is migrated to EventBridge Pipes. SQS has messages, Lambda is idle, nothing errors.",
+      "difficulty": 2,
+      "category": "operations",
+      "services": [
+        "eventbridge-pipes",
+        "sqs",
+        "lambda",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 25,
+      "created": "2026-04-23"
+    },
+    {
+      "id": "033-app-runner-vpc-egress",
+      "title": "The Service That Went Quiet",
+      "summary": "Attaching a VPC connector fixes database access and breaks everything else. Stripe calls time out, Slack is silent, nobody expected this.",
+      "difficulty": 2,
+      "category": "networking",
+      "services": [
+        "app-runner",
+        "rds",
+        "vpc",
+        "secrets-manager"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-23"
+    },
+    {
+      "id": "034-memorydb-acl-flushdb",
+      "title": "The Key the Cache Would Not Drop",
+      "summary": "A nightly cleanup job dies the first time it runs on the new durable cache. The cache is up, connection is fine, the command is refused.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "memorydb",
+        "ec2",
+        "iam",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-23"
+    },
+    {
+      "id": "035-transfer-family-scope-down",
+      "title": "The Partner Who Saw Too Much",
+      "summary": "An external supplier's SFTP account was only supposed to see its own folder. CloudTrail says it read every customer's folder last night.",
+      "difficulty": 3,
+      "category": "security",
+      "services": [
+        "transfer-family",
+        "iam",
+        "s3",
+        "cloudtrail"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
     }
   ]
 }

@@ -37,3 +37,9 @@ tags:
 | 027 | [[027-s3-vectors-filter-rag/story\|The Filter That Lost the Answer]] | 3 - Professional | Data | s3-vectors, bedrock, opensearch-serverless, cloudwatch | 40 min |
 | 028 | [[028-lambda-snapstart-credentials/story\|Yesterday's Token, Today's Traffic]] | 3 - Professional | Reliability | lambda, iam, sts, secrets-manager, cloudwatch | 35 min |
 | 029 | [[029-agentcore-gateway-timeout/story\|Five Minutes Is Not Enough]] | 2 - Associate | Operations | bedrock-agentcore, lambda, api-gateway, cloudwatch | 25 min |
+| 030 | [[030-verified-access-lockout/story\|The Door That Read the Wrong Name]] | 3 - Professional | Security | verified-access, iam, cognito, cloudtrail | 35 min |
+| 031 | [[031-msk-iam-consumer-commit/story\|Every Order, Again]] | 3 - Professional | Data | msk, iam, ec2, cloudwatch | 35 min |
+| 032 | [[032-pipes-filter-number-string/story\|The Pipe That Said No to Everything]] | 2 - Associate | Operations | eventbridge-pipes, sqs, lambda, cloudwatch | 25 min |
+| 033 | [[033-app-runner-vpc-egress/story\|The Service That Went Quiet]] | 2 - Associate | Networking | app-runner, rds, vpc, secrets-manager | 30 min |
+| 034 | [[034-memorydb-acl-flushdb/story\|The Key the Cache Would Not Drop]] | 3 - Professional | Reliability | memorydb, ec2, iam, cloudwatch | 30 min |
+| 035 | [[035-transfer-family-scope-down/story\|The Partner Who Saw Too Much]] | 3 - Professional | Security | transfer-family, iam, s3, cloudtrail | 35 min |
