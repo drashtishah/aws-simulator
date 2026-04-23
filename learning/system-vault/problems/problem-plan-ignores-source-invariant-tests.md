@@ -4,8 +4,8 @@ kind: problem
 title: Plan edits collide with pre-existing tests that assert on source content
 tags: [kind/problem, scope/pipeline, stage/planner, signal/self-correction]
 created: 2026-04-15
-updated: 2026-04-15
-source_issues: [#276]
+updated: 2026-04-23
+source_issues: [#276, #326]
 confidence: observed
 summary: Plans that change a file miss pre-existing invariant tests asserting on that file's source content, flipping green tests red post-implementation
 triggers: [plan touches source file, pre-existing test reads that file as fs/string, registry.includes or content.match assertion, implementer runs tests and hits unexpected failures]
