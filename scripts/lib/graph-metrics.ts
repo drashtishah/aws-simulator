@@ -39,39 +39,6 @@ export interface FreshnessFinding {
   cost: number;
 }
 
-export interface OwnershipFinding {
-  kind: 'overlap' | 'orphan' | 'cycle' | 'missing';
-  detail: string;
-  /**
-   * The dir or skill identifier the finding is about. Used as part of the
-   * dedup key by `dedupeOwnershipFindings` so two findings with the same
-   * (kind, dir, skill-set) tuple but different `detail` strings collapse
-   * into one. Optional for backwards compatibility with callers that did
-   * not previously set it.
-   */
-  dir?: string;
-  skills: string[];
-}
-
-/**
- * Collapse ownership findings that share the same (kind, dir, skill-set)
- * triple. Skill order in `skills` is normalized so [a,b] and [b,a] dedup
- * to the same entry. Preserves the first occurrence (insertion order is
- * meaningful: the first finding for a duplicate carries the canonical
- * detail string the upstream rendering uses).
- */
-export function dedupeOwnershipFindings(
-  findings: OwnershipFinding[]
-): OwnershipFinding[] {
-  const seen = new Map<string, OwnershipFinding>();
-  for (const f of findings) {
-    const sortedSkills = [...f.skills].sort().join(',');
-    const key = `${f.kind}:${f.dir ?? ''}:${sortedSkills}`;
-    if (!seen.has(key)) seen.set(key, f);
-  }
-  return Array.from(seen.values());
-}
-
 // ---------------------------------------------------------------------------
 // proseDuplication: 5-gram shingles + Jaccard >= 0.4 over reference/skill/command
 // ---------------------------------------------------------------------------
@@ -340,51 +307,6 @@ export function activityFreshness(
 }
 
 // ---------------------------------------------------------------------------
-// skillOwnershipIntegrity
-// ---------------------------------------------------------------------------
-
-export function skillOwnershipIntegrity(skillsDir: string): OwnershipFinding[] {
-  const out: OwnershipFinding[] = [];
-  if (!fs.existsSync(skillsDir)) return out;
-  let entries: fs.Dirent[];
-  try { entries = fs.readdirSync(skillsDir, { withFileTypes: true }); } catch { return out; }
-  const claims = new Map<string, string[]>(); // dir -> [skill names]
-  for (const e of entries) {
-    if (!e.isDirectory()) continue;
-    const op = path.join(skillsDir, e.name, 'ownership.json');
-    if (!fs.existsSync(op)) {
-      out.push({ kind: 'missing', detail: `skill ${e.name} missing ownership.json`, skills: [e.name] });
-      continue;
-    }
-    let parsed: any;
-    try { parsed = JSON.parse(fs.readFileSync(op, 'utf8')); }
-    catch (err: any) {
-      out.push({ kind: 'orphan', detail: `skill ${e.name} ownership.json invalid: ${err.message}`, skills: [e.name] });
-      continue;
-    }
-    const dirs: string[] = Array.isArray(parsed.dirs) ? parsed.dirs : [];
-    for (const d of dirs) {
-      const key = d.replace(/\/+$/, '');
-      if (!key) continue;
-      if (!claims.has(key)) claims.set(key, []);
-      claims.get(key)!.push(e.name);
-    }
-  }
-  for (const [dir, owners] of claims) {
-    if (owners.length > 1) {
-      // System-vault is intentionally claimed by multiple system-vault-* skills + setup.
-      if (dir === 'learning/system-vault') continue;
-      out.push({
-        kind: 'overlap',
-        detail: `dir ${dir} claimed by ${owners.join(', ')}`,
-        dir,
-        skills: owners,
-      });
-    }
-  }
-  return dedupeOwnershipFindings(out);
-}
-
 /** Wrap a list of findings, preserving order, limited to N. */
 export function capFindings<T>(arr: T[], n: number): T[] {
   return arr.slice(0, n);
@@ -395,6 +317,4 @@ module.exports = {
   proseDuplication,
   danglingReferences,
   activityFreshness,
-  skillOwnershipIntegrity,
-  dedupeOwnershipFindings,
 };

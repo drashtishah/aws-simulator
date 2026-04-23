@@ -1,27 +1,26 @@
 ## Finding
-ownership.json for play skill claims a directory already owned by setup, causing ownership_integrity score to drop.
+scripts/lib/graph-metrics.ts reports a freshness finding for learning/logs/raw.jsonl: last activity entry is more than 30 days old, dragging the memory_link bucket score down by twelve points.
 
 ## Bucket and metric
-- Bucket: skill
-- Metric: ownership_integrity
+- Bucket: memory_link
+- Metric: freshness
 - Current score: 88
 - Expected score after fix: 100
 - Point gain: 12
 
 ## Evidence
-- `/home/runner/work/aws-simulator/aws-simulator/.claude/skills/play/ownership.json:1` , declares `learning/feedback.md` which is also declared by setup ownership.json
-- `/home/runner/work/aws-simulator/aws-simulator/.claude/skills/setup/ownership.json:1` , the original owner of `learning/feedback.md`
+- `/home/runner/work/aws-simulator/aws-simulator/learning/logs/raw.jsonl:1` , last entry timestamp is 2026-02-20T10:00:00Z, which is 62 days before the current run
+- `/home/runner/work/aws-simulator/aws-simulator/scripts/lib/graph-metrics.ts:1` , activityFreshness threshold is 30 days
 
 ## Current behavior
-Two skills both claim `learning/feedback.md` as an owned directory. The aggregator in scripts/code-health.ts emits an `ownership_integrity` finding for every overlap pair, dragging the skill bucket composite down by twelve points.
+The learning log has not been updated in over 60 days. The scorer emits a freshness finding for the memory_link bucket, reducing its composite by twelve points.
 
 ## Expected behavior
-Each directory has exactly one owner. Ownership is unambiguous so that /fix and /doc can route findings to a single skill without coordinator arbitration.
+The learning log is updated regularly so freshness findings do not appear. Alternatively, the player has run /play recently enough that raw.jsonl has a recent entry.
 
 ## Suggested approach
-1. Edit `/home/runner/work/aws-simulator/aws-simulator/.claude/skills/play/ownership.json` lines 1 to 5 to remove the `learning/feedback.md` entry from `dirs`.
-2. Run `/home/runner/work/aws-simulator/aws-simulator/scripts/code-health.ts` to confirm the overlap finding disappears.
-3. Add a regression test in `/home/runner/work/aws-simulator/aws-simulator/web/test/code-health.test.ts` covering the no-overlap invariant for `learning/feedback.md`.
+1. Run `/home/runner/work/aws-simulator/aws-simulator/scripts/code-health.ts` after a /play session to confirm the freshness finding disappears.
+2. Add a regression test in `/home/runner/work/aws-simulator/aws-simulator/web/test/code-health.test.ts` covering the freshness threshold for learning/logs/raw.jsonl.
 
 ## Verification
 ```bash
@@ -30,15 +29,15 @@ npx tsx scripts/test.ts run --files web/test/code-health.test.ts
 ```
 
 ## Review excerpts
-- **Challenger lens:** Two ownership.json files claim the same dir; the scorer counts this twice and the bucket composite drops twelve points. Evidence: `/home/runner/work/aws-simulator/aws-simulator/.claude/skills/play/ownership.json:1`
-- **Defender lens:** Overlap was intentional because both skills write session notes; conceded after grep shows zero writes from play/ to learning/feedback.md in code.
-- **Steelman pass:** Removing the entry from play is the cleanest fix; paired with a SKILL.md update so the documented intent is preserved.
+- **Challenger lens:** The learning log has not been updated in 62 days; the freshness threshold is 30 days. Evidence: `/home/runner/work/aws-simulator/aws-simulator/learning/logs/raw.jsonl:1`
+- **Defender lens:** Inactivity was intentional during a hiatus period; conceded after checking that the scorer has no exemption for planned pauses.
+- **Steelman pass:** Running a /play session is the cleanest fix; it updates raw.jsonl and clears the finding without any code change.
 
 ## Labels
 - source:doc
 - priority:high
-- bucket:skill
-- metric:ownership_integrity
+- bucket:memory_link
+- metric:freshness
 - needs-human
 
 ## Linked context
