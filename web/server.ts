@@ -317,10 +317,12 @@ app.get('/api/progress', (_req: Request, res: Response) => {
 let claudeProcess: typeof import('./lib/claude-process') | undefined;
 let claudeSession: typeof import('./lib/claude-session') | undefined;
 let claudeStream: typeof import('./lib/claude-stream') | undefined;
+let postSessionOrchestrator: typeof import('../scripts/post-session-orchestrator') | undefined;
 try {
   claudeProcess = require('./lib/claude-process');
   claudeSession = require('./lib/claude-session');
   claudeStream = require('./lib/claude-stream');
+  postSessionOrchestrator = require('../scripts/post-session-orchestrator');
 } catch {
   // claude modules not yet created
 }
@@ -363,7 +365,7 @@ app.post('/api/game/start', async (req: Request, res: Response) => {
 });
 
 app.post('/api/game/message', async (req: Request, res: Response) => {
-  if (!claudeStream || !claudeProcess || !claudeSession) return res.status(503).json({ error: 'Game engine not available' });
+  if (!claudeStream || !claudeProcess || !claudeSession || !postSessionOrchestrator) return res.status(503).json({ error: 'Game engine not available' });
 
   const { sessionId, message } = req.body as MessageBody;
   if (!message?.trim()) return res.status(400).json({ error: 'Message is required' });
@@ -397,7 +399,7 @@ app.post('/api/game/message', async (req: Request, res: Response) => {
         claudeSession.updateGameSession(simId, { status: 'post-processing' });
         res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
         try {
-          await claudeProcess.runPostSessionAgent(simId);
+          await postSessionOrchestrator!.runPostSessionAgent(simId);
           res.write(`data: ${JSON.stringify({ type: 'profile_updated' })}\n\n`);
         } catch (postErr: unknown) {
           const postMessage = postErr instanceof Error ? postErr.message : String(postErr);
@@ -425,7 +427,7 @@ app.post('/api/game/message', async (req: Request, res: Response) => {
       if (simId) {
         res.write(`data: ${JSON.stringify({ type: 'profile_updating' })}\n\n`);
         try {
-          await claudeProcess.runPostSessionAgent(simId);
+          await postSessionOrchestrator!.runPostSessionAgent(simId);
           res.write(`data: ${JSON.stringify({ type: 'profile_updated' })}\n\n`);
         } catch (postErr: unknown) {
           const postMessage = postErr instanceof Error ? postErr.message : String(postErr);
