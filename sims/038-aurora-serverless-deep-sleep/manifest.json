@@ -1,0 +1,197 @@
+{
+  "id": "038-aurora-serverless-deep-sleep",
+  "title": "Thirty Seconds of Silence",
+  "summary": "A niche B2B reporting tool migrated to Aurora Serverless v2 with min_capacity=0. Every Monday morning the first customer login hangs for 30 seconds and API Gateway returns 504. The database shows no errors.",
+  "difficulty": 3,
+  "category": "performance",
+  "services": ["aurora", "rds", "lambda", "cloudwatch"],
+  "tags": ["aurora", "aurora-serverless-v2", "auto-pause", "lambda", "api-gateway"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain2:ResiliencyAndHighAvailability",
+    "SAP-C02:Domain1:DesignForOrganizationalComplexity"
+  ],
+  "company": {
+    "name": "Plover Analytics",
+    "industry": "B2B financial reporting SaaS",
+    "size": "12-person startup, ~80 business clients, low overnight traffic"
+  },
+  "glossary": {
+    "Aurora Serverless v2": "An Amazon Aurora capacity mode that automatically scales compute (measured in Aurora Capacity Units, ACUs) up and down in response to load. Unlike v1, v2 scales continuously rather than in discrete steps. Capacity can be set as low as 0.5 ACU minimum, or 0 ACU if auto-pause is enabled.",
+    "Auto-pause": "An Aurora Serverless v2 feature (requires MinCapacity=0) that stops all compute after a configurable idle period (SecondsUntilAutoPause, default 300 seconds). The cluster's storage remains intact. Resume is triggered by the next connection attempt and takes approximately 15 seconds.",
+    "Aurora Capacity Unit (ACU)": "The unit of compute for Aurora Serverless v2. 1 ACU is approximately 2 GiB of memory and proportional CPU. MinCapacity=0 enables auto-pause; MinCapacity=0.5 is the smallest always-on setting.",
+    "ServerlessDatabaseCapacity": "A CloudWatch metric published by Aurora Serverless v2 clusters that shows the current ACU allocation. A value of 0 means the cluster is paused (deep sleep). A spike from 0 to a positive value indicates a resume event.",
+    "SecondsUntilAutoPause": "The cluster-level setting that controls how many seconds of inactivity before Aurora Serverless v2 pauses. Minimum is 300 seconds (5 minutes). Default is 300.",
+    "Deep sleep": "Informal term for the state of an Aurora Serverless v2 cluster when ServerlessDatabaseCapacity=0 after an extended idle period. The cluster is not crashed; it is intentionally paused by the auto-pause feature. A resume takes ~15 seconds.",
+    "API Gateway integration timeout": "API Gateway REST APIs have a maximum integration timeout of 29 seconds. If the backend Lambda does not respond within 29 seconds, API Gateway returns HTTP 504 to the caller regardless of the Lambda's actual execution outcome.",
+    "Lambda Task timed out": "A Lambda function that exceeds its configured timeout limit is terminated and logs 'Task timed out after X.XX seconds'. The function invocation fails with a timeout error."
+  },
+  "system": {
+    "what_broke": "Plover Analytics migrated their reporting database to Aurora Serverless v2 with MinCapacity=0 and SecondsUntilAutoPause=300. The cluster correctly pauses after 5 minutes of inactivity. Over the weekend (Friday evening through Monday morning) there is no traffic, so the cluster sits paused for 60+ hours. On Monday at 09:00 the first customer opens the reporting dashboard. The Lambda function tries to connect to the database, but Aurora needs ~15 seconds to resume. The Lambda's first connection attempt blocks for the full resume duration, overshoots the Lambda timeout (29 seconds), and times out. API Gateway returns HTTP 504 to the customer. The database itself has no errors: it resumed successfully 15 seconds into the Lambda invocation. The second customer's request (seconds later) succeeds because the cluster is now running. The failure window is ~30 seconds on the first request each Monday.",
+    "data_flow": "Customer browsers hit the Plover Analytics reporting dashboard, which calls an API Gateway REST endpoint. API Gateway forwards each request to a Node.js Lambda function that opens a PostgreSQL connection to the Aurora Serverless v2 cluster (plover-reporting-db), runs a parameterized report query, and returns JSON. The Lambda uses a direct driver connection (no RDS Proxy). The cluster is in us-east-1. There is no connection pool warming or pre-connection keep-alive.",
+    "components": [
+      {
+        "name": "plover-reporting-db (Aurora Serverless v2 cluster)",
+        "role": "PostgreSQL 15.4 compatible Aurora Serverless v2 cluster. MinCapacity=0, MaxCapacity=16, SecondsUntilAutoPause=300. Holds all customer report data. Auto-pauses when idle for 5 minutes.",
+        "connections": ["Written by Lambda reporting functions", "No other consumers; no scheduled jobs that keep it warm overnight"],
+        "failure_impact": "When paused, the first connection attempt triggers resume (~15 seconds). If the caller's timeout is shorter than the resume time, the first request fails."
+      },
+      {
+        "name": "plover-report-fn (Lambda function)",
+        "role": "Node.js 20.x Lambda, 512 MB, timeout 29 seconds. Receives API Gateway events, opens a pg (node-postgres) connection, executes the report query, returns JSON. No connection pooling. No pre-warming.",
+        "connections": ["Invoked by API Gateway REST API", "Connects to plover-reporting-db via direct PostgreSQL driver"],
+        "failure_impact": "If the Aurora cluster is paused, the first Lambda invocation blocks on the TCP connection until Aurora resumes (~15 seconds) then must still open the connection and run the query. If total elapsed time exceeds 29 seconds, the Lambda times out and API Gateway returns 504."
+      },
+      {
+        "name": "plover-api (API Gateway REST API)",
+        "role": "Regional REST API. POST /report routes to plover-report-fn Lambda integration. Integration timeout set to the API Gateway maximum of 29 seconds.",
+        "connections": ["Receives requests from customer browsers", "Forwards to plover-report-fn Lambda"],
+        "failure_impact": "If Lambda does not respond within 29 seconds, returns HTTP 504 to the customer with body 'Endpoint request timed out'."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "rds",
+      "artifacts": [
+        "artifacts/rds-cluster-config.json",
+        "artifacts/rds-events.json"
+      ],
+      "capabilities": [
+        "describe_db_clusters",
+        "describe_db_instances",
+        "describe_events",
+        "describe_db_cluster_parameters"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_data",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_functions"
+      ]
+    },
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/api-gateway-logs.txt"
+      ],
+      "capabilities": [
+        "get_rest_api",
+        "get_integration",
+        "get_stage",
+        "get_deployment"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The 504 errors happen only on the very first request each Monday morning, then stop. No errors occur during the week. What could cause a failure on only the first request after a long idle period?",
+    "Look at the CloudWatch ServerlessDatabaseCapacity metric. What is the value from Friday evening through Sunday night? What happens at Monday 09:00?",
+    "Aurora Serverless v2 with MinCapacity=0 can pause completely after SecondsUntilAutoPause seconds of inactivity. Resuming takes about 15 seconds. What happens to a Lambda that tries to connect during those 15 seconds?",
+    "The Lambda timeout is 29 seconds. API Gateway's maximum integration timeout is also 29 seconds. If the Aurora resume takes 15 seconds and the Lambda still needs time to open a connection and run the query, what is the risk?",
+    "The fix is to raise MinCapacity from 0 to 0.5 ACU. This disables auto-pause entirely and keeps the cluster warm at minimal cost. Alternatively, add an RDS Proxy (absorbs the connection wait) or a warm-up Lambda that pre-connects before business hours."
+  ],
+  "resolution": {
+    "root_cause": "Aurora Serverless v2 cluster plover-reporting-db has MinCapacity=0, which enables auto-pause. After SecondsUntilAutoPause=300 seconds of idle, the cluster pauses and ServerlessDatabaseCapacity drops to 0. Over the weekend there is no traffic for 60+ hours, so the cluster is fully paused by Friday evening. On Monday at 09:00 the first Lambda invocation opens a TCP connection to the cluster endpoint. Aurora begins resuming (~15 seconds). The pg driver's connect() call blocks until the TCP handshake completes. Once Aurora resumes and accepts the connection, the Lambda still needs to run the query. Total elapsed time frequently exceeds 29 seconds, which is both the Lambda function timeout and the API Gateway integration timeout. The Lambda is terminated with 'Task timed out after 29.00 seconds' and API Gateway returns HTTP 504. The cluster itself is healthy: it resumed successfully and all subsequent requests succeed. The database logs show no errors.",
+    "fix_criteria": [
+      {
+        "id": "identify_auto_pause_enabled",
+        "description": "Player identifies from rds-cluster-config.json that MinCapacity=0 enables auto-pause on the Aurora Serverless v2 cluster",
+        "required": true
+      },
+      {
+        "id": "identify_capacity_gap",
+        "description": "Player identifies from cloudwatch-metrics.csv that ServerlessDatabaseCapacity=0 for the 60+ hour window from Friday evening to Monday 09:00",
+        "required": true
+      },
+      {
+        "id": "correlate_resume_with_timeout",
+        "description": "Player correlates the RDS resume event timestamp with the Lambda timeout and API Gateway 504 at Monday 09:00, concluding that the resume latency caused the timeout",
+        "required": true
+      },
+      {
+        "id": "propose_fix",
+        "description": "Player proposes at least one of: (1) raise MinCapacity to 0.5 ACU to disable auto-pause; (2) add RDS Proxy to absorb connection waits; (3) implement a warm-up Lambda that connects before business hours",
+        "required": true,
+        "options": [
+          {
+            "id": "raise_min_capacity",
+            "description": "Raise MinCapacity from 0 to 0.5 ACU. Disables auto-pause entirely. Cluster stays warm at all times. Cost: ~$43/month for the always-on 0.5 ACU. Cleanest fix with the clearest tradeoff.",
+            "recommended": true
+          },
+          {
+            "id": "add_rds_proxy",
+            "description": "Add RDS Proxy in front of Aurora. Proxy maintains a connection pool and absorbs resume latency from the Lambda's perspective. Cost: ~$0.015/hour plus traffic. Adds operational complexity. Also masks the root cause rather than fixing it.",
+            "recommended": false
+          },
+          {
+            "id": "warm_up_lambda",
+            "description": "Add an EventBridge scheduled rule that fires a warm-up Lambda at 08:50 on Monday mornings. The warm-up Lambda connects to Aurora (triggering resume), waits for success, then exits. The production Lambda then sees a warm cluster at 09:00. Cost: negligible. Brittle if schedule changes or business hours expand.",
+            "recommended": false
+          }
+        ]
+      },
+      {
+        "id": "explain_no_database_errors",
+        "description": "Player explains why the database shows no errors: Aurora resumed successfully; the failure was in the caller's timeout, not in Aurora itself",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Aurora Serverless v2 auto-pause works: MinCapacity=0 enables it, SecondsUntilAutoPause controls the idle threshold, resume takes ~15 seconds",
+      "Why MinCapacity=0 is dangerous behind synchronous callers with tight timeouts: the resume latency can exceed the caller's timeout",
+      "How to read CloudWatch ServerlessDatabaseCapacity to detect a paused cluster and correlate the resume event with an application error",
+      "The three remediation options (raise MinCapacity, add RDS Proxy, warm-up Lambda) and their cost and complexity tradeoffs",
+      "Why the database appears healthy while the application fails: Aurora resumed successfully; the timeout was in the Lambda/API Gateway layer, not in Aurora"
+    ],
+    "sop_steps": [
+      "Check CloudWatch metrics for the Aurora cluster. Pull ServerlessDatabaseCapacity over the past 7 days. If you see a prolonged period of 0 ACU ending precisely at the first error timestamp, the cluster was paused and the error is the resume-latency race condition.",
+      "Check the RDS event log. Filter for the cluster identifier. Look for 'Aurora DB cluster paused' and 'Resuming DB cluster' events. Confirm the resume event timestamp aligns with the first 504 error.",
+      "Read the cluster configuration. Call DescribeDBClusters and inspect ServerlessV2ScalingConfiguration. A MinCapacity of 0 means auto-pause is enabled. Note SecondsUntilAutoPause to understand the idle threshold.",
+      "Check the Lambda timeout. Call GetFunctionConfiguration for the reporting Lambda. If the timeout is at or below 30 seconds, any Aurora resume event will race against the function timeout.",
+      "Check the API Gateway integration timeout. Call GetIntegration on the route. If it is at the maximum (29 seconds), any Lambda that takes more than 29 seconds to respond will produce a 504, regardless of what the Lambda does.",
+      "Choose and apply a fix. Option 1 (recommended): modify the cluster's ServerlessV2ScalingConfiguration to set MinCapacity=0.5. This disables auto-pause. Apply via ModifyDBCluster; no reboot required. Option 2: provision an RDS Proxy in front of the cluster and update the Lambda's connection string to point to the proxy endpoint. Option 3: add an EventBridge rule that triggers a warm-up Lambda before business hours each day the cluster might be idle.",
+      "Verify the fix. After raising MinCapacity, confirm ServerlessDatabaseCapacity never drops to 0 in CloudWatch. Simulate a weekend by manually checking the metric on Monday morning before the first real request. Alternatively, run a load test that includes a 10-minute idle gap and confirm the first post-idle request succeeds within 2 seconds.",
+      "Add a CloudWatch alarm. Alert on ServerlessDatabaseCapacity=0 for more than 60 minutes if the cluster should never be paused post-fix. This detects any future regression (e.g., someone setting MinCapacity back to 0 via Terraform drift)."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "RDS Proxy connection pool exhaustion under bursty load",
+        "how_it_differs": "RDS Proxy hides the Aurora resume latency but introduces its own failure mode: if the pool is exhausted during a burst (e.g., Monday morning all customers hit the dashboard simultaneously), new connections queue and time out. Symptom is similar 504s but during load, not just on first request. CloudWatch shows RDS Proxy DatabaseConnectionsCurrentlyBorrowed at max.",
+        "prevention": "Size the RDS Proxy connection pool to the Lambda concurrency limit. Add a CloudWatch alarm on DatabaseConnectionsCurrentlyBorrowed approaching max_connections."
+      },
+      {
+        "scenario": "Aurora Serverless v2 scale-up latency during a traffic spike",
+        "how_it_differs": "Even with MinCapacity=0.5 (auto-pause disabled), if traffic spikes rapidly, Aurora may take several seconds to allocate additional ACUs. During that ramp, queries queue and latency rises. This is different from a paused cluster: the cluster is running but under-provisioned for a moment. ServerlessDatabaseCapacity will show a rising ramp, not a jump from 0.",
+        "prevention": "Set MaxCapacity high enough for peak load. Use RDS Proxy or application-level connection pooling to smooth out connection bursts. Pre-warm by gradually ramping traffic if possible."
+      },
+      {
+        "scenario": "Lambda cold start + Aurora resume compound latency",
+        "how_it_differs": "If both the Lambda execution environment and the Aurora cluster are cold simultaneously (e.g., after a deployment that replaces all Lambda instances), the Lambda cold start (~500ms to 1s for Node.js) adds to the Aurora resume time (~15s), further reducing the margin before the 29-second timeout.",
+        "prevention": "Use Lambda Provisioned Concurrency for the critical reporting function so at least one execution environment is always warm. Combined with raising Aurora MinCapacity, this eliminates both cold-start layers."
+      }
+    ],
+    "sop_practices": [
+      "Never set MinCapacity=0 on an Aurora Serverless v2 cluster that serves synchronous callers with timeouts shorter than the resume latency plus query time. The 15-second resume window is a hard floor; any caller timeout at or below 20 seconds risks a Monday-morning failure.",
+      "When you see a 504 that only occurs on the first request after a long idle period, check ServerlessDatabaseCapacity before anything else. A jump from 0 to positive at the exact error time is the fingerprint of an Aurora auto-pause resume race.",
+      "Always pair auto-pause (MinCapacity=0) with a warm-up strategy: an EventBridge scheduled rule that fires a keep-alive Lambda before business hours, or RDS Proxy, or simply raising MinCapacity to 0.5. Cost of MinCapacity=0.5 (~$43/month) is usually less than one escalation incident.",
+      "Add a CloudWatch alarm on ServerlessDatabaseCapacity=0 for any cluster that should be always-on. This makes accidental auto-pause visible before Monday morning."
+    ]
+  }
+}
