@@ -1,4 +1,5 @@
 name: evaluator
+run-name: "evaluator #${{ github.event.issue.number }}"
 on:
   issues:
     types: [labeled]

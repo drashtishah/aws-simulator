@@ -1,4 +1,5 @@
 name: verifier
+run-name: "verifier #${{ github.event.issue.number }}"
 on:
   issues:
     types: [labeled]

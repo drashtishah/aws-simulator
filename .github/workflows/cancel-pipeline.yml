@@ -18,12 +18,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
           REPO: ${{ github.repository }}
+          N: ${{ github.event.issue.number }}
         run: |
           cancelled=""
           for wf in planner.yml critic.yml implementer.yml verifier.yml evaluator.yml; do
             for status in in_progress queued; do
               ids=$(gh run list --workflow "$wf" --status "$status" \
-                --repo "$REPO" --json databaseId --jq '.[].databaseId')
+                --repo "$REPO" --json databaseId,displayTitle \
+                --jq ".[] | select(.displayTitle | endswith(\" #$N\")) | .databaseId")
               for id in $ids; do
                 if gh run cancel "$id" --repo "$REPO" 2>/dev/null; then
                   cancelled="$cancelled\n- $wf run $id"
