@@ -1,0 +1,60 @@
+{
+  "Events": [
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "DB cluster created",
+      "EventCategories": ["creation"],
+      "Date": "2026-03-15T11:22:04Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "Aurora DB cluster paused",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-10T22:55:31Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "Resuming DB cluster",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-13T09:00:08Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "DB cluster resumed",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-13T09:00:23Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "Aurora DB cluster paused",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-17T17:50:44Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "Resuming DB cluster",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-20T09:00:12Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    },
+    {
+      "SourceIdentifier": "plover-reporting-db",
+      "SourceType": "db-cluster",
+      "Message": "DB cluster resumed",
+      "EventCategories": ["notification"],
+      "Date": "2026-04-20T09:00:27Z",
+      "SourceArn": "arn:aws:rds:us-east-1:123456789012:cluster:plover-reporting-db"
+    }
+  ]
+}

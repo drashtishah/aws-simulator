@@ -1,0 +1,176 @@
+{
+  "id": "037-rds-proxy-pinning",
+  "title": "The Proxy That Stopped Sharing",
+  "summary": "For 8 months, RDS Proxy multiplexed 400 Lambda sessions into 20 database connections. Monday afternoon every Lambda times out with connection-slots exhausted. No deployment happened.",
+  "difficulty": 3,
+  "category": "performance",
+  "services": ["rds-proxy", "lambda", "rds", "cloudwatch"],
+  "tags": ["rds-proxy", "connection-pooling", "pinning", "postgresql", "lambda", "sequences", "serverless-database"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain4:DesignHighPerformingArchitectures",
+    "DAS-C01:Domain3:ProcessingAndMonitoring"
+  ],
+  "company": {
+    "name": "Finch Ledger",
+    "industry": "B2B financial technology (accounts payable automation)",
+    "size": "Series B startup, 55 engineers, 3 product teams"
+  },
+  "glossary": {
+    "RDS Proxy": "A fully managed database proxy for Amazon RDS and Aurora that sits between application clients and the database. It pools and shares database connections to improve scalability and resilience, reducing the connection overhead from spiky workloads like Lambda functions.",
+    "Connection multiplexing": "RDS Proxy's core feature: many client sessions share a smaller pool of real database connections. When a client's transaction finishes, the proxy reassigns that underlying connection to a different waiting client. Multiplexing breaks down when the proxy pins a connection to a specific client.",
+    "Connection pinning": "When RDS Proxy assigns a single database connection exclusively to one client session for the duration of that session, bypassing multiplexing. Certain SQL operations trigger pinning: sequence function calls (nextval, currval), SET commands, prepared statements, temporary tables, advisory locks, and other session-state mutations.",
+    "DatabaseConnectionsCurrentlySessionPinned": "A CloudWatch metric published by RDS Proxy that counts how many database connections are currently pinned to a specific client session. A spike in this metric while DatabaseConnections approaches max_connections indicates a pinning-driven exhaustion event.",
+    "max_connections": "The PostgreSQL configuration parameter that caps the total number of simultaneous client connections the database will accept. On Aurora PostgreSQL, the default value is computed from instance memory: LEAST({DBInstanceClassMemory/9531392}, 5000). For db.t4g.medium (4 GiB), this resolves to 450.",
+    "nextval()": "A PostgreSQL function that returns the next value from a named sequence. Calling nextval() inside a connection proxied through RDS Proxy causes the proxy to pin that connection for the remainder of the client session because the sequence state is session-local and cannot be transferred to another underlying connection.",
+    "Aurora connection limits": "Aurora PostgreSQL caps simultaneous connections based on instance class memory. db.t4g.medium (4 GiB RAM) resolves max_connections to 450. With 400 Lambda functions each holding a pinned connection, 90 percent of capacity is consumed by a single function pool.",
+    "InitQuery": "An optional RDS Proxy configuration field that specifies one or more SQL statements to run when a new database connection is established by the proxy. Used to set session parameters (search_path, timezone, application_name). Setting session variables via InitQuery does not cause pinning; setting them after the proxy hands a connection to a client does."
+  },
+  "system": {
+    "what_broke": "A Friday migration added SELECT nextval('invoice_number_seq') to the Lambda invoice-creation path. RDS Proxy pins a connection on any sequence function call; 400 concurrent Lambdas each pinned one connection and exhausted Aurora max_connections=450.",
+    "data_flow": "Lambda invoice-processor -> finch-proxy (RDS Proxy) -> finch-invoicing-cluster (Aurora PostgreSQL writer) -> invoice_number_seq",
+    "components": [
+      {
+        "name": "finch-proxy (RDS Proxy)",
+        "role": "Sits in front of the Aurora writer and multiplexes up to 400 Lambda sessions into a shared pool of database connections. Under normal operation maintains a ~20:1 multiplex ratio, keeping Aurora connection count well below max_connections.",
+        "connections": ["Receives connections from invoice-processor Lambda pool", "Forwards queries to finch-invoicing-cluster Aurora writer", "Publishes DatabaseConnectionsCurrentlySessionPinned and DatabaseConnections metrics to CloudWatch"],
+        "failure_impact": "If pinning disables multiplexing, each Lambda holds one real database connection for its entire execution window. With 400 concurrent Lambdas, connection count approaches max_connections and new connections are refused."
+      },
+      {
+        "name": "finch-invoicing-cluster (Aurora PostgreSQL 15)",
+        "role": "Aurora PostgreSQL 15 writer on db.t4g.medium (4 GiB RAM). Hosts the invoices database including invoice_number_seq. max_connections resolves to 450 (4294967296 / 9531392).",
+        "connections": ["Receives proxied connections from finch-proxy", "Hosts invoice_number_seq sequence used by invoice-creation path"],
+        "failure_impact": "When connection count reaches 450, Aurora returns FATAL: remaining connection slots are reserved for non-replication superuser connections, refusing all new client connections."
+      },
+      {
+        "name": "invoice-processor Lambda",
+        "role": "A pool of 400 Lambda functions that handle invoice-creation requests. Each invocation opens a connection through finch-proxy, runs INSERT into invoices, and closes. Post-migration, each invocation also calls SELECT nextval('invoice_number_seq') inside the same transaction.",
+        "connections": ["Connects to finch-proxy endpoint on port 5432", "Reads from SQS invoice-creation-queue trigger"],
+        "failure_impact": "Each Lambda invocation that calls nextval() pins one proxy connection. With 400 concurrent invocations, 400 connections are pinned simultaneously, exhausting Aurora capacity."
+      },
+      {
+        "name": "invoice_number_seq (PostgreSQL sequence)",
+        "role": "A PostgreSQL sequence that generates unique invoice numbers. Added to the invoice-creation transaction by migration_20260417_invoice_sequence.sql on Friday 2026-04-17. Calling nextval() on this sequence triggers RDS Proxy pinning.",
+        "connections": ["Called via SELECT nextval('invoice_number_seq') inside invoice-creation transaction in invoice-processor Lambda"],
+        "failure_impact": "Each call to nextval() through the proxy causes that client session's proxy connection to be pinned, removing it from the multiplex pool for the duration of the Lambda execution."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "rds-proxy",
+      "artifacts": [
+        "artifacts/proxy-config.json",
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "describe_db_proxy",
+        "describe_db_proxy_targets",
+        "describe_db_proxy_target_groups"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "describe_alarms",
+        "list_metrics"
+      ]
+    },
+    {
+      "service": "rds",
+      "artifacts": [
+        "artifacts/rds-parameter-group.json"
+      ],
+      "capabilities": [
+        "describe_db_instances",
+        "describe_db_clusters",
+        "describe_db_parameters"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function_configuration",
+        "list_event_source_mappings",
+        "get_function_concurrency"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "RDS Proxy stopped multiplexing connections Monday at 14:22 UTC. No code deployment since Friday.",
+    "Check CloudWatch: DatabaseConnectionsCurrentlySessionPinned. When did it start climbing, and at what rate?",
+    "Lambda logs show FATAL: remaining connection slots are reserved for non-replication superuser connections from 14:22. Aurora max_connections=450; 400 Lambdas each hold a pinned connection.",
+    "A migration ran Friday: migration_20260417_invoice_sequence.sql. What SQL did it add to the Lambda invoicing path?",
+    "AWS docs: calling nextval() causes RDS Proxy to pin the connection for that client session. The migration added SELECT nextval('invoice_number_seq') inside a Lambda transaction. Fix: move sequence calls to a direct Aurora endpoint that bypasses the proxy, or use a server-side sequence default."
+  ],
+  "resolution": {
+    "root_cause": "The Friday migration added SELECT nextval('invoice_number_seq') inside Lambda's invoice-creation transaction. RDS Proxy pins a database connection whenever a client calls a PostgreSQL sequence function. With 400 concurrent Lambda invocations each pinning one connection, Aurora max_connections=450 (db.t4g.medium, 4 GiB: 4294967296/9531392=450) was exhausted, blocking all new connections.",
+    "fix_criteria": [
+      {
+        "id": "identify_pinning_metric",
+        "description": "Player correlates DatabaseConnectionsCurrentlySessionPinned spike at 14:22 UTC with Lambda connection errors",
+        "required": true
+      },
+      {
+        "id": "identify_nextval_trigger",
+        "description": "Player identifies nextval() in migration_20260417_invoice_sequence.sql as the RDS Proxy pinning trigger per AWS documentation",
+        "required": true
+      },
+      {
+        "id": "identify_connection_exhaustion",
+        "description": "Player identifies that 400 pinned connections exhausted Aurora max_connections=450 on db.t4g.medium",
+        "required": true
+      },
+      {
+        "id": "propose_immediate_fix",
+        "description": "Player proposes reverting the migration OR moving nextval outside the proxy path (direct Aurora endpoint or server-side sequence default)",
+        "required": true
+      },
+      {
+        "id": "propose_guardrail",
+        "description": "Player proposes a CloudWatch alarm on DatabaseConnectionsCurrentlySessionPinned ratio or a pre-merge review gate for proxy-incompatible SQL",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "What RDS Proxy multiplexing is and when it breaks down due to connection pinning",
+      "Which SQL operations cause pinning per AWS documentation: nextval, SET, PREPARE, cursors, temporary tables, advisory locks",
+      "How to read DatabaseConnectionsCurrentlySessionPinned in CloudWatch to diagnose a pinning-driven exhaustion event",
+      "How to architect sequence calls safely behind a proxy: use server-side sequence defaults or route sequence calls to a direct Aurora endpoint"
+    ],
+    "sop_steps": [
+      "Confirm pinning via CloudWatch. Open the finch-proxy metrics in CloudWatch and graph DatabaseConnectionsCurrentlySessionPinned alongside DatabaseConnections over the last 2 hours. If pinned connections equal or approach total connections, pinning is the cause.",
+      "Identify the root-cause SQL in recent migrations. Run git log or check the migrations table for any migration merged or applied since the last healthy baseline. Open migration_20260417_invoice_sequence.sql and scan for nextval(), currval(), SET, PREPARE, DECLARE CURSOR, or any advisory lock call inside a proxied transaction.",
+      "Immediate mitigation: revert the migration or disable the Lambda trigger. The fastest path is to disable the SQS event source mapping on invoice-processor Lambda to stop new pinned connections accumulating. Then revert migration_20260417_invoice_sequence.sql via a rollback migration to remove the nextval() call from the transaction path.",
+      "Long-term fix option A (server-side default): remove the explicit SELECT nextval() call from the Lambda code and set the invoice_number column DEFAULT to nextval('invoice_number_seq') in the table DDL. The sequence is called server-side during INSERT, never through the proxy client session, so no pin is triggered.",
+      "Long-term fix option B (direct endpoint): keep the nextval() call but route it through a direct Aurora writer endpoint (not through finch-proxy). The direct endpoint has no multiplexing and no pin semantics; session state is isolated to one connection that the Lambda opens and closes explicitly.",
+      "Verify multiplexing ratio recovers. After the fix is deployed, watch DatabaseConnectionsCurrentlySessionPinned drop to near zero and confirm DatabaseConnections returns to the normal ~20:1 multiplex ratio (roughly 20 connections serving 400 Lambda invocations).",
+      "Add a CloudWatch alarm on pin ratio. Create an alarm on DatabaseConnectionsCurrentlySessionPinned / DatabaseConnections. Threshold of 0.5 (50 percent of connections pinned) should page on-call before exhaustion is reached."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "SET session variable causes pinning on every Lambda invocation",
+        "how_it_differs": "Any SET command (SET search_path, SET timezone, SET application_name) issued after the proxy hands a connection to the client also triggers pinning. No migration is required; a SET in application startup code or an ORM configuration is enough. The symptom is identical (DatabaseConnectionsCurrentlySessionPinned spikes) but the root cause is in application initialization code rather than a sequence call.",
+        "prevention": "Audit all SQL in proxy-connected Lambda paths for SET commands. Move session initialization to RDS Proxy InitQuery configuration, where it runs at connection establishment time without triggering pinning."
+      },
+      {
+        "scenario": "Direct Lambda-to-Aurora without proxy exhausts max_connections",
+        "how_it_differs": "If the proxy is removed or bypassed, Lambda concurrency spikes directly consume Aurora connections. The failure mode looks similar (FATAL: remaining connection slots) but the CloudWatch signature differs: DatabaseConnections total rises without a corresponding DatabaseConnectionsCurrentlySessionPinned spike, and the exhaustion happens faster with no ramp because there is no multiplex buffer.",
+        "prevention": "Always route Lambda through RDS Proxy. Monitor DatabaseConnections with an alarm at 80 percent of max_connections. If direct connections are unavoidable, set LAMBDA_TASK_ROOT connection pool limits and use RDS IAM authentication to enforce client identity."
+      }
+    ],
+    "sop_practices": [
+      "Monitor DatabaseConnectionsCurrentlySessionPinned/DatabaseConnections ratio as a pinning health signal. A ratio above 0.3 during peak traffic warrants investigation; above 0.7 is a pre-exhaustion condition.",
+      "Audit all SQL in proxy-connected Lambda paths for nextval, currval, SET, PREPARE, DECLARE CURSOR, and advisory lock operations before deploy. Add a CI lint step that fails on these patterns in files that touch the proxy connection path.",
+      "Use a direct Aurora reader or writer endpoint for operations that intentionally use session state. Never route sequence calls, prepared statements, or cursor-heavy workloads through RDS Proxy unless the connection count is far below max_connections and pinning is acceptable."
+    ]
+  }
+}
