@@ -1,0 +1,26 @@
+START RequestId: d4e5f6a7-b8c9-0123-def0-234567890123 Version: $LATEST
+2026-04-20T09:00:12.143Z d4e5f6a7-b8c9-0123-def0-234567890123 INFO  [plover-report-fn] Connecting to database plover-reporting-db.cluster-cabcdefghijk.us-east-1.rds.amazonaws.com:5432
+2026-04-20T09:00:12.144Z d4e5f6a7-b8c9-0123-def0-234567890123 INFO  [plover-report-fn] Opening pg connection...
+END RequestId: d4e5f6a7-b8c9-0123-def0-234567890123
+REPORT RequestId: d4e5f6a7-b8c9-0123-def0-234567890123  Duration: 29000.00 ms  Billed Duration: 29000 ms  Memory Size: 512 MB  Max Memory Used: 89 MB
+2026-04-20T09:00:41.143Z d4e5f6a7-b8c9-0123-def0-234567890123 ERROR Task timed out after 29.00 seconds
+
+START RequestId: e5f6a7b8-c9d0-1234-ef01-345678901234 Version: $LATEST
+2026-04-20T09:00:52.301Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Connecting to database plover-reporting-db.cluster-cabcdefghijk.us-east-1.rds.amazonaws.com:5432
+2026-04-20T09:00:52.302Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Opening pg connection...
+2026-04-20T09:00:52.584Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Connection established in 283ms
+2026-04-20T09:00:52.585Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Running report query for clientId=plover-client-0042
+2026-04-20T09:00:52.840Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Query completed in 255ms, rows=147
+2026-04-20T09:00:52.841Z e5f6a7b8-c9d0-1234-ef01-345678901234 INFO  [plover-report-fn] Response serialized, returning 200
+END RequestId: e5f6a7b8-c9d0-1234-ef01-345678901234
+REPORT RequestId: e5f6a7b8-c9d0-1234-ef01-345678901234  Duration: 298.14 ms  Billed Duration: 299 ms  Memory Size: 512 MB  Max Memory Used: 91 MB
+
+START RequestId: f6a7b8c9-d0e1-2345-f012-456789012345 Version: $LATEST
+2026-04-20T09:01:08.112Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Connecting to database plover-reporting-db.cluster-cabcdefghijk.us-east-1.rds.amazonaws.com:5432
+2026-04-20T09:01:08.113Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Opening pg connection...
+2026-04-20T09:01:08.375Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Connection established in 262ms
+2026-04-20T09:01:08.376Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Running report query for clientId=plover-client-0017
+2026-04-20T09:01:08.627Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Query completed in 251ms, rows=203
+2026-04-20T09:01:08.628Z f6a7b8c9-d0e1-2345-f012-456789012345 INFO  [plover-report-fn] Response serialized, returning 200
+END RequestId: f6a7b8c9-d0e1-2345-f012-456789012345
+REPORT RequestId: f6a7b8c9-d0e1-2345-f012-456789012345  Duration: 254.88 ms  Billed Duration: 255 ms  Memory Size: 512 MB  Max Memory Used: 90 MB
