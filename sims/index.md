@@ -47,3 +47,4 @@ tags:
 | 037 | [[037-rds-proxy-pinning/story\|The Proxy That Stopped Sharing]] | 3 - Professional | Performance | rds-proxy, lambda, rds, cloudwatch | 30 min |
 | 038 | [[038-aurora-serverless-deep-sleep/story\|Thirty Seconds of Silence]] | 3 - Professional | Performance | aurora, rds, lambda, cloudwatch | 30 min |
 | 039 | [[039-tgw-static-route-shadow/story\|The Route That Was Never There]] | 3 - Professional | Networking | transit-gateway, vpc, cloudtrail, cloudwatch | 35 min |
+| 040 | [[040-eventbridge-cross-account-drop/story\|The Events Nobody Sent]] | 2 - Associate | Operations | eventbridge, iam, cloudwatch, cloudtrail | 25 min |
