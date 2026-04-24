@@ -46,3 +46,4 @@ tags:
 | 036 | [[036-s3-vpce-policy-lockout/story\|The Lock You Wrote Yourself]] | 3 - Professional | Security | s3, vpc, iam, cloudtrail | 35 min |
 | 037 | [[037-rds-proxy-pinning/story\|The Proxy That Stopped Sharing]] | 3 - Professional | Performance | rds-proxy, lambda, rds, cloudwatch | 30 min |
 | 038 | [[038-aurora-serverless-deep-sleep/story\|Thirty Seconds of Silence]] | 3 - Professional | Performance | aurora, rds, lambda, cloudwatch | 30 min |
+| 039 | [[039-tgw-static-route-shadow/story\|The Route That Was Never There]] | 3 - Professional | Networking | transit-gateway, vpc, cloudtrail, cloudwatch | 35 min |

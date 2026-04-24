@@ -1,0 +1,148 @@
+{
+  "id": "039-tgw-static-route-shadow",
+  "title": "The Route That Was Never There",
+  "summary": "A static blackhole route in the TGW route table has silently dropped payroll VPC east-west traffic for six months. Discovered via Reachability Analyzer during new-VPC routing setup.",
+  "difficulty": 3,
+  "category": "networking",
+  "services": ["transit-gateway", "vpc", "cloudtrail", "cloudwatch"],
+  "tags": ["transit-gateway", "routing", "blackhole-route", "static-route", "propagated-route", "east-west-connectivity"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "ANS-C01:Domain1:NetworkDesignAndConnectivity",
+    "SAP-C02:Domain2:ContinuousImprovement",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Marsh Street Bank",
+    "industry": "Regional commercial bank",
+    "size": "Mid-size, 14 production VPCs, TGW hub-and-spoke"
+  },
+  "glossary": {
+    "Transit Gateway": "An AWS network hub that connects VPCs and on-premises networks through a central routing plane. Instead of peering every VPC to every other VPC, each VPC attaches to the TGW and the TGW routes packets between them.",
+    "TGW route table": "A routing table associated with a Transit Gateway that determines where packets are forwarded based on destination CIDR. Each attachment is associated with a route table and propagates routes into it.",
+    "Static route": "A manually created route in a TGW route table that maps a CIDR to a specific attachment or marks it as a blackhole. Static routes are created by operators and have higher priority than propagated routes for the same CIDR.",
+    "Propagated route": "A route that a VPC attachment automatically advertises into a TGW route table when propagation is enabled. Propagated routes reflect the actual CIDR of the attached VPC and are suppressed by any static route for the same CIDR.",
+    "Blackhole route": "A static route with no valid attachment target. Any packet whose destination matches a blackhole route is silently dropped by the Transit Gateway with no ICMP unreachable returned to the source.",
+    "Static-vs-propagated priority rule": "When a TGW route table contains both a static route and a propagated route for the same CIDR, the static route always wins regardless of the static route's state. A blackhole static route therefore silently outranks an active propagated route.",
+    "Reachability Analyzer": "An AWS VPC feature that performs logical path analysis between two endpoints without sending live traffic. Returns a pass or fail result and, on failure, an explanation code such as TGW_RTB_HIGHER_PRIORITY_ROUTE that pinpoints the blocking component.",
+    "PacketDropCountBlackhole": "A CloudWatch metric in the AWS/TransitGateway namespace that counts packets dropped due to blackhole routes. Can be filtered by the TransitGatewayAttachment dimension to identify which attachment's traffic is being dropped."
+  },
+  "system": {
+    "what_broke": "A static route for 10.19.0.0/16 with State: blackhole in TGW route table tgw-rtb-main was created six months ago and has higher priority than the propagated route from the payroll VPC attachment. All east-west traffic destined for the payroll VPC is silently dropped at the Transit Gateway. The outage was discovered when an engineer ran a Reachability Analyzer path check while configuring routing for the newly attached VPC and received a TGW_RTB_HIGHER_PRIORITY_ROUTE explanation.",
+    "components": [
+      {
+        "name": "msb-tgw-01 (Transit Gateway)",
+        "role": "Network hub for all 14 production VPCs at Marsh Street Bank. Route table tgw-rtb-main is associated with every VPC attachment. All inter-VPC traffic flows through this TGW.",
+        "connections": ["tgw-rtb-main associated with all VPC attachments", "Forwards packets between payroll-vpc, shared-services-vpc, and 12 other VPCs"],
+        "failure_impact": "Route table misconfiguration silently drops inter-VPC traffic without ICMP unreachable; source applications see connection timeouts with no routing error."
+      },
+      {
+        "name": "tgw-rtb-main (TGW Route Table)",
+        "role": "Single route table associated with all VPC attachments at Marsh Street Bank. Contains two conflicting route entries for 10.19.0.0/16: one static blackhole and one propagated active route.",
+        "connections": ["Associated with tgw-attach-payroll", "Associated with tgw-attach-shared", "Associated with tgw-attach-new"],
+        "failure_impact": "The static blackhole entry shadows the propagated route from tgw-attach-payroll. All traffic whose destination falls in 10.19.0.0/16 is dropped silently at the TGW."
+      },
+      {
+        "name": "payroll-vpc (10.19.0.0/16, vpc-payroll)",
+        "role": "Hosts payroll processing workloads that require east-west access to shared-services-vpc for Active Directory authentication, DNS, and monitoring agents.",
+        "connections": ["Attached to msb-tgw-01 via tgw-attach-payroll", "Depends on shared-services-vpc for AD, DNS, and monitoring"],
+        "failure_impact": "All inter-VPC connections from other VPCs to payroll-vpc fail while the blackhole is active. VPC flow logs on payroll ENIs show no inbound traffic; source ENIs show ACCEPT on egress with no return traffic."
+      },
+      {
+        "name": "shared-services-vpc (10.0.0.0/16, vpc-shared)",
+        "role": "Internal shared services hub providing Active Directory, DNS, and monitoring infrastructure consumed by all other VPCs including payroll-vpc.",
+        "connections": ["Attached to msb-tgw-01 via tgw-attach-shared", "Serves payroll-vpc for AD auth, DNS resolution, and monitoring agents"],
+        "failure_impact": "Payroll authentication and name resolution fail silently. Symptoms appear at the application layer as timeouts and auth errors, not obviously linked to TGW routing."
+      },
+      {
+        "name": "new-vpc (10.42.0.0/16, vpc-new, attachment tgw-attach-new)",
+        "role": "New VPC attached to msb-tgw-01 one hour before incident discovery. An engineer ran Reachability Analyzer during its routing setup to verify end-to-end paths; the path incidentally crossed the 10.19.0.0/16 CIDR and exposed the pre-existing blackhole.",
+        "connections": ["Attached to msb-tgw-01 via tgw-attach-new one hour before incident", "Reachability Analyzer path analysis triggered the discovery of the blackhole"],
+        "failure_impact": "The new VPC itself is unaffected; its attachment was the catalyst that surfaced the six-month-old blackhole during routine routing verification."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "transit-gateway",
+      "artifacts": ["artifacts/tgw-route-table.json"],
+      "capabilities": ["SearchTransitGatewayRoutes", "DescribeTransitGatewayRouteTables", "DeleteTransitGatewayRoute"]
+    },
+    {
+      "service": "vpc",
+      "artifacts": ["artifacts/vpc-flow-logs.txt", "artifacts/reachability-analyzer-result.json", "artifacts/context.txt"],
+      "capabilities": ["DescribeFlowLogs", "StartNetworkInsightsAnalysis", "DescribeNetworkInsightsAnalyses", "DescribeVpcs"]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": ["artifacts/cloudtrail-events.json"],
+      "capabilities": ["LookupEvents", "GetTrailStatus"]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": ["artifacts/cloudwatch-tgw-metrics.json"],
+      "capabilities": ["GetMetricData", "GetMetricStatistics", "ListMetrics"]
+    }
+  ],
+  "progressive_clues": [
+    "Payroll VPC cannot reach shared services. The Transit Gateway is in the path. Check the route table.",
+    "The TGW route table has two routes for 10.19.0.0/16: one static, one propagated. Static routes always win over propagated routes for the same CIDR.",
+    "The static route for 10.19.0.0/16 is in BLACKHOLE state. A blackhole route has no valid attachment; matching packets are dropped silently. It still outranks the propagated route.",
+    "Call DeleteTransitGatewayRoute on the blackhole static entry for 10.19.0.0/16 in tgw-rtb-main. The propagated route from tgw-attach-payroll will become the active path."
+  ],
+  "resolution": {
+    "root_cause": "A static route for 10.19.0.0/16 with State: blackhole in TGW route table tgw-rtb-main has higher priority than the propagated route from the payroll VPC attachment, causing all east-west traffic destined for the payroll VPC to be silently dropped at the Transit Gateway.",
+    "fix_criteria": [
+      {
+        "id": "identify_blackhole_route",
+        "description": "Player identifies the static blackhole route for 10.19.0.0/16 in tgw-rtb-main from the TGW route table",
+        "required": true
+      },
+      {
+        "id": "understand_static_priority",
+        "description": "Player explains that a static route takes priority over a propagated route for the same CIDR regardless of state",
+        "required": true
+      },
+      {
+        "id": "delete_static_route",
+        "description": "Player calls DeleteTransitGatewayRoute for the 10.19.0.0/16 blackhole entry, restoring the propagated route as active",
+        "required": true
+      },
+      {
+        "id": "add_detection_guardrail",
+        "description": "Player proposes a CloudWatch alarm on PacketDropCountBlackhole or an AWS Config rule to detect blackhole routes before they cause outages",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Static routes in a TGW route table outrank propagated routes for the same CIDR even when the static route is in BLACKHOLE state.",
+      "A blackhole route silently drops packets; VPC flow logs on the source ENI show ACCEPT on egress but no return-path entries, because the drop occurs at the TGW after leaving the source VPC.",
+      "PacketDropCountBlackhole in the AWS/TransitGateway namespace is the canonical metric for blackhole-route drops; Reachability Analyzer returns TGW_RTB_HIGHER_PRIORITY_ROUTE for the same condition."
+    ],
+    "sop_steps": [
+      "Check CloudWatch metric PacketDropCountBlackhole for the TGW and per attachment using the TransitGatewayAttachment dimension. Non-zero values confirm blackhole-route drops are occurring.",
+      "Run SearchTransitGatewayRoutes on the TGW route table with filter State=blackhole. Any result is an active problem that must be investigated.",
+      "For each blackhole result, check whether a propagated route for the same CIDR exists. If yes, the blackhole silently shadows it and all traffic to that CIDR is being dropped.",
+      "Call DeleteTransitGatewayRoute specifying TransitGatewayRouteTableId and DestinationCidrBlock of the blackhole entry to remove the shadowing route.",
+      "Verify with Reachability Analyzer: run StartNetworkInsightsAnalysis on a path from the payroll-VPC ENI to a shared-services-VPC ENI. Expect networkPathFound: true after the fix.",
+      "Prevent recurrence: create a CloudWatch alarm on PacketDropCountBlackhole at threshold 0 per attachment. Optionally add an AWS Config rule that flags TGW route tables containing any blackhole-state static routes."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Missing propagated route: VPC attachment exists but route propagation is not enabled on the route table association, so no route exists at all for the CIDR.",
+        "how_it_differs": "Reachability Analyzer returns TGW_RTB_NO_ROUTE_TO_TGW_ATTACHMENT; SearchTransitGatewayRoutes returns no route for the CIDR rather than a blackhole entry. There is no static-vs-propagated conflict; the route table simply has no entry.",
+        "prevention": "Enforce route propagation on all attachments via AWS Config rule. Alert when a new attachment has no propagated route within 5 minutes of creation."
+      },
+      {
+        "scenario": "Overlapping CIDR conflict: a more-specific static route (for example 10.19.1.0/24) coexists with a propagated /16, causing partial reachability that varies by destination IP.",
+        "how_it_differs": "Some payroll hosts are reachable and some are not depending on whether their IP falls in the more-specific prefix. Reachability Analyzer returns TGW_RTB_MORE_SPECIFIC_ROUTE; no blackhole flag appears in the route state.",
+        "prevention": "Audit for overlapping CIDRs before adding any static route. Run SearchTransitGatewayRoutes after every route-table change to compare static and propagated entries and confirm no unintended overlap."
+      }
+    ],
+    "sop_practices": [
+      "Run SearchTransitGatewayRoutes with filter State=blackhole after every TGW route-table change as a mandatory post-change health check. A blackhole that was always present but suddenly matters because workloads shifted will surface before an incident is reported.",
+      "Alarm on PacketDropCountBlackhole per attachment at threshold 0. A blackhole created during a maintenance window six months ago will be caught the moment traffic begins flowing through the affected path."
+    ]
+  }
+}
