@@ -1,0 +1,176 @@
+{
+  "id": "041-fargate-ephemeral-exhaust",
+  "title": "Twenty Gigabytes Is Not Enough (Tern Vision)",
+  "summary": "A computer-vision inference service fails to start new Fargate tasks Friday morning. Existing tasks run fine. The fix is one missing field in the task definition.",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": ["ecs", "ecr", "cloudwatch"],
+  "tags": ["fargate", "ephemeral-storage", "CannotPullContainerError", "container-insights", "task-definition", "ecs"],
+  "estimated_minutes": 25,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain4:TroubleshootingAndOptimization",
+    "SAP-C02:Domain2:DesignSolutionsForOrganizationalComplexity",
+    "DOP-C02:Domain4:MonitoringAndLogging"
+  ],
+  "company": {
+    "name": "Tern Vision",
+    "industry": "computer-vision model-inference SaaS",
+    "size": "18 customers, 6-person engineering team"
+  },
+  "glossary": {
+    "Fargate ephemeral storage": "Default 20 GiB per task on platform 1.4.0+; shared by image layers, container root filesystem, and /tmp; expanded via ephemeralStorage.sizeInGiB (min 21, max 200).",
+    "ephemeralStorage.sizeInGiB": "Task-definition field that provisions additional ephemeral storage; omit the block to get the 20 GiB default; cannot be set to 20 (minimum configurable value is 21).",
+    "platform version 1.4.0": "Fargate Linux runtime version that introduced 20 GiB ephemeral storage and containerd-based image pulling.",
+    "CannotPullContainerError": "ECS task stoppedReason prefix emitted when the container agent cannot pull an image; for ephemeral-storage exhaustion on platform 1.4.0+ the message includes a containerd snapshotter path and 'no space left on device'.",
+    "layer extraction": "Process where containerd decompresses each OCI image layer onto ephemeral storage before the container starts; peak disk usage is compressed-size-in-ECR plus uncompressed-size on disk.",
+    "sidecar container": "A secondary container in the same task definition, typically for logging/tracing; its image layers also consume ephemeral storage."
+  },
+  "system": {
+    "what_broke": "The task definition for tern-inference-task-def omits the ephemeralStorage block, so Fargate tasks get the 20 GiB default; the combined uncompressed size of tern-vision-inference:v2.3.1 (~14.2 GiB extracted) plus datadog-agent:7 (~2.2 GiB extracted) plus /tmp overhead exceeds 20 GiB, causing the image pull to fail with no-space-left errors.",
+    "data_flow": "Inference requests arrive via API Gateway -> ECS Fargate service -> tern-inference tasks -> results returned; model weights bundled in the ECR image.",
+    "components": [
+      {
+        "name": "tern-inference-task-def (ECS task definition)",
+        "role": "Defines both containers and launch config; no ephemeralStorage block.",
+        "connections": [
+          "registered against tern-inference-service",
+          "pulls from tern-vision-ecr-primary"
+        ],
+        "failure_impact": "New task launches fail at image-pull stage when total extracted layer size exceeds 20 GiB default."
+      },
+      {
+        "name": "tern-inference-service (ECS service)",
+        "role": "Fargate service running desiredCount: 2.",
+        "connections": [
+          "uses tern-inference-task-def",
+          "publishes RunningTaskCount and PendingTaskCount to ECS/ContainerInsights when Container Insights enabled"
+        ],
+        "failure_impact": "PendingTaskCount spikes, RunningTaskCount drops as in-flight replacements stall."
+      },
+      {
+        "name": "tern-vision-ecr-primary (ECR repository)",
+        "role": "Stores tern-vision-inference:v2.3.1 (6.2 GiB compressed, ~14.2 GiB extracted).",
+        "connections": [
+          "pulled by Fargate task execution role",
+          "referenced in tern-inference-task-def"
+        ],
+        "failure_impact": "v2.3.1 is the first image version where model weights push total extracted size past 20 GiB."
+      },
+      {
+        "name": "tern-datadog-sidecar-ecr (ECR repository)",
+        "role": "Stores datadog-agent:7 (900 MB compressed, ~2.2 GiB extracted).",
+        "connections": [
+          "pulled alongside primary image by same task",
+          "logs to CloudWatch"
+        ],
+        "failure_impact": "Even a small sidecar contributes ~2.2 GiB extracted, which tips the combined total over the 20 GiB limit after the v2.3.1 primary image upgrade."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "ecs",
+      "artifacts": [
+        "artifacts/task-definition.json",
+        "artifacts/ecs-events.json"
+      ],
+      "capabilities": [
+        "describe_task_definition",
+        "describe_tasks",
+        "list_tasks",
+        "describe_services",
+        "describe_clusters"
+      ]
+    },
+    {
+      "service": "ecr",
+      "artifacts": [
+        "artifacts/ecr-image-manifest.json"
+      ],
+      "capabilities": [
+        "describe_images",
+        "get_repository_policy",
+        "batch_get_image"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "New Fargate tasks stopped immediately after a task definition update. Existing running tasks are unaffected.",
+    "The stoppedReason for every new task contains 'CannotPullContainerError' and 'no space left on device'. The ECR repository and network connectivity are both healthy.",
+    "Fargate platform 1.4.0 tasks get 20 GiB ephemeral storage by default. That space holds all image layers during pull, not just the container root filesystem.",
+    "Check the combined uncompressed size of all container images in the task definition. The ECR image manifest lists layer sizes in compressed form; the extracted size on disk is larger.",
+    "The task definition does not include an ephemeralStorage block. Adding ephemeralStorage: { sizeInGiB: 40 } to the task definition and deploying a new revision will give tasks enough headroom."
+  ],
+  "resolution": {
+    "root_cause": "tern-inference-task-def omits ephemeralStorage, so tasks receive the 20 GiB Fargate default; the v2.3.1 primary image and Datadog sidecar together require ~16.2 GiB extracted plus write-layer overhead, exhausting the default allocation before the sidecar finishes pulling.",
+    "fix_criteria": [
+      {
+        "id": "identify_space_error",
+        "description": "Player identifies stoppedReason contains 'no space left on device' in ecs-events.json.",
+        "required": true
+      },
+      {
+        "id": "calculate_total_layer_size",
+        "description": "Player calculates that combined extracted layer sizes (~16.2 GiB) plus overhead exceed 20 GiB default.",
+        "required": true
+      },
+      {
+        "id": "identify_missing_ephemeral_block",
+        "description": "Player identifies task definition lacks ephemeralStorage field.",
+        "required": true
+      },
+      {
+        "id": "propose_ephemeral_increase",
+        "description": "Player proposes adding ephemeralStorage: { sizeInGiB: <value >= 40> } to the task definition.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "Fargate platform 1.4.0 tasks get 20 GiB ephemeral storage by default; the minimum configurable increase is 21 GiB; 40 GiB is a safe working value for large-model inference images.",
+      "Ephemeral storage holds compressed and uncompressed image layers during pull, container writable layer, and /tmp; peak usage can be 2-3x the compressed ECR size.",
+      "How to size ephemeral storage: sum all container image compressed sizes, multiply by ~2.5 for extraction overhead, add /tmp reserve, then round up to the next 5 GiB.",
+      "EphemeralStorageUtilized (namespace ECS/ContainerInsights, dimension ClusterName + TaskDefinitionFamily) tracks usage; only available when Container Insights is enabled on the cluster."
+    ],
+    "sop_steps": [
+      "Confirm stoppedReason via ECS DescribeTasks: filter stopped tasks launched after the task definition update; check stoppedReason for 'no space left on device'. If CannotPullContainerError with a containerd snapshotter path appears, disk exhaustion during pull is confirmed.",
+      "Calculate required storage: from the ECR image manifest, sum compressed layer sizes for every container in the task definition. Multiply by ~2.5 to estimate extracted size (compressed layers are typically 40-50% of uncompressed). Add 2 GiB for the container writable layer and /tmp. For tern-vision-inference:v2.3.1 (6.2 GiB compressed, ~14.2 GiB extracted) plus datadog-agent:7 (900 MB compressed, ~2.2 GiB extracted), total extracted ~16.2 GiB + ~2 GiB overhead = ~18.2 GiB; round up to 40 GiB for headroom.",
+      "Update the task definition: register a new revision of tern-inference-task-def with '\"ephemeralStorage\": { \"sizeInGiB\": 40 }' at the task level (not inside containerDefinitions). Verify requiresCompatibilities includes FARGATE and networkMode is awsvpc.",
+      "Deploy the new revision: update the ECS service to use the new task definition revision. Watch PendingTaskCount drop and RunningTaskCount recover to desiredCount in the ECS console or CloudWatch.",
+      "Enable Container Insights on the cluster if not already on ('aws ecs update-cluster-settings --cluster tern-vision-prod --settings name=containerInsights,value=enabled'). After tasks start, verify EphemeralStorageUtilized (namespace ECS/ContainerInsights) stays well below the new limit. Set a CloudWatch alarm at 80% of sizeInGiB."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Task OOM kill instead of pull failure.",
+        "how_it_differs": "OOM is an exit-code-137 event after the task starts; ephemeral exhaustion stops the task before any container process runs.",
+        "prevention": "Set memory and memoryReservation on each container explicitly; do not rely solely on task-level memory."
+      },
+      {
+        "scenario": "ECR image pull throttled by authentication failure.",
+        "how_it_differs": "stoppedReason is a permissions or auth error, not 'no space left on device'; the ECR repository and task execution role are the investigation surface.",
+        "prevention": "Ensure the task execution role has ecr:GetAuthorizationToken, ecr:BatchCheckLayerAvailability, ecr:GetDownloadUrlForLayer, ecr:BatchGetImage."
+      },
+      {
+        "scenario": "Ephemeral storage exhausted by application writes at runtime, not image pull.",
+        "how_it_differs": "Task starts successfully; it fails later with 'no space left on device' inside application code writing to /tmp or the container writable layer.",
+        "prevention": "Same ephemeralStorage increase applies, but add monitoring via EphemeralStorageUtilized and consider moving large writes to an EFS volume or S3."
+      }
+    ],
+    "sop_practices": [
+      "Size ephemeral storage before deploying a new image version, not after a production outage. Use 'aws ecr describe-images --query imageDetails[0].imageSizeInBytes' to get compressed size, then apply the 2.5x heuristic.",
+      "Enable Container Insights on every cluster where large images run. EphemeralStorageUtilized (namespace ECS/ContainerInsights) is the only vended CloudWatch metric for per-task disk usage; without it you learn about exhaustion only from stoppedReason strings.",
+      "Keep a buffer: set sizeInGiB to at least 1.5x your calculated peak. Model weights grow with retraining cycles; a buffer avoids repeat incidents on the next image version bump."
+    ]
+  }
+}

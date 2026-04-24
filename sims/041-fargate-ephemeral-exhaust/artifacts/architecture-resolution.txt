@@ -1,0 +1,21 @@
+[API Gateway]
+     |
+     v
+[ECS Service: tern-inference-service]
+  desiredCount: 2 | runningCount: 2 | pendingCount: 0
+     |
+     v
+[Fargate Task]
+  ephemeralStorage: { sizeInGiB: 40 }   <-- added to task definition
+     |
+     +---> [ECR Pull: tern-vision-inference:v2.3.1]  OK
+     |       extracted ~14.2 GiB
+     |
+     +---> [ECR Pull: datadog-agent:7]               OK
+     |       extracted ~2.2 GiB
+     |
+     +---> [Container: tern-vision-inference]  RUNNING
+     +---> [Container: datadog-agent]          RUNNING
+
+             40 GiB headroom sufficient (~16.4 GiB extracted + overhead ~18.4 GiB used)
+             EphemeralStorageUtilized (ECS/ContainerInsights) now observable

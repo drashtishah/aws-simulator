@@ -1,0 +1,1 @@
+Company: Tern Vision | Role: on-call SRE | Time: Friday 10:14am | Incident: Fargate tasks stuck in PENDING, stoppedReason indicates image pull failure

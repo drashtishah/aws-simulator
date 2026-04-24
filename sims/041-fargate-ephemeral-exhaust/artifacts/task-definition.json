@@ -1,0 +1,74 @@
+{
+  "taskDefinition": {
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:123456789012:task-definition/tern-inference-task-def:5",
+    "family": "tern-inference-task-def",
+    "taskRoleArn": "arn:aws:iam::123456789012:role/tern-inference-task-role",
+    "executionRoleArn": "arn:aws:iam::123456789012:role/tern-inference-execution-role",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "4096",
+    "memory": "8192",
+    "revision": 5,
+    "status": "ACTIVE",
+    "registeredAt": "2026-04-17T10:01:52.000Z",
+    "registeredBy": "arn:aws:iam::123456789012:user/deploy-bot",
+    "containerDefinitions": [
+      {
+        "name": "tern-vision-inference",
+        "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/tern-vision-ecr-primary:v2.3.1",
+        "essential": true,
+        "cpu": 3584,
+        "memory": 7168,
+        "portMappings": [
+          {
+            "containerPort": 8080,
+            "protocol": "tcp"
+          }
+        ],
+        "environment": [
+          {
+            "name": "MODEL_VERSION",
+            "value": "v2.3.1"
+          },
+          {
+            "name": "LOG_LEVEL",
+            "value": "INFO"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/tern-inference-task-def",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "tern-vision-inference"
+          }
+        }
+      },
+      {
+        "name": "datadog-agent",
+        "image": "public.ecr.aws/datadog/agent:7",
+        "essential": false,
+        "cpu": 256,
+        "memory": 512,
+        "environment": [
+          {
+            "name": "DD_API_KEY_SECRET_ARN",
+            "value": "arn:aws:secretsmanager:us-east-1:123456789012:secret/datadog-api-key"
+          },
+          {
+            "name": "ECS_FARGATE",
+            "value": "true"
+          }
+        ],
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/tern-inference-task-def",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "datadog-agent"
+          }
+        }
+      }
+    ]
+  }
+}
