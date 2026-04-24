@@ -127,10 +127,11 @@ updated: {{TODAY}}
 source_issues: [#{{ISSUE}}]
 confidence: observed | inferred | ambiguous
 summary: <one sentence, <= 160 chars>
-# PROBLEM adds: triggers, solutions, related_problems, severity
-# SOLUTION adds: applies_to, preconditions, cost
-# PLAYBOOK adds: when, steps, related
-# PATTERN adds:  principle, counter_examples
+# Kind-specific frontmatter keys (all listed keys are REQUIRED as frontmatter, not body sections):
+# PROBLEM:  triggers, solutions, related_problems, severity
+# SOLUTION: applies_to, preconditions, cost
+# PLAYBOOK: when, steps, related   <- steps: must be a frontmatter key (count or inline list); the `## Steps` body section does NOT satisfy it
+# PATTERN:  principle, counter_examples
 ---
 ```
 
