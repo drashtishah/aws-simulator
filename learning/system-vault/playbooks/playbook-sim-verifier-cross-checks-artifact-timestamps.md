@@ -9,6 +9,7 @@ source_issues: [#340]
 confidence: observed
 summary: Sim artifacts look realistic in isolation but contradict each other on timestamps; verifier must cross-reference every timeline artifact before PASS
 when: sim-content PR touches two or more time-stamped artifacts (cloudwatch CSV, rds-events.json, api-gateway-logs.txt, lambda-logs.txt)
+steps: [list every time-stamped artifact, pick canonical timeline source per window, walk each artifact against canonical timeline, verify day-of-week of absolute dates, verify downstream timeout arithmetic adds up to user-visible symptom]
 related: []
 ---
 
