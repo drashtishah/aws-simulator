@@ -1,0 +1,27 @@
+{
+  "Policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowProductAccountsPutEvents",
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": [
+            "arn:aws:iam::888877776666:root",
+            "arn:aws:iam::777766665555:root",
+            "arn:aws:iam::666655554444:root",
+            "arn:aws:iam::555544443333:root",
+            "arn:aws:iam::444433332222:root",
+            "arn:aws:iam::333322221111:root",
+            "arn:aws:iam::222211110000:root",
+            "arn:aws:iam::111100009999:root",
+            "arn:aws:iam::444455556666:root"
+          ]
+        },
+        "Action": "events:PutEvents",
+        "Resource": "arn:aws:events:us-east-1:111122223333:event-bus/audit-bus"
+      }
+    ]
+  },
+  "_note": "all 9 accounts including new account 444455556666 are authorized; resource policy is correctly configured and is not the failure point"
+}

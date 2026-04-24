@@ -1,0 +1,21 @@
+{
+  "DescribeRuleResponse": {
+    "Name": "audit-forward-rule",
+    "Arn": "arn:aws:events:us-east-1:444455556666:rule/audit-forward-rule",
+    "EventPattern": "{\"source\":[\"quillmark.product-audit\"],\"detail-type\":[\"AccessEvent\"]}",
+    "State": "ENABLED",
+    "Description": "Forward audit events from new-product-team to central audit bus",
+    "EventBusName": "default",
+    "CreatedBy": "444455556666"
+  },
+  "ListTargetsByRuleResponse": {
+    "Targets": [
+      {
+        "Id": "central-audit-bus-target",
+        "Arn": "arn:aws:events:us-east-1:111122223333:event-bus/audit-bus",
+        "RoleArn": "arn:aws:iam::444455556666:role/eventbridge-cross-account-role"
+      }
+    ]
+  },
+  "_note": "source value 'quillmark.product-audit' does not match the central rule's prefix 'quillmark.audit.'"
+}
