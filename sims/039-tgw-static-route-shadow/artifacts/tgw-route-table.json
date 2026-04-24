@@ -1,0 +1,47 @@
+{
+  "Routes": [
+    {
+      "DestinationCidrBlock": "10.19.0.0/16",
+      "Type": "static",
+      "State": "blackhole",
+      "TransitGatewayAttachments": []
+    },
+    {
+      "DestinationCidrBlock": "10.19.0.0/16",
+      "Type": "propagated",
+      "State": "active",
+      "TransitGatewayAttachments": [
+        {
+          "TransitGatewayAttachmentId": "tgw-attach-0payroll1234abcdef",
+          "ResourceType": "vpc",
+          "ResourceId": "vpc-payroll"
+        }
+      ]
+    },
+    {
+      "DestinationCidrBlock": "10.0.0.0/16",
+      "Type": "propagated",
+      "State": "active",
+      "TransitGatewayAttachments": [
+        {
+          "TransitGatewayAttachmentId": "tgw-attach-0shared1234abcdef",
+          "ResourceType": "vpc",
+          "ResourceId": "vpc-shared"
+        }
+      ]
+    },
+    {
+      "DestinationCidrBlock": "10.42.0.0/16",
+      "Type": "propagated",
+      "State": "active",
+      "TransitGatewayAttachments": [
+        {
+          "TransitGatewayAttachmentId": "tgw-attach-0new12345abcdef01",
+          "ResourceType": "vpc",
+          "ResourceId": "vpc-new"
+        }
+      ]
+    }
+  ],
+  "AdditionalRoutesAvailable": false
+}

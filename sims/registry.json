@@ -548,6 +548,21 @@
       "created": "2026-04-23"
     },
     {
+      "id": "039-tgw-static-route-shadow",
+      "title": "The Route That Was Never There",
+      "summary": "A static blackhole route in the TGW route table has silently dropped payroll VPC east-west traffic for six months. Discovered via Reachability Analyzer during new-VPC routing setup.",
+      "difficulty": 3,
+      "category": "networking",
+      "services": [
+        "transit-gateway",
+        "vpc",
+        "cloudtrail",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-23"
+    },
+    {
       "id": "040-eventbridge-cross-account-drop",
       "title": "The Events Nobody Sent",
       "summary": "A new product account's EventBridge rule fires and Invocations climb, but the central audit Lambda is never invoked. FailedInvocations is zero. No DLQ. No errors.",
