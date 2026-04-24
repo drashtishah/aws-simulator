@@ -4,11 +4,11 @@ kind: problem
 title: patch-plan fails when issue body lacks plan-template section headers
 tags: [kind/problem, scope/pipeline, stage/planner, signal/loop]
 created: 2026-04-12
-updated: 2026-04-13
-source_issues: [#217, #209, #236, #237, #246]
+updated: 2026-04-23
+source_issues: [#217, #209, #236, #237, #246, #344]
 confidence: observed
 summary: patch-plan calls fail on free-form issue specs because they expect template section headers to already exist in the body
-triggers: [free-form issue body without plan-template headers, planner uses patch-plan on non-templated issue, plan contains non-standard section names like New files that patch-plan cannot match, template-defined section (Files NOT to touch) absent from patch-plan valid-sections list, plan edit embeds markdown headings inside code fences that GitHub renders as real section headers creating false indexOf anchors]
+triggers: [free-form issue body without plan-template headers, planner uses patch-plan on non-templated issue, plan contains non-standard section names like New files that patch-plan cannot match, template-defined section (Files NOT to touch) absent from patch-plan valid-sections list, plan edit embeds markdown headings inside code fences that GitHub renders as real section headers creating false indexOf anchors, sim-content label plans always include New files to create and Files NOT to touch sections so patch-plan always falls back on revision]
 severity: degraded
 solutions: [solution-escape-headings-in-plan-fences, solution-fence-aware-patch-body]
 related_problems: [problem-plan-scope-change-stale-residue]
@@ -40,6 +40,10 @@ When the issue body does not follow the template structure, write the
 full plan directly instead of patching. Detect template compliance
 first: grep for `### Scope`, `### Files to change`, or similar
 anchors. If absent, skip patch-plan and write the complete plan body.
+For `sim-content` issues specifically, skip patch-plan unconditionally
+on revision: sim plans always carry `New files to create` and
+`Files NOT to touch` sections that are outside the patch-plan
+section allowlist, so the first attempt is guaranteed to fail (#344).
 For embedded headings, use four-backtick fences or escape as `\###`.
 Callee-side fix landed in #246: patchBody now uses a fence-aware line
 tokenizer, ignoring `### ` inside backtick or tilde fences.
