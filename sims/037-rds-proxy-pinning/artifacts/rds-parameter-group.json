@@ -1,0 +1,100 @@
+{
+  "DBClusterParameterGroups": [
+    {
+      "DBClusterParameterGroupName": "finch-aurora-pg15",
+      "DBParameterGroupFamily": "aurora-postgresql15",
+      "Description": "Parameter group for finch-invoicing-cluster Aurora PostgreSQL 15",
+      "DBClusterParameterGroupArn": "arn:aws:rds:us-east-1:123456789012:cluster-pg:finch-aurora-pg15"
+    }
+  ],
+  "Parameters": [
+    {
+      "ParameterName": "max_connections",
+      "ParameterValue": "LEAST({DBInstanceClassMemory/9531392},5000)",
+      "Description": "Sets the maximum number of concurrent connections. Aurora PostgreSQL computes this from instance memory at startup.",
+      "Source": "engine-default",
+      "ApplyType": "static",
+      "DataType": "integer",
+      "IsModifiable": true,
+      "ApplyMethod": "pending-reboot",
+      "_resolved_value_note": "db.t4g.medium has 4 GiB RAM (4294967296 bytes). 4294967296 / 9531392 = 450. max_connections = 450."
+    },
+    {
+      "ParameterName": "shared_buffers",
+      "ParameterValue": "{DBInstanceClassMemory/32768}",
+      "Description": "Sets the number of shared memory buffers used by the server.",
+      "Source": "engine-default",
+      "ApplyType": "static",
+      "DataType": "integer",
+      "IsModifiable": true,
+      "ApplyMethod": "pending-reboot"
+    },
+    {
+      "ParameterName": "log_min_duration_statement",
+      "ParameterValue": "1000",
+      "Description": "Sets the minimum execution time above which statements will be logged.",
+      "Source": "user",
+      "ApplyType": "dynamic",
+      "DataType": "integer",
+      "IsModifiable": true,
+      "ApplyMethod": "immediate"
+    },
+    {
+      "ParameterName": "idle_in_transaction_session_timeout",
+      "ParameterValue": "30000",
+      "Description": "Sets the maximum allowed duration of any idling open transaction.",
+      "Source": "user",
+      "ApplyType": "dynamic",
+      "DataType": "integer",
+      "IsModifiable": true,
+      "ApplyMethod": "immediate"
+    },
+    {
+      "ParameterName": "rds.logical_replication",
+      "ParameterValue": "0",
+      "Description": "Enables logical replication.",
+      "Source": "engine-default",
+      "ApplyType": "static",
+      "DataType": "boolean",
+      "IsModifiable": true,
+      "ApplyMethod": "pending-reboot"
+    }
+  ],
+  "DBClusters": [
+    {
+      "DBClusterIdentifier": "finch-invoicing-cluster",
+      "Status": "available",
+      "Engine": "aurora-postgresql",
+      "EngineVersion": "15.4",
+      "DBClusterParameterGroup": "finch-aurora-pg15",
+      "DBClusterMembers": [
+        {
+          "DBInstanceIdentifier": "finch-invoicing-instance-1",
+          "IsClusterWriter": true,
+          "DBClusterParameterGroupStatus": "in-sync"
+        }
+      ],
+      "Endpoint": "finch-invoicing-cluster.cluster-abc123def456.us-east-1.rds.amazonaws.com",
+      "ReaderEndpoint": "finch-invoicing-cluster.cluster-ro-abc123def456.us-east-1.rds.amazonaws.com",
+      "MultiAZ": false,
+      "StorageEncrypted": true
+    }
+  ],
+  "DBInstances": [
+    {
+      "DBInstanceIdentifier": "finch-invoicing-instance-1",
+      "DBInstanceClass": "db.t4g.medium",
+      "Engine": "aurora-postgresql",
+      "DBInstanceStatus": "available",
+      "MultiAZ": false,
+      "StorageEncrypted": true,
+      "DBParameterGroups": [
+        {
+          "DBParameterGroupName": "default.aurora-postgresql15",
+          "ParameterApplyStatus": "in-sync"
+        }
+      ],
+      "_instance_memory_note": "db.t4g.medium: 2 vCPU, 4 GiB RAM (4294967296 bytes). max_connections resolved value: 4294967296 / 9531392 = 450."
+    }
+  ]
+}

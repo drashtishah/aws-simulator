@@ -1,0 +1,163 @@
+{
+  "id": "036-s3-vpce-policy-lockout",
+  "title": "The Lock You Wrote Yourself",
+  "summary": "Admin self-locks out of S3 bucket by writing a Deny policy on aws:SourceVpce that blocks non-VPC traffic, including the AWS Console",
+  "difficulty": 3,
+  "category": "security",
+  "services": ["s3", "vpc", "iam", "cloudtrail"],
+  "tags": ["vpc-endpoint", "bucket-policy", "condition-keys", "deny-precedence"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SCS-C02:Domain4:IdentityAccessManagement",
+    "SAP-C02:Domain4:AccessControls"
+  ],
+  "company": {
+    "name": "Larkspur Health",
+    "industry": "Regional healthcare network",
+    "size": "Mid-size, 2,400 employees, 6 facilities, cloud-first infrastructure team"
+  },
+  "glossary": {
+    "Bucket policy": "A resource-based IAM policy attached directly to an S3 bucket. Evaluated in addition to identity-based policies. A Deny in a bucket policy overrides any Allow in an identity-based policy, including s3:* grants and even admin IAM policies.",
+    "VPC endpoint": "A gateway or interface resource that lets traffic from a VPC reach AWS services without traversing the public internet. For S3, the gateway endpoint type is most common. Requests routed through the endpoint carry the aws:SourceVpce context key; requests from outside the VPC (including the AWS Console) do not.",
+    "aws:SourceVpce": "An IAM condition key that evaluates to the VPC endpoint ID when a request arrives through a VPC endpoint. When a request does NOT arrive through a VPC endpoint (e.g., from the AWS Console or CLI outside a VPC), this key is absent from the request context.",
+    "aws:SourceVpc": "An IAM condition key that evaluates to the VPC ID of the originating VPC when a request arrives through a VPC endpoint. Like aws:SourceVpce, it is absent when the request does not originate from within a VPC.",
+    "Gateway vs interface endpoint": "A gateway endpoint (used by S3 and DynamoDB) is a route-table entry that directs traffic to the AWS service without a network interface. An interface endpoint (PrivateLink) creates an ENI in your subnet. For S3 bucket policies, both endpoint types set aws:SourceVpce; only interface endpoints also set aws:SourceIp to a private address.",
+    "Deny precedence": "In IAM policy evaluation, an explicit Deny anywhere in the policy set overrides any Allow, regardless of how many Allow statements exist. An identity-based policy granting s3:* does not override a bucket policy Deny. Even the root user is not exempt from explicit Deny on most S3 actions (exception: bucket-owner root can replace the policy itself).",
+    "Condition key absence semantics": "When IAM evaluates a condition operator like StringNotEquals and the condition key (e.g., aws:SourceVpce) is absent from the request context, the comparison is made against a null or missing value. StringNotEquals on a missing key evaluates to true, meaning the Deny statement fires. StringNotEqualsIfExists short-circuits when the key is absent (condition evaluates to false), preventing the Deny from firing on requests that simply lack the key."
+  },
+  "system": {
+    "what_broke": "The bucket policy on larkspur-phi-archive contains an Effect: Deny statement with a StringNotEquals condition on aws:SourceVpce. The intent was to restrict access to traffic from the approved VPC endpoint only. The bug: when the AWS Console or any caller outside the VPC makes a request, the aws:SourceVpce key is absent from the request context. StringNotEquals on an absent key evaluates to true, so the Deny fires on all non-VPC traffic, including the Console session of the admin who wrote the policy. The admin's IAM identity has s3:* via an admin role, but the bucket policy Deny takes precedence over all identity-based Allows.",
+    "data_flow": "Larkspur Health stores PHI archive files in the larkspur-phi-archive S3 bucket. Application servers in a private subnet reach S3 through a gateway VPC endpoint (vpce-0a1b2c3d4e5f67890). Security and compliance engineers access the bucket through the AWS Console or CLI from their workstations. The bucket policy was meant to enforce VPC-only access for the application tier while still allowing Console access for administrators.",
+    "components": [
+      {
+        "name": "larkspur-phi-archive (S3 bucket)",
+        "role": "Stores PHI archive files for Larkspur Health's clinical data retention policy. Versioning enabled, server-side encryption with KMS. Bucket policy is the primary access control layer beyond IAM.",
+        "connections": ["Written and read by application servers via VPC endpoint", "Accessed by compliance engineers via AWS Console and CLI", "CloudTrail data events enabled on all object operations"],
+        "failure_impact": "Lockout blocks all Console and CLI access outside the VPC. Application traffic through the endpoint continues unaffected, but no manual intervention, audits, or emergency reads are possible until the policy is corrected."
+      },
+      {
+        "name": "vpce-0a1b2c3d4e5f67890 (S3 gateway endpoint)",
+        "role": "Gateway endpoint in the larkspur-app VPC that routes S3 traffic from application EC2 instances directly to S3 without a NAT gateway. Endpoint policy is permissive (allows all S3 actions).",
+        "connections": ["Attached to route tables of private subnets", "Carries aws:SourceVpce context key on all requests routed through it"],
+        "failure_impact": "Application tier is unaffected by the lockout. The lockout only affects callers that do not route through this endpoint."
+      },
+      {
+        "name": "larkspur-infra-admin (IAM role)",
+        "role": "Administrator role assumed by the security engineer who wrote the bucket policy. Has AdministratorAccess managed policy attached. The admin assumed this role via AWS SSO from their console session.",
+        "connections": ["Assumes role from identity center session", "Has s3:* on all resources", "Subject to bucket policy resource-based Deny"],
+        "failure_impact": "Even with s3:* from the IAM role, the bucket policy Deny fires on Console requests because aws:SourceVpce is absent. The admin cannot read, write, or update the bucket via Console."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/bucket-policy.json"
+      ],
+      "capabilities": [
+        "get_bucket_policy",
+        "get_object",
+        "list_objects_v2"
+      ]
+    },
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/iam-policy.json"
+      ],
+      "capabilities": [
+        "simulate_principal_policy",
+        "get_user",
+        "get_policy"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status"
+      ]
+    },
+    {
+      "service": "vpc",
+      "artifacts": [
+        "artifacts/vpc-endpoint-policy.json"
+      ],
+      "capabilities": [
+        "describe_vpc_endpoints",
+        "describe_vpc_endpoint_connections"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The AWS Console returns AccessDenied on GetObject even though the admin's IAM role has s3:*. Something other than IAM identity policy is blocking the request.",
+    "Check the bucket policy. A Deny statement in a bucket policy overrides any Allow in an identity-based policy, including AdministratorAccess.",
+    "Look at the Deny statement's Condition. It uses StringNotEquals on aws:SourceVpce. When does aws:SourceVpce appear in a request context, and when is it absent?",
+    "The aws:SourceVpce key is only present when the request arrives through a VPC endpoint. Console and CLI requests from outside a VPC do not carry this key. StringNotEquals on an absent key evaluates to true, so the Deny fires on all Console traffic.",
+    "There are two paths out: (1) the root user (or a principal calling from within the VPC via the endpoint) can call PutBucketPolicy to replace the policy; (2) replace StringNotEquals with StringNotEqualsIfExists, which short-circuits when the key is absent and prevents the Deny from firing on non-VPC callers."
+  ],
+  "resolution": {
+    "root_cause": "The larkspur-phi-archive bucket policy contains a Deny statement with Condition: { StringNotEquals: { 'aws:SourceVpce': 'vpce-0a1b2c3d4e5f67890' } }. The intent was to allow only VPC endpoint traffic. The defect: when aws:SourceVpce is absent from the request context (as it is for all AWS Console and CLI calls outside the VPC), StringNotEquals evaluates to true and the Deny fires. The admin's IAM role has s3:* via AdministratorAccess, but a bucket policy explicit Deny overrides all identity-based Allows. The result is a complete lockout of every principal not calling from within the VPC through the specific endpoint.",
+    "fix_criteria": [
+      {
+        "id": "identify_deny_precedence",
+        "description": "Player identifies that the Deny statement in the bucket policy takes precedence over the admin's IAM Allow (s3:*), and that no identity-based policy can override an explicit Deny in a resource-based policy.",
+        "required": true
+      },
+      {
+        "id": "identify_missing_key_semantics",
+        "description": "Player identifies that StringNotEquals evaluates to true when aws:SourceVpce is absent from the request context (Console and non-VPC CLI requests do not carry this key), which is why the Deny fires on all non-VPC traffic.",
+        "required": true
+      },
+      {
+        "id": "propose_recovery_or_fix",
+        "description": "Player proposes at least one valid recovery path: (a) root user (bucket-owner account root principal) calls PutBucketPolicy or DeleteBucketPolicy to replace or remove the policy, since root can perform these actions on an owned bucket even when the bucket policy denies them; or (b) an IAM principal with s3:PutBucketPolicy calling from within the VPC through the endpoint satisfies the condition (key present and equals the expected endpoint ID), so the Deny does not fire for that call. Player also identifies the prevention fix: replace StringNotEquals with StringNotEqualsIfExists, which short-circuits when the key is absent and prevents the Deny from affecting non-VPC callers.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "How explicit Deny in a bucket policy overrides any identity-based Allow, including AdministratorAccess and s3:*",
+      "How aws:SourceVpce is set only when a request arrives through a VPC endpoint, and is absent for Console and non-VPC CLI requests",
+      "The difference between StringNotEquals and StringNotEqualsIfExists: StringNotEquals fires when the key is absent; StringNotEqualsIfExists short-circuits (condition false, Deny does not fire)",
+      "Recovery paths when a bucket policy self-lockout occurs: root user override and VPC endpoint caller override",
+      "The Organizations Root Access Management delete-bucket-policy privileged action as an additional recovery mechanism for non-management-account buckets"
+    ],
+    "sop_steps": [
+      "Confirm the lockout scope. Attempt a GetObject call from the AWS Console and from the AWS CLI with the admin role. Note the errorCode. Then attempt the same call from an EC2 instance inside the VPC (via the endpoint). If the VPC call succeeds but the Console call fails, the bucket policy is the likely cause.",
+      "Read the bucket policy. Call GetBucketPolicy on larkspur-phi-archive. Look for any Deny statement. Identify the Condition block and the operator used.",
+      "Analyze the condition semantics. If the Deny uses StringNotEquals on aws:SourceVpce, ask: what happens when aws:SourceVpce is absent? StringNotEquals on a missing key evaluates to true. That means the Deny fires on every request that does not carry the key, including all Console and non-VPC CLI traffic.",
+      "Identify the recovery paths. Path 1: the root user of the account that owns the bucket can call PutBucketPolicy or DeleteBucketPolicy even when the bucket policy explicitly denies those actions. The root override applies only to the bucket-owner account's root principal. Path 2: any IAM principal with s3:PutBucketPolicy who calls from within the VPC through the endpoint (vpce-0a1b2c3d4e5f67890) satisfies the condition (key present and equals the expected value), so the Deny does not fire for that call. Path 3: if the account is managed by AWS Organizations and the bucket is not in the management account, use the Root Access Management feature to perform a 'Delete bucket policy' privileged action as an alternative recovery.",
+      "Execute recovery. Using the root user (or a VPC-based caller), replace the bucket policy with a corrected version. The correct condition operator is StringNotEqualsIfExists. With IfExists, if aws:SourceVpce is absent, the condition evaluates to false and the Deny does not fire; the caller proceeds to identity-based policy evaluation. If aws:SourceVpce is present but does not match the expected endpoint ID, the condition evaluates to true and the Deny fires as intended.",
+      "Verify the fix. After applying the updated policy, confirm from the Console that GetObject, PutObject, and ListObjects work for the admin role. Then confirm from an EC2 instance outside the approved VPC that requests are still denied (or re-confirm from within the endpoint that they still succeed).",
+      "Document and prevent. Update the bucket policy template in the IaC repository. Add a pre-deploy policy simulator check that tests Console-path requests against the new policy. Add an AWS Config rule (or SCP) that flags any bucket policy using StringNotEquals on aws:SourceVpce or aws:SourceVpc without the IfExists suffix."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Same pattern with aws:SourceVpc instead of aws:SourceVpce.",
+        "how_it_differs": "aws:SourceVpc is also absent on Console requests. The lockout is identical. Using StringNotEquals on aws:SourceVpc produces the same self-lockout because the key is absent for non-VPC callers and StringNotEquals on a missing key evaluates to true.",
+        "prevention": "Always use StringNotEqualsIfExists when writing Deny conditions that reference aws:SourceVpc or aws:SourceVpce. The IfExists suffix is the canonical way to say 'only enforce this condition when the key is present.'"
+      },
+      {
+        "scenario": "Admin uses NotPrincipal in a Deny statement intending to exclude themselves.",
+        "how_it_differs": "NotPrincipal in a Deny statement is dangerous in a different way: it denies everyone except the listed principal. Listing the wrong ARN (e.g., user ARN instead of assumed-role ARN) locks out the intended exception. The root cause is ARN format mismatch, not condition key absence.",
+        "prevention": "Prefer explicit Principal Allows in a separate Allow statement over NotPrincipal Deny patterns. Test with the IAM policy simulator before deploying. Use role ARNs (not user ARNs) when the principal assumes a role."
+      },
+      {
+        "scenario": "VPC endpoint policy (not the bucket policy) contains the over-restrictive Deny.",
+        "how_it_differs": "If the endpoint policy denies traffic, requests through the endpoint fail but Console/CLI calls outside the VPC still work. The failure pattern is the inverse: VPC traffic denied, non-VPC traffic allowed. The bucket policy and endpoint policy are evaluated independently; a Deny in either blocks the relevant call.",
+        "prevention": "Keep the VPC endpoint policy permissive (Allow s3:* on *) and enforce access controls in the bucket policy. Simpler policy model, easier to reason about, and avoids layered Deny interactions."
+      }
+    ],
+    "sop_practices": [
+      "Use StringNotEqualsIfExists, not StringNotEquals, when writing Deny conditions on aws:SourceVpce or aws:SourceVpc. StringNotEquals on an absent key evaluates to true; StringNotEqualsIfExists short-circuits and lets the call proceed to identity-based evaluation.",
+      "After writing any bucket policy Deny, run the IAM policy simulator with a Console-sourced request (no aws:SourceVpce context key) to confirm the Deny does not fire unexpectedly.",
+      "Keep a documented recovery path before deploying any restrictive bucket policy. The root user override for PutBucketPolicy and DeleteBucketPolicy on an owned bucket is the canonical break-glass procedure.",
+      "For accounts in AWS Organizations, configure Root Access Management so the management account or a delegated admin can perform privileged bucket policy actions without needing the root user credentials of the member account."
+    ]
+  }
+}

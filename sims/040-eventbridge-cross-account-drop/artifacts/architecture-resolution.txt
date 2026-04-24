@@ -1,0 +1,31 @@
+Source Account (444455556666)                Central Audit Account (111122223333)
+-------------------------------------        -----------------------------------------
+
+  Application                                  audit-bus (custom event bus)
+  [UPDATED CONFIG]                               |
+    |                                            | resource policy: allows PutEvents
+    | emits events with                          | from all 9 account principals
+    | source: "quillmark.audit.product"          |
+    |                                            |
+  EventBridge default bus                        |   consolidate-all-accounts rule
+    |                                            |   EventPattern:
+  audit-forward-rule (ENABLED)                   |   { "source": [{ "prefix": "quillmark.audit." }] }
+    EventPattern:                                |
+    { "source": ["quillmark.audit.product"],     |   "quillmark.audit.product"
+      "detail-type": ["AccessEvent"] }           |   starts with "quillmark.audit." [MATCH]
+    Target: audit-bus (cross-account)            |
+    Role: eventbridge-cross-account-role         |   TriggeredRules: rising
+    |                                            |
+    | Invocations: rising                        |
+    | FailedInvocations: 0                       |
+    |                                            |
+    |---[ PutEvents ]------------------------>   |
+        failedEntryCount: 0                      |   audit-consolidation Lambda
+                                                 |   Invocations: rising [NOW INVOKED]
+                                                 |
+                                                 | Events processed and stored.
+
+Fix applied:
+  Application config changed: source "quillmark.product-audit" -> "quillmark.audit.product"
+  Central rule EventPattern unchanged: prefix "quillmark.audit." now matches.
+  No IAM or resource policy changes needed (both were already correct).

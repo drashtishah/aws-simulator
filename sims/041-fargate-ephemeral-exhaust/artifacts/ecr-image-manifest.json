@@ -1,0 +1,130 @@
+{
+  "images": [
+    {
+      "repositoryName": "tern-vision-ecr-primary",
+      "imageTag": "v2.3.1",
+      "imageSizeInBytes": 6659579904,
+      "imagePushedAt": "2026-04-17T09:58:11.000Z",
+      "imageDigest": "sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "manifest": {
+        "schemaVersion": 2,
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "config": {
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 12482,
+          "digest": "sha256:9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b"
+        },
+        "layers": [
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 157286400,
+            "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+            "_comment": "base OS (ubuntu:22.04) ~150 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 440401920,
+            "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+            "_comment": "Python 3.11 runtime ~420 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 3040870400,
+            "digest": "sha256:a3f2c1d8e9b045e7f6a8c9d2e1f3b4a5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1",
+            "_comment": "PyTorch 2.2 + CUDA 12.1 libraries ~2.84 GB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 398458880,
+            "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+            "_comment": "OpenCV, numpy, pillow, fastapi deps ~380 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 943718400,
+            "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+            "_comment": "CUDA runtime additional libs ~900 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 1678844004,
+            "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+            "_comment": "model weights v2.3.1 (upgraded from v2.2.0) ~1.56 GB compressed; extracted ~6.5 GB"
+          }
+        ]
+      },
+      "_layer_size_summary": {
+        "compressed_total_bytes": 6659579904,
+        "compressed_total_gib": 6.2,
+        "estimated_extracted_gib": 14.2,
+        "extraction_ratio": 2.29,
+        "note": "Extraction ratio varies by layer type: OS/runtime layers ~2.0x, PyTorch CUDA ~1.7x, model weights ~4.2x due to sparse weight tensors stored in compressed format in ECR"
+      }
+    },
+    {
+      "repositoryName": "tern-datadog-sidecar-ecr",
+      "imageTag": "7",
+      "imageSizeInBytes": 943718400,
+      "imagePushedAt": "2026-01-14T08:22:33.000Z",
+      "imageDigest": "sha256:f1e2d3c4b5a6978869504132241516171819202122232425262728293031323334",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "manifest": {
+        "schemaVersion": 2,
+        "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+        "config": {
+          "mediaType": "application/vnd.docker.container.image.v1+json",
+          "size": 6214,
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "layers": [
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 83886080,
+            "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "_comment": "base OS (debian:bullseye-slim) ~80 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 367001600,
+            "digest": "sha256:b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5",
+            "_comment": "Datadog agent binary + go runtime ~350 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 209715200,
+            "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "_comment": "integrations and check plugins ~200 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 15728640,
+            "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "_comment": "default configuration and entrypoint scripts ~15 MB compressed"
+          },
+          {
+            "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+            "size": 267386880,
+            "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "_comment": "Python check dependencies ~255 MB compressed"
+          }
+        ]
+      },
+      "_layer_size_summary": {
+        "compressed_total_bytes": 943718400,
+        "compressed_total_gib": 0.88,
+        "estimated_extracted_gib": 2.2,
+        "extraction_ratio": 2.5,
+        "note": "Standard Go + Python agent image; extraction ratio ~2.5x typical for this image type"
+      }
+    }
+  ],
+  "_combined_summary": {
+    "total_compressed_gib": 7.08,
+    "total_estimated_extracted_gib": 16.4,
+    "fargate_default_ephemeral_gib": 20,
+    "headroom_after_extraction_gib": 3.6,
+    "headroom_after_writable_layer_and_tmp_gib": 1.6,
+    "conclusion": "Peak ephemeral usage ~18.4 GiB including writable layers and /tmp; 20 GiB default is insufficient"
+  }
+}

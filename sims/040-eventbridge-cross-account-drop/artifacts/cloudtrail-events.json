@@ -1,0 +1,55 @@
+{
+  "Events": [
+    {
+      "EventId": "c1a2b3d4-e5f6-7890-abcd-ef1234567890",
+      "EventName": "PutEvents",
+      "EventTime": "2026-04-21T10:15:22Z",
+      "EventSource": "events.amazonaws.com",
+      "Username": "eventbridge-cross-account-role",
+      "Resources": [
+        {
+          "ResourceType": "AWS::Events::EventBus",
+          "ResourceName": "audit-bus"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA4X5YZ9MNPQR12345:EventBridge\",\"arn\":\"arn:aws:sts::444455556666:assumed-role/eventbridge-cross-account-role/EventBridge\",\"accountId\":\"444455556666\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"arn\":\"arn:aws:iam::444455556666:role/eventbridge-cross-account-role\",\"userName\":\"eventbridge-cross-account-role\"}}},\"eventTime\":\"2026-04-21T10:15:22Z\",\"eventSource\":\"events.amazonaws.com\",\"eventName\":\"PutEvents\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"events.amazonaws.com\",\"userAgent\":\"events.amazonaws.com\",\"requestParameters\":{\"entries\":[{\"eventBusName\":\"arn:aws:events:us-east-1:111122223333:event-bus/audit-bus\",\"source\":\"quillmark.product-audit\",\"detailType\":\"AccessEvent\",\"detail\":\"{\\\"userId\\\":\\\"u-1234\\\",\\\"action\\\":\\\"page_view\\\",\\\"resourceId\\\":\\\"doc-abc\\\",\\\"timestamp\\\":\\\"2026-04-21T10:15:20Z\\\"}\"}]},\"responseElements\":{\"failedEntryCount\":0,\"entries\":[{\"eventId\":\"d1e2f3a4-b5c6-7890-def0-123456789abc\"}]},\"requestID\":\"A1B2C3D4E5F6G7H8\",\"eventType\":\"AwsApiCall\"}"
+    },
+    {
+      "EventId": "f9e8d7c6-b5a4-3210-fedc-ba9876543210",
+      "EventName": "PutEvents",
+      "EventTime": "2026-04-22T14:32:11Z",
+      "EventSource": "events.amazonaws.com",
+      "Username": "eventbridge-cross-account-role",
+      "Resources": [
+        {
+          "ResourceType": "AWS::Events::EventBus",
+          "ResourceName": "audit-bus"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA4X5YZ9MNPQR12345:EventBridge\",\"arn\":\"arn:aws:sts::444455556666:assumed-role/eventbridge-cross-account-role/EventBridge\",\"accountId\":\"444455556666\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"arn\":\"arn:aws:iam::444455556666:role/eventbridge-cross-account-role\",\"userName\":\"eventbridge-cross-account-role\"}}},\"eventTime\":\"2026-04-22T14:32:11Z\",\"eventSource\":\"events.amazonaws.com\",\"eventName\":\"PutEvents\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"events.amazonaws.com\",\"userAgent\":\"events.amazonaws.com\",\"requestParameters\":{\"entries\":[{\"eventBusName\":\"arn:aws:events:us-east-1:111122223333:event-bus/audit-bus\",\"source\":\"quillmark.product-audit\",\"detailType\":\"AccessEvent\",\"detail\":\"{\\\"userId\\\":\\\"u-5678\\\",\\\"action\\\":\\\"document_export\\\",\\\"resourceId\\\":\\\"doc-xyz\\\",\\\"timestamp\\\":\\\"2026-04-22T14:32:09Z\\\"}\"}]},\"responseElements\":{\"failedEntryCount\":0,\"entries\":[{\"eventId\":\"e2f3a4b5-c6d7-8901-ef01-234567890bcd\"}]},\"requestID\":\"B2C3D4E5F6G7H8I9\",\"eventType\":\"AwsApiCall\"}"
+    },
+    {
+      "EventId": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+      "EventName": "PutEvents",
+      "EventTime": "2026-04-23T07:44:55Z",
+      "EventSource": "events.amazonaws.com",
+      "Username": "eventbridge-cross-account-role",
+      "Resources": [
+        {
+          "ResourceType": "AWS::Events::EventBus",
+          "ResourceName": "audit-bus"
+        }
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"principalId\":\"AROA4X5YZ9MNPQR12345:EventBridge\",\"arn\":\"arn:aws:sts::444455556666:assumed-role/eventbridge-cross-account-role/EventBridge\",\"accountId\":\"444455556666\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"arn\":\"arn:aws:iam::444455556666:role/eventbridge-cross-account-role\",\"userName\":\"eventbridge-cross-account-role\"}}},\"eventTime\":\"2026-04-23T07:44:55Z\",\"eventSource\":\"events.amazonaws.com\",\"eventName\":\"PutEvents\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"events.amazonaws.com\",\"userAgent\":\"events.amazonaws.com\",\"requestParameters\":{\"entries\":[{\"eventBusName\":\"arn:aws:events:us-east-1:111122223333:event-bus/audit-bus\",\"source\":\"quillmark.product-audit\",\"detailType\":\"AccessEvent\",\"detail\":\"{\\\"userId\\\":\\\"u-9012\\\",\\\"action\\\":\\\"login\\\",\\\"resourceId\\\":\\\"session-mno\\\",\\\"timestamp\\\":\\\"2026-04-23T07:44:53Z\\\"}\"}]},\"responseElements\":{\"failedEntryCount\":0,\"entries\":[{\"eventId\":\"f3a4b5c6-d7e8-9012-f012-345678901cde\"}]},\"requestID\":\"C3D4E5F6G7H8I9J0\",\"eventType\":\"AwsApiCall\"}"
+    }
+  ],
+  "_summary": {
+    "account_id": "111122223333",
+    "trail_covers": "data events on audit-bus, enabled for compliance",
+    "records_shown": 3,
+    "all_records_failedEntryCount": 0,
+    "source_value_in_all_records": "quillmark.product-audit",
+    "required_prefix_on_central_rule": "quillmark.audit.",
+    "mismatch": "quillmark.product-audit does not start with quillmark.audit."
+  }
+}

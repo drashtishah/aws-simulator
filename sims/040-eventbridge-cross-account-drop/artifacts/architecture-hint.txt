@@ -1,0 +1,32 @@
+Source Account (444455556666)                Central Audit Account (111122223333)
+-------------------------------------        -----------------------------------------
+
+  Application                                  audit-bus (custom event bus)
+    |                                            |
+    | emits events with                          | resource policy: allows PutEvents
+    | source: "quillmark.product-audit"          | from all 9 account principals
+    |                                            |
+  EventBridge default bus                        |
+    |                                            |   consolidate-all-accounts rule
+  audit-forward-rule (ENABLED)                   |   EventPattern:
+    EventPattern:                                |   { "source": [{ "prefix": "quillmark.audit." }] }
+    { "source": ["quillmark.product-audit"],     |                                     [PATTERN MISMATCH]
+      "detail-type": ["AccessEvent"] }           |   quillmark.product-audit
+    Target: audit-bus (cross-account)            |   does NOT start with
+    Role: eventbridge-cross-account-role         |   "quillmark.audit."
+    |                                            |
+    | Invocations: rising                        |   TriggeredRules: 0
+    | FailedInvocations: 0                       |
+    |                                            |
+    |---[ PutEvents ]------------------------>   |
+        failedEntryCount: 0                      |
+        Events accepted by bus                   |
+                                                 |   audit-consolidation Lambda
+                                                 |   Invocations: 0  [NEVER INVOKED]
+                                                 |
+                                                 | Events silently discarded.
+                                                 | No error. No DLQ.
+
+Key:
+  [PATTERN MISMATCH] = events reach the bus but no rule matches
+  [NEVER INVOKED]    = Lambda receives no trigger because the rule never fires

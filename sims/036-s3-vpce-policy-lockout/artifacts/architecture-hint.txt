@@ -1,0 +1,62 @@
+LARKSPUR HEALTH - ARCHITECTURE OVERVIEW
+========================================
+
+  Corporate Workstation (admin)
+  [larkspur-infra-admin role via SSO]
+           |
+           | HTTPS (public internet)
+           |
+           v
+    +------+------+
+    |  AWS Console |
+    |  / CLI       |
+    +------+------+
+           |
+           | S3 API Request
+           | (no aws:SourceVpce in request context)
+           |
+           v
+  +-------------------+
+  | larkspur-phi-archive (S3 bucket)   |
+  |                                    |
+  | Bucket Policy:                     |
+  |   Deny * on s3:*                   |
+  |   if aws:SourceVpce !=             |
+  |       vpce-0a1b2c3d4e5f67890       |
+  +-------------------+
+
+
+  larkspur-app VPC (vpc-0f1e2d3c4b5a6978)
+  +----------------------------------------------+
+  |                                              |
+  |  Private Subnet                              |
+  |  +--------------------+                     |
+  |  | App EC2 instances  |                     |
+  |  | (application tier) |                     |
+  |  +--------------------+                     |
+  |           |                                  |
+  |           | Route table -> endpoint          |
+  |           v                                  |
+  |  +---------------------------+               |
+  |  | Gateway VPC Endpoint      |               |
+  |  | vpce-0a1b2c3d4e5f67890    |               |
+  |  | (S3, policy: allow all)   |               |
+  |  +---------------------------+               |
+  |           |                                  |
+  +-----------|----------------------------------+
+              |
+              | S3 API Request
+              | (aws:SourceVpce = vpce-0a1b2c3d4e5f67890)
+              |
+              v
+  +-------------------+
+  | larkspur-phi-archive (S3 bucket)   |
+  |                                    |
+  | Bucket Policy:                     |
+  |   Deny does NOT fire               |
+  |   (key present, value matches)     |
+  +-------------------+
+
+NOTE: The bucket policy Deny fires when aws:SourceVpce is absent or
+does not match. Application traffic (through the endpoint) carries
+the matching key and is allowed. Console traffic carries no key.

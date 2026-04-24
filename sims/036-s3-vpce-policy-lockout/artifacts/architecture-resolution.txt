@@ -1,0 +1,74 @@
+LARKSPUR HEALTH - ARCHITECTURE (ANNOTATED)
+===========================================
+
+  Corporate Workstation (admin)
+  [larkspur-infra-admin role via SSO]
+           |
+           | HTTPS (public internet)
+           | aws:SourceVpce = [KEY ABSENT]
+           |
+           v
+    +------+------+
+    |  AWS Console |
+    |  / CLI       |
+    +------+------+
+           |
+           | S3 API Request
+           |
+           v
+  +----------------------------------------------+
+  | larkspur-phi-archive BUCKET POLICY            |
+  |                                               |
+  |  Deny * s3:* WHERE StringNotEquals(           |
+  |    aws:SourceVpce, vpce-0a1b2c3d4e5f67890     |
+  |  )                                            |
+  |                                               |
+  |  [DENY FIRES ON MISSING KEY]                  |
+  |  aws:SourceVpce absent -> StringNotEquals     |
+  |  evaluates TRUE -> Deny fires ->              |
+  |  AccessDenied returned                        |
+  +----------------------------------------------+
+
+
+  larkspur-app VPC (vpc-0f1e2d3c4b5a6978)
+  +----------------------------------------------+
+  |                                              |
+  |  Private Subnet                              |
+  |  +--------------------+                     |
+  |  | App EC2 instances  |                     |
+  |  | (application tier) |                     |
+  |  +--------------------+                     |
+  |           |                                  |
+  |           | Route table -> endpoint          |
+  |           | aws:SourceVpce =                 |
+  |           |   vpce-0a1b2c3d4e5f67890         |
+  |           v                                  |
+  |  +---------------------------+               |
+  |  | Gateway VPC Endpoint      |               |
+  |  | vpce-0a1b2c3d4e5f67890    |               |
+  |  +---------------------------+               |
+  |           |                                  |
+  +-----------|----------------------------------+
+              |
+              | S3 API Request
+              | aws:SourceVpce = vpce-0a1b2c3d4e5f67890
+              v
+  +----------------------------------------------+
+  | larkspur-phi-archive BUCKET POLICY            |
+  |                                               |
+  |  Deny * s3:* WHERE StringNotEquals(           |
+  |    aws:SourceVpce, vpce-0a1b2c3d4e5f67890     |
+  |  )                                            |
+  |                                               |
+  |  Key present, value MATCHES -> condition      |
+  |  FALSE -> Deny does NOT fire -> ALLOWED       |
+  +----------------------------------------------+
+
+ROOT CAUSE SUMMARY:
+  StringNotEquals(aws:SourceVpce, "vpce-...") where key is ABSENT
+  = true (Deny fires). Fix: use StringNotEqualsIfExists.
+
+RECOVERY:
+  Root user -> PutBucketPolicy (root override on owned bucket)
+  OR
+  EC2 in VPC -> call through endpoint -> condition satisfied

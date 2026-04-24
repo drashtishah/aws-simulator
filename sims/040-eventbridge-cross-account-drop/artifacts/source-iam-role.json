@@ -1,0 +1,39 @@
+{
+  "GetRoleResponse": {
+    "Role": {
+      "RoleName": "eventbridge-cross-account-role",
+      "RoleId": "AROA4X5YZ9MNPQR12345",
+      "Arn": "arn:aws:iam::444455556666:role/eventbridge-cross-account-role",
+      "CreateDate": "2026-04-21T09:45:00Z",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "events.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "Description": "Cross-account delivery role for EventBridge audit forwarding"
+    }
+  },
+  "GetRolePolicyResponse": {
+    "RoleName": "eventbridge-cross-account-role",
+    "PolicyName": "allow-putevents-central-bus",
+    "PolicyDocument": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AllowPutEventsToCentralBus",
+          "Effect": "Allow",
+          "Action": "events:PutEvents",
+          "Resource": "arn:aws:events:us-east-1:111122223333:event-bus/audit-bus"
+        }
+      ]
+    }
+  },
+  "_note": "role and inline policy are correctly configured; cross-account delivery succeeds; this is a red herring"
+}

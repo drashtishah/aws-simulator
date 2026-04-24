@@ -1,0 +1,32 @@
+Scenario: Quillmark Publishing
+Organization: 9 AWS accounts, 1 central audit account + 8 product accounts
+Central audit account: 111122223333, us-east-1
+New product account: 444455556666 (new-product-team), onboarded 2026-04-21
+Existing product accounts: 888877776666, 777766665555, 666655554444, 555544443333, 444433332222, 333322221111, 222211110000, and 111100009999
+
+Central audit bus: audit-bus
+  ARN: arn:aws:events:us-east-1:111122223333:event-bus/audit-bus
+  Region: us-east-1
+
+Source forwarding rule (account 444455556666):
+  Rule name: audit-forward-rule
+  Bus: default
+  Target: arn:aws:events:us-east-1:111122223333:event-bus/audit-bus
+  Role: arn:aws:iam::444455556666:role/eventbridge-cross-account-role
+
+Central consolidation rule (account 111122223333):
+  Rule name: consolidate-all-accounts
+  Bus: audit-bus
+  Target: arn:aws:lambda:us-east-1:111122223333:function:audit-consolidation
+
+Timeline:
+  2026-04-21T10:00Z: new product account onboarded, audit-forward-rule enabled
+  2026-04-21T10:15Z: first Invocations on audit-forward-rule
+  2026-04-23T09:00Z: audit team opens P2 ticket; 48-hour gap confirmed
+
+CloudTrail note: CloudTrail data events are enabled on audit-bus for compliance
+purposes. PutEvents calls are captured in the central account's trail.
+
+All 8 existing accounts send events with source prefix quillmark.audit.
+(e.g., quillmark.audit.identity, quillmark.audit.billing, quillmark.audit.payments).
+The new account sends source: quillmark.product-audit.
