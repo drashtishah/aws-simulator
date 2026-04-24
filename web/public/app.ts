@@ -1,8 +1,11 @@
 /* AWS Incident Simulator - Frontend Application */
 
-import { CollapsibleBlock, renderMermaidIn } from './reveal.js';
-import { stripNarratorMarkers } from './narrator-markers.js';
 import { filterAvailableSims } from './sim-picker-filter.js';
+import { $, getSetting, setSetting, loadUiTheme, fetchJSON, escapeHtml, escapeAttr } from './dom-helpers.js';
+import { ModalConfig, ModalAction, showConfirmModal, hideConfirmModal } from './modals.js';
+import { SelectOption, initCustomSelect, loadSettings, formatThemeName } from './settings-pane.js';
+import { isSessionCompleted, setSessionCompleted, resetChatUI, appendNarratorDelta, appendMessage, showTyping, setInputEnabled, scrollToBottom, setupScrollDetection, setupTextareaResize, resetNarratorTracking, finalizeNarratorStream } from './chat-renderer.js';
+import { ProgressData, CompletedSim, RankGate, QualityGate, NextRank, RankHistoryEntry, getProgressData, loadDashboard, showCompletedDrilldown, hideCompletedDrilldown, scheduleReturnToDashboard } from './dashboard.js';
 
 // --- Types ---
 
@@ -23,62 +26,6 @@ interface Profile {
   completed_sims: string[];
 }
 
-interface CompletedSim {
-  title: string;
-  difficulty?: number;
-  category?: string;
-  questionTypes?: string[];
-  summary?: string;
-}
-
-interface RankGate {
-  all_axes_min?: number;
-  axes_min?: Record<string, number>;
-}
-
-interface QualityGate {
-  avg_question_quality: number;
-  min_sessions_at_rank: number;
-}
-
-interface NextRank {
-  id: string;
-  title: string;
-  gate?: RankGate;
-  quality_gate?: QualityGate;
-}
-
-interface ProgressData {
-  rank: string;
-  rankTitle: string;
-  polygon: Record<string, number>;
-  rawPolygon: Record<string, number>;
-  axisNames: string[];
-  axisLabels: Record<string, string>;
-  simsCompleted: number;
-  servicesEncountered: string[];
-  polygonLastAdvanced: Record<string, string>;
-  rankHistory: RankHistoryEntry[];
-  challengeRuns: unknown[];
-  maxDifficulty: number;
-  assist: Record<string, unknown>;
-  nextRank?: NextRank;
-  completedSims?: CompletedSim[];
-  categoryMap?: Record<string, string[]>;
-  questionQuality?: { avg_overall: number };
-  sessionsAtCurrentRank?: number;
-}
-
-interface RankHistoryEntry {
-  rank: string;
-  achieved: string;
-}
-
-interface RankMeta {
-  description: string;
-  icon: string;
-}
-
 interface StreamEvent {
   type: string;
   sessionId?: string;
@@ -90,83 +37,12 @@ interface StreamEvent {
 
 type StreamHandlers = Record<string, (data: StreamEvent) => void>;
 
-interface ModalAction {
-  label: string;
-  primary: boolean;
-  onClick: () => void;
-}
-
-interface ModalConfig {
-  title: string;
-  body: string;
-  actions: ModalAction[];
-}
-
-interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface GapEntry {
-  label: string;
-  current: number | string;
-  needed: number;
-}
-
-import { renderPolygon, renderNextRank, renderRankProgression, formatRankId } from './rank-display.js';
-
-// --- Helpers ---
-
-function $(id: string): HTMLElement {
-  return document.getElementById(id)!;
-}
-
 // --- State ---
 let currentView = 'dashboard';
 let currentSessionId: string | null = null;
 let currentSimId: string | null = null;
 let registry: Registry = { sims: [] };
 let profile: Profile = { completed_sims: [] };
-let progressData: ProgressData | null = null;
-let isScrollPinned = true;
-let sessionCompleted = false;
-let currentNarratorDiv: HTMLElement | null = null;
-let narratorBuffer = '';
-
-// --- Settings (localStorage with fallback) ---
-
-function getSetting(key: string, fallback: string): string {
-  try {
-    return localStorage.getItem(key) || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setSetting(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Private browsing or quota exceeded
-  }
-}
-
-// --- Theme Loading ---
-
-function loadUiTheme(themeId: string): void {
-  const link = document.getElementById('ui-theme') as HTMLLinkElement | null;
-  if (link) {
-    link.href = '/ui-themes/' + themeId + '.css';
-  }
-}
-
-// --- API Helpers ---
-
-async function fetchJSON(url: string): Promise<any> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch ' + url);
-  return res.json();
-}
 
 // --- SSE Stream Consumer ---
 
@@ -214,90 +90,6 @@ function switchView(view: string): void {
     loadSimPicker();
   }
 }
-
-// --- Dashboard ---
-
-async function loadDashboard(): Promise<void> {
-  let progress: ProgressData;
-  try {
-    progress = await fetchJSON('/api/progress');
-  } catch {
-    progress = {
-      rank: 'Responder',
-      rankTitle: 'Responder',
-      polygon: {},
-      rawPolygon: {},
-      axisNames: ['gather', 'diagnose', 'correlate', 'impact', 'trace', 'fix'],
-      axisLabels: { gather: 'Gather', diagnose: 'Diagnose', correlate: 'Correlate', impact: 'Impact', trace: 'Trace', fix: 'Fix' },
-      simsCompleted: 0,
-      servicesEncountered: [],
-      polygonLastAdvanced: {},
-      rankHistory: [],
-      challengeRuns: [],
-      maxDifficulty: 1,
-      assist: {}
-    };
-  }
-  progressData = progress;
-
-  $('stat-rank-title').textContent = progress.rankTitle;
-  $('stat-completed').textContent = String(progress.simsCompleted);
-
-  // Dynamic polygon SVG
-  renderPolygon(progress.polygon, progress.axisNames, progress.axisLabels, progress.polygonLastAdvanced);
-
-  // Next rank preview
-  renderNextRank(progress);
-
-  // Rank history
-  renderRankProgression(progress.rankHistory || []);
-
-  // Services encountered
-  const servicesList = $('services-list');
-  if (progress.servicesEncountered.length) {
-    servicesList.innerHTML = progress.servicesEncountered.map((name: string) =>
-      '<span class="service-encountered-tag">' + escapeHtml(name) + '</span>'
-    ).join('');
-  } else {
-    servicesList.innerHTML = '<span class="text-muted">No services encountered yet. Play a simulation to begin.</span>';
-  }
-}
-
-function showCompletedDrilldown(): void {
-  if (!progressData || !progressData.completedSims || !progressData.completedSims.length) return;
-
-  $('dashboard-content').style.display = 'none';
-  const drilldown = $('completed-drilldown');
-  drilldown.style.display = 'block';
-
-  const grid = $('completed-grid');
-  grid.innerHTML = progressData.completedSims.map((sim: CompletedSim) => {
-    const maxDiff = 4;
-    const dots = Array.from({ length: maxDiff }, (_, i) =>
-      '<span class="difficulty-dot' + (i >= (sim.difficulty || 1) ? ' empty' : '') + '"></span>'
-    ).join('');
-
-    const qTypes = (sim.questionTypes || []).map((t: string) =>
-      '<span class="question-type-tag">' + escapeHtml(t) + '</span>'
-    ).join('');
-
-    const tooltip = sim.summary ? ' data-tooltip="' + escapeAttr(sim.summary) + '"' : '';
-    return '<div class="sim-card fade-in"' + tooltip + '>' +
-      '<div class="sim-card-title">' + escapeHtml(sim.title) + '</div>' +
-      '<div class="sim-card-meta">' +
-      '<div class="difficulty-dots">' + dots + '</div>' +
-      '<span class="sim-card-category">' + escapeHtml(sim.category || '') + '</span>' +
-      '</div>' +
-      '<div class="question-type-tags">' + qTypes + '</div>' +
-      '</div>';
-  }).join('');
-}
-
-function hideCompletedDrilldown(): void {
-  $('completed-drilldown').style.display = 'none';
-  $('dashboard-content').style.display = 'block';
-}
-
 
 // --- Sim Picker ---
 
@@ -348,7 +140,7 @@ async function loadSimPicker(): Promise<void> {
   // Sort using server-provided sort scores, or fallback to weakness-first
   let progress: ProgressData;
   try {
-    progress = progressData || await fetchJSON('/api/progress');
+    progress = getProgressData() || await fetchJSON('/api/progress');
   } catch {
     progress = { rawPolygon: {}, maxDifficulty: 1, categoryMap: {}, axisNames: [] } as unknown as ProgressData;
   }
@@ -424,7 +216,6 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
   const messages = $('chat-messages');
   messages.innerHTML = '';
 
-  const input = $('chat-input') as HTMLTextAreaElement;
   setInputEnabled(false);
   showTyping(true);
 
@@ -438,8 +229,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
       body: JSON.stringify({ simId, themeId })
     });
 
-    currentNarratorDiv = null;
-    narratorBuffer = '';
+    resetNarratorTracking();
     await streamResponse(response, {
       session: (data: StreamEvent) => {
         currentSessionId = data.sessionId || null;
@@ -454,7 +244,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
         appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
-        sessionCompleted = true;
+        setSessionCompleted(true);
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
         scheduleReturnToDashboard();
@@ -475,21 +265,7 @@ async function startSim(simId: string, isResume: boolean): Promise<void> {
       warning: (data: StreamEvent) => {
         appendMessage('system', data.message || '');
       },
-      done: () => {
-        const cleaned = stripNarratorMarkers(narratorBuffer).trim();
-        if (currentNarratorDiv !== null && cleaned === '') {
-          currentNarratorDiv.remove();
-          currentNarratorDiv = null;
-        } else if (currentNarratorDiv !== null) {
-          currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
-          renderMermaidIn(currentNarratorDiv);
-        }
-        showTyping(false);
-        if (!sessionCompleted) {
-          setInputEnabled(true);
-          input.focus();
-        }
-      }
+      done: () => finalizeNarratorStream()
     });
   } catch {
     showTyping(false);
@@ -519,8 +295,7 @@ async function sendMessage(): Promise<void> {
       body: JSON.stringify({ sessionId: currentSessionId, message })
     });
 
-    currentNarratorDiv = null;
-    narratorBuffer = '';
+    resetNarratorTracking();
     await streamResponse(response, {
       text: (data: StreamEvent) => {
         appendMessage('narrator', data.content || '');
@@ -532,7 +307,7 @@ async function sendMessage(): Promise<void> {
         appendMessage('dropdown', data.content || '', { label: data.label, open: data.open });
       },
       complete: () => {
-        sessionCompleted = true;
+        setSessionCompleted(true);
         setInputEnabled(false);
         appendMessage('system', 'Simulation complete.');
         scheduleReturnToDashboard();
@@ -553,21 +328,7 @@ async function sendMessage(): Promise<void> {
       warning: (data: StreamEvent) => {
         appendMessage('system', data.message || '');
       },
-      done: () => {
-        const cleaned = stripNarratorMarkers(narratorBuffer).trim();
-        if (currentNarratorDiv !== null && cleaned === '') {
-          currentNarratorDiv.remove();
-          currentNarratorDiv = null;
-        } else if (currentNarratorDiv !== null) {
-          currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
-          renderMermaidIn(currentNarratorDiv);
-        }
-        showTyping(false);
-        if (!sessionCompleted) {
-          setInputEnabled(true);
-          input.focus();
-        }
-      }
+      done: () => finalizeNarratorStream()
     });
   } catch {
     showTyping(false);
@@ -580,14 +341,13 @@ async function sendMessage(): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: currentSessionId, message })
       });
-      currentNarratorDiv = null;
-      narratorBuffer = '';
+      resetNarratorTracking();
       await streamResponse(retryResponse, {
         text: (data: StreamEvent) => appendMessage('narrator', data.content || ''),
         text_delta: (data: StreamEvent) => appendNarratorDelta(data.content || ''),
         dropdown: (data: StreamEvent) => appendMessage('dropdown', data.content || '', { label: data.label, open: data.open }),
         complete: () => {
-          sessionCompleted = true;
+          setSessionCompleted(true);
           setInputEnabled(false);
           appendMessage('system', 'Simulation complete.');
           scheduleReturnToDashboard();
@@ -596,21 +356,7 @@ async function sendMessage(): Promise<void> {
         profile_updated: () => handleSessionComplete('updated'),
         profile_update_failed: (data: StreamEvent) => { appendMessage('system', 'Warning: profile update failed. ' + (data.message || '')); handleSessionComplete('failed', data.message); },
         error: (data: StreamEvent) => appendMessage('system', 'Error: ' + (data.message || 'Unknown error')),
-        done: () => {
-          const cleaned = stripNarratorMarkers(narratorBuffer).trim();
-          if (currentNarratorDiv !== null && cleaned === '') {
-            currentNarratorDiv.remove();
-            currentNarratorDiv = null;
-          } else if (currentNarratorDiv !== null) {
-            currentNarratorDiv.innerHTML = renderMarkdown(cleaned);
-            renderMermaidIn(currentNarratorDiv);
-          }
-          showTyping(false);
-          if (!sessionCompleted) {
-            setInputEnabled(true);
-            input.focus();
-          }
-        }
+        done: () => finalizeNarratorStream()
       });
     } catch {
       showTyping(false);
@@ -639,7 +385,6 @@ function handleSessionComplete(profileStatus: string, errorMessage?: string): vo
     actions: [
       { label: 'Return to Dashboard', primary: true, onClick: () => {
         currentSessionId = null;
-        sessionCompleted = false;
         resetChat();
         switchView('dashboard');
         loadDashboard();
@@ -674,238 +419,7 @@ async function quitSim(): Promise<void> {
 function resetChat(): void {
   currentSessionId = null;
   currentSimId = null;
-  sessionCompleted = false;
-  $('chat-messages').innerHTML = '';
-  $('chat').classList.remove('active');
-  $('sim-picker').style.display = 'block';
-  showTyping(false);
-  setInputEnabled(true);
-}
-
-// --- Confirmation Modal ---
-
-function showConfirmModal({ title, body, actions }: ModalConfig): void {
-  $('confirm-modal-title').textContent = title;
-  $('confirm-modal-body').textContent = body;
-  const actionsEl = $('confirm-modal-actions');
-  actionsEl.innerHTML = '';
-  for (const action of actions) {
-    const btn = document.createElement('button');
-    btn.className = 'btn ' + (action.primary ? 'btn-primary' : 'btn-secondary');
-    btn.textContent = action.label;
-    btn.addEventListener('click', () => {
-      hideConfirmModal();
-      if (action.onClick) action.onClick();
-    });
-    actionsEl.appendChild(btn);
-  }
-  $('confirm-modal').classList.add('active');
-}
-
-function hideConfirmModal(): void {
-  $('confirm-modal').classList.remove('active');
-}
-
-// --- Chat UI Helpers ---
-
-function appendNarratorDelta(delta: string): void {
-  if (currentNarratorDiv === null) {
-    const div = document.createElement('div');
-    div.className = 'chat-message narrator';
-    $('chat-messages').appendChild(div);
-    currentNarratorDiv = div;
-  }
-  narratorBuffer += delta;
-  currentNarratorDiv.innerHTML = renderMarkdown(narratorBuffer);
-  if (isScrollPinned) scrollToBottom();
-}
-
-function appendMessage(type: string, content: string, event?: { label?: string; open?: boolean }): void {
-  if (!content || !content.trim()) return;
-  const messages = $('chat-messages');
-  const div = document.createElement('div');
-
-  if (type === 'narrator') {
-    if (currentNarratorDiv !== null) {
-      // Content already streamed via text_delta; skip.
-      return;
-    }
-    div.className = 'chat-message narrator';
-    div.innerHTML = renderMarkdown(content);
-    messages.appendChild(div);
-    if (isScrollPinned) scrollToBottom();
-    return;
-  }
-
-  div.className = 'chat-message ' + type + ' msg-enter';
-
-  if (type === 'dropdown') {
-    const label = event?.label ?? 'Details';
-    const open = event?.open ?? false;
-    div.appendChild(CollapsibleBlock({
-      title: label,
-      bodyHtml: renderMarkdown(content),
-      defaultOpen: open,
-    }));
-    renderMermaidIn(div);
-  } else {
-    div.textContent = content;
-  }
-
-  messages.appendChild(div);
-
-  if (isScrollPinned) {
-    scrollToBottom();
-  } else {
-    $('new-messages-pill').classList.add('visible');
-  }
-}
-
-// Delay so the "Simulation complete." system message renders before navigating away.
-const COMPLETE_TO_DASHBOARD_MS = 1500;
-
-function scheduleReturnToDashboard(): void {
-  setTimeout(() => {
-    document.getElementById('tab-dashboard')?.click();
-  }, COMPLETE_TO_DASHBOARD_MS);
-}
-
-function showTyping(show: boolean): void {
-  const indicator = $('typing-indicator');
-  indicator.classList.toggle('visible', show);
-  if (show) scrollToBottom();
-}
-
-function setInputEnabled(enabled: boolean): void {
-  const input = $('chat-input') as HTMLTextAreaElement;
-  const sendBtn = $('btn-send') as HTMLButtonElement;
-  input.disabled = !enabled;
-  sendBtn.disabled = !enabled;
-}
-
-function scrollToBottom(): void {
-  const messages = $('chat-messages');
-  messages.scrollTop = messages.scrollHeight;
-}
-
-// --- Scroll Detection ---
-
-function setupScrollDetection(): void {
-  const messages = $('chat-messages');
-  messages.addEventListener('scroll', () => {
-    const threshold = 50;
-    isScrollPinned = messages.scrollHeight - messages.scrollTop - messages.clientHeight < threshold;
-    if (isScrollPinned) {
-      $('new-messages-pill').classList.remove('visible');
-    }
-  });
-
-  $('new-messages-pill').addEventListener('click', () => {
-    scrollToBottom();
-    $('new-messages-pill').classList.remove('visible');
-  });
-}
-
-// --- Settings ---
-
-function initCustomSelect(el: HTMLElement, options: SelectOption[], currentValue: string, onChange: (val: string) => void): { setValue(val: string): void } {
-  const trigger = el.querySelector('.custom-select-trigger') as HTMLElement;
-  const optionsList = el.querySelector('.custom-select-options') as HTMLElement;
-  let selectedValue = currentValue;
-
-  function render(): void {
-    const current = options.find(o => o.value === selectedValue) || options[0];
-    if (current) trigger.textContent = current.label;
-
-    optionsList.innerHTML = options.map((o: SelectOption) =>
-      '<div class="custom-select-option' + (o.value === selectedValue ? ' selected' : '') +
-      '" data-value="' + escapeAttr(o.value) + '" role="option">' +
-      escapeHtml(o.label) + '</div>'
-    ).join('');
-  }
-
-  trigger.addEventListener('click', () => {
-    document.querySelectorAll('.custom-select.open').forEach(s => {
-      if (s !== el) s.classList.remove('open');
-    });
-    el.classList.toggle('open');
-    trigger.setAttribute('aria-expanded', el.classList.contains('open') ? 'true' : 'false');
-  });
-
-  optionsList.addEventListener('click', (e: Event) => {
-    const opt = (e.target as HTMLElement).closest('.custom-select-option') as HTMLElement | null;
-    if (!opt) return;
-    selectedValue = opt.dataset.value || '';
-    el.classList.remove('open');
-    trigger.setAttribute('aria-expanded', 'false');
-    render();
-    onChange(selectedValue);
-  });
-
-  document.addEventListener('click', (e: Event) => {
-    if (!el.contains(e.target as Node)) {
-      el.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  trigger.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      trigger.click();
-    } else if (e.key === 'Escape') {
-      el.classList.remove('open');
-      trigger.setAttribute('aria-expanded', 'false');
-    }
-  });
-
-  render();
-  return {
-    setValue(val: string) { selectedValue = val; render(); }
-  };
-}
-
-async function loadSettings(): Promise<void> {
-  // UI themes
-  try {
-    const uiThemes: string[] = await fetchJSON('/api/ui-themes');
-    const options = uiThemes.map((t: string) => ({ value: t, label: formatThemeName(t) }));
-    initCustomSelect(
-      $('select-ui-theme'),
-      options,
-      getSetting('uiTheme', 'ops-center'),
-      (val: string) => { setSetting('uiTheme', val); loadUiTheme(val); }
-    );
-  } catch {
-    // ignore
-  }
-
-}
-
-function formatThemeName(id: string): string {
-  return id.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
-// --- Textarea Auto-resize ---
-
-function setupTextareaResize(): void {
-  const input = $('chat-input') as HTMLTextAreaElement;
-  input.addEventListener('input', () => {
-    input.style.height = 'auto';
-    input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-  });
-}
-
-// --- Escape Helpers ---
-
-function escapeHtml(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function escapeAttr(str: string): string {
-  return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  resetChatUI();
 }
 
 // --- Event Bindings ---
