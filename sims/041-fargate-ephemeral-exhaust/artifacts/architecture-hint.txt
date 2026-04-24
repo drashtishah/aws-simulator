@@ -1,0 +1,18 @@
+[API Gateway]
+     |
+     v
+[ECS Service: tern-inference-service]
+  desiredCount: 2 | runningCount: 0 | pendingCount: 2
+     |
+     v
+[Fargate Task]
+  ephemeral storage: 20 GiB (default, no ephemeralStorage block in task def)
+     |
+     +---> [ECR Pull: tern-vision-inference:v2.3.1]  FAILS
+     |       extracted ~14.2 GiB
+     |
+     +---> [ECR Pull: datadog-agent:7]               FAILS
+             extracted ~2.2 GiB
+
+             EPHEMERAL 20 GiB EXHAUSTED (~16.4 GiB extracted + overhead)
+             stoppedReason: CannotPullContainerError ... no space left on device
