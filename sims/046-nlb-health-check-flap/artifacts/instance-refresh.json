@@ -1,0 +1,24 @@
+{
+  "InstanceRefreshes": [
+    {
+      "InstanceRefreshId": "ir-2026A0424-1400",
+      "AutoScalingGroupName": "lumen-edge-asg",
+      "Status": "InProgress",
+      "StatusReason": "Step 2 of 4: replacing 4 instances in us-east-1a",
+      "StartTime": "2026-04-24T21:00:00Z",
+      "PercentageComplete": 33,
+      "InstancesToUpdate": 24,
+      "Preferences": {
+        "MinHealthyPercentage": 66,
+        "InstanceWarmup": 0,
+        "CheckpointPercentages": [],
+        "CheckpointDelay": 0,
+        "SkipMatching": false,
+        "AutoRollback": false,
+        "ScaleInProtectedInstances": "Ignore",
+        "StandbyInstances": "Ignore"
+      }
+    }
+  ],
+  "_note_for_player": "Notice: InstanceWarmup is 0. This is a critical setting in Instance Refresh: it tells the refresh how long to wait after a new instance joins before considering it ready and proceeding to the next batch. With InstanceWarmup=0, the refresh proceeds as soon as the instance is launched, not after it is healthy. Combined with MinHealthyPercentage=66 (allowing 34% to be down at once), the deploy can be at any moment with 4 instances per AZ all in their unhealthy launch window simultaneously."
+}

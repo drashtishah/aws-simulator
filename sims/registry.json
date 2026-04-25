@@ -645,6 +645,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-25"
+    },
+    {
+      "id": "046-nlb-health-check-flap",
+      "title": "The Failover That Failed Itself",
+      "summary": "An NLB removes healthy targets and adds sick ones in a flapping pattern. Every five minutes the entire AZ flips. One in three viewer requests fails.",
+      "difficulty": 3,
+      "category": "networking",
+      "services": [
+        "elb",
+        "ec2",
+        "auto-scaling",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-25"
     }
   ]
 }

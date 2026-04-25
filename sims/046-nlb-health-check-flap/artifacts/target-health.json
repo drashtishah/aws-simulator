@@ -1,0 +1,29 @@
+{
+  "TargetHealthDescriptions": [
+    {"Target": {"Id": "i-0lumen1a01", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a02", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a03", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a04", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a05", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a06", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a07", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a08", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1a13", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "unhealthy", "Reason": "Target.FailedHealthChecks", "Description": "Health checks failed"}},
+    {"Target": {"Id": "i-0lumen1a14", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "unhealthy", "Reason": "Target.FailedHealthChecks", "Description": "Health checks failed"}},
+    {"Target": {"Id": "i-0lumen1a15", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress"}},
+    {"Target": {"Id": "i-0lumen1a16", "Port": 8443, "AvailabilityZone": "us-east-1a"}, "TargetHealth": {"State": "initial", "Reason": "Elb.RegistrationInProgress", "Description": "Target registration is in progress"}},
+    {"Target": {"Id": "i-0lumen1b01", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b02", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b03", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b04", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b05", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b06", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b07", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b08", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b09", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b10", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b11", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}},
+    {"Target": {"Id": "i-0lumen1b12", "Port": 8443, "AvailabilityZone": "us-east-1b"}, "TargetHealth": {"State": "healthy"}}
+  ],
+  "_note_for_player": "Snapshot at 21:13:00 UTC. AZ-1a has 8 healthy + 2 unhealthy + 2 in initial state (newly registered, still warming up). AZ-1b has 12 healthy because the deploy step just rotated to AZ-1b but the new instances have not been registered yet (will happen in ~30 seconds). The next snapshot will show the inverse pattern."
+}

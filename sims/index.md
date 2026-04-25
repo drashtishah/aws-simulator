@@ -53,3 +53,4 @@ tags:
 | 043 | [[043-mesh-thread-limit/story\|One Thread Per Neighbor]] | 3 - Professional | Reliability | ecs, ec2, cloudwatch, vpc | 35 min |
 | 044 | [[044-dynamodb-lease-storm/story\|The Lease That Would Not Release]] | 3 - Professional | Reliability | dynamodb, lambda, sqs, cloudwatch | 35 min |
 | 045 | [[045-route53-dual-automation-race/story\|Two Automations, One Record]] | 3 - Professional | Networking | route53, lambda, ecs, cloudwatch | 35 min |
+| 046 | [[046-nlb-health-check-flap/story\|The Failover That Failed Itself]] | 3 - Professional | Networking | elb, ec2, auto-scaling, cloudwatch | 35 min |

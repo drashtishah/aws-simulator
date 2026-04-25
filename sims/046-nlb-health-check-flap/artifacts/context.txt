@@ -1,0 +1,6 @@
+Company: Lumen Cast (Series C, 64 engineers)
+Industry: Live video streaming for sports
+Users: ~340,000 concurrent viewers at peak; an NBA playoff game tonight is forecast at 280,000
+AWS Services: Elastic Load Balancing (NLB), Amazon EC2, EC2 Auto Scaling, Amazon CloudWatch
+Your role: Senior SRE, 14:11 PT Friday, three hours before puck drop
+Situation: A routine TLS-cert Instance Refresh started at 14:00; HealthyHostCount is now flapping between AZs every five minutes and one in three viewer connections is failing

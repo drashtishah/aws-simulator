@@ -1,0 +1,66 @@
+                       +------------------------+
+                       | Sports Viewers         |
+                       +-----------+------------+
+                                   |
+                                   | DNS query
+                                   v
+                       +------------------------+
+                       | NLB DNS                |
+                       | [AZ FAILOVER FLAPPING] |
+                       | T=0  : 1a, 1b in DNS   |
+                       | T=10 : 1a removed      |
+                       | T=15 : all to 1b       |
+                       | T=20 : 1b strained     |
+                       | T=15:00: 1b removed    |
+                       | T=15:00: all to 1a     |
+                       +-----------+------------+
+                                   |
+              +--------------------+--------------------+
+              |                                         |
+   +----------v---------------+              +----------v---------------+
+   | NLB node in us-east-1a   |              | NLB node in us-east-1b   |
+   | cross_zone: disabled     |              | cross_zone: disabled     |
+   | [PROBLEM: forwards only  |              | [PROBLEM: forwards only  |
+   |  to in-AZ targets]       |              |  to in-AZ targets]       |
+   +----------+---------------+              +----------+---------------+
+              |                                         |
+              v                                         v
+   +----------+---------------+              +----------+---------------+
+   | Target group AZ-1a       |              | Target group AZ-1b       |
+   | 8 healthy + 4 launching  |              | 8 healthy + 4 launching  |
+   | [4 are unhealthy for 75s |              | [during alternating step |
+   |  during warm-up window]  |              |  of Instance Refresh]    |
+   +--------------------------+              +--------------------------+
+
+  PROBLEM 1: ASG launches into target group with no warm-up gate
+    -> No lifecycle hook on launch
+    -> New instances are registered with target group immediately
+    -> Health check marks them unhealthy after 2 * 10s = 20s
+    -> Bootstrap takes ~75s; instance is unhealthy for ~55s of that window
+
+  PROBLEM 2: HealthCheckGracePeriod misunderstood
+    -> 120s grace period prevents ASG from terminating the instance
+    -> Does NOT prevent target group from marking unhealthy
+    -> Does NOT prevent NLB from removing the instance from DNS
+
+  PROBLEM 3: Cross-zone load balancing disabled (NLB default)
+    -> Each AZ's NLB node forwards only to in-AZ targets
+    -> When AZ-1a has too few healthy, the AZ is removed from DNS
+    -> Other AZ gets 100% of traffic and gets overloaded
+    -> Other AZ then fails too; failover reverses
+
+  PROBLEM 4: Instance Refresh velocity too high
+    -> MinHealthyPercentage = 66 allows 34% of instances to be down at once
+    -> 4 of 12 in each AZ in launch window simultaneously
+    -> Combined with the 75s warm-up, this is enough to trigger AZ failover
+
+  Fix: combine all three layers
+    1. Add ASG lifecycle hook (Launching:Wait) with 180s timeout
+       -> Bootstrap script polls /healthz, then calls complete-lifecycle-action
+       -> Instance enters target group only when truly ready
+    2. Enable cross-zone LB on NLB
+       -> Single AZ failure no longer concentrates 100% of traffic on the other
+    3. Increase target-group HealthyThresholdCount to 3, Interval to 15
+       -> Belt-and-braces: 45s tolerance at the LB layer
+    4. Increase MinHealthyPercentage to 90 for Instance Refresh
+       -> Velocity control: bounded blast radius per deploy step

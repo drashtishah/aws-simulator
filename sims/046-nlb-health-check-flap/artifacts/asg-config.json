@@ -1,0 +1,29 @@
+{
+  "AutoScalingGroups": [
+    {
+      "AutoScalingGroupName": "lumen-edge-asg",
+      "AutoScalingGroupARN": "arn:aws:autoscaling:us-east-1:498231746283:autoScalingGroup:abc:autoScalingGroupName/lumen-edge-asg",
+      "LaunchTemplate": {
+        "LaunchTemplateName": "lumen-edge-launch-template",
+        "Version": "$Latest"
+      },
+      "MinSize": 12,
+      "MaxSize": 48,
+      "DesiredCapacity": 24,
+      "DefaultCooldown": 300,
+      "AvailabilityZones": ["us-east-1a", "us-east-1b"],
+      "TargetGroupARNs": [
+        "arn:aws:elasticloadbalancing:us-east-1:498231746283:targetgroup/lumen-edge-target-group/abc"
+      ],
+      "HealthCheckType": "ELB",
+      "HealthCheckGracePeriod": 120,
+      "NewInstancesProtectedFromScaleIn": false,
+      "Tags": [
+        {"Key": "Name", "Value": "lumen-edge", "PropagateAtLaunch": true},
+        {"Key": "Tier", "Value": "production", "PropagateAtLaunch": true}
+      ]
+    }
+  ],
+  "LifecycleHooks": [],
+  "_note_for_player": "LifecycleHooks is empty. There is NO Launching:Wait hook to delay target-group registration. New instances are added to the target group as soon as they reach InService state, which happens shortly after RunInstances returns. HealthCheckGracePeriod=120s is set, but it does not prevent the target group from evaluating health checks."
+}

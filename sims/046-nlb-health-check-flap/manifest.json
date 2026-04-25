@@ -1,0 +1,179 @@
+{
+  "id": "046-nlb-health-check-flap",
+  "title": "The Failover That Failed Itself (Lumen Cast)",
+  "summary": "An NLB removes healthy targets and adds sick ones in a flapping pattern. Every five minutes the entire AZ flips. One in three viewer requests fails.",
+  "difficulty": 3,
+  "category": "networking",
+  "services": ["elb", "ec2", "auto-scaling", "cloudwatch"],
+  "tags": ["nlb", "health-check-oscillation", "az-failover", "warm-up", "cross-zone", "post-mortem-pattern", "nlb-2025"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "ANS-C01:Domain2:NetworkDesign",
+    "SAA-C03:Domain2:DesignResilientArchitectures",
+    "DOP-C02:Domain3:Resilience"
+  ],
+  "company": {
+    "name": "Lumen Cast",
+    "industry": "live video streaming for sports",
+    "size": "Series C, 64 engineers, peaks at ~340,000 concurrent viewers during marquee events"
+  },
+  "glossary": {
+    "Network Load Balancer (NLB)": "An AWS layer-4 load balancer that operates at the TCP/UDP level. It supports very high throughput, low latency, and source IP preservation. Health checks decide which targets are eligible to receive traffic.",
+    "Target group health check": "A periodic probe that the load balancer sends to each registered target. Configurable parameters include protocol, port, path (for HTTP), Interval (seconds between probes), Timeout (per-probe deadline), HealthyThresholdCount (consecutive successes to mark healthy), and UnhealthyThresholdCount (consecutive failures to mark unhealthy).",
+    "AZ DNS failover (NLB)": "When all targets in an Availability Zone are unhealthy, NLB removes that AZ from its DNS response. Clients then resolve only to AZs with healthy capacity. If targets recover, the AZ is added back.",
+    "Cross-zone load balancing": "An NLB setting that, when enabled, lets a load balancer node in one AZ forward traffic to targets in any AZ. When disabled, each AZ's load balancer node forwards only to targets in the same AZ.",
+    "Auto Scaling lifecycle hook": "A hook that pauses an instance during launch (Pending:Wait) or termination (Terminating:Wait) until your code completes a custom step (e.g., warm-up). Without a hook, Auto Scaling treats the instance as ready as soon as the OS boots.",
+    "Health check grace period (ASG)": "A delay after launch during which Auto Scaling does not act on a failed ELB health check. Gives the instance time to bootstrap before being terminated.",
+    "Connection draining / deregistration delay": "A period during which the load balancer stops sending new connections to a target but allows in-flight connections to complete before fully removing it.",
+    "Velocity control": "A safety mechanism that limits how fast capacity can be removed in response to a signal. Without it, a brief signal can remove an entire fleet."
+  },
+  "system": {
+    "what_broke": "The lumen-edge-target-group health check has Interval=10s, UnhealthyThresholdCount=2, HealthyThresholdCount=2, but the lumen-edge ASG launches new EC2 instances that take 60-90 seconds for ENI attachment and route programming to complete; instances are registered with the target group immediately on launch via the ASG -> target-group binding (no lifecycle hook); cross-zone load balancing is disabled; AZ DNS failover triggers when all targets in an AZ are unhealthy, but during a deploy that replaces multiple instances per AZ at once, several new instances simultaneously fail health checks for the first 60-90s and the AZ flips out of DNS; old AZ traffic is then redirected to the other AZ which gets overloaded and instances start failing health checks there too; the failover reverses; pattern repeats every ~5 minutes for the duration of the deploy.",
+    "data_flow": "Sports viewers connect via the lumen-cast.com client -> Route 53 -> NLB DNS resolves to AZ-scoped IPs -> NLB forwards to in-AZ targets (cross-zone disabled) -> EC2 instances run the streaming relay -> connect to the origin in us-east-1.",
+    "components": [
+      {
+        "name": "lumen-edge-nlb (Network Load Balancer)",
+        "role": "Public NLB across us-east-1a and us-east-1b. Cross-zone load balancing: disabled (default for NLB). AZ DNS failover: enabled (default).",
+        "connections": ["Listens on TCP 443", "Forwards to lumen-edge-target-group"],
+        "failure_impact": "When all targets in an AZ are unhealthy, that AZ is removed from DNS responses. Clients connecting at that moment go to the other AZ; clients with cached DNS continue trying the failed AZ until TTL expires."
+      },
+      {
+        "name": "lumen-edge-target-group (Target group)",
+        "role": "Holds the registered EC2 instances. Health check: HTTPS GET /healthz on port 8443, Interval=10, Timeout=6, HealthyThresholdCount=2, UnhealthyThresholdCount=2.",
+        "connections": ["Receives instance registrations from lumen-edge-asg"],
+        "failure_impact": "Aggressive health check thresholds mean a newly launched instance has only 30 seconds (2 * Interval) to pass before being marked unhealthy and removed from DNS."
+      },
+      {
+        "name": "lumen-edge-asg (EC2 Auto Scaling group)",
+        "role": "Maintains the edge fleet across AZ-1a and AZ-1b. Min=12, Max=48, Desired=24 (12 per AZ). HealthCheckGracePeriod=120s. No lifecycle hook on launch.",
+        "connections": ["Registered to lumen-edge-target-group", "Launches from lumen-edge-launch-template (AMI bootstrap ~75s for ENI + route propagation + cert load)"],
+        "failure_impact": "New instances are added to the target group as soon as the OS boots; they do not pass health checks until ~60-90s later, during which time they count as unhealthy in target-group metrics."
+      },
+      {
+        "name": "lumen-edge-deploy (Instance Refresh)",
+        "role": "Currently mid-deploy: rolling Instance Refresh with MinHealthyPercentage=66, replacing 4 instances in each AZ at a time.",
+        "connections": ["Replaces instances in lumen-edge-asg"],
+        "failure_impact": "Replacing 4 instances per AZ at once means 4 new instances are simultaneously in the launch-but-not-yet-healthy window; this is enough to push the AZ's healthy count below the threshold for AZ DNS failover."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "elb",
+      "artifacts": [
+        "artifacts/target-health.json",
+        "artifacts/target-group-config.json"
+      ],
+      "capabilities": [
+        "describe_target_health",
+        "describe_target_groups",
+        "describe_load_balancers",
+        "describe_load_balancer_attributes"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/instance-state.json"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_instance_status"
+      ]
+    },
+    {
+      "service": "auto-scaling",
+      "artifacts": [
+        "artifacts/asg-config.json",
+        "artifacts/instance-refresh.json"
+      ],
+      "capabilities": [
+        "describe_auto_scaling_groups",
+        "describe_instance_refreshes",
+        "describe_lifecycle_hooks"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The flap is too regular to be backend instability. The healthy count drops to zero in one AZ, then drops to zero in the other AZ five minutes later. What changes every five minutes?",
+    "An Instance Refresh is running. It replaces four instances per AZ at a time. How long does a new instance take to become healthy?",
+    "Newly launched instances take 60-90 seconds for ENI attachment and route programming. The target-group health check marks unhealthy after 2 * 10s = 20 seconds of failures. The HealthCheckGracePeriod on the ASG is 120s, but that prevents Auto Scaling from terminating the instance, NOT the target group from removing it from DNS.",
+    "When all targets in an AZ are unhealthy at once, NLB removes that AZ from DNS. Cross-zone load balancing is disabled, so the other AZ gets all the traffic, gets overloaded, and the next batch of new instances fails health checks too. The failover then reverses."
+  ],
+  "resolution": {
+    "root_cause": "The lumen-edge-asg launches new instances directly into the lumen-edge-target-group without an Auto Scaling lifecycle hook to delay registration; new instances need 60-90 seconds for ENI attachment, route programming, and certificate loading before they pass /healthz, but the target group's health check marks them unhealthy after 20 seconds; during the in-flight Instance Refresh, four instances per AZ are simultaneously in the unhealthy launch window; with cross-zone load balancing disabled, the AZ-DNS failover removes the entire AZ when its healthy count drops below threshold, the other AZ then gets the full traffic load, its instances start failing under the surge, and the failover reverses; the oscillation cycle is roughly the deploy step interval (~5 minutes).",
+    "fix_criteria": [
+      {
+        "id": "identify_oscillation",
+        "description": "Player identifies the AZ-by-AZ flapping pattern in target health metrics.",
+        "required": true
+      },
+      {
+        "id": "identify_warmup_gap",
+        "description": "Player identifies that newly launched instances take 60-90s to pass health checks but are added to the target group immediately.",
+        "required": true
+      },
+      {
+        "id": "identify_cross_zone_disabled",
+        "description": "Player identifies that cross-zone load balancing is disabled, which means a single AZ failing redirects all traffic to the other.",
+        "required": false
+      },
+      {
+        "id": "propose_remediation",
+        "description": "Player proposes one or more of: (a) add an Auto Scaling lifecycle hook (Launching:Wait) that completes only after the instance passes a local health check, so it joins the target group only when ready; (b) increase HealthyThresholdCount and Interval so newly launched instances have more grace time at the load-balancer level; (c) enable cross-zone load balancing on the NLB so a single AZ failure does not remove all of one AZ's traffic.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "ASG HealthCheckGracePeriod prevents the ASG from terminating an instance, but does NOT prevent the target group from removing it from DNS or from showing it as unhealthy.",
+      "NLB cross-zone load balancing is disabled by default; when disabled, an AZ that loses all healthy targets sends 100% of its share of traffic away, often overloading the surviving AZ.",
+      "The right place to manage instance warm-up is at the ASG via a lifecycle hook (Launching:Wait), which holds the instance out of the target group until your script signals ready.",
+      "Health-check thresholds need to be calibrated against actual instance startup time, not just steady-state liveness; what works for liveness is often too aggressive for warm-up."
+    ],
+    "sop_steps": [
+      "Confirm the oscillation pattern. Look at TargetGroup HealthyHostCount per AZ in CloudWatch over the last hour; if the metric oscillates between AZ-1a and AZ-1b on a regular interval, you have flap, not steady-state failure.",
+      "Find what is changing on that interval. Check Auto Scaling activity log for ongoing Instance Refresh or scheduled scaling actions. The flap interval usually matches the deploy step interval (e.g., 5 minutes per batch in CodeDeployDefault.ECSLinear policies, or the ASG's InstanceRefresh CheckpointPercentage step).",
+      "Time the warm-up. Launch a single instance manually, time how long it takes from EC2 RunInstances to passing the target-group /healthz, and compare to the health-check window (HealthyThresholdCount * Interval). If warm-up exceeds the window, the instance will register, fail, and be marked unhealthy before it ever serves traffic.",
+      "Stop the bleeding by suspending the deploy. Pause the Instance Refresh (aws autoscaling cancel-instance-refresh) so no new instances are launched into the target group. The current healthy fleet stabilizes.",
+      "Add an Auto Scaling lifecycle hook on launch. Create a hook with LifecycleTransition=autoscaling:EC2_INSTANCE_LAUNCHING and a HeartbeatTimeout long enough to cover the warm-up plus margin (e.g., 180s). The instance pauses in Pending:Wait state and is NOT registered with the target group until the hook completes-lifecycle-action call is made by your bootstrap script.",
+      "Implement the bootstrap completion. The instance's user-data script runs the bootstrap, polls the local /healthz endpoint until it returns 200, then calls aws autoscaling complete-lifecycle-action --lifecycle-action-result CONTINUE. Only after this does the ASG add the instance to the target group.",
+      "Increase target-group health-check tolerances. Set HealthyThresholdCount=3 and Interval=15 so a newly registered instance has 45 seconds of grace at the LB level even if the lifecycle hook misses something.",
+      "Enable cross-zone load balancing. ModifyLoadBalancerAttributes with cross_zone.enabled=true. Now a single AZ losing capacity does not redirect 100% of its share to the other AZ; load is spread across both AZs always.",
+      "Resume the deploy and verify. Re-run the Instance Refresh; HealthyHostCount per AZ should remain stable throughout."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Instance Refresh terminates too many instances at once due to MinHealthyPercentage being too low.",
+        "how_it_differs": "The ASG terminates instances faster than replacements can be ready. Old fleet shrinks and new fleet has not yet joined; HealthyHostCount drops cleanly without flap. Symptom is a single drop, not oscillation.",
+        "prevention": "Set MinHealthyPercentage to at least 90 for production. Combine with the lifecycle hook so replacements only count once they are truly serving traffic."
+      },
+      {
+        "scenario": "Application-level memory leak causes targets to fail health checks after several hours of traffic.",
+        "how_it_differs": "Failures are correlated with elapsed time on a target, not with deploy events. The target group's UnHealthyHostCount climbs steadily; flap is irregular.",
+        "prevention": "Application-level instrumentation (memory metric, GC pause time); roll instances on a schedule; fix the leak."
+      },
+      {
+        "scenario": "Subnet route table missing a default route causes health checks from the NLB to fail entirely.",
+        "how_it_differs": "All targets in the affected subnet are permanently unhealthy from the moment they are launched; not flap, but persistent failure.",
+        "prevention": "Reachability Analyzer to confirm NLB-to-target reachability before introducing a new subnet."
+      }
+    ],
+    "sop_practices": [
+      "Use Auto Scaling lifecycle hooks (Launching:Wait) to gate target-group registration on the instance passing a local readiness check. This is the canonical solution for warm-up; HealthCheckGracePeriod alone does not address the load-balancer view.",
+      "Calibrate target-group health-check thresholds against actual cold-start time. A health check that works for steady-state liveness will often falsely mark warm-up traffic as unhealthy.",
+      "Enable cross-zone load balancing on NLB unless there is a specific reason not to (e.g., per-AZ data-locality requirements). The default-disabled state amplifies single-AZ failures into bilateral fleet collapse.",
+      "Set MinHealthyPercentage to at least 90 for production Instance Refresh. Combined with the lifecycle hook, this ensures rolling deploys never reduce serving capacity below the configured floor. The 2025 NLB cascade post-mortem made the velocity-control lesson explicit at AWS scale; the customer-side equivalent is MinHealthyPercentage."
+    ]
+  }
+}

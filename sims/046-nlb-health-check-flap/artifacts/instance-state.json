@@ -1,0 +1,49 @@
+{
+  "Reservations": [
+    {
+      "Instances": [
+        {
+          "InstanceId": "i-0lumen1a15",
+          "State": {"Name": "running", "Code": 16},
+          "AvailabilityZone": "us-east-1a",
+          "LaunchTime": "2026-04-24T21:08:32Z",
+          "Tags": [
+            {"Key": "Name", "Value": "lumen-edge-1a-15"},
+            {"Key": "aws:autoscaling:groupName", "Value": "lumen-edge-asg"}
+          ]
+        }
+      ]
+    },
+    {
+      "Instances": [
+        {
+          "InstanceId": "i-0lumen1a01",
+          "State": {"Name": "running", "Code": 16},
+          "AvailabilityZone": "us-east-1a",
+          "LaunchTime": "2026-04-23T11:14:00Z",
+          "Tags": [
+            {"Key": "Name", "Value": "lumen-edge-1a-01"},
+            {"Key": "aws:autoscaling:groupName", "Value": "lumen-edge-asg"}
+          ]
+        }
+      ]
+    }
+  ],
+  "InstanceStatuses": [
+    {
+      "InstanceId": "i-0lumen1a15",
+      "AvailabilityZone": "us-east-1a",
+      "InstanceState": {"Code": 16, "Name": "running"},
+      "InstanceStatus": {"Status": "ok"},
+      "SystemStatus": {"Status": "ok"}
+    },
+    {
+      "InstanceId": "i-0lumen1a01",
+      "AvailabilityZone": "us-east-1a",
+      "InstanceState": {"Code": 16, "Name": "running"},
+      "InstanceStatus": {"Status": "ok"},
+      "SystemStatus": {"Status": "ok"}
+    }
+  ],
+  "_note_for_player": "Instance i-0lumen1a15 was launched 28 seconds ago at 21:08:32. EC2 reports its status as 'ok' (running, status checks passed). But the target group reports it as 'initial' / 'Elb.RegistrationInProgress' because the application-level /healthz has not yet returned 200. This is the gap: EC2 is fine, the application is still warming up, the target group sees it as not-yet-serving."
+}

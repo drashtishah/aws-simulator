@@ -1,0 +1,29 @@
+{
+  "TargetGroups": [
+    {
+      "TargetGroupName": "lumen-edge-target-group",
+      "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:498231746283:targetgroup/lumen-edge-target-group/abc",
+      "Protocol": "TCP",
+      "Port": 8443,
+      "VpcId": "vpc-0lumenedge",
+      "HealthCheckProtocol": "HTTPS",
+      "HealthCheckPort": "8443",
+      "HealthCheckPath": "/healthz",
+      "HealthCheckEnabled": true,
+      "HealthCheckIntervalSeconds": 10,
+      "HealthCheckTimeoutSeconds": 6,
+      "HealthyThresholdCount": 2,
+      "UnhealthyThresholdCount": 2,
+      "TargetType": "instance",
+      "LoadBalancerArns": [
+        "arn:aws:elasticloadbalancing:us-east-1:498231746283:loadbalancer/net/lumen-edge-nlb/abc"
+      ]
+    }
+  ],
+  "LoadBalancerAttributes": [
+    {"Key": "load_balancing.cross_zone.enabled", "Value": "false"},
+    {"Key": "deletion_protection.enabled", "Value": "true"},
+    {"Key": "dns_record.client_routing_policy", "Value": "any_availability_zone"}
+  ],
+  "_note_for_player": "Two configuration choices stand out: HealthyThresholdCount=2 with Interval=10 means a target has only 20 seconds to pass health checks. And cross_zone.enabled=false means each AZ's NLB node forwards only to in-AZ targets. Both are NLB defaults; nobody changed them."
+}

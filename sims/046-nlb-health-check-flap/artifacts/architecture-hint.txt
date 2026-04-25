@@ -1,0 +1,57 @@
+                       +------------------------+
+                       | Sports Viewers         |
+                       | (peak 340k concurrent) |
+                       +-----------+------------+
+                                   |
+                                   | DNS query: edge.lumen-cast.com
+                                   v
+                       +------------------------+
+                       | Route 53 + NLB DNS     |
+                       | per-AZ A records       |
+                       +-----------+------------+
+                                   |
+              +--------------------+--------------------+
+              |                                         |
+   +----------v---------------+              +----------v---------------+
+   | NLB node in us-east-1a   |              | NLB node in us-east-1b   |
+   | cross_zone: disabled     |              | cross_zone: disabled     |
+   +----------+---------------+              +----------+---------------+
+              |                                         |
+              | forwards only to AZ-1a targets          | forwards only to AZ-1b targets
+              v                                         v
+   +----------+---------------+              +----------+---------------+
+   | Target group AZ-1a       |              | Target group AZ-1b       |
+   | 12 EC2 instances         |              | 12 EC2 instances         |
+   | (4 currently launching)  |              |                          |
+   +----------+---------------+              +----------+---------------+
+              |                                         |
+              +--------------------+--------------------+
+                                   |
+                                   v
+                       +------------------------+
+                       | Origin (single source) |
+                       | lumen-origin-vpc       |
+                       | (us-east-1)            |
+                       +------------------------+
+
+  Auto Scaling Group: lumen-edge-asg
+    -> Min: 12    Max: 48    Desired: 24 (12 per AZ)
+    -> HealthCheckGracePeriod: 120s
+    -> Lifecycle hooks: NONE
+    -> Currently mid-Instance-Refresh, MinHealthyPercentage: 66
+
+  Target Group: lumen-edge-target-group
+    -> HealthCheckProtocol: HTTPS
+    -> HealthCheckPath: /healthz
+    -> HealthCheckIntervalSeconds: 10
+    -> HealthCheckTimeoutSeconds: 6
+    -> HealthyThresholdCount: 2
+    -> UnhealthyThresholdCount: 2
+
+  Bootstrap timing (per launched instance):
+    -> ENI attachment: ~5s
+    -> VPC route programming: ~10s
+    -> cloud-init: ~30s
+    -> TLS cert fetch: ~15s
+    -> app warm-up + pool prime: ~15s
+    -> total: ~75 seconds before /healthz returns 200
