@@ -1,0 +1,55 @@
+                       +------------------------+
+                       | Customer Integrations  |
+                       | (800 mid-market tenants)|
+                       +-----------+------------+
+                                   |
+                                   | DNS query: api.halcyonpay.com
+                                   v
+                       +------------------------+
+                       | Route 53 public zone   |
+                       | halcyonpay.com         |
+                       | RRset: api A-record    |
+                       | TTL: 60s               |
+                       +-----------+------------+
+                                   |
+                                   | resolves to (multiple A records)
+                                   v
+                       +------------------------+
+                       | Network Load Balancer  |
+                       | halcyon-api-nlb        |
+                       +-----------+------------+
+                                   |
+                       +-----------+----------+
+                       |                      |
+                +------v-----+         +------v------+
+                | Fargate    |         | Fargate     |
+                | task set   |  ===>   | task set    |
+                | (blue, old)|  shift  | (green, new)|
+                +------------+         +-------------+
+                       |                      |
+                       +----------+-----------+
+                                  |
+                       +----------v----------+
+                       | RDS Aurora          |
+                       | halcyon-payments-db |
+                       +---------------------+
+
+  Two automations write to api.halcyonpay.com RRset:
+
+  1. halcyon-health-check-lambda
+     -> trigger: EventBridge schedule, every 30 seconds
+     -> reads current RRset, queries NLB target health for each IP
+     -> removes unhealthy IPs, adds newly-healthy IPs
+     -> calls Route 53 ChangeResourceRecordSets (Upsert)
+     -> NO SetIdentifier, NO version check
+
+  2. halcyon-deploy-hook (CodeDeploy AfterAllowTraffic)
+     -> trigger: every ECS deployment lifecycle event
+     -> reads current RRset, removes old task IPs, adds new task IPs
+     -> calls Route 53 ChangeResourceRecordSets (Upsert)
+     -> NO SetIdentifier, NO version check
+
+  Recent activity:
+    -> Deploy in progress: halcyon-api-fargate-service v3.7.1 -> v3.7.2
+    -> 12 deploys today (typical for this team)
+    -> Health-check Lambda has been firing on its 30-second schedule continuously

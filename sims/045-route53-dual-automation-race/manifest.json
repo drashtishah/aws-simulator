@@ -1,0 +1,176 @@
+{
+  "id": "045-route53-dual-automation-race",
+  "title": "Two Automations, One Record (Halcyon Pay)",
+  "summary": "After a noisy Friday deploy, the public API hostname resolves to nothing. Customers report intermittent failures. Re-running either automation fixes it for ninety seconds, then it breaks again.",
+  "difficulty": 3,
+  "category": "networking",
+  "services": ["route53", "lambda", "ecs", "cloudwatch"],
+  "tags": ["route53", "race-condition", "automation-conflict", "dns-record-set", "post-mortem-pattern", "dynamodb-2025"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "ANS-C01:Domain3:NetworkManagement",
+    "SAP-C02:Domain2:DesignSolutionsForNewSolutions",
+    "DOP-C02:Domain3:Resilience"
+  ],
+  "company": {
+    "name": "Halcyon Pay",
+    "industry": "B2B payments and reconciliation",
+    "size": "Series B, 52 engineers, processes ~$4B in monthly volume for 800 mid-market customers"
+  },
+  "glossary": {
+    "Route 53 hosted zone": "A container in Amazon Route 53 for the DNS records of a domain. Each hosted zone has a set of resource record sets (RRsets), each keyed by name + type (e.g., 'api.halcyonpay.com' + 'A').",
+    "Resource record set (RRset)": "A group of DNS records sharing the same name and type. An A-type RRset for a hostname can contain multiple IP addresses; clients pick one per query.",
+    "ChangeResourceRecordSets API": "The Route 53 API for creating, updating, or deleting RRsets. The call is atomic: a single ChangeBatch either applies in full or not at all. There is no compare-and-swap; the change always wins over whatever was there.",
+    "Read-modify-write race": "A pattern where two clients each read a value, modify it locally, and write it back. Whichever writes second overwrites the other's modification, even if both modifications were correct in isolation.",
+    "Route 53 health check": "A periodic probe (HTTPS, TCP, or CloudWatch alarm) that determines whether an endpoint is healthy. Health checks can be linked to RRset entries so unhealthy endpoints are removed from query results.",
+    "ECS deployment hook": "A custom script or Lambda invoked at lifecycle events of an ECS deployment (e.g., AfterAllowTraffic in CodeDeploy). Often used to update DNS, drain caches, or notify external systems.",
+    "Cloud Map (AWS service discovery)": "An AWS service for naming and discovering services. Maintains DNS records (often in a private hosted zone) that mirror the live set of healthy task IPs.",
+    "Weighted routing / SetIdentifier": "Route 53 routing policies that allow multiple RRset records with the same name and type to coexist as long as each has a distinct SetIdentifier. Two automations writing under different SetIdentifiers do not race."
+  },
+  "system": {
+    "what_broke": "The Halcyon Pay public API hostname (api.halcyonpay.com, A type) is updated by two independent automations: a Lambda that runs every 30 seconds in response to Route 53 health-check failures, and a CodeDeploy AfterAllowTraffic hook that runs on every ECS deployment; both perform a read-modify-write cycle on the same RRset and there is no SetIdentifier to keep them in separate scopes; during a high-frequency deploy, the deploy hook read the RRset between two health-check Lambda updates, computed a new RRset that overwrote the health-check Lambda's just-applied changes, and the next health-check Lambda invocation then reverted the deploy hook's changes; one of the cycles produced an empty RRset that left api.halcyonpay.com unresolvable.",
+    "data_flow": "Customers resolve api.halcyonpay.com via Route 53 -> connect to ECS Fargate tasks behind an NLB -> tasks call the payment processor and write to RDS Aurora. ECS service discovery uses Cloud Map (private zone). Public DNS is updated by the two automations described above.",
+    "components": [
+      {
+        "name": "halcyonpay.com (Route 53 public hosted zone)",
+        "role": "Holds the public DNS records, including api.halcyonpay.com (A) which is the customer-facing API endpoint.",
+        "connections": ["Updated by halcyon-health-check-lambda", "Updated by halcyon-deploy-hook (CodeDeploy)"],
+        "failure_impact": "If the api.halcyonpay.com RRset is empty, customers see NXDOMAIN-equivalent failures and cannot reach the API."
+      },
+      {
+        "name": "halcyon-health-check-lambda",
+        "role": "Runs every 30 seconds via EventBridge schedule. Reads the api.halcyonpay.com RRset, queries the NLB target health, removes any unhealthy IPs, adds any newly-healthy IPs, writes the resulting RRset.",
+        "connections": ["Reads NLB target health", "Calls Route 53 ChangeResourceRecordSets"],
+        "failure_impact": "If it reads stale data (e.g., immediately after the deploy hook started), it can revert legitimate deploy-driven changes."
+      },
+      {
+        "name": "halcyon-deploy-hook (CodeDeploy AfterAllowTraffic)",
+        "role": "Runs at the end of each ECS Fargate deployment. Reads the api.halcyonpay.com RRset, removes the IPs of the old task set, adds the IPs of the new task set, writes the resulting RRset.",
+        "connections": ["Calls Route 53 ChangeResourceRecordSets"],
+        "failure_impact": "If it overwrites a record set just modified by the health-check Lambda, it can re-add IPs that the Lambda just removed for being unhealthy."
+      },
+      {
+        "name": "halcyon-api-fargate-service (ECS service)",
+        "role": "Fargate service running the public API. Deployed via CodeDeploy blue/green. Each task gets its own ENI and IP.",
+        "connections": ["Tasks register with halcyon-api-nlb", "Task IPs propagate via the deploy hook"],
+        "failure_impact": "Healthy at the orchestration layer; the issue is at the DNS publication layer."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "route53",
+      "artifacts": [
+        "artifacts/recordset-history.json",
+        "artifacts/hosted-zone-config.json"
+      ],
+      "capabilities": [
+        "list_resource_record_sets",
+        "change_resource_record_sets",
+        "get_change",
+        "get_health_check"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/health-check-lambda-config.json",
+        "artifacts/health-check-lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "list_invocations"
+      ]
+    },
+    {
+      "service": "ecs",
+      "artifacts": [
+        "artifacts/codedeploy-events.json"
+      ],
+      "capabilities": [
+        "describe_services",
+        "describe_deployment",
+        "list_deployments"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/dns-query-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The hostname api.halcyonpay.com works for ninety seconds at a time, then fails for ninety seconds, then works again. That cycle is too regular to be a backend issue.",
+    "Look at the Route 53 change history for the api RRset. How many independent callers are writing to it, and how often?",
+    "The health-check Lambda runs every 30 seconds. The deploy hook runs every ~3 minutes during the active deploy window. Both call ChangeResourceRecordSets without a SetIdentifier and without any read-with-version protection.",
+    "When two automations both do read-modify-write on the same record set, the second writer overwrites the first. There is no compare-and-swap in Route 53 ChangeResourceRecordSets. One cycle produced an empty record set when the deploy hook computed a new set assuming an old IP was already removed."
+  ],
+  "resolution": {
+    "root_cause": "Two automations modify the api.halcyonpay.com A-record RRset independently: a health-check Lambda every 30 seconds and a CodeDeploy hook on every deployment; both perform read-modify-write without any version check or SetIdentifier separation; during a high-frequency deploy, the deploy hook computed a replacement RRset based on a stale read and overwrote concurrent changes from the health-check Lambda, producing one cycle in which the RRset was written empty.",
+    "fix_criteria": [
+      {
+        "id": "identify_two_writers",
+        "description": "Player identifies two independent automations modifying the same RRset.",
+        "required": true
+      },
+      {
+        "id": "identify_race_pattern",
+        "description": "Player identifies the read-modify-write race: each automation reads, computes a new RRset locally, and writes it back, with no version check.",
+        "required": true
+      },
+      {
+        "id": "identify_empty_record",
+        "description": "Player identifies the specific change-batch that produced an empty RRset (in the change history).",
+        "required": false
+      },
+      {
+        "id": "propose_remediation",
+        "description": "Player proposes one of: separate the two automations into different RRsets via weighted routing with distinct SetIdentifier values, OR consolidate to a single writer (Cloud Map service discovery managing the public RRset, deploy hook removed), OR add a serialization layer (a Step Function or Lambda that owns all writes).",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "Route 53 ChangeResourceRecordSets has no compare-and-swap; the last writer wins, period.",
+      "Read-modify-write on a shared RRset by independent automations is a textbook race condition; the fix is at the topology layer (single writer) or the API layer (SetIdentifier scopes).",
+      "Weighted routing with SetIdentifier lets multiple records coexist for the same name + type, so two automations can each own a separate slice without colliding.",
+      "When debugging intermittent DNS, the Route 53 change-history is the source of truth; query logs show the symptom, but the change log shows who did what when."
+    ],
+    "sop_steps": [
+      "Identify all writers to the affected RRset. Pull the Route 53 change-history (via the AWS CLI: aws route53 list-resource-record-sets-changes or via CloudTrail filtered by ChangeResourceRecordSets) and group by caller principal. If two or more independent principals are modifying the same Name + Type, you have the precondition for a race.",
+      "Reconstruct the timeline. For each ChangeResourceRecordSets call in the affected window, note the exact request body (especially the Action and ResourceRecords list). Look for two changes within a few seconds of each other where the second writer's RRset omits records the first writer just added.",
+      "Stop the bleeding. Disable one of the two automations temporarily to break the race. The most surgical option is to disable the EventBridge schedule on the health-check Lambda (or set the deploy hook to a no-op for the next deploy) until the topology is fixed.",
+      "Pick a topology fix. Option A: weighted routing with SetIdentifier - each automation writes records under its own SetIdentifier ('health-check' and 'deploy-hook'), so they coexist and never overwrite each other. Option B: single writer - migrate the public RRset to be managed only by ECS Service Discovery / Cloud Map, and remove the deploy hook entirely. Option C: serialized writer - introduce a Lambda that holds an SQS-FIFO mutex for writes to the RRset and is the sole caller of ChangeResourceRecordSets.",
+      "Implement and verify. After deploying the chosen topology fix, re-enable both signals and trigger a deploy plus a simulated health-check failure. Watch the Route 53 change-history; ChangeResourceRecordSets calls should now be either separate-scoped (Option A) or serialized through a single principal (Options B and C).",
+      "Add a monitor for empty RRsets. CloudWatch alarm on the Route 53 query metric DNSQueries with the pattern 'queries returning NoData'; supplement with a synthetic that resolves api.halcyonpay.com every 30 seconds and pages on NXDOMAIN."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Stale TTL caches the empty RRset for the configured TTL window even after the fix.",
+        "how_it_differs": "Route 53 change-history shows the RRset is now correct, but customers continue to fail because the previous (empty) response is cached at downstream resolvers for the original TTL.",
+        "prevention": "Use short TTLs (30-60s) for RRsets that are programmatically managed; document that the recovery window includes the TTL, not just the time to fix the underlying cause."
+      },
+      {
+        "scenario": "Cloud Map service discovery diverges from public DNS because only one is updated.",
+        "how_it_differs": "Internal callers (using the private Cloud Map name) succeed while external callers (using the public name) fail, or vice versa. Symptoms differ by traffic origin.",
+        "prevention": "Pick one source of truth for service location and have all consumers (internal and external) resolve through it. If a public name is needed, use an alias that points to the Cloud Map name."
+      },
+      {
+        "scenario": "Health-check flapping causes records to be added and removed repeatedly even with a single writer.",
+        "how_it_differs": "Only one principal is writing, but the underlying health check is unstable (e.g., threshold too low). The RRset oscillates regardless of writer concurrency.",
+        "prevention": "Tune health-check thresholds to require multiple consecutive failures or successes before changing state; add hysteresis."
+      }
+    ],
+    "sop_practices": [
+      "Treat Route 53 RRsets as a shared resource with the same care as any database row. ChangeResourceRecordSets has no compare-and-swap; the last writer wins. If multiple automations need to modify the same RRset, use weighted routing with SetIdentifier or serialize through a single writer.",
+      "Cloud Map (AWS service discovery) is the canonical solution for keeping a DNS name in sync with a dynamically scaling service. It is the single writer by design and does not race with itself.",
+      "For programmatically managed records, set the TTL low (30-60s). A high TTL turns a brief misconfiguration into a long outage because resolvers cache the bad answer.",
+      "Add a synthetic check that resolves your critical hostnames externally (from an out-of-AWS source like CloudWatch Synthetics or a third-party prober). Page on NXDOMAIN and on hostname returning unexpected IPs. The 2025 DynamoDB DNS race was first noticed as elevated query failures; the same pattern catches customer-side races."
+    ]
+  }
+}

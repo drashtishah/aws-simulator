@@ -1,0 +1,27 @@
+{
+  "FunctionName": "halcyon-health-check-lambda",
+  "FunctionArn": "arn:aws:lambda:us-east-1:498231746283:function:halcyon-health-check-lambda",
+  "Runtime": "python3.12",
+  "Role": "arn:aws:iam::498231746283:role/halcyon-health-check-lambda-role",
+  "Handler": "lambda_function.handler",
+  "MemorySize": 256,
+  "Timeout": 60,
+  "Environment": {
+    "Variables": {
+      "HOSTED_ZONE_ID": "Z3HALCYONPAY01",
+      "RECORD_NAME": "api.halcyonpay.com.",
+      "TARGET_GROUP_ARN": "arn:aws:elasticloadbalancing:us-east-1:498231746283:targetgroup/halcyon-api-tg/abc",
+      "TTL_SECONDS": "60"
+    }
+  },
+  "EventSourceMappings": [],
+  "_eventbridge_rule": {
+    "Name": "halcyon-health-check-schedule",
+    "ScheduleExpression": "rate(30 seconds)",
+    "Targets": [
+      {"Id": "1", "Arn": "arn:aws:lambda:us-east-1:498231746283:function:halcyon-health-check-lambda"}
+    ],
+    "State": "ENABLED"
+  },
+  "_excerpt_from_handler_code": "# from lambda_function.py\ndef handler(event, context):\n    rrset = route53.list_resource_record_sets(\n        HostedZoneId=HOSTED_ZONE_ID,\n        StartRecordName=RECORD_NAME,\n        StartRecordType='A',\n        MaxItems='1',\n    )['ResourceRecordSets'][0]\n    current_ips = {r['Value'] for r in rrset['ResourceRecords']}\n    target_health = elbv2.describe_target_health(TargetGroupArn=TARGET_GROUP_ARN)\n    healthy_ips = {t['Target']['Id'] for t in target_health['TargetHealthDescriptions']\n                   if t['TargetHealth']['State'] == 'healthy'}\n    new_ips = (current_ips & healthy_ips) | healthy_ips  # keep healthy current, add newly healthy\n    route53.change_resource_record_sets(\n        HostedZoneId=HOSTED_ZONE_ID,\n        ChangeBatch={\n            'Changes': [{\n                'Action': 'UPSERT',\n                'ResourceRecordSet': {\n                    'Name': RECORD_NAME, 'Type': 'A', 'TTL': int(TTL_SECONDS),\n                    'ResourceRecords': [{'Value': ip} for ip in sorted(new_ips)]\n                }\n            }]\n        }\n    )"
+}

@@ -1,0 +1,121 @@
+{
+  "ChangeBatchHistory": [
+    {
+      "ChangeId": "/change/C2026A0424T1631140000",
+      "SubmittedAt": "2026-04-24T23:31:15.207Z",
+      "Status": "INSYNC",
+      "SubmittedBy": "arn:aws:iam::498231746283:role/halcyon-deploy-hook-role",
+      "ChangeBatch": {
+        "Comment": "deploy hook AfterAllowTraffic api.halcyonpay.com",
+        "Changes": [
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "api.halcyonpay.com.",
+              "Type": "A",
+              "TTL": 60,
+              "ResourceRecords": [
+                {"Value": "10.42.7.21"},
+                {"Value": "10.42.7.22"},
+                {"Value": "10.42.7.23"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "ChangeId": "/change/C2026A0424T1631158880",
+      "SubmittedAt": "2026-04-24T23:31:15.881Z",
+      "Status": "INSYNC",
+      "SubmittedBy": "arn:aws:iam::498231746283:role/halcyon-health-check-lambda-role",
+      "ChangeBatch": {
+        "Comment": "health-check sweep, removed unhealthy targets",
+        "Changes": [
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "api.halcyonpay.com.",
+              "Type": "A",
+              "TTL": 60,
+              "ResourceRecords": [
+                {"Value": "10.42.7.11"},
+                {"Value": "10.42.7.12"},
+                {"Value": "10.42.7.21"},
+                {"Value": "10.42.7.22"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "ChangeId": "/change/C2026A0424T1631458888",
+      "SubmittedAt": "2026-04-24T23:31:45.401Z",
+      "Status": "INSYNC",
+      "SubmittedBy": "arn:aws:iam::498231746283:role/halcyon-health-check-lambda-role",
+      "ChangeBatch": {
+        "Comment": "health-check sweep, removed unhealthy targets",
+        "Changes": [
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "api.halcyonpay.com.",
+              "Type": "A",
+              "TTL": 60,
+              "ResourceRecords": [
+                {"Value": "10.42.7.21"},
+                {"Value": "10.42.7.22"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "ChangeId": "/change/C2026A0424T1631488118",
+      "SubmittedAt": "2026-04-24T23:31:48.811Z",
+      "Status": "INSYNC",
+      "SubmittedBy": "arn:aws:iam::498231746283:role/halcyon-deploy-hook-role",
+      "ChangeBatch": {
+        "Comment": "deploy hook AfterAllowTraffic api.halcyonpay.com",
+        "Changes": [
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "api.halcyonpay.com.",
+              "Type": "A",
+              "TTL": 60,
+              "ResourceRecords": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "ChangeId": "/change/C2026A0424T1633180920",
+      "SubmittedAt": "2026-04-24T23:33:18.092Z",
+      "Status": "INSYNC",
+      "SubmittedBy": "arn:aws:iam::498231746283:role/halcyon-health-check-lambda-role",
+      "ChangeBatch": {
+        "Comment": "health-check sweep, recovered from empty",
+        "Changes": [
+          {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+              "Name": "api.halcyonpay.com.",
+              "Type": "A",
+              "TTL": 60,
+              "ResourceRecords": [
+                {"Value": "10.42.7.21"},
+                {"Value": "10.42.7.22"},
+                {"Value": "10.42.7.23"}
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "_note_for_player": "Five ChangeResourceRecordSets calls in 90 seconds, alternating between two principal roles (halcyon-deploy-hook-role and halcyon-health-check-lambda-role). Notice the fourth change: ResourceRecords is an empty array. That single change-batch produced the empty RRset that caused customers to see NXDOMAIN-equivalent failures."
+}

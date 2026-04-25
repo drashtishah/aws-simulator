@@ -1,0 +1,54 @@
+{
+  "DeploymentInfo": {
+    "DeploymentId": "d-HALCYON-2026A0424-1620",
+    "ApplicationName": "halcyon-api",
+    "DeploymentGroupName": "halcyon-api-prod",
+    "DeploymentConfigName": "CodeDeployDefault.ECSLinear10PercentEvery1Minutes",
+    "Status": "InProgress",
+    "CreateTime": "2026-04-24T23:20:00Z",
+    "ComputePlatform": "ECS",
+    "ServiceName": "halcyon-api-fargate-service"
+  },
+  "LifecycleEvents": [
+    {
+      "LifecycleEventName": "BeforeInstall",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:20:01Z",
+      "EndTime": "2026-04-24T23:20:08Z"
+    },
+    {
+      "LifecycleEventName": "Install",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:20:08Z",
+      "EndTime": "2026-04-24T23:22:14Z"
+    },
+    {
+      "LifecycleEventName": "AfterInstall",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:22:14Z",
+      "EndTime": "2026-04-24T23:22:38Z"
+    },
+    {
+      "LifecycleEventName": "BeforeAllowTraffic",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:22:38Z",
+      "EndTime": "2026-04-24T23:22:55Z"
+    },
+    {
+      "LifecycleEventName": "AllowTraffic",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:22:55Z",
+      "EndTime": "2026-04-24T23:31:14Z"
+    },
+    {
+      "LifecycleEventName": "AfterAllowTraffic",
+      "Status": "Succeeded",
+      "StartTime": "2026-04-24T23:31:14Z",
+      "EndTime": "2026-04-24T23:31:48Z",
+      "Diagnostics": {
+        "Message": "halcyon-deploy-hook executed; ChangeResourceRecordSets called twice (initial set + post-stabilization re-set)",
+        "LogTail": "[deploy-hook] read RRset, computed new set, wrote /change/C2026A0424T1631140000\n[deploy-hook] sleep 30s for stabilization\n[deploy-hook] read RRset (now contains stale entries from health-check), computed new set, wrote /change/C2026A0424T1631488118"
+      }
+    }
+  ]
+}

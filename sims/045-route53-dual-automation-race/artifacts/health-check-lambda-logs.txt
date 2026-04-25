@@ -1,0 +1,13 @@
+2026-04-24T23:31:14.118Z INFO  [halcyon-health-check-lambda] read RRset: 6 records [10.42.7.11,10.42.7.12,10.42.7.13,10.42.7.21,10.42.7.22,10.42.7.23]
+2026-04-24T23:31:14.402Z INFO  [halcyon-health-check-lambda] target group health: 4 healthy, 2 unhealthy
+2026-04-24T23:31:15.881Z INFO  [halcyon-health-check-lambda] writing RRset with 4 records
+2026-04-24T23:31:15.998Z INFO  [halcyon-health-check-lambda] route53 change submitted: /change/C2026A0424T1631158880, status PENDING
+2026-04-24T23:31:45.121Z INFO  [halcyon-health-check-lambda] read RRset: 4 records [10.42.7.11,10.42.7.12,10.42.7.21,10.42.7.22]
+2026-04-24T23:31:45.301Z INFO  [halcyon-health-check-lambda] target group health: 2 healthy (10.42.7.21, 10.42.7.22), 2 unhealthy (10.42.7.11, 10.42.7.12)
+2026-04-24T23:31:45.401Z INFO  [halcyon-health-check-lambda] writing RRset with 2 records
+2026-04-24T23:31:45.512Z INFO  [halcyon-health-check-lambda] route53 change submitted: /change/C2026A0424T1631458888, status PENDING
+2026-04-24T23:32:15.022Z INFO  [halcyon-health-check-lambda] read RRset: 0 records []
+2026-04-24T23:32:15.214Z INFO  [halcyon-health-check-lambda] target group health: 3 healthy (10.42.7.21, 10.42.7.22, 10.42.7.23)
+2026-04-24T23:32:15.302Z INFO  [halcyon-health-check-lambda] writing RRset with 3 records
+2026-04-24T23:32:15.402Z INFO  [halcyon-health-check-lambda] route53 change submitted: /change/C2026A0424T1632154020, status PENDING
+2026-04-24T23:35:11.205Z WARN  [halcyon-controller] EventBridge schedule halcyon-health-check-schedule disabled by SRE

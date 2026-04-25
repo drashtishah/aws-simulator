@@ -630,6 +630,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-25"
+    },
+    {
+      "id": "045-route53-dual-automation-race",
+      "title": "Two Automations, One Record",
+      "summary": "After a noisy Friday deploy, the public API hostname resolves to nothing. Customers report intermittent failures. Re-running either automation fixes it for ninety seconds, then it breaks again.",
+      "difficulty": 3,
+      "category": "networking",
+      "services": [
+        "route53",
+        "lambda",
+        "ecs",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-25"
     }
   ]
 }

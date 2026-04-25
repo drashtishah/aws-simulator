@@ -1,0 +1,63 @@
+                       +------------------------+
+                       | Customer Integrations  |
+                       +-----------+------------+
+                                   |
+                                   | DNS query
+                                   v
+                       +------------------------+
+                       | Route 53 public zone   |
+                       | RRset: api A-record    |
+                       | [OSCILLATING]          |
+                       | T=0   : [n1,n2,n3]     |
+                       | T=1   : [o1,o2,n1,n2]  |
+                       | T=30  : [n1,n2]        |
+                       | T=33  : [] EMPTY       |
+                       | T=63  : [n1,n2,n3]     |
+                       +-----------+------------+
+                                   |
+                       +-----------+----------+
+                       |                      |
+                +------v-----+         +------v------+
+                | Fargate    |         | Fargate     |
+                | task set   |         | task set    |
+                | (blue, old)|         | (green, new)|
+                | [TERMINATED]         | [healthy]   |
+                +------------+         +-------------+
+
+  PROBLEM: TWO independent writers to the same RRset
+
+      health-check Lambda                    deploy hook (CodeDeploy)
+      every 30s, reads + writes              on each deploy step, reads + writes
+      no SetIdentifier                       no SetIdentifier
+      no version check                       no version check
+                  \                              /
+                   \                            /
+                    v                          v
+                  +------------------------------+
+                  |  Route 53 ChangeResourceRec  |
+                  |  ordSets API                 |
+                  |  [LAST WRITER WINS]          |
+                  |  no compare-and-swap         |
+                  +------------------------------+
+
+  The race (in chronological order):
+    16:31:14.022  deploy hook    reads V1 = [o1,o2,o3,n1,n2,n3]
+    16:31:14.118  health-check L reads V1 (same)
+    16:31:15.207  deploy hook    WRITES V2-deploy = [n1,n2,n3]
+    16:31:15.881  health-check L WRITES V2-health = [o1,o2,n1,n2]   <- overwrote V2-deploy!
+    16:31:45.401  health-check L removes o1,o2 (now unhealthy)
+                                   WRITES V3 = [n1,n2]
+    16:31:48.811  deploy hook    reads V3, with stale "old set" knowledge
+                                   WRITES V4 = [] EMPTY RRset
+
+  PROBLEM: high deploy frequency makes the race likely
+    -> 12 deploys per day means deploy-hook firings overlap with the 30s health-check ticks regularly
+
+  Fix options (pick one):
+    A: weighted routing with SetIdentifier ("health-check" vs "deploy-hook")
+    B: migrate to Cloud Map service discovery (single writer)
+    C: serialize writes through a single Lambda holding an SQS-FIFO mutex
+
+  Long-term observability:
+    -> External synthetic from CloudWatch Synthetics multi-region
+    -> Alarm on NXDOMAIN, NOERROR-with-empty-answer, and IPs not in current target group

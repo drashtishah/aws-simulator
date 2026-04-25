@@ -1,0 +1,45 @@
+{
+  "HostedZone": {
+    "Id": "/hostedzone/Z3HALCYONPAY01",
+    "Name": "halcyonpay.com.",
+    "CallerReference": "halcyonpay-prod",
+    "Config": {
+      "Comment": "Halcyon Pay public DNS",
+      "PrivateZone": false
+    },
+    "ResourceRecordSetCount": 14
+  },
+  "ResourceRecordSets": [
+    {
+      "Name": "api.halcyonpay.com.",
+      "Type": "A",
+      "TTL": 60,
+      "ResourceRecords": [
+        {"Value": "10.42.7.21"},
+        {"Value": "10.42.7.22"},
+        {"Value": "10.42.7.23"}
+      ]
+    },
+    {
+      "Name": "halcyonpay.com.",
+      "Type": "NS",
+      "TTL": 172800,
+      "ResourceRecords": [
+        {"Value": "ns-1024.awsdns-00.org."},
+        {"Value": "ns-2048.awsdns-64.com."},
+        {"Value": "ns-3072.awsdns-32.net."},
+        {"Value": "ns-4096.awsdns-96.co.uk."}
+      ]
+    },
+    {
+      "Name": "www.halcyonpay.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "HostedZoneId": "Z2FDTNDATAQYW2",
+        "DNSName": "d111111abcdef8.cloudfront.net.",
+        "EvaluateTargetHealth": false
+      }
+    }
+  ],
+  "_note_for_player": "Notice: api.halcyonpay.com has Type=A but no SetIdentifier, no Weight, no Failover policy. Just a plain multi-value A record. Both automations write to this single RRset with Action=UPSERT, which replaces the entire record set."
+}

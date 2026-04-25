@@ -1,0 +1,6 @@
+Company: Halcyon Pay (Series B, 52 engineers)
+Industry: B2B payments and reconciliation
+Users: 800 mid-market customers, ~$4B in monthly volume, ~14k requests per second peak
+AWS Services: Amazon Route 53, AWS Lambda, Amazon ECS, Amazon CloudWatch
+Your role: Network on call, 16:42 PT Friday, eleven minutes after the synthetic alert
+Situation: api.halcyonpay.com works for ninety seconds at a time, then fails for ninety seconds, then works again; a deploy is in progress and three customers have opened tickets
