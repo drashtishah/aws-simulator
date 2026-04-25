@@ -1,0 +1,6 @@
+Company: Westmark Insights (Series B, 41 engineers)
+Industry: B2B analytics platform for European retailers, GDPR + Schrems II compliance
+Users: 320 mid-market retail customers, ~14k queries per minute peak; primary region eu-west-1
+AWS Services: AWS IAM, AWS STS, Amazon CloudFront, Amazon Route 53, Amazon S3
+Your role: SRE on call, 23:14 UTC Sunday, two hours into a major AWS US-EAST-1 service event
+Situation: customer dashboard in eu-west-1 is healthy, but the team cannot deploy, cannot log in to the console, the docs site is returning 502s, and the support Slack bot stopped responding to updates

@@ -1,0 +1,58 @@
+  Customer-facing path (eu-west-1, fully regional):
+
+    +------------+     +-------------------+     +------------+     +-----------+
+    | Customers  |---->| Route 53 (global) |---->| ALB        |---->| ECS       |
+    | (EU)       |     | dashboard.        |     | dashboard- |     | Fargate   |
+    |            |     |   westmark-       |     | eu-west-1- |     | service   |
+    |            |     |   insights.com    |     | alb        |     |           |
+    +------------+     +-------------------+     +------------+     +-----+-----+
+                                                                          |
+                                                                          v
+                                                                  +---------------+
+                                                                  | Aurora        |
+                                                                  | (eu-west-1)   |
+                                                                  +---------------+
+
+  Operational paths (with hidden us-east-1 dependencies):
+
+    +-----------+    AssumeRole via sts.amazonaws.com (anchored us-east-1)
+    | GitHub    |--------------------------------------------------+
+    | Actions   |                                                   |
+    | (CD)      |                                                   v
+    +-----------+                                              +---------+
+                                                               | us-east |
+    +-----------+    Console login via Identity Center         |   -1    |
+    | Engineers |--------------------------------------------->|         |
+    +-----------+    (control plane in us-east-1)              | (the    |
+                                                               |  hidden |
+    +-----------+    docs.westmark-insights.com                | place   |
+    | Partners  |--------------------------------------------->| every-  |
+    +-----+-----+                                              | thing   |
+          |                                                    | leans   |
+          v                                                    | on)     |
+    +-----------+    serves docs CloudFront                    |         |
+    | Cloud-    |--------------------------------------------->|         |
+    | Front     |    cert MUST be in us-east-1 (ACM            |         |
+    |           |     for CloudFront platform requirement)     |         |
+    |           |                                               |         |
+    |           |    origin: westmark-docs-static (S3,         |         |
+    |           |     us-east-1, legacy from 2022)             |         |
+    +-----------+                                               |         |
+                                                               |         |
+    +-----------+    Lambda@Edge support bot                   |         |
+    | Slack bot |--------------------------------------------->|         |
+    |           |    (Lambda@Edge: created and updated         |         |
+    +-----------+     ONLY in us-east-1; runs at edge)         +---------+
+
+  What is currently broken:
+    - GitHub Actions deploys: AssumeRole returns 5xx
+    - Engineer console login: Identity Center degraded
+    - docs CloudFront: 502 from origin (S3 in us-east-1 unreachable)
+    - ACM auto-renewal scheduled for tomorrow morning will fail
+    - Support Slack bot continues running but cannot be updated
+
+  What is NOT broken:
+    - dashboard.westmark-insights.com (customer-facing path is regional)
+    - Aurora in eu-west-1
+    - ECS Fargate in eu-west-1
+    - Existing AWS sessions with cached credentials

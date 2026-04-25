@@ -1,0 +1,28 @@
+{
+  "RoleName": "westmark-cd-deploy-role",
+  "RoleArn": "arn:aws:iam::498231746283:role/westmark-cd-deploy-role",
+  "AssumeRolePolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Federated": "arn:aws:iam::498231746283:oidc-provider/token.actions.githubusercontent.com"
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {
+          "StringEquals": {
+            "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+          },
+          "StringLike": {
+            "token.actions.githubusercontent.com:sub": "repo:westmark-insights/*:*"
+          }
+        }
+      }
+    ]
+  },
+  "AttachedPolicies": [
+    {"PolicyName": "WestmarkDeployPolicy", "PolicyArn": "arn:aws:iam::498231746283:policy/WestmarkDeployPolicy"}
+  ],
+  "_note_for_player": "The trust policy condition references 'sts.amazonaws.com' as the audience claim. This is the standard GitHub Actions OIDC audience and is independent of which STS endpoint the AWS CLI client uses. The audience string is a JWT claim, not an endpoint URL. Switching the client to regional STS endpoints does not change this trust policy."
+}

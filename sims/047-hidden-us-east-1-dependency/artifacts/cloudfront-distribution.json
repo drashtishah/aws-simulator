@@ -1,0 +1,40 @@
+{
+  "Distribution": {
+    "Id": "EWESTMARKDOCS01",
+    "ARN": "arn:aws:cloudfront::498231746283:distribution/EWESTMARKDOCS01",
+    "Status": "Deployed",
+    "DomainName": "d3westmarkdocs.cloudfront.net",
+    "Aliases": ["docs.westmark-insights.com"],
+    "Origins": [
+      {
+        "Id": "westmark-docs-static",
+        "DomainName": "westmark-docs-static.s3.us-east-1.amazonaws.com",
+        "S3OriginConfig": {"OriginAccessIdentity": ""},
+        "OriginAccessControlId": "E1XQOACWESTMARK",
+        "_note": "Origin S3 bucket is in us-east-1. Created in 2022 when the company was US-only and never migrated."
+      }
+    ],
+    "ViewerCertificate": {
+      "ACMCertificateArn": "arn:aws:acm:us-east-1:498231746283:certificate/abcdef-1234-5678-9012-westmarkdocs",
+      "SSLSupportMethod": "sni-only",
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "_note": "ACM certificate ARN region is us-east-1. AWS REQUIRES that ACM certs used by CloudFront live in us-east-1, regardless of where the distribution serves traffic. This is a documented platform requirement."
+    },
+    "DefaultCacheBehavior": {
+      "TargetOriginId": "westmark-docs-static",
+      "ViewerProtocolPolicy": "redirect-to-https",
+      "LambdaFunctionAssociations": {
+        "Quantity": 1,
+        "Items": [
+          {
+            "LambdaFunctionARN": "arn:aws:lambda:us-east-1:498231746283:function:westmark-support-bot:42",
+            "EventType": "viewer-request",
+            "_note": "Lambda@Edge function. Lambda@Edge can only be CREATED and UPDATED in us-east-1; the runtime then replicates the function to all CloudFront edge locations. Existing replicas continue running during a us-east-1 outage; updates and rollbacks require us-east-1."
+          }
+        ]
+      }
+    }
+  },
+  "RecentInvalidations": [],
+  "_observed_during_outage": "Existing CloudFront edge cache hits served stale content for ~75 minutes (cache TTL). After cache expiration, viewer-request behavior continued to invoke the Lambda@Edge replica successfully (it was already deployed), but origin fetches returned 502 because the S3 origin in us-east-1 was unreachable."
+}

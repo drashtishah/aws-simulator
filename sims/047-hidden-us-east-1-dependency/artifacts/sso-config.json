@@ -1,0 +1,18 @@
+{
+  "InstanceArn": "arn:aws:sso:::instance/ssoins-westmarkprod",
+  "IdentityStoreId": "d-westmark01",
+  "Region": "eu-west-1",
+  "_note_for_player": "The Identity Center instance shows Region=eu-west-1 in the console, but the underlying control plane that serves federated logins lives in us-east-1. This is a documented behavior: 'AWS IAM Identity Center is hosted in a single Region, but you can use it to manage access to AWS accounts in any commercial Region.' The 'single Region' is us-east-1 unless explicitly delegated. Federated console logins call into this control plane and fail when it is unreachable.",
+  "PermissionSets": [
+    {
+      "Name": "AdminAccess",
+      "ManagedPolicies": ["arn:aws:iam::aws:policy/AdministratorAccess"],
+      "AccountAssignmentCount": 7
+    },
+    {
+      "Name": "DeveloperAccess",
+      "AccountAssignmentCount": 38
+    }
+  ],
+  "_observed_during_outage": "Federated logins from corporate IdP returning 502 at the SSO redirect endpoint. Existing console sessions with valid credentials continue working until session expiry."
+}

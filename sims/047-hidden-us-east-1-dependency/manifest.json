@@ -1,0 +1,207 @@
+{
+  "id": "047-hidden-us-east-1-dependency",
+  "title": "The Region You Did Not Know You Lived In (Westmark Insights)",
+  "summary": "A SaaS runs production in eu-west-1 and has practiced regional failover quarterly. When us-east-1 goes dark, every cross-region service the team owns is fine. Yet nothing works.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["iam", "sts", "cloudfront", "route53", "s3"],
+  "tags": ["regional-dependency", "us-east-1", "global-endpoints", "control-plane", "blast-radius", "post-mortem-pattern", "us-east-1-2025"],
+  "estimated_minutes": 40,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain1:DesignForOrgComplexity",
+    "ANS-C01:Domain5:NetworkSecurityComplianceGovernance",
+    "SCS-C02:Domain1:ThreatDetectionIncidentResponse"
+  ],
+  "company": {
+    "name": "Westmark Insights",
+    "industry": "B2B analytics platform for European retailers",
+    "size": "Series B, 41 engineers, 320 mid-market customers, GDPR + Schrems II compliance"
+  },
+  "glossary": {
+    "AWS Region": "An isolated geographic location with multiple Availability Zones. Most AWS services are regional: a service in eu-west-1 is independent of the same service in us-east-1.",
+    "Global service": "A small set of AWS services that have a single control plane that lives in us-east-1 even though they appear region-less to the user. The most common are IAM (identity and access), Route 53 (DNS hosted zones), CloudFront (CDN), and the older STS global endpoint.",
+    "STS regional endpoint": "Per-region endpoints for AWS Security Token Service of the form sts.<region>.amazonaws.com. The newer SDKs default to regional endpoints; older code and the AWS CLI sometimes still use the global sts.amazonaws.com which lives in us-east-1.",
+    "ACM certificate region requirement (CloudFront)": "AWS Certificate Manager certificates that are used by Amazon CloudFront must be issued in us-east-1 specifically, regardless of where the CloudFront distribution serves traffic. This is a documented platform requirement.",
+    "Lambda@Edge deployment region": "Lambda@Edge functions can only be created in us-east-1; the Lambda runtime then replicates them to CloudFront edge locations worldwide. Updates require a deploy in us-east-1.",
+    "Control plane vs data plane": "The control plane is the API that creates and modifies resources (CreateBucket, AssumeRole). The data plane is what serves customer traffic (PutObject, the running EC2 instance). A service can be operating fine on the data plane while its control plane is degraded.",
+    "Static stability": "An architecture property where the running system continues to operate even if its dependencies (especially the control plane) become unavailable. Pre-warmed capacity, cached credentials, and avoiding deploys during the outage are typical static-stability practices.",
+    "Multi-region runbook": "An operations document that lists the dependencies of a production region on other regions, especially us-east-1, and describes manual workarounds for each."
+  },
+  "system": {
+    "what_broke": "Westmark Insights runs production in eu-west-1 and has practiced regional failover to eu-central-1 quarterly; during the October 19 us-east-1 outage their compute and data layer in eu-west-1 stayed healthy, but five hidden cross-region dependencies all failed simultaneously: their CD pipeline used the global sts.amazonaws.com endpoint (anchored in us-east-1) so deploys returned 5xx; the CloudFront distribution serving their docs site used an ACM certificate that was issued in us-east-1 and could not be rotated when its scheduled renewal fired during the outage; their support engineers used IAM Identity Center for console login which depends on the us-east-1 control plane; their public docs origin S3 bucket was in us-east-1 because it was created when the company was US-only; and their support-desk Slack bot ran via a Lambda@Edge function that could not be redeployed.",
+    "data_flow": "Customer-facing analytics traffic: Customers -> CloudFront -> ALB in eu-west-1 -> ECS Fargate -> Aurora in eu-west-1. Operations traffic: Engineers -> AWS Console (Identity Center) -> service-specific control planes. CI/CD: GitHub Actions -> AssumeRole via STS -> deploy targets in eu-west-1.",
+    "components": [
+      {
+        "name": "Production data plane (eu-west-1)",
+        "role": "ECS Fargate, Aurora, ALB, all in eu-west-1; the actual application that customers use.",
+        "connections": ["Independent of us-east-1 for customer request serving"],
+        "failure_impact": "Healthy throughout the us-east-1 outage; this is the part the team correctly designed for regional independence."
+      },
+      {
+        "name": "westmark-cd-deploy (GitHub Actions runner role)",
+        "role": "OIDC role assumed by GitHub Actions to deploy. Workflow uses the AWS CLI's default endpoint config.",
+        "connections": ["AssumeRole via sts.amazonaws.com (the global endpoint)", "Once assumed, makes regional API calls to eu-west-1"],
+        "failure_impact": "Cannot deploy during us-east-1 outage because the AssumeRole call goes to the global STS endpoint which is anchored in us-east-1."
+      },
+      {
+        "name": "docs.westmark-insights.com (CloudFront distribution)",
+        "role": "Serves the public documentation site to customers and integration partners. Origin is the westmark-docs-static S3 bucket. Uses an ACM certificate for the custom domain.",
+        "connections": ["ACM certificate must be in us-east-1 (CloudFront platform requirement)", "Origin is S3 bucket in us-east-1"],
+        "failure_impact": "ACM cert auto-renewal scheduled for the outage window failed; certificate validation also failed; S3 origin in us-east-1 was unreachable."
+      },
+      {
+        "name": "westmark-docs-static (S3 bucket, us-east-1)",
+        "role": "Origin bucket for the docs CloudFront distribution. Created in 2022 when the company was US-only and never migrated.",
+        "connections": ["Read by CloudFront on cache miss", "Written by docs CI on every documentation change"],
+        "failure_impact": "Inaccessible during us-east-1 outage; CloudFront cache hits continued serving stale content for ~1 hour, then started returning origin errors."
+      },
+      {
+        "name": "Identity Center (formerly AWS SSO)",
+        "role": "Engineers' console login portal. Configured in eu-west-1 visually but the global control plane lives in us-east-1.",
+        "connections": ["Federates from corporate IdP", "Issues short-lived STS credentials for console sessions"],
+        "failure_impact": "Engineers could not log in to the AWS console for incident response during the outage; existing sessions continued working until token expiry."
+      },
+      {
+        "name": "westmark-support-bot (Lambda@Edge)",
+        "role": "Slack bot that responds to /support commands and creates Zendesk tickets. Deployed as a Lambda@Edge function attached to the docs CloudFront.",
+        "connections": ["Created and updated only in us-east-1 (Lambda@Edge requirement)"],
+        "failure_impact": "Existing replicated copies at edge locations continued running; could not be deployed, updated, or rolled back during the outage."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "iam",
+      "artifacts": [
+        "artifacts/sso-config.json",
+        "artifacts/iam-trust-policy.json"
+      ],
+      "capabilities": [
+        "list_roles",
+        "get_role",
+        "list_account_aliases",
+        "list_sso_admins"
+      ]
+    },
+    {
+      "service": "sts",
+      "artifacts": [
+        "artifacts/sdk-config-snippets.txt",
+        "artifacts/sts-call-failures.txt"
+      ],
+      "capabilities": [
+        "get_caller_identity",
+        "assume_role",
+        "assume_role_with_web_identity"
+      ]
+    },
+    {
+      "service": "cloudfront",
+      "artifacts": [
+        "artifacts/cloudfront-distribution.json"
+      ],
+      "capabilities": [
+        "get_distribution",
+        "list_distributions",
+        "get_distribution_config"
+      ]
+    },
+    {
+      "service": "route53",
+      "artifacts": [
+        "artifacts/route53-zone.json"
+      ],
+      "capabilities": [
+        "list_hosted_zones",
+        "list_resource_record_sets"
+      ]
+    },
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/s3-bucket-locations.json"
+      ],
+      "capabilities": [
+        "list_buckets",
+        "get_bucket_location",
+        "head_bucket"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The data plane in eu-west-1 is fine. Customer requests are flowing. So what is actually broken?",
+    "Make a list of every operational task the team CANNOT do right now: CD deploys, AWS console login, docs site, support Slack bot, ACM cert rotation. What do all of those have in common?",
+    "Each of those tasks goes through a service or endpoint that lives in us-east-1, even though the rest of the architecture is in eu-west-1. STS global endpoint, IAM Identity Center, ACM-for-CloudFront, Lambda@Edge, and S3 buckets that were created in us-east-1 when the company was US-only.",
+    "The fix is not to move the data plane (it is already correctly regional). The fix is to inventory and remove the implicit us-east-1 dependencies: switch SDK config to regional STS endpoints, replicate the docs S3 bucket and CloudFront origin to a multi-region setup, document Lambda@Edge as a cross-region dependency, and add a runbook entry that says 'during a us-east-1 outage, console access is degraded; use AWS CLI with regional STS endpoints.'"
+  ],
+  "resolution": {
+    "root_cause": "Westmark Insights had correctly designed customer-facing data-plane independence from us-east-1, but five operational dependencies silently relied on us-east-1 anyway: the global STS endpoint (used by CD pipeline), IAM Identity Center (used for console login), ACM certificates for CloudFront (which AWS requires to be in us-east-1), Lambda@Edge (which can only be deployed via us-east-1), and a legacy S3 bucket in us-east-1 used as the docs CloudFront origin; when us-east-1 went down, all five operational paths failed simultaneously even though customer traffic kept flowing.",
+    "fix_criteria": [
+      {
+        "id": "identify_data_plane_healthy",
+        "description": "Player identifies that the customer-facing data plane in eu-west-1 is unaffected.",
+        "required": true
+      },
+      {
+        "id": "identify_sts_global",
+        "description": "Player identifies that the CD pipeline depends on the global STS endpoint anchored in us-east-1.",
+        "required": true
+      },
+      {
+        "id": "identify_acm_cloudfront",
+        "description": "Player identifies that ACM-for-CloudFront and Lambda@Edge require us-east-1 by AWS platform design.",
+        "required": true
+      },
+      {
+        "id": "identify_legacy_s3",
+        "description": "Player identifies that the docs S3 bucket is in us-east-1 because of historical company location.",
+        "required": false
+      },
+      {
+        "id": "propose_remediation",
+        "description": "Player proposes the layered fix: switch SDK/CLI to regional STS endpoints; document Lambda@Edge and ACM-for-CloudFront as inherent us-east-1 dependencies and accept them with mitigations (pre-rotated certs, replicated assets); migrate the docs S3 bucket to eu-west-1 with multi-region replication; add a us-east-1-aware runbook entry.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "Some AWS services are global by design and have their control plane in us-east-1 (IAM, the global STS endpoint, parts of Route 53, CloudFront, billing).",
+      "ACM certificates used by CloudFront must be in us-east-1; this is a platform requirement that cannot be worked around.",
+      "Lambda@Edge functions can only be created and updated in us-east-1; the runtime replicates them globally, but deployments are anchored in us-east-1.",
+      "Static stability means designing the running system to keep working even if its control plane is unavailable; pre-issued certs, cached credentials, and avoiding deploys during the outage are common patterns.",
+      "Switching SDK and CLI clients to regional STS endpoints (sts.<region>.amazonaws.com) is a one-line change that eliminates the most common cross-region dependency."
+    ],
+    "sop_steps": [
+      "Inventory implicit us-east-1 dependencies. Run a mental or scripted audit: any code that calls sts.amazonaws.com (the global endpoint), any ACM cert used by CloudFront, any Lambda@Edge function, any S3 bucket in us-east-1 referenced by a non-us-east-1 service, any IAM Identity Center deployment, and any Route 53 health check (Route 53 itself is global but its health checkers run in us-east-1).",
+      "Switch SDK and CLI clients to regional STS endpoints. For the AWS CLI: 'aws configure set sts_regional_endpoints regional' or set AWS_STS_REGIONAL_ENDPOINTS=regional. For SDKs, set the equivalent client config option. The endpoint then becomes sts.eu-west-1.amazonaws.com instead of sts.amazonaws.com. Note that IAM credential validation still depends on the IAM control plane in us-east-1, but the STS API call itself can be served regionally.",
+      "Pre-issue and cache CloudFront certificates. ACM certificates auto-renew, but the renewal is a control-plane operation that requires us-east-1 to be reachable. For mission-critical certs, issue them with a long validity period from a private CA or pre-renew before any planned us-east-1 maintenance.",
+      "Document Lambda@Edge as inherently coupled to us-east-1. The function continues running at edge locations during a us-east-1 outage, but cannot be updated. For functions on the customer hot path, treat the deploy as a separate mini-region with its own freeze window during us-east-1 incidents.",
+      "Migrate legacy S3 buckets out of us-east-1 if they are origins for non-us-east-1 services. The docs bucket should be in eu-west-1 with a CloudFront origin failover to a us-east-1 replica via S3 Cross-Region Replication.",
+      "Add a us-east-1-aware runbook entry. List which operational paths are impacted during a us-east-1 outage (CD deploys, console login, ACM cert ops, Lambda@Edge deploys, S3 in us-east-1) and the manual workarounds (use long-lived AWS CLI credentials, defer non-critical deploys, use the support team's pre-issued admin creds for emergency access).",
+      "Test with a chaos exercise. Run a scheduled drill where IAM Identity Center is unreachable and the global STS endpoint returns 5xx; verify the team can still operate the data plane via regional STS plus pre-issued credentials."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Multi-region setup but Aurora Global Database write forwarding goes through us-east-1.",
+        "how_it_differs": "The data plane appears multi-region, but writes from secondary regions are forwarded to the primary writer via a single endpoint. If the primary region is down, secondaries can read but cannot write.",
+        "prevention": "Use Aurora Global Database with managed planned failover so a secondary can be promoted. Document the RTO and RPO."
+      },
+      {
+        "scenario": "CloudWatch Cross-Region dashboards depend on the source region.",
+        "how_it_differs": "Operators in eu-west-1 trying to view us-east-1 metrics during the outage get partial data or none. Affects observability, not availability.",
+        "prevention": "Replicate critical metrics into the operating region via CloudWatch metric streams; rely on the regional dashboard during cross-region incidents."
+      },
+      {
+        "scenario": "AWS Secrets Manager replicas drift because the source region is unreachable.",
+        "how_it_differs": "Replicas continue serving stale secrets; rotations cannot complete because the rotation Lambda needs to reach the source.",
+        "prevention": "Use multi-region secrets with replicate-on-write; set the operating region as the primary, not the corporate-default region."
+      }
+    ],
+    "sop_practices": [
+      "Treat us-east-1 as a hidden dependency for any multi-region architecture. The data plane can be regional; the control plane and a small set of global services are not. Map them explicitly.",
+      "Switch all SDK and CLI clients to regional STS endpoints by default. This is a one-line config change that removes the most common implicit us-east-1 dependency. Set it at the SDK level so it is uniform across all team services.",
+      "Maintain a us-east-1-aware operations runbook. List every operational path that depends on us-east-1 and the manual workaround for each. Refresh quarterly; new AWS services often add new dependencies.",
+      "Practice with chaos drills. A scheduled exercise where IAM Identity Center is unreachable surfaces dependencies that quarterly failover drills miss because regional failover does not exercise the control-plane dependencies on us-east-1."
+    ]
+  }
+}

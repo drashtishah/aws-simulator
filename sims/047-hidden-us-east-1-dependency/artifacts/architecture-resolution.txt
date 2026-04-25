@@ -1,0 +1,54 @@
+  PROBLEM 1: CD pipeline uses global STS endpoint (anchored us-east-1)
+  +-----------+    AssumeRole via sts.amazonaws.com [PROBLEM]
+  | GitHub    |---X    EndpointConnectionError, 5xx
+  | Actions   |
+  +-----------+    Fix: AWS_STS_REGIONAL_ENDPOINTS=regional
+                        -> uses sts.eu-west-1.amazonaws.com instead
+
+  PROBLEM 2: IAM Identity Center for console login
+  +-----------+    SSO login via global Identity Center
+  | Engineers |---X    federated session not issued
+  +-----------+
+                   Fix: pre-issued long-lived IAM access keys for emergency
+                        access via the CLI (which can use regional STS)
+
+  PROBLEM 3: ACM certificate for docs CloudFront [HARD CONSTRAINT]
+  +-----------+    docs.westmark-insights.com
+  | Partners  |---X    cert renewal scheduled for the outage window
+  +-----------+
+                   Constraint: ACM for CloudFront MUST be in us-east-1
+                   Fix: pre-renew at least 2 months before any us-east-1
+                        maintenance window; or use a cert from a public CA
+                        outside ACM
+
+  PROBLEM 4: docs S3 bucket lives in us-east-1 (legacy)
+  +-----------+    westmark-docs-static (S3, us-east-1)
+  | Cloud-    |---X    cache misses now return 502
+  | Front     |
+  +-----------+    Fix: migrate to eu-west-1 + CloudFront origin failover
+                        to a us-east-1 replica via Cross-Region Replication
+
+  PROBLEM 5: Lambda@Edge support bot [HARD CONSTRAINT]
+  +-----------+    westmark-support-bot (Lambda@Edge)
+  | Slack bot |     existing edge replicas continue running
+  +-----------+    new deploys require us-east-1 [PROBLEM]
+                   Constraint: Lambda@Edge can only be created/updated in
+                               us-east-1; runtime replicates worldwide
+                   Fix: document as a us-east-1-coupled component;
+                        defer non-critical Lambda@Edge updates during
+                        us-east-1 incidents
+
+  WHAT IS NOT BROKEN (correct regional design):
+  +------------+    dashboard.westmark-insights.com (eu-west-1 ALB)
+  | Customers  |---->[ALB]-->[ECS Fargate]-->[Aurora] all in eu-west-1
+  | (EU)       |    customer-facing data plane is fully unaffected
+  +------------+
+
+  Layered remediation:
+    1. Switch all SDK/CLI to regional STS endpoints (one config flag)
+    2. Pre-issue ACM certs with margin; document as us-east-1-coupled
+    3. Migrate legacy S3 buckets out of us-east-1 if used by other regions
+    4. Document Lambda@Edge as inherently us-east-1-coupled
+    5. Add a us-east-1-aware runbook entry
+    6. Run quarterly chaos drills targeting us-east-1 control-plane outage
+       (regional failover drills do NOT exercise this dimension)

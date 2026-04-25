@@ -1,0 +1,44 @@
+# GitHub Actions log excerpt from a failed deploy during the outage.
+
+2026-10-19T21:18:42.118Z Run aws-actions/configure-aws-credentials@v4
+2026-10-19T21:18:42.119Z   with:
+2026-10-19T21:18:42.120Z     role-to-assume: arn:aws:iam::498231746283:role/westmark-cd-deploy-role
+2026-10-19T21:18:42.121Z     aws-region: eu-west-1
+2026-10-19T21:18:42.135Z Assuming role with OIDC
+2026-10-19T21:18:47.402Z Error: Could not assume role with OIDC: Could not connect to the endpoint URL: "https://sts.amazonaws.com/"
+2026-10-19T21:18:47.403Z   Endpoint: https://sts.amazonaws.com/
+2026-10-19T21:18:47.404Z   Region: us-east-1 (default for global STS endpoint)
+2026-10-19T21:18:47.405Z   Underlying error: ConnectTimeoutError(host='sts.amazonaws.com', port=443)
+2026-10-19T21:18:47.406Z Process completed with exit code 1.
+
+# SRE workstation: aws sts get-caller-identity calls during the incident
+
+[2026-10-19T23:18:11Z][SRE-Operator@eu-w1-bastion]$ aws sts get-caller-identity
+An error occurred (EndpointConnectionError) when calling the GetCallerIdentity operation:
+Could not connect to the endpoint URL: "https://sts.amazonaws.com/"
+
+[2026-10-19T23:33:02Z][SRE-Operator@eu-w1-bastion]$ export AWS_STS_REGIONAL_ENDPOINTS=regional
+
+[2026-10-19T23:33:08Z][SRE-Operator@eu-w1-bastion]$ aws sts get-caller-identity
+{
+    "UserId": "AIDAEXAMPLEUSERID",
+    "Account": "498231746283",
+    "Arn": "arn:aws:iam::498231746283:user/sre-operator-emergency"
+}
+# Same call now succeeds because it goes to sts.eu-west-1.amazonaws.com
+
+[2026-10-19T23:33:42Z][SRE-Operator@eu-w1-bastion]$ aws sts assume-role \
+  --role-arn arn:aws:iam::498231746283:role/SRE-Operator \
+  --role-session-name incident-response-1019
+{
+    "Credentials": {
+        "AccessKeyId": "ASIAREDACTED",
+        "SecretAccessKey": "REDACTED",
+        "SessionToken": "REDACTED",
+        "Expiration": "2026-10-20T00:33:42+00:00"
+    },
+    "AssumedRoleUser": {
+        "AssumedRoleId": "AROAEXAMPLE:incident-response-1019",
+        "Arn": "arn:aws:sts::498231746283:assumed-role/SRE-Operator/incident-response-1019"
+    }
+}

@@ -1,0 +1,37 @@
+{
+  "HostedZone": {
+    "Id": "/hostedzone/Z3WESTMARK01",
+    "Name": "westmark-insights.com.",
+    "Config": {"PrivateZone": false}
+  },
+  "ResourceRecordSets": [
+    {
+      "Name": "dashboard.westmark-insights.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "HostedZoneId": "Z32O12XQLNTSW2",
+        "DNSName": "dashboard-eu-west-1-alb-1234.eu-west-1.elb.amazonaws.com.",
+        "EvaluateTargetHealth": true
+      }
+    },
+    {
+      "Name": "docs.westmark-insights.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "HostedZoneId": "Z2FDTNDATAQYW2",
+        "DNSName": "d3westmarkdocs.cloudfront.net.",
+        "EvaluateTargetHealth": false
+      }
+    },
+    {
+      "Name": "api.westmark-insights.com.",
+      "Type": "A",
+      "AliasTarget": {
+        "HostedZoneId": "Z32O12XQLNTSW2",
+        "DNSName": "api-eu-west-1-alb-5678.eu-west-1.elb.amazonaws.com.",
+        "EvaluateTargetHealth": true
+      }
+    }
+  ],
+  "_note_for_player": "Route 53 itself is a global service whose data plane (DNS resolution) is replicated worldwide and stayed healthy throughout the us-east-1 outage. Customer-facing hostnames (dashboard, api) resolve to ALBs in eu-west-1 and continued to work. The docs hostname resolves to a CloudFront distribution that has its origin and ACM cert in us-east-1; that path is the one that broke. Route 53 was not the cause; it just routed customers to a downstream resource that was."
+}

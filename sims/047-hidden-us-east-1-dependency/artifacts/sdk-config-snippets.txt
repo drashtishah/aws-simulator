@@ -1,0 +1,47 @@
+# Snippets from various Westmark services that show how the STS endpoint is configured.
+
+# 1. GitHub Actions workflow .github/workflows/deploy.yml
+#    Uses aws-actions/configure-aws-credentials@v4 with default endpoint config.
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::498231746283:role/westmark-cd-deploy-role
+          aws-region: eu-west-1
+          # NOTE: no audience override, no STS endpoint override.
+          # The action calls sts:AssumeRoleWithWebIdentity against the global endpoint by default.
+
+# 2. SRE workstation ~/.aws/config
+#    Set up by the platform team in 2022 when the company was US-only.
+#    The sts_regional_endpoints setting is missing.
+
+[default]
+region = eu-west-1
+output = json
+# missing: sts_regional_endpoints = regional
+
+[profile westmark-prod]
+region = eu-west-1
+role_arn = arn:aws:iam::498231746283:role/SRE-Operator
+source_profile = default
+# missing: sts_regional_endpoints = regional
+
+# 3. Westmark Python service (boto3 1.26 era), uses default config.
+import boto3
+
+session = boto3.Session(region_name='eu-west-1')
+sts = session.client('sts')   # <-- defaults to global STS endpoint in older boto3 versions
+identity = sts.get_caller_identity()
+
+# 4. WORKING fix the SRE applied during the incident.
+#    Set in the workstation environment, then re-ran the deploy commands.
+
+export AWS_STS_REGIONAL_ENDPOINTS=regional
+aws sts get-caller-identity   # now hits sts.eu-west-1.amazonaws.com, succeeds
+aws sts assume-role --role-arn arn:aws:iam::498231746283:role/SRE-Operator \
+                    --role-session-name incident-response   # also succeeds
+
+# 5. Equivalent fix for boto3 (added later as a permanent change):
+session = boto3.Session(region_name='eu-west-1')
+sts = session.client('sts', endpoint_url='https://sts.eu-west-1.amazonaws.com')
+# OR upgrade boto3 to 1.34+ where regional STS is the default.

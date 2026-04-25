@@ -660,6 +660,22 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-25"
+    },
+    {
+      "id": "047-hidden-us-east-1-dependency",
+      "title": "The Region You Did Not Know You Lived In",
+      "summary": "A SaaS runs production in eu-west-1 and has practiced regional failover quarterly. When us-east-1 goes dark, every cross-region service the team owns is fine. Yet nothing works.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "iam",
+        "sts",
+        "cloudfront",
+        "route53",
+        "s3"
+      ],
+      "estimated_minutes": 40,
+      "created": "2026-04-25"
     }
   ]
 }

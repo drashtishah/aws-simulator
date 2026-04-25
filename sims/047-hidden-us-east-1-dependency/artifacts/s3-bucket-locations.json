@@ -1,0 +1,35 @@
+{
+  "Buckets": [
+    {
+      "Name": "westmark-data-eu-west-1",
+      "CreationDate": "2023-08-12T11:14:00Z",
+      "LocationConstraint": "eu-west-1",
+      "_note": "Customer data lake. Correctly in eu-west-1 (also a GDPR data-residency requirement). Healthy during the outage."
+    },
+    {
+      "Name": "westmark-cd-artifacts",
+      "CreationDate": "2024-01-04T16:42:00Z",
+      "LocationConstraint": "eu-west-1",
+      "_note": "Build artifacts for CD. Healthy during the outage."
+    },
+    {
+      "Name": "westmark-docs-static",
+      "CreationDate": "2022-02-08T03:14:00Z",
+      "LocationConstraint": "us-east-1",
+      "_note": "PROBLEM: Origin for the docs CloudFront distribution. Created in 2022 when the company was US-only and never migrated. Was unreachable during the us-east-1 outage; CloudFront cache hits worked for ~75 minutes, then origin fetches returned 502."
+    },
+    {
+      "Name": "westmark-cloudtrail-archive",
+      "CreationDate": "2023-09-22T13:08:00Z",
+      "LocationConstraint": "eu-west-1",
+      "_note": "Long-term CloudTrail log archive. Correctly in eu-west-1."
+    },
+    {
+      "Name": "westmark-tf-state",
+      "CreationDate": "2023-04-18T17:22:00Z",
+      "LocationConstraint": "us-east-1",
+      "_note": "PROBLEM: Terraform remote state bucket. Created when the platform team set up Terraform in 2023; us-east-1 was the default region in their AWS CLI profile at the time. Could not be accessed during the outage, which would have blocked terraform plan/apply runs even if STS had been working."
+    }
+  ],
+  "_summary_for_player": "Two buckets are in us-east-1 (westmark-docs-static and westmark-tf-state). Both were created when defaults pointed at us-east-1 and never migrated. The docs bucket caused customer-visible impact (docs site 502s); the Terraform state bucket would have blocked any infrastructure change during the outage even if the SRE had fixed the STS endpoint issue."
+}
