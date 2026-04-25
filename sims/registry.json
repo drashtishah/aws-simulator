@@ -615,6 +615,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-25"
+    },
+    {
+      "id": "044-dynamodb-lease-storm",
+      "title": "The Lease That Would Not Release",
+      "summary": "A nightly batch pipeline crashes at 2 AM. The team bounces the workers and watches them fight over DynamoDB locks for nine hours, processing zero records. Throwing more workers in makes the fight worse.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "dynamodb",
+        "lambda",
+        "sqs",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-25"
     }
   ]
 }

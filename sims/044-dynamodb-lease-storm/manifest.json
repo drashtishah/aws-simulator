@@ -1,0 +1,179 @@
+{
+  "id": "044-dynamodb-lease-storm",
+  "title": "The Lease That Would Not Release (Polestar Returns)",
+  "summary": "A nightly batch pipeline crashes at 2 AM. The team bounces the workers and watches them fight over DynamoDB locks for nine hours, processing zero records. Throwing more workers in makes the fight worse.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["dynamodb", "lambda", "sqs", "cloudwatch"],
+  "tags": ["retry-storm", "congestive-collapse", "exponential-backoff", "jitter", "circuit-breaker", "post-mortem-pattern", "ec2-2021"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:DesignSolutionsForNewSolutions",
+    "DOP-C02:Domain3:Resilience",
+    "DBS-C01:Domain2:Deployment"
+  ],
+  "company": {
+    "name": "Polestar Returns",
+    "industry": "e-commerce reverse-logistics platform",
+    "size": "Series C, 78 engineers, processes returns for 1,200 retailers"
+  },
+  "glossary": {
+    "DynamoDB conditional write": "A write operation (PutItem, UpdateItem, DeleteItem) that only succeeds if a condition expression evaluates true at the moment the write is applied. Used to implement leases, optimistic locks, and uniqueness constraints.",
+    "ConditionalCheckFailedException": "The error DynamoDB returns when a conditional write's condition expression evaluates false. Common when two clients race to update the same item; one wins, the other gets this exception.",
+    "Lease (in distributed systems)": "A short-lived, time-bounded reservation that grants the holder exclusive access to a resource. In DynamoDB, leases are typically represented as items with an owner_id and an expires_at timestamp; clients use conditional writes to acquire and release them.",
+    "Retry storm": "A pattern where many clients fail an operation, retry simultaneously, fail again, and retry again, indefinitely. Without backoff and jitter, the retries are perfectly synchronized and prevent the system from making any forward progress.",
+    "Congestive collapse": "A failure mode where a system spends all of its capacity on retries and contention rather than useful work. Adding capacity makes it worse because each new client adds to the contention.",
+    "Exponential backoff with jitter": "A retry strategy where each successive retry waits longer (exponential) by a randomized factor (jitter). Prevents synchronized retry storms.",
+    "Circuit breaker": "A pattern where a client tracks recent failure rate and refuses to make more calls when the rate is too high, giving the downstream system time to recover.",
+    "DynamoDB on-demand mode": "A capacity mode where the table scales automatically and you pay per request. Throttling can still occur if the request rate spikes faster than DynamoDB can scale; the throttling rate is governed by per-partition limits.",
+    "Lambda concurrency": "The number of Lambda invocations executing in parallel. Reserved concurrency caps it; without a cap, a single function can scale to thousands of concurrent invocations within seconds."
+  },
+  "system": {
+    "what_broke": "polestar-return-classifier Lambda workers acquire shard leases via DynamoDB conditional writes; after a brief throttling event at 02:14 each worker started retrying with no jitter and a fixed 200ms interval; failed conditional writes drove DynamoDB write rate to its on-demand throttle ceiling; no worker could acquire a fresh lease; the SQS backlog stayed at 4M messages while Lambda invocations completed in 4.8s each (the retry timeout) doing zero work.",
+    "data_flow": "Retailer return events arrive in SQS (polestar-returns-queue). Lambda polestar-return-classifier polls in batches, claims a shard lease in DynamoDB (polestar-shard-leases), processes the batch, releases the lease, and writes results to RDS Aurora.",
+    "components": [
+      {
+        "name": "polestar-return-classifier (Lambda function)",
+        "role": "Polls SQS in batches of 10, claims a shard lease via DynamoDB conditional write, processes the batch, releases the lease.",
+        "connections": ["Event source: polestar-returns-queue (SQS)", "DynamoDB: polestar-shard-leases (table)", "RDS Aurora: polestar-returns-db"],
+        "failure_impact": "If lease acquisition fails, the function retries indefinitely until the Lambda timeout (5s). Each invocation that times out is counted as a successful poll by SQS; the message is later retried by SQS visibility-timeout expiry."
+      },
+      {
+        "name": "polestar-shard-leases (DynamoDB table)",
+        "role": "Stores active shard leases. Item key: shard_id. Attributes: owner_id, expires_at. Conditional writes used for acquire (attribute_not_exists OR expires_at < now) and release (owner_id = self).",
+        "connections": ["Written by polestar-return-classifier on every invocation"],
+        "failure_impact": "On-demand mode; per-partition write throttle is ~1000 WCU/s; sustained ConditionalCheckFailed write rate of 8,000+/s exhausted partition capacity."
+      },
+      {
+        "name": "polestar-returns-queue (SQS)",
+        "role": "Holds incoming return events from retailer webhooks. Visibility timeout 30s.",
+        "connections": ["Polled by polestar-return-classifier", "DLQ: polestar-returns-dlq after 5 failed receives"],
+        "failure_impact": "Backlog grew to 4.2M messages over 9 hours; messages near MaxReceiveCount=5 began moving to DLQ."
+      },
+      {
+        "name": "polestar-deploy-2026-04-23 (recent CodeDeploy event)",
+        "role": "Routine deploy of the front-end at 21:00 the previous evening; unrelated to the batch pipeline; included in CloudTrail as a possible cause to investigate.",
+        "connections": ["Did not touch polestar-return-classifier or DynamoDB"],
+        "failure_impact": "None; this is a red herring."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json",
+        "artifacts/lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_concurrency",
+        "list_invocations"
+      ]
+    },
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/dynamodb-table.json",
+        "artifacts/dynamodb-metrics.csv"
+      ],
+      "capabilities": [
+        "describe_table",
+        "describe_time_to_live",
+        "describe_continuous_backups"
+      ]
+    },
+    {
+      "service": "sqs",
+      "artifacts": [
+        "artifacts/sqs-queue-attrs.json"
+      ],
+      "capabilities": [
+        "get_queue_attributes",
+        "list_queues"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The SQS backlog has not moved in nine hours. Lambda is busy. Where is the work going?",
+    "Look at the DynamoDB metrics on polestar-shard-leases. ConditionalCheckFailedRequests is at 8,000 per second and write throughput is at the on-demand throttle ceiling.",
+    "Read the lease-acquire code. After a failed conditional write, what does the worker do? How long does it wait before retrying?",
+    "Every worker retries on a fixed 200ms interval with no jitter. With 1000 concurrent Lambda invocations and one shard lease, all workers wake at the same instant, all attempt the conditional write, exactly one wins, 999 fail. The winner releases. All retry on the next 200ms tick. Forever."
+  ],
+  "resolution": {
+    "root_cause": "polestar-return-classifier retries failed lease-acquire conditional writes on a fixed 200ms interval with no jitter and no backoff; with 1000 concurrent Lambda workers contending for shard leases, every retry tick is a synchronized stampede that drives DynamoDB ConditionalCheckFailedRequests above 8,000/s, exhausts the per-partition write throttle, and prevents any worker from making forward progress.",
+    "fix_criteria": [
+      {
+        "id": "identify_no_throughput",
+        "description": "Player identifies that SQS backlog is flat while Lambda invocations are running constantly (no useful work being done).",
+        "required": true
+      },
+      {
+        "id": "identify_conditional_failures",
+        "description": "Player identifies the high ConditionalCheckFailedRequests rate on the DynamoDB lease table.",
+        "required": true
+      },
+      {
+        "id": "identify_retry_pattern",
+        "description": "Player identifies the synchronized retry pattern (fixed interval, no jitter) in worker code or logs.",
+        "required": true
+      },
+      {
+        "id": "propose_remediation",
+        "description": "Player proposes the correct combination: REDUCE concurrency (not increase), add exponential backoff with jitter, add a circuit breaker that exits early if lease contention is high. May also propose increasing shard count to reduce contention.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "Synchronized retries on a hot key produce a stampede that prevents progress; jitter is what breaks the synchronization.",
+      "DynamoDB on-demand mode has per-partition throttle limits (~1000 WCU/s, 3000 RCU/s); sustained contention on a single item exhausts that limit regardless of overall table capacity.",
+      "ConditionalCheckFailedException is a normal occurrence under contention; a healthy system metabolizes it via backoff. Fixed-interval retries amplify it into a denial-of-service against your own table.",
+      "Adding capacity to a contention-bound system makes the contention worse. The fix is to reduce concurrency until forward progress resumes, then add backoff and jitter, then carefully scale back up."
+    ],
+    "sop_steps": [
+      "Confirm the system is making no forward progress. Check the SQS queue's ApproximateNumberOfMessagesVisible over the last hour; if it is flat or growing while Lambda Invocations is non-zero, work is being attempted but not completed.",
+      "Check the DynamoDB metrics on the contended item or table. ConditionalCheckFailedRequests at sustained high rate, plus WriteThrottleEvents non-zero, plus per-second WCU usage at the on-demand soft limit, all together point at lease contention.",
+      "Pull the worker source or recent logs for the retry pattern. Look for a fixed sleep interval after a conditional-write failure. Without jitter and exponential backoff, every retry from every worker happens at the same moment.",
+      "Stop the bleeding. Reduce the function's reserved concurrency to a small number (start with 1, then 5, then 10) so the contention drops. Forward progress should resume within seconds because each individual worker can now win its lease.",
+      "Add exponential backoff with jitter to the lease-acquire loop. After a failed conditional write, sleep for a duration uniformly random between 0 and (base * 2^attempt), capped at a max. AWS SDK's standard retry mode includes this; for application-level retries, write it explicitly.",
+      "Add a circuit breaker. Track the rolling rate of ConditionalCheckFailed errors over the last 30 seconds; if it exceeds a threshold, the worker exits early without retrying, returning the message to SQS for later processing. This is the customer-side equivalent of AWS's velocity-control mechanism.",
+      "Reduce shard contention at the data-model layer. If many workers contend for a single lease item, increase the shard count so multiple leases exist. With 64 leases instead of 1, contention drops by a factor of 64 even at the same concurrency.",
+      "Once stable, scale concurrency back up gradually. Watch ConditionalCheckFailedRequests stay low and Lambda Duration drop to actual processing time, not retry timeout."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "DynamoDB on-demand throttle from a hot partition (single hot key receiving all traffic).",
+        "how_it_differs": "Symptom is ProvisionedThroughputExceeded or ThrottlingException on a specific partition. The application is not contending on a lease; it is just sending too many requests to the same partition key.",
+        "prevention": "Spread writes across many partition keys; add a random shard suffix to a hot key; review the partition-key choice."
+      },
+      {
+        "scenario": "Lambda concurrency limit hit at the account level.",
+        "how_it_differs": "New invocations fail with ConcurrentInvocationLimitExceeded immediately, before any DynamoDB call. SQS backlog grows because Lambda cannot pick up messages, not because workers are spinning.",
+        "prevention": "Set per-function reserved concurrency for predictable behavior; request an account-level concurrency increase ahead of expected scale-out events."
+      },
+      {
+        "scenario": "Stale lease left behind by a crashed worker, blocking all subsequent attempts.",
+        "how_it_differs": "ConditionalCheckFailedRequests rate is low but constant; one specific shard cannot be acquired by anyone because expires_at was set far in the future by the crashed worker.",
+        "prevention": "Use a TTL value short enough to recover quickly; release the lease in a finally-block; monitor for leases held by Lambda request IDs no longer in flight."
+      }
+    ],
+    "sop_practices": [
+      "Always combine retries with exponential backoff and full jitter. The AWS SDK's 'standard' retry mode does this for SDK-level retries; application-level retry loops must do it explicitly. Synchronized retries are how a small failure becomes a large outage.",
+      "Add a circuit breaker to any retry loop that touches a shared resource. When the failure rate crosses a threshold, exit early and let the upstream system handle the message later. This bounds the blast radius of contention.",
+      "Reduce shard contention at the data-model layer before scaling concurrency. If workers serialize on a single hot item, no amount of capacity addition will help; the bottleneck is the hot item.",
+      "Treat 'adding more workers' as a hypothesis, not a default. For congestion-bound problems, reducing concurrency is the correct first move. The 2021 EC2 DWFM congestive-collapse event made this lesson explicit at AWS scale."
+    ]
+  }
+}

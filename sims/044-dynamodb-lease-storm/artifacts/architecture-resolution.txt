@@ -1,0 +1,66 @@
+                       +------------------------+
+                       | Retailer Webhooks      |
+                       +-----------+------------+
+                                   |
+                                   v
+                       +------------------------+
+                       | SQS Queue              |
+                       | polestar-returns-queue |
+                       | depth: 4,234,118       |
+                       | [BACKLOG NOT DRAINING] |
+                       +-----------+------------+
+                                   |
+                                   | event source mapping (batch=10)
+                                   v
+                       +------------------------+
+                       | Lambda Function        |
+                       | polestar-return-       |
+                       |   classifier           |
+                       | reserved conc: 1000    |
+                       | invocations/s: 800     |
+                       | duration p50: 4,800ms  |
+                       | [SPINNING, NOT WORKING]|
+                       +-----+--------------+---+
+                             |              |
+              acquire/release|              | write results
+                             |              | (NEVER REACHED)
+                             v              v
+        +------------------------+   +-------------------+
+        | DynamoDB Table         |   | RDS Aurora        |
+        | polestar-shard-leases  |   | polestar-returns- |
+        | mode: ON_DEMAND        |   |   db (idle)       |
+        | shard_count: 1         |   +-------------------+
+        | [SINGLE HOT PARTITION] |
+        |                        |
+        | metrics:               |
+        | ConditionalCheckFailed |
+        |   = 8,000/s [PROBLEM]  |
+        | WriteThrottleEvents    |
+        |   = 2,400/s [PROBLEM]  |
+        +------------------------+
+
+  PROBLEM 1: Lease-acquire retry loop has no jitter, no backoff
+    -> after a failed conditional write, worker sleeps fixed 200ms and retries
+    -> with 1000 concurrent workers, every 200ms tick is a synchronized stampede
+
+  PROBLEM 2: Single shard (shard_count = 1)
+    -> all 1000 workers contend for ONE lease item on ONE partition
+    -> per-partition write throttle is ~1,000 WCU/s
+    -> ConditionalCheckFailed drives writes to ~8,000/s, ten times the limit
+
+  PROBLEM 3: Counter-intuitive scaling response
+    -> SRE's first instinct was to scale UP concurrency from 200 to 1000
+    -> more workers means more concurrent conditional writes per tick
+    -> contention got worse, not better
+
+  PROBLEM 4: No early-warning signal
+    -> no alarm on Lambda Duration approaching timeout
+    -> no alarm on ConditionalCheckFailed rate
+    -> no alarm on SQS backlog growth slope
+
+  Fix sequence:
+    1. REDUCE reserved concurrency to 5 (counter-intuitive but correct)
+    2. Add exponential backoff with full jitter to retry loop
+    3. Add circuit breaker that exits early when contention is high
+    4. Increase shard_count to 64 to spread contention across partitions
+    5. Scale concurrency back up gradually (5 -> 50 -> 200)

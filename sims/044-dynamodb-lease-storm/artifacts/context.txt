@@ -1,0 +1,6 @@
+Company: Polestar Returns (Series C, 78 engineers)
+Industry: E-commerce reverse-logistics platform
+Users: 1,200 retailers, ~4M return events per night
+AWS Services: Amazon DynamoDB, AWS Lambda, Amazon SQS, Amazon CloudWatch
+Your role: SRE on call, 11:14 AM PT Friday, nine hours into a stalled batch run
+Situation: Nightly pipeline crashed at 02:14; team has bounced workers four times and scaled them up twice; SQS backlog at 4.2M messages and not moving

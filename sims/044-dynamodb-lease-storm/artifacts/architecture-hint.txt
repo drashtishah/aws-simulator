@@ -1,0 +1,58 @@
+                       +------------------------+
+                       | Retailer Webhooks      |
+                       | (1,200 retailers)      |
+                       +-----------+------------+
+                                   |
+                                   | POST /returns
+                                   v
+                       +------------------------+
+                       | API Gateway            |
+                       | polestar-returns-api   |
+                       +-----------+------------+
+                                   |
+                                   v
+                       +------------------------+
+                       | SQS Queue              |
+                       | polestar-returns-queue |
+                       | visibility_timeout: 30s|
+                       | DLQ after 5 receives   |
+                       +-----------+------------+
+                                   |
+                                   | event source mapping (batch=10)
+                                   v
+                       +------------------------+
+                       | Lambda Function        |
+                       | polestar-return-       |
+                       |   classifier           |
+                       | timeout: 5s            |
+                       | reserved concurrency:  |
+                       |   1000                 |
+                       +-----+--------------+---+
+                             |              |
+              acquire/release|              | write results
+                  conditional|              | (after lease)
+                   UpdateItem|              v
+                             |   +-------------------+
+                             |   | RDS Aurora        |
+                             |   | polestar-returns- |
+                             |   |   db              |
+                             |   +-------------------+
+                             v
+                       +------------------------+
+                       | DynamoDB Table         |
+                       | polestar-shard-leases  |
+                       | mode: ON_DEMAND        |
+                       | items keyed by shard_id|
+                       +------------------------+
+
+  Lease item structure:
+    shard_id      (partition key, string)
+    owner_id      (string, Lambda request ID)
+    expires_at    (number, Unix timestamp)
+
+  Acquire operation: UpdateItem with ConditionExpression
+    attribute_not_exists(owner_id) OR expires_at < :now
+
+  Recent CloudTrail events:
+    - polestar-deploy-2026-04-23 at 21:00: front-end deploy, unrelated to pipeline
+    - polestar-iam-rotate at 22:14: scheduled key rotation, unrelated

@@ -1,0 +1,24 @@
+2026-04-24T09:14:01.402Z START RequestId: aaaa1111-bbbb-2222-cccc-333344445555
+2026-04-24T09:14:01.412Z INFO  [polestar-return-classifier] poll batch=10 from polestar-returns-queue
+2026-04-24T09:14:01.418Z INFO  [polestar-return-classifier] attempting lease acquire: shard_id=shard-01, attempt=0
+2026-04-24T09:14:01.487Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:01.689Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:01.891Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:02.092Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:02.293Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:02.494Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:02.695Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:02.896Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:03.097Z WARN  [polestar-return-classifier] ConditionalCheckFailedException; retrying in 200ms
+2026-04-24T09:14:04.802Z ERROR [polestar-return-classifier] lease acquire timeout after 20 attempts
+2026-04-24T09:14:04.890Z END RequestId: aaaa1111-bbbb-2222-cccc-333344445555
+2026-04-24T09:14:04.890Z REPORT RequestId: aaaa1111-bbbb-2222-cccc-333344445555 Duration: 4801.92 ms Billed Duration: 4802 ms Memory Size: 1024 MB Max Memory Used: 128 MB
+2026-04-24T17:51:08.221Z INFO  [polestar-controller] reduced reserved-concurrency from 1000 to 5 via aws lambda put-function-concurrency
+2026-04-24T17:51:09.882Z START RequestId: f9e8d7c6-b5a4-3210-fedc-ba0987654321
+2026-04-24T17:51:09.892Z INFO  [polestar-return-classifier] attempting lease acquire: shard_id=shard-01, attempt=0
+2026-04-24T17:51:09.911Z INFO  [polestar-return-classifier] lease acquired: shard_id=shard-01, owner=f9e8d7c6, expires=1745524269
+2026-04-24T17:51:09.913Z INFO  [polestar-return-classifier] processing batch of 10 records
+2026-04-24T17:51:10.444Z INFO  [polestar-return-classifier] batch processed: 10 records, 0 errors, 531ms
+2026-04-24T17:51:10.452Z INFO  [polestar-return-classifier] lease released
+2026-04-24T17:51:10.502Z END RequestId: f9e8d7c6-b5a4-3210-fedc-ba0987654321
+2026-04-24T17:51:10.502Z REPORT RequestId: f9e8d7c6-b5a4-3210-fedc-ba0987654321 Duration: 619.84 ms Billed Duration: 620 ms Memory Size: 1024 MB Max Memory Used: 142 MB

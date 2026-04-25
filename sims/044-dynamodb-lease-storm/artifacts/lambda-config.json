@@ -1,0 +1,30 @@
+{
+  "FunctionName": "polestar-return-classifier",
+  "FunctionArn": "arn:aws:lambda:us-east-1:498231746283:function:polestar-return-classifier",
+  "Runtime": "nodejs20.x",
+  "Role": "arn:aws:iam::498231746283:role/polestar-return-classifier-role",
+  "Handler": "index.handler",
+  "MemorySize": 1024,
+  "Timeout": 5,
+  "ReservedConcurrentExecutions": 1000,
+  "Environment": {
+    "Variables": {
+      "LEASE_TABLE": "polestar-shard-leases",
+      "SHARD_COUNT": "1",
+      "LEASE_TTL_SECONDS": "30",
+      "RETRY_INTERVAL_MS": "200",
+      "MAX_RETRIES": "20"
+    }
+  },
+  "EventSourceMappings": [
+    {
+      "UUID": "abc-123",
+      "EventSourceArn": "arn:aws:sqs:us-east-1:498231746283:polestar-returns-queue",
+      "FunctionArn": "arn:aws:lambda:us-east-1:498231746283:function:polestar-return-classifier",
+      "BatchSize": 10,
+      "MaximumBatchingWindowInSeconds": 0,
+      "State": "Enabled"
+    }
+  ],
+  "_excerpt_from_handler_code": "// from index.js\nasync function acquireLease(shardId, ownerId) {\n  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {\n    try {\n      await ddb.update({\n        TableName: LEASE_TABLE,\n        Key: { shard_id: shardId },\n        UpdateExpression: 'SET owner_id = :owner, expires_at = :exp',\n        ConditionExpression: 'attribute_not_exists(owner_id) OR expires_at < :now',\n        ExpressionAttributeValues: { ':owner': ownerId, ':exp': now + LEASE_TTL_SECONDS, ':now': now }\n      }).promise();\n      return true;\n    } catch (err) {\n      if (err.code === 'ConditionalCheckFailedException') {\n        await sleep(RETRY_INTERVAL_MS);  // <-- fixed interval, no jitter, no backoff\n        continue;\n      }\n      throw err;\n    }\n  }\n  throw new Error('lease acquire timeout');\n}"
+}

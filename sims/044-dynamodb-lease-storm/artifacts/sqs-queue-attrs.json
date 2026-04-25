@@ -1,0 +1,14 @@
+{
+  "Attributes": {
+    "QueueArn": "arn:aws:sqs:us-east-1:498231746283:polestar-returns-queue",
+    "ApproximateNumberOfMessages": "4234118",
+    "ApproximateNumberOfMessagesNotVisible": "8000",
+    "ApproximateNumberOfMessagesDelayed": "0",
+    "VisibilityTimeout": "30",
+    "MessageRetentionPeriod": "345600",
+    "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:us-east-1:498231746283:polestar-returns-dlq\",\"maxReceiveCount\":\"5\"}",
+    "CreatedTimestamp": "1693267200",
+    "LastModifiedTimestamp": "1745515200"
+  },
+  "_note_for_player": "ApproximateNumberOfMessages is 4.2M and has been flat for 9 hours. ApproximateNumberOfMessagesNotVisible is 8,000 -- these are messages currently in flight (a Lambda has them but has not deleted them); they will become visible again in 30 seconds when the visibility timeout expires. The fact that depth is not falling means deletes are not happening, which means the Lambda invocations are not completing the work."
+}

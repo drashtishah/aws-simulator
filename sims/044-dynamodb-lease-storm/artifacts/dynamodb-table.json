@@ -1,0 +1,24 @@
+{
+  "Table": {
+    "TableName": "polestar-shard-leases",
+    "TableArn": "arn:aws:dynamodb:us-east-1:498231746283:table/polestar-shard-leases",
+    "TableStatus": "ACTIVE",
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST"
+    },
+    "KeySchema": [
+      {"AttributeName": "shard_id", "KeyType": "HASH"}
+    ],
+    "AttributeDefinitions": [
+      {"AttributeName": "shard_id", "AttributeType": "S"}
+    ],
+    "ItemCount": 1,
+    "TableSizeBytes": 78,
+    "CreationDateTime": "2024-09-04T17:22:11Z",
+    "TimeToLiveDescription": {
+      "TimeToLiveStatus": "ENABLED",
+      "AttributeName": "expires_at"
+    }
+  },
+  "_note_for_player": "ItemCount is 1. The entire lease table consists of a single item with shard_id='shard-01'. Every Lambda invocation acquires a lease against this same item. With shard_count=1 in the function configuration, there is exactly one possible lease key, and DynamoDB places it on a single partition by definition."
+}
