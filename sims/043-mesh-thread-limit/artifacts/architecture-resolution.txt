@@ -1,0 +1,56 @@
+                       +--------------------+
+                       | Three US Options   |
+                       | Exchanges (clients)|
+                       +---------+----------+
+                                 |
+                                 | wss://, port 443
+                                 v
+                       +--------------------+
+                       | Network Load Bal.  |
+                       | adagio-matcher-nlb |
+                       +---------+----------+
+                                 |
+              +------------------+------------------+
+              |                  |                  |
+   +----------v---+   +----------v---+   +---------v----+
+   | matcher-001  |<->| matcher-002  |<->| matcher-100  |
+   | (ECS task)   |<->| (ECS task)   |<->| (ECS task)   |
+   |              |   |              |   |              |
+   | nofile: 1024 |   | nofile: 1024 |   | nofile: 1024 |
+   | [PROBLEM]    |   | [PROBLEM]    |   | [PROBLEM]    |
+   | open FDs:    |   | open FDs:    |   | open FDs:    |
+   | ~382 + churn |   | ~382 + churn |   | ~382 + churn |
+   +------+-------+   +------+-------+   +------+-------+
+          |                  |                   |
+          +------------------+-------------------+
+                             |
+                             | full-mesh: per-task connections grow as 2*(N-1)
+                             | at N=40: ~78    at N=100: ~198
+                             |
+                    +--------v---------+
+                    | RDS Aurora       |
+                    | adagio-trades-db |
+                    | (writer + 2 RR)  |
+                    +------------------+
+
+  PROBLEM 1: Task definition adagio-matcher-task-def has no ulimits block
+    -> On EC2 launch type, container inherits host OS default: nofile=1024 soft / 4096 hard
+    -> On Fargate, the default would have been 65535 (would not have triggered)
+    -> Migration from Fargate to EC2 launch type carried the task def over unchanged
+
+  PROBLEM 2: Full-mesh O(n) growth
+    -> At 40 tasks: 2*39 + 64 (DB pool) + 120 (websockets) = 262 FDs per task (under 1024)
+    -> At 100 tasks: 2*99 + 64 + 120 = 382 FDs per task + accumulated TIME_WAIT, half-closed sockets
+    -> Result: many tasks cross 1024 within minutes of scale-out
+
+  PROBLEM 3: No early-warning signal
+    -> No CloudWatch metric for per-task open-file-descriptor count
+    -> Discovered only when EMFILE errors started appearing in logs
+
+  Counter-intuitive insight:
+    -> Adding more tasks makes EMFILE worse, not better
+    -> Each new task is a new peer that every existing task must connect to
+
+  Fix:
+    -> Add to task definition: "ulimits": [{"name": "nofile", "softLimit": 65536, "hardLimit": 65536}]
+    -> Long-term: sidecar proxy (Envoy) so per-task FD count is bounded regardless of mesh size

@@ -1,0 +1,177 @@
+{
+  "id": "043-mesh-thread-limit",
+  "title": "One Thread Per Neighbor (Adagio Trading)",
+  "summary": "An order-matching mesh scales from 40 to 100 ECS tasks ahead of a product launch. Within minutes, the original 40 tasks start dropping connections. Adding more tasks makes it worse.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["ecs", "ec2", "cloudwatch", "vpc"],
+  "tags": ["ulimits", "nofile", "EMFILE", "service-mesh", "scale-out", "post-mortem-pattern", "kinesis-2020"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:DesignSolutionsForNewSolutions",
+    "DOP-C02:Domain3:Resilience",
+    "SOA-C02:Domain1:MonitoringLoggingAndRemediation"
+  ],
+  "company": {
+    "name": "Adagio Trading",
+    "industry": "low-latency electronic market-making",
+    "size": "Series A startup, 24 engineers, trades equity options on three US exchanges"
+  },
+  "glossary": {
+    "ulimit": "A per-process resource limit enforced by the Linux kernel. The most relevant for a service mesh is 'nofile', the maximum number of open file descriptors. Each TCP socket counts as one file descriptor.",
+    "nofile (RLIMIT_NOFILE)": "The kernel limit on how many file descriptors a single process can have open at once. Default on most Linux distributions is 1024 soft / 4096 hard. Fargate sets it to 65535 by default; EC2-launch-type ECS uses the OS default unless overridden.",
+    "EMFILE": "A POSIX errno value that means 'too many open files in process'. Returned when a process tries to open a new file or socket and is already at its nofile limit. In Java, surfaces as 'java.io.IOException: Too many open files'.",
+    "ECS task definition ulimits block": "A per-container field in an ECS task definition that overrides the default OS ulimits. Has name (e.g., 'nofile'), softLimit, and hardLimit. Without it, the container inherits the OS default.",
+    "service mesh peer connection": "A persistent TCP connection between two service nodes used for low-latency intra-mesh RPC. A full mesh of N nodes requires each node to maintain (N-1) inbound and (N-1) outbound connections.",
+    "ENI (Elastic Network Interface)": "The virtual network adapter attached to an EC2 instance or ECS task. Each ENI has its own private IP. ECS awsvpc mode gives every task its own ENI.",
+    "EC2 launch type (ECS)": "An ECS execution mode where tasks run on EC2 instances you manage. Inherits the host OS configuration, including ulimits, unless the task definition overrides them. Contrast with Fargate, which sets nofile=65535 by default.",
+    "Connection growth (mesh O(n))": "In a full-mesh topology, the number of peer connections per node grows linearly with mesh size. Doubling the mesh roughly doubles per-node socket count."
+  },
+  "system": {
+    "what_broke": "Each adagio-matcher task in the order-matching mesh holds a persistent TCP connection to every peer plus a database connection pool of 64 plus client websockets; the EC2-launch-type ECS task definition has no ulimits override, so each container inherits the host OS default of nofile=1024; scaling from 40 to 100 tasks pushed per-task socket count past 1024, and every existing task started rejecting new connections with EMFILE.",
+    "data_flow": "Market data flows in via the websocket gateway, fans out to all matcher tasks for order routing; each matcher holds peer connections to every other matcher for cross-instrument hedging; trades persist to RDS Aurora via a connection pool.",
+    "components": [
+      {
+        "name": "adagio-matcher-task-def (ECS task definition)",
+        "role": "Defines the order-matching container; EC2 launch type, awsvpc network mode; no ulimits block.",
+        "connections": ["Registered against adagio-matcher-service", "Pulled from adagio-matching-engine ECR repo"],
+        "failure_impact": "New connections (peer mesh joins, client websockets, DB pool entries) fail with EMFILE once the per-process limit is reached."
+      },
+      {
+        "name": "adagio-matcher-service (ECS service)",
+        "role": "EC2-launch-type ECS service running adagio-matcher-task-def.",
+        "connections": ["Was at desiredCount=40; scaled to desiredCount=100 at 09:42 PT"],
+        "failure_impact": "ServiceConnect peer registry shows all 100 tasks healthy at the orchestration layer; the application layer disagrees."
+      },
+      {
+        "name": "adagio-mesh-host-asg (EC2 Auto Scaling group)",
+        "role": "Hosts the ECS cluster; AMI is the ECS-optimized AL2023 image with default sysctl settings; LimitNOFILE on the ecs-agent systemd unit is high, but the container runtime applies the OS default to each container process.",
+        "connections": ["Registered to adagio-prod-cluster"],
+        "failure_impact": "Per-host process limits do not protect individual containers; each container process is its own RLIMIT_NOFILE scope."
+      },
+      {
+        "name": "adagio-mesh-vpc (VPC)",
+        "role": "Two-AZ VPC with /22 subnets; plenty of free IPs; security groups allow intra-mesh traffic on port 9100.",
+        "connections": ["Hosts the ECS cluster ENIs"],
+        "failure_impact": "VPC capacity is not the bottleneck (red herring); subnet IP exhaustion would manifest as ENI provisioning failures, not EMFILE."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "ecs",
+      "artifacts": [
+        "artifacts/task-definition.json",
+        "artifacts/ecs-service-events.json"
+      ],
+      "capabilities": [
+        "describe_task_definition",
+        "describe_tasks",
+        "describe_services",
+        "list_tasks"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/host-sysctl-snapshot.txt"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_subnets"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv",
+        "artifacts/container-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics",
+        "get_log_events"
+      ]
+    },
+    {
+      "service": "vpc",
+      "artifacts": [
+        "artifacts/subnet-availability.json"
+      ],
+      "capabilities": [
+        "describe_subnets",
+        "describe_network_interfaces"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The orchestration layer says all 100 tasks are healthy. The application layer says half of them cannot accept new connections. Where is the disagreement?",
+    "Container logs are full of 'java.io.IOException: Too many open files'. That is EMFILE, the kernel saying a process has hit its file-descriptor limit.",
+    "Each matcher holds a persistent TCP connection to every other matcher for the mesh, plus a database connection pool, plus client websockets. How does the per-task socket count change when the mesh grows from 40 to 100?",
+    "Look at the ECS task definition. Is there a ulimits block for nofile? On EC2 launch type, without an override, the container inherits the OS default of 1024 soft / 4096 hard, not the Fargate default of 65535."
+  ],
+  "resolution": {
+    "root_cause": "The adagio-matcher-task-def has no ulimits block; on EC2 launch type, each container inherits the host OS default of nofile=1024 soft. With 100 tasks in a full mesh plus database pool and client connections, per-task socket count exceeded 1024 and the matcher started returning EMFILE on every new connection.",
+    "fix_criteria": [
+      {
+        "id": "identify_emfile_pattern",
+        "description": "Player identifies 'Too many open files' / EMFILE errors in container logs.",
+        "required": true
+      },
+      {
+        "id": "calculate_mesh_growth",
+        "description": "Player calculates that scaling from 40 to 100 tasks raised per-node peer connections from ~78 to ~198 (mesh growth is O(n)).",
+        "required": true
+      },
+      {
+        "id": "identify_missing_ulimits",
+        "description": "Player identifies the ECS task definition has no ulimits block, so the container is using the OS default of 1024.",
+        "required": true
+      },
+      {
+        "id": "propose_remediation",
+        "description": "Player proposes either raising nofile in the task definition's ulimits block to a value well above peak per-task socket count (e.g., 65536), OR introducing a connection-pooling sidecar so per-node socket count does not grow with mesh size.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "EC2-launch-type ECS containers inherit OS ulimits by default; Fargate sets nofile=65535 but EC2 uses the OS limit (1024 soft on most distros).",
+      "A full-mesh service topology grows per-node connections linearly with mesh size; what worked at 40 nodes may fail at 100.",
+      "EMFILE / 'Too many open files' is a kernel-level signal of file-descriptor exhaustion; sockets and open files share the same limit.",
+      "Adding capacity to fix a connection-exhaustion problem makes it worse, because each new node is a new peer that every existing node must connect to."
+    ],
+    "sop_steps": [
+      "Confirm the symptom is per-process file-descriptor exhaustion. Pull container logs via aws logs tail or CloudWatch Logs Insights and search for 'Too many open files', 'EMFILE', or 'open files limit reached'. If those strings appear correlated with new connection attempts, the limit is the cause.",
+      "Inspect the running container's actual ulimit. Exec into a task with aws ecs execute-command and run 'cat /proc/1/limits' to see the kernel-enforced per-process limits. The 'Max open files' row is the nofile limit. If it shows 1024, the task definition is not overriding the OS default.",
+      "Inspect the task definition. Pull the registered task definition with aws ecs describe-task-definition and look for the 'ulimits' field on each container definition. If the field is missing or does not include 'name: nofile', the container is using the OS default.",
+      "Calculate the required limit. For a full-mesh of N tasks, per-task connections = 2*(N-1) for inbound + outbound, plus the DB connection pool size, plus expected client connections, plus a 2x safety margin. For 100 tasks with a 64-pool and 200 client websockets, required nofile is roughly (2 * 99) + 64 + 200 = 462; double for safety -> 924 minimum, but 65536 is the standard high-headroom setting.",
+      "Register a new task definition revision with the ulimits block. In each container definition, add: \"ulimits\": [{\"name\": \"nofile\", \"softLimit\": 65536, \"hardLimit\": 65536}]. Ensure the ECS host's /proc/sys/fs/file-max is at least equal to the sum of all container limits; on AL2023 the default is high enough.",
+      "Update the service to use the new revision. Watch container logs for the absence of EMFILE errors and verify peer connection counts settle. Set a CloudWatch alarm on a custom metric (e.g., open_file_descriptors_per_task / nofile_limit) to alert before reaching 80% utilization.",
+      "Long-term: introduce a connection-pooling sidecar (e.g., Envoy with TCP upstream pools) so the application process holds a fixed number of upstream sockets regardless of mesh size. This breaks the O(n) growth pattern."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "VPC subnet IP exhaustion in awsvpc mode.",
+        "how_it_differs": "Each ECS awsvpc-mode task gets its own ENI and IP from the subnet. When the subnet runs out of IPs, new tasks fail to start with 'No subnet available' rather than EMFILE; existing tasks continue running normally.",
+        "prevention": "Right-size subnets for peak task count; use larger CIDR ranges (e.g., /22 instead of /24) for clusters with many tasks; add prefix delegation on ENIs."
+      },
+      {
+        "scenario": "ECS service hits ServiceConnect or ServiceDiscovery namespace quota.",
+        "how_it_differs": "Tasks register and run, but mesh peer discovery is incomplete; some tasks see only a subset of peers. Logs show DNS failures, not EMFILE.",
+        "prevention": "Check the AWS service quota for Cloud Map namespaces and instances; request increases ahead of large scale-out events."
+      },
+      {
+        "scenario": "Java application hits its own internal thread pool limit before nofile.",
+        "how_it_differs": "Logs show 'OutOfMemoryError: unable to create new native thread' or thread-pool rejection exceptions, not EMFILE. The kernel limit is fine; the JVM or application's thread executor is the bottleneck.",
+        "prevention": "Tune executor pool sizes for the expected concurrent connection count; in Java, also check ulimit nproc which limits processes/threads per user."
+      }
+    ],
+    "sop_practices": [
+      "Always set ulimits explicitly in EC2-launch-type ECS task definitions. Do not rely on the OS default, which is 1024 on most Linux distributions and is far too low for any process that holds more than a handful of network connections.",
+      "Monitor file-descriptor usage as a first-class metric. Emit /proc/self/fd count from the application or sidecar to CloudWatch and alarm at 80% of the configured limit, well before EMFILE starts.",
+      "Service-mesh designs that use one persistent connection per peer have O(n) growth and stop scaling once peer count gets large. Use a sidecar proxy or a hash-based shard topology so per-node connection count is bounded.",
+      "Run a load test that grows the mesh past the projected production size. The 2020 Kinesis incident hit a thread limit nobody had tested at production scale; the same pattern reappears any time a connection-per-peer service scales linearly without hitting its limit in pre-production."
+    ]
+  }
+}

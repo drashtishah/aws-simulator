@@ -50,3 +50,4 @@ tags:
 | 040 | [[040-eventbridge-cross-account-drop/story\|The Events Nobody Sent]] | 2 - Associate | Operations | eventbridge, iam, cloudwatch, cloudtrail | 25 min |
 | 041 | [[041-fargate-ephemeral-exhaust/story\|Twenty Gigabytes Is Not Enough]] | 2 - Associate | Reliability | ecs, ecr, cloudwatch | 25 min |
 | 042 | [[042-capacity-removal-typo/story\|The Drain That Took Twenty]] | 3 - Professional | Operations | auto-scaling, ec2, cloudtrail, cloudwatch | 35 min |
+| 043 | [[043-mesh-thread-limit/story\|One Thread Per Neighbor]] | 3 - Professional | Reliability | ecs, ec2, cloudwatch, vpc | 35 min |

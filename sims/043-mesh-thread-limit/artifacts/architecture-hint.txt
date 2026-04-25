@@ -1,0 +1,51 @@
+                       +--------------------+
+                       | Three US Options   |
+                       | Exchanges (clients)|
+                       +---------+----------+
+                                 |
+                                 | wss://, port 443
+                                 v
+                       +--------------------+
+                       | Network Load Bal.  |
+                       | adagio-matcher-nlb |
+                       +---------+----------+
+                                 |
+              +------------------+------------------+
+              |                  |                  |
+   +----------v---+   +----------v---+   +---------v----+
+   | matcher-001  |<->| matcher-002  |<->| matcher-NNN  |
+   | (ECS task)   |<->| (ECS task)   |<->| (ECS task)   |
+   |              |   |              |   |              |
+   | mesh: peer-  |   | mesh: peer-  |   | mesh: peer-  |
+   | to-peer port |   | to-peer port |   | to-peer port |
+   | 9100         |   | 9100         |   | 9100         |
+   +------+-------+   +------+-------+   +------+-------+
+          |                  |                   |
+          +------------------+-------------------+
+                             |
+                             | full-mesh: each task connects to every peer
+                             |
+                    +--------v---------+
+                    | RDS Aurora       |
+                    | adagio-trades-db |
+                    | (writer + 2 RR)  |
+                    +------------------+
+
+  ECS Cluster: adagio-prod-cluster (EC2 launch type)
+    -> Hosted on adagio-mesh-host-asg (m6i.4xlarge x 12, AL2023 ECS-optimized AMI)
+    -> Service: adagio-matcher-service, desiredCount currently 100 (was 40)
+    -> Network mode: awsvpc (each task has its own ENI)
+
+  Task definition: adagio-matcher-task-def revision 41
+    -> Container: adagio-matcher (Java 21, model-matching engine)
+    -> CPU: 2048 (2 vCPU)    Memory: 8192 MB
+    -> ulimits block: not present
+    -> ServiceConnect: enabled, namespace adagio-mesh
+
+  VPC: adagio-mesh-vpc (10.42.0.0/16)
+    -> Two AZs, /22 subnets per AZ (~1000 IPs each)
+    -> Security group adagio-mesh-sg: ingress 9100 from self, 443 from NLB
+
+  CloudWatch:
+    -> Container Insights enabled
+    -> Custom metrics: not currently emitting per-task file-descriptor count

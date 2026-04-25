@@ -1,0 +1,45 @@
+{
+  "taskDefinitionArn": "arn:aws:ecs:us-east-1:498231746283:task-definition/adagio-matcher-task-def:41",
+  "family": "adagio-matcher-task-def",
+  "revision": 41,
+  "taskRoleArn": "arn:aws:iam::498231746283:role/adagio-matcher-task-role",
+  "executionRoleArn": "arn:aws:iam::498231746283:role/adagio-matcher-execution-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["EC2"],
+  "cpu": "2048",
+  "memory": "8192",
+  "containerDefinitions": [
+    {
+      "name": "adagio-matcher",
+      "image": "498231746283.dkr.ecr.us-east-1.amazonaws.com/adagio-matching-engine:v3.2.7",
+      "essential": true,
+      "cpu": 2048,
+      "memory": 8192,
+      "portMappings": [
+        {"containerPort": 9100, "protocol": "tcp", "name": "mesh-peer"},
+        {"containerPort": 8443, "protocol": "tcp", "name": "wss-clients"}
+      ],
+      "environment": [
+        {"name": "MESH_NAMESPACE", "value": "adagio-mesh"},
+        {"name": "DB_POOL_SIZE", "value": "64"},
+        {"name": "JVM_OPTS", "value": "-Xms6g -Xmx6g -XX:+UseG1GC"}
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/adagio-matcher",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -fs http://localhost:8081/health || exit 1"],
+        "interval": 15,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      }
+    }
+  ],
+  "_note_for_player": "Notice: there is NO 'ulimits' field on the container definition. On EC2 launch type, this means the container inherits the host OS default (nofile=1024 soft on Amazon Linux 2023). On Fargate, the default would be 65535 regardless. The migration from Fargate to EC2 launch type carried this task definition over unchanged."
+}

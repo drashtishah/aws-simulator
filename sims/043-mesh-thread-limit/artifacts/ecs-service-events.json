@@ -1,0 +1,47 @@
+{
+  "services": [
+    {
+      "serviceName": "adagio-matcher-service",
+      "serviceArn": "arn:aws:ecs:us-east-1:498231746283:service/adagio-prod-cluster/adagio-matcher-service",
+      "clusterArn": "arn:aws:ecs:us-east-1:498231746283:cluster/adagio-prod-cluster",
+      "taskDefinition": "arn:aws:ecs:us-east-1:498231746283:task-definition/adagio-matcher-task-def:41",
+      "desiredCount": 100,
+      "runningCount": 100,
+      "pendingCount": 0,
+      "launchType": "EC2",
+      "deployments": [
+        {
+          "id": "ecs-svc/abc123",
+          "status": "PRIMARY",
+          "taskDefinition": "arn:aws:ecs:us-east-1:498231746283:task-definition/adagio-matcher-task-def:41",
+          "desiredCount": 100,
+          "runningCount": 100,
+          "createdAt": "2026-04-24T16:42:00Z",
+          "updatedAt": "2026-04-24T16:43:11Z"
+        }
+      ],
+      "events": [
+        {
+          "id": "ev-2026-04-24-16-42-04",
+          "createdAt": "2026-04-24T16:42:04Z",
+          "message": "(service adagio-matcher-service) has begun draining connections on 0 tasks."
+        },
+        {
+          "id": "ev-2026-04-24-16-42-05",
+          "createdAt": "2026-04-24T16:42:05Z",
+          "message": "(service adagio-matcher-service) updated desiredCount from 40 to 100; placing 60 new tasks."
+        },
+        {
+          "id": "ev-2026-04-24-16-43-11",
+          "createdAt": "2026-04-24T16:43:11Z",
+          "message": "(service adagio-matcher-service) has reached a steady state with 100 tasks running."
+        },
+        {
+          "id": "ev-2026-04-24-16-47-55",
+          "createdAt": "2026-04-24T16:47:55Z",
+          "message": "(service adagio-matcher-service) (deployment ecs-svc/abc123) is reporting healthy via ECS health check; application errors not visible to ECS."
+        }
+      ]
+    }
+  ]
+}

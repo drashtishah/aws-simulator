@@ -1,0 +1,22 @@
+2026-04-24T16:42:11.402Z INFO  [adagio-matcher-041] startup complete; mesh peer registry has 41 nodes; opening peer connections
+2026-04-24T16:42:14.881Z INFO  [adagio-matcher-041] mesh ready: 40 outbound peer connections established
+2026-04-24T16:43:11.052Z INFO  [adagio-matcher-001] new peer detected via Cloud Map: matcher-082; opening connection
+2026-04-24T16:43:11.061Z INFO  [adagio-matcher-001] new peer detected via Cloud Map: matcher-083; opening connection
+2026-04-24T16:43:11.082Z INFO  [adagio-matcher-001] new peer detected via Cloud Map: matcher-084; opening connection
+2026-04-24T16:46:30.221Z ERROR [adagio-matcher-007] failed to accept incoming peer connection: java.io.IOException: Too many open files
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept0(Native Method)
+	at java.base/sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:566)
+	at io.netty.channel.socket.nio.NioServerSocketChannel.doReadMessages(NioServerSocketChannel.java:147)
+2026-04-24T16:46:31.118Z ERROR [adagio-matcher-007] failed to open outbound peer connection to matcher-094: java.net.SocketException: Too many open files
+2026-04-24T16:46:42.337Z ERROR [adagio-matcher-012] failed to open outbound peer connection to matcher-091: java.net.SocketException: Too many open files
+2026-04-24T16:47:01.991Z ERROR [adagio-matcher-007] failed to accept new client websocket: java.io.IOException: Too many open files
+2026-04-24T16:47:55.012Z WARN  [adagio-matcher-007] /proc/self/fd count: 1024 of 1024 (limit reached); rejecting new connections
+2026-04-24T16:47:55.124Z WARN  [adagio-matcher-007] last successful connection: matcher-093 at 16:46:30; current open peers: 79 (expected 99)
+2026-04-24T16:48:14.401Z INFO  [adagio-matcher-002] heartbeat from matcher-014 timed out (no response in 30s); marking peer offline
+2026-04-24T16:48:21.886Z ERROR [adagio-matcher-014] DB pool exhausted, cannot acquire new connection: pool size 64, in use 64, queue depth 12
+2026-04-24T16:50:22.118Z ERROR [adagio-matcher-022] startup hanging at peer-mesh-init phase; managed to open 41 of 99 peer connections before EMFILE
+2026-04-24T16:54:42.011Z INFO  [adagio-deployer] new task definition adagio-matcher-task-def:42 registered with ulimits.nofile=65536
+2026-04-24T16:55:08.341Z INFO  [adagio-matcher-101] (revision 42) startup; /proc/self/fd count after init: 0; nofile limit: 65536
+2026-04-24T16:58:44.221Z INFO  [adagio-matcher-101] (revision 42) full peer mesh established: 99 outbound connections
+2026-04-24T17:00:11.882Z INFO  [adagio-matcher-007] (revision 42) replaced predecessor; full peer mesh OK
+2026-04-24T17:02:33.092Z INFO  [adagio-controller] all 100 tasks on revision 42; MatcherErrorRate has fallen below 1%

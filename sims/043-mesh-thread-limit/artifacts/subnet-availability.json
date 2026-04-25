@@ -1,0 +1,21 @@
+{
+  "Subnets": [
+    {
+      "SubnetId": "subnet-0adagiomesha22",
+      "CidrBlock": "10.42.0.0/22",
+      "AvailabilityZone": "us-east-1a",
+      "AvailableIpAddressCount": 758,
+      "VpcId": "vpc-0adagiomesh",
+      "Tags": [{"Key": "Name", "Value": "adagio-mesh-subnet-1a"}]
+    },
+    {
+      "SubnetId": "subnet-0adagiomeshb22",
+      "CidrBlock": "10.42.4.0/22",
+      "AvailabilityZone": "us-east-1b",
+      "AvailableIpAddressCount": 762,
+      "VpcId": "vpc-0adagiomesh",
+      "Tags": [{"Key": "Name", "Value": "adagio-mesh-subnet-1b"}]
+    }
+  ],
+  "_note_for_player": "Subnet IP availability is healthy (~75% free). VPC capacity is NOT the bottleneck. This is a red herring: operators sometimes assume task launch issues mean ENI/IP exhaustion, but here the issue is at the per-process file-descriptor layer, not the network layer."
+}

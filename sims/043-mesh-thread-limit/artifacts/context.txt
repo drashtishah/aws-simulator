@@ -1,0 +1,6 @@
+Company: Adagio Trading (Series A startup, 24 engineers)
+Industry: Low-latency electronic market-making, equity options
+Users: Three US options exchanges, ~12,000 client websocket connections at peak
+AWS Services: Amazon ECS, Amazon EC2, Amazon CloudWatch, Amazon VPC
+Your role: Senior SRE, 09:48 PT Friday, twelve minutes before a product launch
+Situation: An order-matching ECS service was scaled from 40 to 100 tasks ahead of launch; ECS reports all tasks healthy but the application is throwing IOException on new connections

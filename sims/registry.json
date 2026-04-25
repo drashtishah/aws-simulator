@@ -600,6 +600,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-25"
+    },
+    {
+      "id": "043-mesh-thread-limit",
+      "title": "One Thread Per Neighbor",
+      "summary": "An order-matching mesh scales from 40 to 100 ECS tasks ahead of a product launch. Within minutes, the original 40 tasks start dropping connections. Adding more tasks makes it worse.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "ecs",
+        "ec2",
+        "cloudwatch",
+        "vpc"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-25"
     }
   ]
 }

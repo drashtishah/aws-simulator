@@ -1,0 +1,42 @@
+# Snapshot from one ECS host (i-0adagiomesh01a, m6i.4xlarge, Amazon Linux 2023)
+# Captured during the incident via SSM Session Manager
+
+[ec2-user@i-0adagiomesh01a]$ uname -a
+Linux i-0adagiomesh01a 6.1.92-99.174.amzn2023.x86_64 #1 SMP Sat Mar  9 09:00:00 UTC 2026 x86_64
+
+[ec2-user@i-0adagiomesh01a]$ cat /proc/sys/fs/file-max
+9223372036854775807
+
+[ec2-user@i-0adagiomesh01a]$ ulimit -a
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 257243
+max locked memory       (kbytes, -l) 64
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 257243
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+
+# Notice: open files = 1024 soft (the OS default)
+# This is the value containers inherit when the task definition has no ulimits block
+
+[ec2-user@i-0adagiomesh01a]$ docker exec adagio-matcher-001 cat /proc/1/limits | grep -E "Max open files|Max processes"
+Max processes             4096                 16384                processes
+Max open files            1024                 4096                 files
+
+# Inside the container, the limit is the same 1024 soft / 4096 hard
+# This confirms the container is NOT overriding the OS default
+
+[ec2-user@i-0adagiomesh01a]$ docker exec adagio-matcher-001 ls /proc/1/fd | wc -l
+1024
+
+# The matcher process is AT its file-descriptor limit
+# Every new socket() call returns EMFILE
