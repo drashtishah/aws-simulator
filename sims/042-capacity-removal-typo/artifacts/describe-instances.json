@@ -1,0 +1,56 @@
+{
+  "Reservations": [
+    {
+      "Instances": [
+        {
+          "InstanceId": "i-0a1b2c3d4e5f60001",
+          "State": {"Code": 48, "Name": "terminated"},
+          "InstanceType": "m6i.large",
+          "AvailabilityZone": "us-east-1a",
+          "LaunchTime": "2026-04-22T03:14:00Z",
+          "Tags": [
+            {"Key": "Name", "Value": "beacon-routing-prod-i01"},
+            {"Key": "Tier", "Value": "production"},
+            {"Key": "aws:autoscaling:groupName", "Value": "beacon-routing-prod-asg"}
+          ],
+          "StateTransitionReason": "User initiated (2026-04-23 21:08:42 GMT)"
+        },
+        {
+          "InstanceId": "i-0a1b2c3d4e5f60002",
+          "State": {"Code": 48, "Name": "terminated"},
+          "InstanceType": "m6i.large",
+          "AvailabilityZone": "us-east-1a",
+          "Tags": [
+            {"Key": "Name", "Value": "beacon-routing-prod-i02"},
+            {"Key": "Tier", "Value": "production"},
+            {"Key": "aws:autoscaling:groupName", "Value": "beacon-routing-prod-asg"}
+          ],
+          "StateTransitionReason": "User initiated (2026-04-23 21:08:42 GMT)"
+        },
+        {
+          "InstanceId": "i-0a1b2c3d4e5f60021",
+          "State": {"Code": 16, "Name": "running"},
+          "InstanceType": "m6i.large",
+          "AvailabilityZone": "us-east-1a",
+          "Tags": [
+            {"Key": "Name", "Value": "beacon-routing-prod-i21"},
+            {"Key": "Tier", "Value": "production"},
+            {"Key": "aws:autoscaling:groupName", "Value": "beacon-routing-prod-asg"}
+          ]
+        },
+        {
+          "InstanceId": "i-0e1f2a3b4c5d70101",
+          "State": {"Code": 16, "Name": "running"},
+          "InstanceType": "t3.medium",
+          "AvailabilityZone": "us-east-1a",
+          "Tags": [
+            {"Key": "Name", "Value": "beacon-routing-staging-i01"},
+            {"Key": "Tier", "Value": "staging"},
+            {"Key": "aws:autoscaling:groupName", "Value": "beacon-routing-staging-asg"}
+          ]
+        }
+      ]
+    }
+  ],
+  "_note_for_player": "20 production instances are in the terminated state with StateTransitionReason 'User initiated'. The 3 staging instances the on-call thought they were draining are still running. The terminated instances all share Tier=production tag."
+}

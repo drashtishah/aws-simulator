@@ -1,0 +1,44 @@
+{
+  "Events": [
+    {
+      "EventId": "b1c2d3e4-f5a6-7890-bcde-f1234567890a",
+      "EventName": "TerminateInstances",
+      "ReadOnly": "false",
+      "EventTime": "2026-04-23T21:08:42Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "beacon-oncall-deploy",
+      "Resources": [
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60001"},
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60002"},
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60003"},
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60004"},
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60005"}
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJBEACONOPSRTU576Q\",\"arn\":\"arn:aws:iam::498231746283:user/beacon-oncall-deploy\",\"accountId\":\"498231746283\",\"userName\":\"beacon-oncall-deploy\"},\"eventTime\":\"2026-04-23T21:08:42Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"TerminateInstances\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.4.18\",\"userAgent\":\"aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0 source/x86_64 prompt/off\",\"requestParameters\":{\"instancesSet\":{\"items\":[{\"instanceId\":\"i-0a1b2c3d4e5f60001\"},{\"instanceId\":\"i-0a1b2c3d4e5f60002\"},{\"instanceId\":\"i-0a1b2c3d4e5f60003\"},{\"instanceId\":\"i-0a1b2c3d4e5f60004\"},{\"instanceId\":\"i-0a1b2c3d4e5f60005\"},{\"instanceId\":\"i-0a1b2c3d4e5f60006\"},{\"instanceId\":\"i-0a1b2c3d4e5f60007\"},{\"instanceId\":\"i-0a1b2c3d4e5f60008\"},{\"instanceId\":\"i-0a1b2c3d4e5f60009\"},{\"instanceId\":\"i-0a1b2c3d4e5f60010\"},{\"instanceId\":\"i-0a1b2c3d4e5f60011\"},{\"instanceId\":\"i-0a1b2c3d4e5f60012\"},{\"instanceId\":\"i-0a1b2c3d4e5f60013\"},{\"instanceId\":\"i-0a1b2c3d4e5f60014\"},{\"instanceId\":\"i-0a1b2c3d4e5f60015\"},{\"instanceId\":\"i-0a1b2c3d4e5f60016\"},{\"instanceId\":\"i-0a1b2c3d4e5f60017\"},{\"instanceId\":\"i-0a1b2c3d4e5f60018\"},{\"instanceId\":\"i-0a1b2c3d4e5f60019\"},{\"instanceId\":\"i-0a1b2c3d4e5f60020\"}]}},\"responseElements\":{\"requestId\":\"abc12345-6789-def0-1234-567890abcdef\",\"instancesSet\":{\"items\":[{\"instanceId\":\"i-0a1b2c3d4e5f60001\",\"currentState\":{\"code\":32,\"name\":\"shutting-down\"},\"previousState\":{\"code\":16,\"name\":\"running\"}}]}},\"requestID\":\"abc12345-6789-def0-1234-567890abcdef\",\"eventID\":\"b1c2d3e4-f5a6-7890-bcde-f1234567890a\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"498231746283\"}"
+    },
+    {
+      "EventId": "c2d3e4f5-a6b7-8901-cdef-234567890abc",
+      "EventName": "TerminateInstances",
+      "ReadOnly": "false",
+      "EventTime": "2026-04-23T19:14:11Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "beacon-oncall-deploy",
+      "Resources": [
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0e1f2a3b4c5d70101"}
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAJBEACONOPSRTU576Q\",\"arn\":\"arn:aws:iam::498231746283:user/beacon-oncall-deploy\",\"accountId\":\"498231746283\",\"userName\":\"beacon-oncall-deploy\"},\"eventTime\":\"2026-04-23T19:14:11Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"TerminateInstances\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"10.0.4.18\",\"userAgent\":\"aws-cli/2.15.30 Python/3.11.8 Linux/5.15.0 source/x86_64 prompt/off\",\"requestParameters\":{\"instancesSet\":{\"items\":[{\"instanceId\":\"i-0e1f2a3b4c5d70101\"},{\"instanceId\":\"i-0e1f2a3b4c5d70102\"},{\"instanceId\":\"i-0e1f2a3b4c5d70103\"}]}},\"responseElements\":{\"requestId\":\"f1e2d3c4-5678-90ab-cdef-1234567890ab\",\"instancesSet\":{\"items\":[{\"instanceId\":\"i-0e1f2a3b4c5d70101\",\"currentState\":{\"code\":32,\"name\":\"shutting-down\"},\"previousState\":{\"code\":16,\"name\":\"running\"}}]}},\"requestID\":\"f1e2d3c4-5678-90ab-cdef-1234567890ab\",\"eventID\":\"c2d3e4f5-a6b7-8901-cdef-234567890abc\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"498231746283\"}"
+    },
+    {
+      "EventId": "d3e4f5a6-b7c8-9012-def0-3456789abcde",
+      "EventName": "RunInstances",
+      "ReadOnly": "false",
+      "EventTime": "2026-04-23T21:09:04Z",
+      "EventSource": "ec2.amazonaws.com",
+      "Username": "AutoScaling",
+      "Resources": [
+        {"ResourceType": "AWS::EC2::Instance", "ResourceName": "i-0a1b2c3d4e5f60100"}
+      ],
+      "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"AssumedRole\",\"arn\":\"arn:aws:sts::498231746283:assumed-role/AWSServiceRoleForAutoScaling/AutoScaling\",\"sessionContext\":{\"sessionIssuer\":{\"type\":\"Role\",\"userName\":\"AWSServiceRoleForAutoScaling\"}},\"invokedBy\":\"autoscaling.amazonaws.com\"},\"eventTime\":\"2026-04-23T21:09:04Z\",\"eventSource\":\"ec2.amazonaws.com\",\"eventName\":\"RunInstances\",\"awsRegion\":\"us-east-1\",\"sourceIPAddress\":\"autoscaling.amazonaws.com\",\"userAgent\":\"autoscaling.amazonaws.com\",\"requestParameters\":{\"instancesSet\":{\"items\":[{\"imageId\":\"ami-0beacon4routing90s2\",\"minCount\":4,\"maxCount\":4}]},\"clientToken\":\"asg-replacement-batch-1\"},\"requestID\":\"99887766-5544-3322-1100-aabbccddeeff\",\"eventID\":\"d3e4f5a6-b7c8-9012-def0-3456789abcde\",\"eventType\":\"AwsApiCall\",\"recipientAccountId\":\"498231746283\"}"
+    }
+  ]
+}

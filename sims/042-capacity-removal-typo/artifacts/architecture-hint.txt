@@ -1,0 +1,51 @@
+                              +------------------+
+                              |  Delivery Trucks |
+                              |  (41,000 active) |
+                              +--------+---------+
+                                       |
+                                       | GPS pings (HTTPS)
+                                       v
+                              +------------------+
+                              | Amazon API GW    |
+                              | beacon-route-api |
+                              +--------+---------+
+                                       |
+                                       v
+                              +------------------+
+                              | Application LB   |
+                              | beacon-prod-alb  |
+                              +--------+---------+
+                                       |
+                       +---------------+---------------+
+                       |               |               |
+              +--------v-----+  +------v-------+  +---v----------+
+              | EC2 (us-1a)  |  | EC2 (us-1b)  |  | EC2 (us-1c)  |
+              | 8 instances  |  | 8 instances  |  | 8 instances  |
+              +--------+-----+  +------+-------+  +---+----------+
+                       |               |              |
+                       +---------------+--------------+
+                                       |
+                              +--------v---------+
+                              | RDS Aurora       |
+                              | beacon-prod-db   |
+                              +------------------+
+
+  Auto Scaling Group: beacon-routing-prod-asg
+    -> Min: 20    Max: 48    Desired: 24
+    -> Launch template: beacon-routing-prod-lt (AMI bootstrap ~90s)
+    -> Cooldown: 300s
+    -> Cross-AZ rebalancing: enabled
+    -> Instance scale-in protection: per-group default = false
+
+  Auto Scaling Group: beacon-routing-staging-asg
+    -> Min: 1     Max: 6     Desired: 3
+    -> Same launch template family, different tier tag
+
+  IAM User: beacon-oncall-deploy
+    -> Allows: ec2:TerminateInstances on resources of any tier
+    -> Allows: autoscaling:* on beacon-routing-*-asg
+    -> Used by: drain-instances.sh on jump host 10.0.4.18
+
+  CloudTrail: beacon-routing-prod-trail
+    -> Multi-region, writes to s3://beacon-cloudtrail-archive
+    -> Logs all management events

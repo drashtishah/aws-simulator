@@ -1,0 +1,6 @@
+Company: Beacon Routing (Series B startup, 38 engineers)
+Industry: Last-mile delivery routing SaaS
+Users: 1,400 fleet operators, 41,000 trucks active, ~28M GPS pings per day
+AWS Services: Amazon EC2 Auto Scaling, Amazon EC2, AWS CloudTrail, Amazon CloudWatch
+Your role: Incident Commander, 14:09 PT Thursday, 90 seconds into the incident
+Situation: PagerDuty fired with HealthyHostCount = 4 of 24 on the production ALB; the on-call engineer was running a planned staging refresh

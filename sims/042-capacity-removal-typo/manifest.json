@@ -1,0 +1,178 @@
+{
+  "id": "042-capacity-removal-typo",
+  "title": "The Drain That Took Twenty (Beacon Routing)",
+  "summary": "A maintenance script meant to drain three staging instances terminates twenty production instances. The runbook ran cleanly. The CLI returned 200 OK.",
+  "difficulty": 3,
+  "category": "operations",
+  "services": ["auto-scaling", "ec2", "cloudtrail", "cloudwatch"],
+  "tags": ["fat-finger", "blast-radius", "scale-in-protection", "cloudtrail-forensics", "post-mortem-pattern", "s3-2017"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain5:ContinuousImprovement",
+    "DOP-C02:Domain2:ConfigurationManagementAndIaC",
+    "SOA-C02:Domain1:MonitoringLoggingAndRemediation"
+  ],
+  "company": {
+    "name": "Beacon Routing",
+    "industry": "last-mile delivery routing SaaS",
+    "size": "Series B startup, 38 engineers, 1,400 fleet operators on the platform"
+  },
+  "glossary": {
+    "Auto Scaling group (ASG)": "A collection of EC2 instances managed as a single unit. The group has a minimum, maximum, and desired count, and AWS keeps the running count at the desired value by launching or terminating instances.",
+    "Desired capacity": "The target number of EC2 instances the Auto Scaling group should keep running. Setting it lower than the current count triggers terminations.",
+    "Instance scale-in protection": "A per-instance setting that tells Auto Scaling not to terminate this instance during scale-in events. It does NOT block direct TerminateInstances API calls; it only blocks ASG-initiated terminations.",
+    "MinSize": "A floor on the Auto Scaling group's desired capacity. The ASG cannot go below this number, but a direct TerminateInstances call against EC2 (bypassing the ASG API) can still kill instances; the ASG will then race to relaunch.",
+    "TerminateInstances": "The EC2 API action that shuts down one or more instances by ID. Bypasses ASG protections. Logged in CloudTrail with the calling principal, source IP, and the instance-id list.",
+    "TerminateInstanceInAutoScalingGroup": "The Auto Scaling API action that terminates an instance THROUGH the ASG, respecting MinSize and scale-in protection. Safer than calling EC2 TerminateInstances directly.",
+    "CloudTrail management event": "A record of every control-plane API call in the account: who called what, when, from which IP, with which arguments. Free 90-day history; longer retention requires a configured trail.",
+    "Blast radius": "The scope of damage from a single action. A drain command intended for three staging instances has a blast radius of three; if it hits production, the blast radius is everything that command can reach."
+  },
+  "system": {
+    "what_broke": "An on-call engineer ran a maintenance script that called EC2 TerminateInstances directly with a copy-pasted instance-id list from the wrong tier; the production ASG lost 20 of 24 instances at once; the ASG could not relaunch fast enough because the launch template referenced an AMI that took 90 seconds to bootstrap and the cooldown allowed only one batch of replacements at a time.",
+    "data_flow": "Customer trucks send GPS pings to API Gateway, which forwards to a fleet of EC2 instances behind an ALB. The instances run the routing engine, write trip events to RDS Aurora, and emit CloudWatch metrics. ASG keeps the fleet at desired capacity; CloudTrail records every API call.",
+    "components": [
+      {
+        "name": "beacon-routing-prod-asg (Auto Scaling group)",
+        "role": "Maintains 24 EC2 instances running the routing engine across three Availability Zones.",
+        "connections": ["Manages instances launched from beacon-routing-prod-lt", "Registers targets with beacon-routing-prod-alb", "Reports HealthyHostCount to CloudWatch"],
+        "failure_impact": "If desired capacity drops sharply, the ALB sees most targets vanish and queues requests until replacements come up; new launches take ~90 seconds to pass health checks."
+      },
+      {
+        "name": "beacon-routing-staging-asg (Auto Scaling group)",
+        "role": "Smaller mirror of production used for soak tests, runs three instances; instance IDs share the same naming convention as production.",
+        "connections": ["Different tier tag (Tier=staging) but same launch-template family"],
+        "failure_impact": "If terminated, only staging soak tests are affected; the runbook treats this as routine."
+      },
+      {
+        "name": "drain-instances.sh (operator runbook script)",
+        "role": "Wraps aws ec2 terminate-instances with no validation; takes an --instance-ids argument from the command line and forwards it directly to the EC2 API.",
+        "connections": ["Run by the on-call engineer from a jump host (10.0.4.18)", "Authenticates as IAM user beacon-oncall-deploy"],
+        "failure_impact": "No tier check; no MinSize check; no scale-in protection check; the AWS CLI returns 200 OK whether the IDs belong to staging or production."
+      },
+      {
+        "name": "beacon-routing-prod-trail (CloudTrail trail)",
+        "role": "Logs all management events for the account, including every EC2 TerminateInstances call with the principal, source IP, and instance-id list.",
+        "connections": ["Multi-region trail, writes to s3://beacon-cloudtrail-archive"],
+        "failure_impact": "If disabled or filtered, there is no forensic record of which instance IDs were passed and by whom."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "auto-scaling",
+      "artifacts": [
+        "artifacts/asg-describe.json",
+        "artifacts/asg-scaling-history.json"
+      ],
+      "capabilities": [
+        "describe_auto_scaling_groups",
+        "describe_scaling_activities",
+        "set_instance_protection",
+        "update_auto_scaling_group"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/describe-instances.json"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_instance_status",
+        "terminate_instances"
+      ]
+    },
+    {
+      "service": "cloudtrail",
+      "artifacts": [
+        "artifacts/cloudtrail-events.json"
+      ],
+      "capabilities": [
+        "lookup_events",
+        "get_trail_status"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv",
+        "artifacts/alb-error-logs.txt"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The fleet shrank from 24 to 4 in under thirty seconds. Auto Scaling alone does not move that fast.",
+    "Look at CloudTrail. Was it Auto Scaling that terminated the instances, or was it something else?",
+    "The TerminateInstances call lists 20 specific instance IDs. Where did that list come from? Cross-check the IDs against tier tags.",
+    "The script that ran the command is beacon-runbooks/drain-instances.sh. It passes --instance-ids straight through to aws ec2 terminate-instances. There is no MinSize check, no tier filter, and no scale-in protection check. The IDs that were passed in match the production tier, not staging."
+  ],
+  "resolution": {
+    "root_cause": "An on-call engineer ran drain-instances.sh with an --instance-ids argument copy-pasted from the production tier instead of staging; the script called EC2 TerminateInstances directly, which bypasses both Auto Scaling MinSize and instance scale-in protection; 20 of 24 production instances were terminated in a single API call.",
+    "fix_criteria": [
+      {
+        "id": "identify_terminate_call",
+        "description": "Player identifies the EC2 TerminateInstances event in CloudTrail with 20 production instance IDs.",
+        "required": true
+      },
+      {
+        "id": "identify_bypass",
+        "description": "Player identifies that calling EC2 TerminateInstances directly bypasses ASG MinSize and instance scale-in protection.",
+        "required": true
+      },
+      {
+        "id": "identify_runbook_gap",
+        "description": "Player identifies that drain-instances.sh has no tier validation and accepts an arbitrary instance-id list.",
+        "required": false
+      },
+      {
+        "id": "propose_protection",
+        "description": "Player proposes guardrails: enable instance scale-in protection on production AND replace direct EC2 TerminateInstances with TerminateInstanceInAutoScalingGroup, OR add a tier-tag check to the runbook script, OR require typed confirmation for destructive operations.",
+        "required": true
+      }
+    ],
+    "learning_objectives": [
+      "EC2 TerminateInstances bypasses ASG MinSize and instance scale-in protection; only TerminateInstanceInAutoScalingGroup respects them.",
+      "ASG cooldown and warm-pool size determine how fast a fleet can recover from a sudden capacity loss.",
+      "CloudTrail is the source of truth for who called what, when, with which arguments.",
+      "Blast-radius reduction requires guardrails at the tool layer (script validation, typed confirmation) AND the AWS layer (scale-in protection, tier-aware IAM)."
+    ],
+    "sop_steps": [
+      "Stop the bleeding. Check the Auto Scaling console or call describe-auto-scaling-groups; if the desired capacity is correct, the ASG will already be relaunching. If not, raise the desired capacity manually to restore the running count quickly. Watch HealthyHostCount in CloudWatch climb back toward the prior value.",
+      "Find the call that did the damage. Search CloudTrail for the EC2 TerminateInstances event in the affected window. The event includes the calling principal (which IAM user or role), the source IP address, the user-agent string, and the exact list of instance IDs that were terminated.",
+      "Verify the blast radius. Cross-reference the terminated instance IDs against EC2 tags to confirm which tier and which Availability Zones were affected. If the call hit the wrong tier, escalate to incident review.",
+      "Add a safety net at the AWS layer. Turn on instance scale-in protection on the production Auto Scaling group via update-auto-scaling-group with --new-instances-protected-from-scale-in. Note: this only protects against ASG-initiated terminations; it does NOT block a direct EC2 TerminateInstances call. To protect against that, scope the IAM permissions of the operator role so terminate-instances is denied unless the resource tag matches Tier=staging.",
+      "Replace the direct EC2 call with the ASG-aware call. Switch the runbook from aws ec2 terminate-instances to aws autoscaling terminate-instance-in-auto-scaling-group, which respects MinSize and scale-in protection. The runbook should fail loudly if the ASG would drop below MinSize.",
+      "Add validation to the runbook script. Before passing instance IDs to the AWS CLI, the script should call describe-instances and verify every ID has Tier=staging. If any ID has Tier=production, abort with a non-zero exit code and require an additional --i-know-what-im-doing flag.",
+      "Set up an alarm. CloudWatch alarm on the Auto Scaling group's GroupDesiredCapacity metric: if the value changes by more than 25% in five minutes, page on-call. This catches both bad scripts and runaway scaling policies."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "An IAM policy grants ec2:TerminateInstances too broadly, and an attacker who steals an access key terminates everything.",
+        "how_it_differs": "The CloudTrail call is identical in shape to a fat-finger event, but the source IP is external and the access key was rotated to an unknown party. The fix is identity-side, not script-side.",
+        "prevention": "Scope ec2:TerminateInstances with a Condition on aws:ResourceTag/Tier so the role can only terminate instances tagged for the tier the operator is authorized for. Rotate access keys, prefer short-lived STS credentials, and require MFA for destructive operations."
+      },
+      {
+        "scenario": "Auto Scaling itself terminates healthy instances because a faulty health-check script returns Unhealthy in a loop.",
+        "how_it_differs": "CloudTrail shows TerminateInstanceInAutoScalingGroup events from the autoscaling.amazonaws.com service principal, not a human IAM user. The pattern is regular and ongoing, not a single bulk call.",
+        "prevention": "Validate health-check scripts in staging with a load profile that matches production. Add a CloudWatch alarm on UnHealthyHostCount that pages before the ASG starts replacing instances."
+      },
+      {
+        "scenario": "Instance Refresh on the ASG terminates more instances than expected because MinHealthyPercentage was set too low.",
+        "how_it_differs": "The terminations come from autoscaling.amazonaws.com as part of an Instance Refresh activity; the scaling activity log lists the refresh ID. The cause is a configuration choice, not a fat finger.",
+        "prevention": "Set MinHealthyPercentage to at least 90 for production refreshes; use 100 if the workload is stateful and cannot tolerate any capacity loss during the rollout."
+      }
+    ],
+    "sop_practices": [
+      "Make destructive operations require typed confirmation. Wrap aws ec2 terminate-instances and similar calls in a script that prints the resource list, the source tier, and the count, then waits for the operator to type the count back. The 2017 S3 incident post-mortem explicitly recommended this pattern.",
+      "Use TerminateInstanceInAutoScalingGroup, not EC2 TerminateInstances, whenever an instance is part of an Auto Scaling group. This single change makes MinSize and scale-in protection effective.",
+      "Tag every resource with Tier (production, staging, dev) and Owner. IAM policies can then condition destructive permissions on the tag, so a credential leaked from a staging operator cannot touch production.",
+      "Keep CloudTrail multi-region with a long retention period (90 days minimum, ideally longer). The 90-day free event history is enough for active incident response, but a longer-retention trail in S3 is what makes deep root-cause analysis possible weeks later."
+    ]
+  }
+}

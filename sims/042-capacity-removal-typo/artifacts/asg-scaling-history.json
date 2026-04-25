@@ -1,0 +1,47 @@
+{
+  "Activities": [
+    {
+      "ActivityId": "a1b2c3d4-1111-2222-3333-444455556666",
+      "AutoScalingGroupName": "beacon-routing-prod-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60103",
+      "Cause": "At 2026-04-23T21:09:04Z an instance was started in response to a difference between desired and actual capacity, increasing the capacity from 4 to 8.",
+      "StartTime": "2026-04-23T21:09:04Z",
+      "EndTime": "2026-04-23T21:10:55Z",
+      "StatusCode": "Successful",
+      "StatusMessage": "Successful: instance i-0a1b2c3d4e5f60103 launched",
+      "Progress": 100,
+      "Details": "{\"Subnet ID\":\"subnet-0c\",\"Availability Zone\":\"us-east-1c\"}"
+    },
+    {
+      "ActivityId": "a1b2c3d4-1111-2222-3333-444455556667",
+      "AutoScalingGroupName": "beacon-routing-prod-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60102",
+      "Cause": "At 2026-04-23T21:09:04Z an instance was started in response to a difference between desired and actual capacity, increasing the capacity from 4 to 8.",
+      "StartTime": "2026-04-23T21:09:04Z",
+      "EndTime": "2026-04-23T21:10:42Z",
+      "StatusCode": "Successful",
+      "Progress": 100
+    },
+    {
+      "ActivityId": "a1b2c3d4-1111-2222-3333-444455556668",
+      "AutoScalingGroupName": "beacon-routing-prod-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60101",
+      "Cause": "At 2026-04-23T21:09:04Z an instance was started in response to a difference between desired and actual capacity, increasing the capacity from 4 to 8.",
+      "StartTime": "2026-04-23T21:09:04Z",
+      "EndTime": "2026-04-23T21:10:38Z",
+      "StatusCode": "Successful",
+      "Progress": 100
+    },
+    {
+      "ActivityId": "a1b2c3d4-1111-2222-3333-444455556669",
+      "AutoScalingGroupName": "beacon-routing-prod-asg",
+      "Description": "Launching a new EC2 instance: i-0a1b2c3d4e5f60100",
+      "Cause": "At 2026-04-23T21:09:04Z an instance was started in response to a difference between desired and actual capacity, increasing the capacity from 4 to 8.",
+      "StartTime": "2026-04-23T21:09:04Z",
+      "EndTime": "2026-04-23T21:10:30Z",
+      "StatusCode": "Successful",
+      "Progress": 100
+    }
+  ],
+  "_note_for_player": "Notice: ASG launched only 4 replacements at 21:09:04Z, not all 20 at once. The ASG batches launches by cooldown and capacity-difference math, so recovery is slower than the loss. Also notice: there is NO 'Terminating' activity in this log for the 20 lost instances, because they were terminated by a direct EC2 TerminateInstances call (not by Auto Scaling). Direct EC2 calls do not appear in ASG scaling activities."
+}

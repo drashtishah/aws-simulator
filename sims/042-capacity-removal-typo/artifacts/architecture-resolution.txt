@@ -1,0 +1,57 @@
+                              +------------------+
+                              |  Delivery Trucks |
+                              |  (41,000 active) |
+                              +--------+---------+
+                                       |
+                                       | GPS pings (HTTPS)
+                                       v
+                              +------------------+
+                              | Amazon API GW    |
+                              | beacon-route-api |
+                              +--------+---------+
+                                       |
+                                       v
+                              +------------------+
+                              | Application LB   |
+                              | beacon-prod-alb  |
+                              | [20 OF 24 GONE]  |
+                              +--------+---------+
+                                       |
+                       +---------------+---------------+
+                       |               |               |
+              +--------v-----+  +------v-------+  +---v----------+
+              | EC2 (us-1a)  |  | EC2 (us-1b)  |  | EC2 (us-1c)  |
+              | 1 of 8 alive |  | 2 of 8 alive |  | 1 of 8 alive |
+              | [TERMINATED] |  | [TERMINATED] |  | [TERMINATED] |
+              +--------+-----+  +------+-------+  +---+----------+
+                       |               |              |
+                       +---------------+--------------+
+                                       |
+                              +--------v---------+
+                              | RDS Aurora       |
+                              | beacon-prod-db   |
+                              +------------------+
+
+  Auto Scaling Group: beacon-routing-prod-asg
+    -> Min: 20    Max: 48    Desired: 24
+    -> PROBLEM: Instance scale-in protection NOT enabled (would help against ASG-initiated scale-in only)
+    -> NOTE: Even if scale-in protection was on, the EC2 TerminateInstances call would have bypassed it
+
+  IAM User: beacon-oncall-deploy
+    -> PROBLEM: ec2:TerminateInstances allowed on ANY resource (no Tier-tag Condition)
+    -> Used by drain-instances.sh which forwards --instance-ids unchecked
+
+  drain-instances.sh
+    -> PROBLEM: forwards --instance-ids straight to aws ec2 terminate-instances
+    -> No tier validation, no MinSize check, no typed confirmation
+
+  CloudTrail event at 21:08:42 UTC
+    -> EventName: TerminateInstances
+    -> EventSource: ec2.amazonaws.com  (NOT autoscaling.amazonaws.com)
+    -> Principal: arn:aws:iam::498231746283:user/beacon-oncall-deploy
+    -> SourceIP: 10.0.4.18 (jump host)
+    -> InstanceIds: 20 production IDs (all Tier=production)
+
+  Why the ASG could not refuse:
+    -> EC2 TerminateInstances bypasses ASG MinSize and scale-in protection
+    -> Only TerminateInstanceInAutoScalingGroup respects those guardrails

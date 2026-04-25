@@ -49,3 +49,4 @@ tags:
 | 039 | [[039-tgw-static-route-shadow/story\|The Route That Was Never There]] | 3 - Professional | Networking | transit-gateway, vpc, cloudtrail, cloudwatch | 35 min |
 | 040 | [[040-eventbridge-cross-account-drop/story\|The Events Nobody Sent]] | 2 - Associate | Operations | eventbridge, iam, cloudwatch, cloudtrail | 25 min |
 | 041 | [[041-fargate-ephemeral-exhaust/story\|Twenty Gigabytes Is Not Enough]] | 2 - Associate | Reliability | ecs, ecr, cloudwatch | 25 min |
+| 042 | [[042-capacity-removal-typo/story\|The Drain That Took Twenty]] | 3 - Professional | Operations | auto-scaling, ec2, cloudtrail, cloudwatch | 35 min |

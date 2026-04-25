@@ -1,0 +1,21 @@
+2026-04-23T21:08:51.412Z INFO  [beacon-prod-alb] Target deregistration triggered: i-0a1b2c3d4e5f60001 state=draining (reason=instance-terminating)
+2026-04-23T21:08:51.418Z INFO  [beacon-prod-alb] Target deregistration triggered: i-0a1b2c3d4e5f60002 state=draining
+2026-04-23T21:08:51.422Z INFO  [beacon-prod-alb] Target deregistration triggered: i-0a1b2c3d4e5f60003 state=draining
+2026-04-23T21:08:51.428Z INFO  [beacon-prod-alb] Target deregistration triggered: i-0a1b2c3d4e5f60004 state=draining
+2026-04-23T21:08:51.609Z INFO  [beacon-prod-alb] 16 additional targets entering draining state
+2026-04-23T21:09:12.001Z WARN  [beacon-prod-alb] HealthyHostCount=4 (threshold=20); pre-existing capacity insufficient for current request rate
+2026-04-23T21:09:12.221Z WARN  [beacon-prod-alb] Returning HTTP 502 to client for upstream connection refused (connect_error_count=1842 in last 60s)
+2026-04-23T21:09:18.444Z INFO  [beacon-routing-api] First customer-visible 5xx propagated to /v1/route endpoint
+2026-04-23T21:09:32.092Z WARN  [beacon-prod-alb] Target group beacon-prod-tg has 4 healthy targets, 0 unhealthy (20 deregistered)
+2026-04-23T21:10:30.118Z INFO  [beacon-prod-alb] Target registration: i-0a1b2c3d4e5f60100 state=initial (health checks pending)
+2026-04-23T21:10:38.402Z INFO  [beacon-prod-alb] Target registration: i-0a1b2c3d4e5f60101 state=initial
+2026-04-23T21:10:42.611Z INFO  [beacon-prod-alb] Target registration: i-0a1b2c3d4e5f60102 state=initial
+2026-04-23T21:10:55.299Z INFO  [beacon-prod-alb] Target i-0a1b2c3d4e5f60100 transitioned: initial -> healthy (HealthyThreshold met)
+2026-04-23T21:11:08.811Z INFO  [beacon-prod-alb] Target i-0a1b2c3d4e5f60101 transitioned: initial -> healthy
+2026-04-23T21:13:22.005Z INFO  [beacon-prod-alb] HealthyHostCount=18 (recovered)
+2026-04-23T21:14:40.622Z INFO  [beacon-prod-alb] HealthyHostCount=24 (target met); incident cleared
+2026-04-23T21:08:14.811Z DEBUG [drain-instances.sh:beacon-oncall-deploy@jump-1] starting drain for tier=staging, ids=i-0a1b2c3d4e5f60001 i-0a1b2c3d4e5f60002 i-0a1b2c3d4e5f60003 i-0a1b2c3d4e5f60004 i-0a1b2c3d4e5f60005 i-0a1b2c3d4e5f60006 i-0a1b2c3d4e5f60007 i-0a1b2c3d4e5f60008 i-0a1b2c3d4e5f60009 i-0a1b2c3d4e5f60010 i-0a1b2c3d4e5f60011 i-0a1b2c3d4e5f60012 i-0a1b2c3d4e5f60013 i-0a1b2c3d4e5f60014 i-0a1b2c3d4e5f60015 i-0a1b2c3d4e5f60016 i-0a1b2c3d4e5f60017 i-0a1b2c3d4e5f60018 i-0a1b2c3d4e5f60019 i-0a1b2c3d4e5f60020
+2026-04-23T21:08:14.812Z DEBUG [drain-instances.sh] argv parsed; --tier=staging is informational only, NOT validated against instance tags
+2026-04-23T21:08:42.103Z INFO  [drain-instances.sh] aws ec2 terminate-instances --instance-ids i-0a1b2c3d4e5f60001 ... (20 ids total)
+2026-04-23T21:08:42.901Z INFO  [drain-instances.sh] aws-cli return code: 0
+2026-04-23T21:08:42.911Z INFO  [drain-instances.sh] drain complete; exit 0

@@ -585,6 +585,21 @@
       ],
       "estimated_minutes": 25,
       "created": "2026-04-23"
+    },
+    {
+      "id": "042-capacity-removal-typo",
+      "title": "The Drain That Took Twenty",
+      "summary": "A maintenance script meant to drain three staging instances terminates twenty production instances. The runbook ran cleanly. The CLI returned 200 OK.",
+      "difficulty": 3,
+      "category": "operations",
+      "services": [
+        "auto-scaling",
+        "ec2",
+        "cloudtrail",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-25"
     }
   ]
 }
