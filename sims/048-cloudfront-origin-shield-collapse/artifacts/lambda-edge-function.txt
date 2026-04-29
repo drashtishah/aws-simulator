@@ -1,0 +1,68 @@
+# Function: prismstream-device-tag
+# ARN: arn:aws:lambda:us-east-1:614927382091:function:prismstream-device-tag:14
+# Runtime: nodejs20.x
+# Trigger: CloudFront viewer-request on distribution EDFDVBD6EXAMPLE
+# Last published: 2026-04-09T17:42:08Z by personalization-team-deployer
+# Memory: 128 MB, Timeout: 5s
+
+'use strict';
+
+const DEVICE_CLASSES = {
+  IOS_PHONE: 'ios-iphone',
+  IOS_TABLET: 'ios-ipad',
+  ANDROID_PHONE: 'android-phone',
+  ANDROID_TABLET: 'android-tablet',
+  WEB_DESKTOP: 'web-desktop',
+  WEB_MOBILE: 'web-mobile',
+  SMART_TV: 'smart-tv-default'
+};
+
+function classify(userAgent) {
+  if (!userAgent) return DEVICE_CLASSES.WEB_DESKTOP;
+  const ua = userAgent.toLowerCase();
+
+  if (/iphone/.test(ua)) return DEVICE_CLASSES.IOS_PHONE;
+  if (/ipad/.test(ua)) return DEVICE_CLASSES.IOS_TABLET;
+  if (/android.*mobile/.test(ua)) return DEVICE_CLASSES.ANDROID_PHONE;
+  if (/android/.test(ua)) return DEVICE_CLASSES.ANDROID_TABLET;
+  if (/(roku|appletv|firetv|smarttv|webos|tizen)/.test(ua)) return DEVICE_CLASSES.SMART_TV;
+  if (/(mobi|iphone|ipod|blackberry|windows phone)/.test(ua)) return DEVICE_CLASSES.WEB_MOBILE;
+  return DEVICE_CLASSES.WEB_DESKTOP;
+}
+
+exports.handler = (event, context, callback) => {
+  const request = event.Records[0].cf.request;
+  const headers = request.headers;
+
+  const userAgent = headers['user-agent'] && headers['user-agent'][0]
+    ? headers['user-agent'][0].value
+    : '';
+
+  const deviceClass = classify(userAgent);
+
+  // Inject the device class header. Origin will read this to serve a manifest
+  // tuned for the device. The header is also included in the cache key (per
+  // the cache policy on this distribution), so cache slots are partitioned
+  // by device class.
+  headers['x-prismstream-deviceclass'] = [{
+    key: 'X-PrismStream-DeviceClass',
+    value: deviceClass
+  }];
+
+  callback(null, request);
+};
+
+# Function configuration:
+# {
+#   "FunctionName": "prismstream-device-tag",
+#   "Role": "arn:aws:iam::614927382091:role/prismstream-edge-runtime",
+#   "Description": "Tag every viewer request with a device class for origin manifest selection",
+#   "Version": "14",
+#   "PackageType": "Zip",
+#   "State": "Active",
+#   "LastUpdateStatus": "Successful",
+#   "Replication": {
+#     "ReplicationStatus": "ReplicatedToAllRegions",
+#     "ReplicatedAt": "2026-04-09T17:42:38Z"
+#   }
+# }

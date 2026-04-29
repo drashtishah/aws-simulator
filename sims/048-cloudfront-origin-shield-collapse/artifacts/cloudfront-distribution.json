@@ -1,0 +1,75 @@
+{
+  "Distribution": {
+    "Id": "EDFDVBD6EXAMPLE",
+    "ARN": "arn:aws:cloudfront::614927382091:distribution/EDFDVBD6EXAMPLE",
+    "Status": "Deployed",
+    "DomainName": "d3a8b7c2k1f9j2.cloudfront.net",
+    "Aliases": {
+      "Items": ["cdn.prismstream.example.net"]
+    },
+    "DistributionConfig": {
+      "Comment": "PrismStream production CDN",
+      "Origins": {
+        "Items": [
+          {
+            "Id": "S3-prismstream-segments-prod",
+            "DomainName": "prismstream-segments-prod.s3.us-east-1.amazonaws.com",
+            "OriginShield": {
+              "Enabled": true,
+              "OriginShieldRegion": "us-east-1"
+            },
+            "OriginAccessControlId": "ECPG7XV9EXAMPLE",
+            "S3OriginConfig": {
+              "OriginAccessIdentity": ""
+            }
+          }
+        ]
+      },
+      "DefaultCacheBehavior": {
+        "TargetOriginId": "S3-prismstream-segments-prod",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "CachePolicyId": "08627262-05a9-4f76-9ded-prismstream-segments-cp",
+        "OriginRequestPolicyId": "33f36d7e-f396-46d9-bad8-prismstream-origin-reqs",
+        "LambdaFunctionAssociations": {
+          "Items": [
+            {
+              "EventType": "viewer-request",
+              "LambdaFunctionARN": "arn:aws:lambda:us-east-1:614927382091:function:prismstream-device-tag:14",
+              "IncludeBody": false
+            }
+          ]
+        },
+        "Compress": true
+      },
+      "CacheBehaviors": {
+        "Items": [
+          {
+            "PathPattern": "/segments/*",
+            "TargetOriginId": "S3-prismstream-segments-prod",
+            "CachePolicyId": "08627262-05a9-4f76-9ded-prismstream-segments-cp",
+            "OriginRequestPolicyId": "33f36d7e-f396-46d9-bad8-prismstream-origin-reqs",
+            "LambdaFunctionAssociations": {
+              "Items": [
+                {
+                  "EventType": "viewer-request",
+                  "LambdaFunctionARN": "arn:aws:lambda:us-east-1:614927382091:function:prismstream-device-tag:14"
+                }
+              ]
+            }
+          },
+          {
+            "PathPattern": "/manifests/*",
+            "TargetOriginId": "S3-prismstream-segments-prod",
+            "CachePolicyId": "658327ea-f89d-4fab-a63d-CachingOptimized"
+          }
+        ]
+      },
+      "Logging": {
+        "Enabled": true,
+        "Bucket": "prismstream-cdn-logs.s3.amazonaws.com",
+        "Prefix": "edfdvbd6example/"
+      }
+    },
+    "LastModifiedTime": "2026-04-09T17:42:08.302Z"
+  }
+}

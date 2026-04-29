@@ -676,6 +676,21 @@
       ],
       "estimated_minutes": 40,
       "created": "2026-04-25"
+    },
+    {
+      "id": "048-cloudfront-origin-shield-collapse",
+      "title": "The Premiere That Bent the Cache",
+      "summary": "A streaming platform's biggest premiere goes live and 5xx errors spike for that one show only. Edge cache hit ratios drop to 9 percent for a single content ID. Other titles are fine.",
+      "difficulty": 3,
+      "category": "performance",
+      "services": [
+        "cloudfront",
+        "s3",
+        "lambda",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-29"
     }
   ]
 }

@@ -1,0 +1,191 @@
+{
+  "id": "048-cloudfront-origin-shield-collapse",
+  "title": "The Premiere That Bent the Cache",
+  "summary": "A streaming platform's biggest premiere goes live and 5xx errors spike for that one show only. Edge cache hit ratios drop to 9 percent for a single content ID. Other titles are fine.",
+  "difficulty": 3,
+  "category": "performance",
+  "services": ["cloudfront", "s3", "lambda", "cloudwatch"],
+  "tags": ["origin-shield", "request-collapsing", "cache-key", "lambda-at-edge", "video-streaming"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:CachingStrategies",
+    "SAP-C02:Domain2:EdgeOptimization",
+    "DVA-C02:Domain1:CDNIntegration"
+  ],
+  "company": {
+    "name": "PrismStream",
+    "industry": "Video streaming",
+    "size": "Series D, 410 engineers, 38 million subscribers"
+  },
+  "glossary": {
+    "Origin shield": "An optional middle layer in the CloudFront cache hierarchy that sits between the regional edge caches and your origin. All edge POPs that miss locally route through the same origin shield region first, so identical requests get collapsed into a single trip to the origin.",
+    "Regional edge cache (REC)": "The mid-tier of CloudFront's caching infrastructure. Each REC sits behind multiple edge POPs and holds objects longer. When an edge misses, it asks its REC; when the REC misses, it asks origin shield (if enabled) or origin.",
+    "Cache key": "The unique identifier CloudFront uses to look up an object in cache. By default it includes the distribution domain and the URL path. You can extend it with selected headers, query strings, and cookies.",
+    "Request collapsing": "When many viewers request the same object at the same time and the cache is empty, CloudFront collapses them into a single request to origin instead of one per viewer. Origin shield broadens this collapsing across regions.",
+    "Lambda@Edge": "A Lambda function that runs at CloudFront edge locations on one of four event hooks: viewer-request, origin-request, origin-response, viewer-response. Viewer-request runs before the cache is checked and can rewrite the URL or headers, which affects the cache key.",
+    "Cache hit ratio": "The fraction of viewer requests served from cache without a trip to origin. Reported in CloudFront CloudWatch metrics as CacheHitRate. Below 80 percent is generally a problem; below 20 percent means caching is barely working.",
+    "OriginRequests": "A CloudFront CloudWatch metric counting requests that miss cache and reach origin. A spike here while overall request volume is steady is a cache-key fragmentation signal.",
+    "Cache key fragmentation": "When the cache key includes a value that varies per viewer (device ID, session token, geo), each viewer effectively gets their own cache slot. Hit ratio collapses and origin gets dogpiled."
+  },
+  "system": {
+    "what_broke": "A viewer-request Lambda@Edge function adds a per-device-class header (X-PrismStream-DeviceClass with values like ios-iphone15-pro, android-pixel8, web-chrome-firefox-safari) to the cache key. The premiere's segment URLs are identical for all viewers, but the cache key is different for each device class. With six tracked device classes plus an empty default, every edge POP keeps seven separate cache slots per segment, request collapsing breaks down, and origin shield cannot deduplicate requests because the cache keys do not match.",
+    "data_flow": "Viewer requests video segment from prismstream-cdn.example.net. Edge POP runs viewer-request Lambda@Edge to inject X-PrismStream-DeviceClass header. Edge checks cache; on miss, asks regional edge cache; on miss, asks origin shield in us-east-1; on miss, fetches from S3 origin bucket prismstream-segments-prod. Response flows back, getting cached at every layer keyed by URL plus the device-class header.",
+    "components": [
+      {
+        "name": "prismstream-cdn-prod (CloudFront distribution)",
+        "role": "Serves HLS video segments to 38M global subscribers. 6 cache behaviors mapped to content type. Origin shield enabled in us-east-1.",
+        "connections": ["Pulls from S3 prismstream-segments-prod via origin shield us-east-1", "Runs viewer-request Lambda@Edge prismstream-device-tag", "Writes access logs to S3 prismstream-cdn-logs"],
+        "failure_impact": "If cache hit ratio collapses, regional edge caches each fetch from origin shield, which fetches from origin. Origin S3 reads spike, latency rises, edge returns 5xx when origin throttles or times out."
+      },
+      {
+        "name": "prismstream-device-tag (Lambda@Edge, viewer-request)",
+        "role": "Parses User-Agent and adds X-PrismStream-DeviceClass header so the origin can serve device-optimized manifests. Deployed three weeks ago by the personalization team.",
+        "connections": ["Triggered on viewer-request event", "Sets request.headers.x-prismstream-deviceclass", "Header is included in the cache policy's HeadersConfig"],
+        "failure_impact": "Because the header is in the cache key and varies across at least seven values, each segment exists in seven cache slots per edge POP, multiplying origin requests sevenfold and breaking request collapsing."
+      },
+      {
+        "name": "prismstream-segments-prod (S3 origin)",
+        "role": "Stores HLS .ts segments and .m3u8 manifests for the entire content library. Multi-part uploads from the encoder pipeline.",
+        "connections": ["Read by CloudFront origin shield us-east-1", "Bucket policy grants GetObject only to the OAC for the distribution"],
+        "failure_impact": "Under cache-fragmented load, S3 sees its own request rate ceiling per partition. Throttled GetObject returns 503 SlowDown to CloudFront, which surfaces as 5xx to viewers."
+      },
+      {
+        "name": "Origin shield us-east-1 (CloudFront mid-tier)",
+        "role": "Designed to collapse identical requests from all regional edge caches into a single origin call.",
+        "connections": ["Receives cache misses from all regional edge caches", "Fetches from prismstream-segments-prod"],
+        "failure_impact": "Cannot collapse what it does not see as identical. Seven cache keys per segment means seven origin fetches even with origin shield healthy."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "cloudfront",
+      "artifacts": [
+        "artifacts/cloudfront-distribution.json",
+        "artifacts/cloudfront-cache-policy.json",
+        "artifacts/cloudfront-access-logs.txt"
+      ],
+      "capabilities": [
+        "get_distribution",
+        "get_cache_policy",
+        "get_origin_request_policy",
+        "list_distributions",
+        "get_function"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-edge-function.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "list_versions_by_function",
+        "get_function_configuration"
+      ]
+    },
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/s3-origin-metrics.csv"
+      ],
+      "capabilities": [
+        "get_bucket_policy",
+        "list_objects",
+        "get_bucket_metrics_configuration"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "list_metrics",
+        "get_metric_data"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "The 5xx errors are concentrated on one show. What is different about that content?",
+    "CloudFront has a metric called CacheHitRate. Compare the rate for the affected show against other titles.",
+    "When the cache misses, where does the request go next? CloudFront has a layer between the edge and your origin called origin shield.",
+    "Origin shield collapses identical requests across regions. Two requests are only identical if they have the same cache key.",
+    "The cache key is built from the URL plus selected headers, query strings, and cookies. Look at what is in your cache policy."
+  ],
+  "resolution": {
+    "root_cause": "Lambda@Edge viewer-request function injects an X-PrismStream-DeviceClass header that is included in the cache key, fragmenting each video segment into seven cache slots per edge POP and defeating origin shield request collapsing.",
+    "fix_criteria": [
+      {
+        "id": "identify_low_hit_rate_for_show",
+        "description": "Player notices that CacheHitRate is low (around 9 percent) for the premiere content while other titles maintain 95 percent or higher",
+        "required": true
+      },
+      {
+        "id": "identify_cache_key_includes_device_header",
+        "description": "Player examines the CloudFront cache policy and finds that X-PrismStream-DeviceClass is in HeadersConfig",
+        "required": true
+      },
+      {
+        "id": "identify_lambda_edge_sets_header",
+        "description": "Player traces the header back to the prismstream-device-tag Lambda@Edge function on viewer-request",
+        "required": false
+      },
+      {
+        "id": "propose_remove_header_from_cache_key",
+        "description": "Player proposes removing the device-class header from the cache key (move device-aware logic to origin-request, or to viewer-response, or use a small enumerated set on the URL path)",
+        "required": true
+      },
+      {
+        "id": "explain_origin_shield_role",
+        "description": "Player articulates that origin shield's request collapsing only works when cache keys match, and per-device cache keys defeat it",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How CloudFront's cache hierarchy works: edge POP, regional edge cache, origin shield, origin",
+      "What the cache key is, how it is constructed, and why every value in it multiplies cache slots",
+      "How origin shield's request collapsing depends on identical cache keys",
+      "Where Lambda@Edge runs in the request lifecycle and which event types affect the cache key",
+      "Why cache hit ratio is the canonical CDN health metric and what 9 percent versus 95 percent tell you"
+    ],
+    "sop_steps": [
+      "Identify which content is affected. Pull the CloudFront CacheHitRate metric grouped by URL path or content ID. The premiere's segments will show a hit rate near zero while other titles are above 90 percent.",
+      "Look at the cache policy attached to the affected cache behavior. The cache policy controls what goes into the cache key. Find the HeadersConfig section. Any header listed there becomes part of the cache key, so a request with a different value for that header gets its own cache slot.",
+      "If a header is in the cache key, find what sets it. CloudFront passes whatever the viewer sent unless something modifies the request first. Lambda@Edge functions on the viewer-request event run before the cache check and can add or change headers. Check the distribution's cache behaviors for any function associations on viewer-request.",
+      "Read the function code. If the function adds a header that takes many distinct values, every viewer with a different value gets a separate cache slot. The result is cache key fragmentation: hit ratio collapses, origin requests multiply.",
+      "Choose a fix. Three options. First, remove the header from the cache key by editing the cache policy. The function still runs and the origin still receives the header (use an origin request policy if you need it at origin). Second, move the header-setting logic to origin-request, which runs after cache lookup, so the cache key stays clean. Third, change the architecture so device awareness is in the URL path with a small enumerated set, like /v1/segments/$device-tier/$id.ts where device-tier has 3 values not 7.",
+      "Deploy the cache policy change. CloudFront propagates within minutes. Watch CacheHitRate climb. Origin shield will now collapse requests across regions for the premiere content."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Many query strings forwarded into the cache key, like analytics tracking codes",
+        "how_it_differs": "The cache key is fragmented by query string instead of by header. Same effect: every visit looks unique to the cache. Common pattern when marketing teams add UTM parameters that the CDN forwards by default.",
+        "prevention": "Use a managed cache policy that forwards specific query strings only. CloudFront has a managed policy called CachingOptimized that forwards no query strings to the cache key. Forward UTM parameters in the origin request policy instead so analytics still receives them."
+      },
+      {
+        "scenario": "Origin shield is not enabled, so each regional edge cache hits origin independently",
+        "how_it_differs": "Even with a clean cache key, the first miss in each region creates a request to origin. With origin shield off, eleven regions can fan out to eleven origin requests per object. With it on, all regions converge through one shield region and origin sees one request.",
+        "prevention": "Enable origin shield in the region geographically closest to your origin. AWS recommends a shield region within 200 ms of origin. Cost is a small fraction of origin egress savings for high-traffic content."
+      },
+      {
+        "scenario": "Cache TTL is set lower than the premiere's traffic burst window",
+        "how_it_differs": "Hit rate is fine for one minute and then crashes when objects expire mid-burst. Each expiration triggers a cache miss storm. Different from cache key fragmentation, but produces similar 5xx spikes.",
+        "prevention": "Set a long enough min and max TTL to span peak windows. For HLS segments that are immutable, use long TTLs (hours or days) and rely on URL versioning when content changes."
+      },
+      {
+        "scenario": "Origin S3 bucket hits per-prefix request rate ceiling under cache-cold load",
+        "how_it_differs": "S3 returns 503 SlowDown for one prefix while other prefixes are fine. Looks like an origin problem rather than a CDN problem. Cause is concentration of object keys under one prefix, not the cache layer.",
+        "prevention": "Spread object keys across many prefixes. S3 supports 5,500 GET requests per second per partitioned prefix. Hash a portion of the key into the prefix to distribute load."
+      }
+    ],
+    "sop_practices": [
+      "Treat the cache key as a contract. Every header, query string, or cookie you put in it multiplies the cache footprint. Use the smallest set that gives correct routing. Move device, language, and personalization signals to origin-request when possible so origin still receives them without fragmenting cache.",
+      "Enable origin shield for any high-traffic origin. Pick a shield region within 200 ms of origin. Without origin shield, every regional edge cache that misses talks to origin directly, which fans out cache miss storms during cold starts and content launches.",
+      "Alarm on CacheHitRate. A drop from 90 percent to 60 percent on a content ID is a five-minute warning before 5xx start landing. Pair the alarm with OriginRequests so you can distinguish cache miss storms from origin failures.",
+      "Test Lambda@Edge changes against a canary distribution before promoting to production. Lambda@Edge changes propagate to every edge globally and are hard to roll back fast under high traffic. A canary lets you watch CacheHitRate and OriginRequests for the change before exposing all viewers."
+    ]
+  }
+}

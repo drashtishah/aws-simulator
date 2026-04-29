@@ -1,0 +1,56 @@
+                          +---------------------------+
+                          |       38M Viewers         |
+                          |   (web, mobile, smart TV) |
+                          +-------------+-------------+
+                                        |
+                          +-------------v-------------+
+                          | CloudFront Edge POPs      |
+                          | (600+ locations)          |
+                          | Distribution: EDFDVBD6EXAMPLE
+                          +-------------+-------------+
+                                        |
+                                        | viewer-request event
+                                        v
+                          +---------------------------+
+                          | Lambda@Edge               |
+                          | prismstream-device-tag    |
+                          | (sets X-PrismStream-      |
+                          |   DeviceClass header)     |
+                          +-------------+-------------+
+                                        |
+                                        | (cache lookup uses cache policy)
+                                        v
+                          +---------------------------+
+                          | Cache Policy              |
+                          | prismstream-segments-cp   |
+                          |   HeadersConfig:          |
+                          |     X-PrismStream-        |
+                          |       DeviceClass         |
+                          +-------------+-------------+
+                                        |
+                                        | (on miss)
+                                        v
+                          +---------------------------+
+                          | Regional Edge Cache       |
+                          |  (11 regions)             |
+                          +-------------+-------------+
+                                        |
+                                        | (on miss, all regions route through)
+                                        v
+                          +---------------------------+
+                          | Origin Shield us-east-1   |
+                          +-------------+-------------+
+                                        |
+                                        | (on miss, OAC-signed)
+                                        v
+                          +---------------------------+
+                          | S3 Origin Bucket          |
+                          | prismstream-segments-prod |
+                          | the-glasshouse/           |
+                          | other-shows/              |
+                          +---------------------------+
+
+  Telemetry:
+    -> CloudWatch metrics: CacheHitRate, OriginRequests, 5xxErrorRate (per distribution and per cache behavior)
+    -> CloudFront access logs: prismstream-cdn-logs S3 bucket
+    -> S3 server access logs: prismstream-segments-logs S3 bucket

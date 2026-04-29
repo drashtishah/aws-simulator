@@ -1,0 +1,33 @@
+{
+  "CachePolicy": {
+    "Id": "08627262-05a9-4f76-9ded-prismstream-segments-cp",
+    "LastModifiedTime": "2026-04-09T17:38:42.118Z",
+    "CachePolicyConfig": {
+      "Comment": "Cache policy for PrismStream segment delivery; updated 2026-04-09 to add device-class personalization",
+      "Name": "prismstream-segments-cp",
+      "DefaultTTL": 86400,
+      "MaxTTL": 604800,
+      "MinTTL": 60,
+      "ParametersInCacheKeyAndForwardedToOrigin": {
+        "EnableAcceptEncodingGzip": true,
+        "EnableAcceptEncodingBrotli": true,
+        "HeadersConfig": {
+          "HeaderBehavior": "whitelist",
+          "Headers": {
+            "Quantity": 2,
+            "Items": [
+              "X-PrismStream-DeviceClass",
+              "Origin"
+            ]
+          }
+        },
+        "QueryStringsConfig": {
+          "QueryStringBehavior": "none"
+        },
+        "CookiesConfig": {
+          "CookieBehavior": "none"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,67 @@
+                          +---------------------------+
+                          |       38M Viewers         |
+                          |   (web, mobile, smart TV) |
+                          +-------------+-------------+
+                                        |
+                          +-------------v-------------+
+                          | CloudFront Edge POPs      |
+                          | (600+ locations)          |
+                          | Distribution: EDFDVBD6EXAMPLE
+                          +-------------+-------------+
+                                        |
+                                        | viewer-request event
+                                        v
+                          +---------------------------+
+                          | Lambda@Edge               |
+                          | prismstream-device-tag    |
+                          | [INJECTS HEADER USED IN   |
+                          |  CACHE KEY, 7 VALUES]     |
+                          +-------------+-------------+
+                                        |
+                                        v
+                          +---------------------------+
+                          | Cache Policy              |
+                          | prismstream-segments-cp   |
+                          | [PROBLEM: HeadersConfig   |
+                          |  contains X-PrismStream-  |
+                          |  DeviceClass; cache key   |
+                          |  fragments into 7 slots   |
+                          |  per segment]             |
+                          +-------------+-------------+
+                                        |
+                                        v
+                          +---------------------------+
+                          | Regional Edge Cache       |
+                          |  [HIT RATE 9% FOR         |
+                          |   the-glasshouse/]        |
+                          +-------------+-------------+
+                                        |
+                                        v
+                          +---------------------------+
+                          | Origin Shield us-east-1   |
+                          | [CANNOT COLLAPSE: cache   |
+                          |  keys differ across regions]
+                          +-------------+-------------+
+                                        |
+                                        v
+                          +---------------------------+
+                          | S3 Origin Bucket          |
+                          | prismstream-segments-prod |
+                          | [PROBLEM: 503 SlowDown    |
+                          |  on the-glasshouse/       |
+                          |  prefix at 4.1k/min;      |
+                          |  per-prefix 5,500 GET/s   |
+                          |  ceiling exceeded]        |
+                          +---------------------------+
+
+  Failure chain:
+    1. Lambda@Edge sets X-PrismStream-DeviceClass on viewer-request
+    2. Cache policy includes that header in HeadersConfig (in the cache key)
+    3. Cache key fragments into 7 slots per segment, hit rate collapses
+    4. Origin shield cannot collapse requests with different keys
+    5. S3 prefix request rate exceeds 5,500 GET/s, returns 503 SlowDown
+    6. CloudFront returns 5xx to viewers
+
+  Fix: remove X-PrismStream-DeviceClass from cache policy HeadersConfig.
+  Move it to an origin request policy so it still reaches origin without
+  fragmenting the cache key.

@@ -1,0 +1,6 @@
+Company: PrismStream (Series D, 410 engineers)
+Industry: Video streaming, subscription on-demand
+Users: 38 million subscribers across 190 countries, peak 9 Tbps egress
+AWS Services: Amazon CloudFront, Amazon S3, AWS Lambda@Edge, Amazon CloudWatch
+Your role: On-call CDN engineer, Friday 21:04 PT
+Situation: 5xx errors spiking only for tonight's premiere of The Glasshouse; other titles fine
