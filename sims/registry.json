@@ -766,6 +766,22 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-04-29"
+    },
+    {
+      "id": "054-fsx-lustre-metadata-genomics",
+      "title": "Twelve Hundred Workers, One Directory",
+      "summary": "A genomics pipeline runs 1,200 spot workers reading from FSx for Lustre. Forty minutes in, every worker stalls at zero CPU. Throughput dashboards show 8 percent utilization. Spot fleet is healthy.",
+      "difficulty": 3,
+      "category": "performance",
+      "services": [
+        "batch",
+        "fsx-lustre",
+        "s3",
+        "ec2",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-29"
     }
   ]
 }

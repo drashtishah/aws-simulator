@@ -1,0 +1,37 @@
+{
+  "FileSystem": {
+    "OwnerId": "284701825038",
+    "FileSystemId": "fs-08a72b1c4d9e2f3a",
+    "FileSystemType": "LUSTRE",
+    "Lifecycle": "AVAILABLE",
+    "StorageCapacity": 9600,
+    "StorageType": "SSD",
+    "VpcId": "vpc-helixprime-prod",
+    "SubnetIds": ["subnet-private-az1", "subnet-private-az2"],
+    "DNSName": "fs-08a72b1c4d9e2f3a.fsx.us-east-1.amazonaws.com",
+    "MountName": "abcd1234",
+    "CreationTime": "2025-05-12T18:42:08Z",
+    "LustreConfiguration": {
+      "DeploymentType": "PERSISTENT_2",
+      "PerUnitStorageThroughput": 1000,
+      "DataCompressionType": "LZ4",
+      "AutomaticBackupRetentionDays": 14,
+      "MetadataConfiguration": {
+        "Mode": "AUTOMATIC",
+        "Iops": 12000
+      },
+      "DataRepositoryAssociations": [
+        {
+          "AssociationId": "dra-08a72b1c4d9e2f3b",
+          "DataRepositoryPath": "s3://helixprime-fsx-data/",
+          "FileSystemPath": "/",
+          "ImportedFileChunkSize": 1024,
+          "Lifecycle": "AVAILABLE"
+        }
+      ]
+    }
+  },
+  "_meta": {
+    "note": "MetadataConfiguration.Mode is AUTOMATIC, which sized for 9.6 TiB storage and yielded 12,000 IOPS. The pipeline's 1,200-worker fan-out generates 56,400 file opens in 30 seconds; this exceeds the metadata IOPS ceiling. Switch to USER_PROVISIONED with Iops=96000 (or higher) to fix."
+  }
+}

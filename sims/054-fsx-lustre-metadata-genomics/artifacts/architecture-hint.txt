@@ -1,0 +1,71 @@
+                  +-------------------------+
+                  | Sequencer  -> S3 ingest |
+                  | helixprime-ingest       |
+                  +-----------+-------------+
+                              |
+                              | EventBridge -> Step Functions
+                              v
+                  +-------------------------+
+                  | AWS Batch               |
+                  | helixprime-align        |
+                  | (job queue + def)       |
+                  +-----------+-------------+
+                              |
+                              | Submit 1,200 jobs
+                              v
+                  +-------------------------+
+                  | Compute environment     |
+                  | helixprime-align-spot   |
+                  | EC2 Spot Fleet          |
+                  | c6i/c6a/c5 4xlarge      |
+                  | Allocation:             |
+                  |   SPOT_CAPACITY_        |
+                  |   OPTIMIZED             |
+                  +-----------+-------------+
+                              |
+                              | mount /fsx
+                              v
+                  +-------------------------+
+                  | FSx for Lustre          |
+                  | helixprime-fsx-prod     |
+                  | PERSISTENT_2, 9.6 TiB   |
+                  | Throughput: 1000 MB/s/TiB
+                  | Metadata: AUTOMATIC,    |
+                  |   12,000 IOPS           |
+                  +-----+----------+--------+
+                        |          |
+                        |          | DRA mirror
+                        |          v
+                        |   +-----------------+
+                        |   | S3 bucket       |
+                        |   | helixprime-fsx- |
+                        |   | data            |
+                        |   | (samples,       |
+                        |   |  references,    |
+                        |   |  outputs)       |
+                        |   +-----------------+
+                        |
+                        v
+              +-------------------------+
+              | Per-worker view of FSx: |
+              |   /fsx/samples/<id>/    |
+              |     - shard.fastq.gz    |
+              |   /fsx/refs/hg38/       |
+              |     - hg38.fa           |
+              |     - hg38.fa.fai       |
+              |     - hg38.dict         |
+              |     - bwa.amb, .ann,    |
+              |       .bwt, .pac, .sa   |
+              |     - 39 chromosome     |
+              |       subfiles          |
+              |     (47 files total)    |
+              |   /fsx/output/<id>.bam  |
+              +-------------------------+
+
+  Telemetry:
+    -> AWS/FSx: DataReadBytes, DataWriteBytes, DataDiskIOPS,
+       MetadataOperations, MetadataOperationLatency, FreeDataStorageCapacity
+    -> AWS/Batch: SubmittedJobsCount, RunnableJobsCount, RunningJobsCount
+    -> EC2 instance metrics: CPUUtilization, NetworkIn, NetworkOut
+    -> Custom Helixprime: per-worker stage timings (submission, mount,
+       reference-load, align-start, align-finish)

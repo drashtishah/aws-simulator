@@ -61,3 +61,4 @@ tags:
 | 051 | [[051-api-gateway-streaming-buffer/story\|The Answer That Arrived All at Once]] | 2 - Associate | Operations | api-gateway, lambda, bedrock, cloudwatch | 30 min |
 | 052 | [[052-bedrock-account-tpm-multitenant/story\|The Tenant Who Drank the Pool]] | 3 - Professional | Reliability | bedrock, api-gateway, dynamodb, cloudwatch | 35 min |
 | 053 | [[053-apigw-websocket-idle-timeout/story\|Ten Minutes of Silence]] | 2 - Associate | Networking | api-gateway, lambda, dynamodb, cloudwatch | 30 min |
+| 054 | [[054-fsx-lustre-metadata-genomics/story\|Twelve Hundred Workers, One Directory]] | 3 - Professional | Performance | batch, fsx-lustre, s3, ec2, cloudwatch | 35 min |

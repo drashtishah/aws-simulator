@@ -1,0 +1,44 @@
+{
+  "jobSummaryList": [
+    {
+      "jobName": "align-PT0042-shard-1",
+      "jobId": "9a8b7c6d-1111-aaaa-1111-helixprime",
+      "jobQueue": "arn:aws:batch:us-east-1:284701825038:job-queue/helixprime-align-q",
+      "status": "RUNNING",
+      "createdAt": 1714356008412,
+      "startedAt": 1714356018412,
+      "container": {
+        "image": "284701825038.dkr.ecr.us-east-1.amazonaws.com/helixprime/bwa-align:v3.2",
+        "vcpus": 16,
+        "memory": 32768
+      }
+    },
+    {
+      "jobName": "align-PT0042-shard-2",
+      "jobId": "9a8b7c6d-1112-aaaa-1112-helixprime",
+      "status": "RUNNING",
+      "startedAt": 1714356018502,
+      "container": {
+        "image": "284701825038.dkr.ecr.us-east-1.amazonaws.com/helixprime/bwa-align:v3.2"
+      }
+    },
+    {
+      "jobName": "align-PT0042-shard-3",
+      "jobId": "9a8b7c6d-1113-aaaa-1113-helixprime",
+      "status": "RUNNING",
+      "startedAt": 1714356018612,
+      "container": {
+        "image": "284701825038.dkr.ecr.us-east-1.amazonaws.com/helixprime/bwa-align:v3.2"
+      }
+    }
+  ],
+  "_summary": {
+    "RUNNING": 1200,
+    "PENDING": 0,
+    "RUNNABLE": 0,
+    "STARTING": 0,
+    "SUCCEEDED": 0,
+    "FAILED": 0,
+    "noteThatRUNNINGDoesNotMeanProgress": "All 1,200 jobs are RUNNING from Batch's perspective because their containers are alive. The containers are blocked on file system I/O. Batch has no visibility into the I/O state of the user's process inside the container."
+  }
+}

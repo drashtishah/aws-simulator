@@ -1,0 +1,37 @@
+{
+  "FileSystemId": "fs-08a72b1c4d9e2f3a",
+  "MetadataConfiguration": {
+    "Mode": "AUTOMATIC",
+    "Iops": 12000
+  },
+  "ValidIopsValues": {
+    "SSD_PERSISTENT_2": [
+      1500,
+      3000,
+      6000,
+      12000,
+      24000,
+      36000,
+      48000,
+      60000,
+      72000,
+      84000,
+      96000,
+      108000,
+      120000,
+      132000,
+      144000,
+      156000,
+      168000,
+      180000,
+      192000
+    ]
+  },
+  "_constraints": [
+    "Cannot decrease Iops once raised",
+    "Switch to USER_PROVISIONED to set Iops manually",
+    "Update is non-disruptive but cannot run concurrent with storage capacity scaling",
+    "Cost scales with provisioned Iops"
+  ],
+  "_command_to_fix": "aws fsx update-file-system --file-system-id fs-08a72b1c4d9e2f3a --lustre-configuration MetadataConfiguration={Mode=USER_PROVISIONED,Iops=96000}"
+}

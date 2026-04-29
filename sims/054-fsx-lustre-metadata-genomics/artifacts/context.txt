@@ -1,0 +1,6 @@
+Company: Helixprime (Series B, 84 engineers + 41 bioinformaticians)
+Industry: Precision medicine, clinical genomics for oncology
+Users: 280 patient samples per night; clinical team reviews from 07:00 ET
+AWS Services: AWS Batch, Amazon FSx for Lustre, Amazon EC2 Spot, Amazon S3, Amazon CloudWatch
+Your role: On-call platform engineer, Tuesday 02:48 ET
+Situation: Pipeline started at 02:00, 1,200 alignment workers idle for 14 minutes at near-zero CPU; 280 samples queued; clinical deadline 07:00 ET

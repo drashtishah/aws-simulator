@@ -1,0 +1,200 @@
+{
+  "id": "054-fsx-lustre-metadata-genomics",
+  "title": "Twelve Hundred Workers, One Directory",
+  "summary": "A genomics pipeline runs 1,200 spot workers reading from FSx for Lustre. Forty minutes in, every worker stalls at zero CPU. Throughput dashboards show 8% utilization. Spot fleet is healthy.",
+  "difficulty": 3,
+  "category": "performance",
+  "services": ["batch", "fsx-lustre", "s3", "ec2", "cloudwatch"],
+  "tags": ["fsx-lustre", "metadata", "hpc", "genomics", "aws-batch", "spot"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:NewSolutions",
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "SAP-C02:Domain3:MigrationPlanning"
+  ],
+  "company": {
+    "name": "Helixprime",
+    "industry": "Precision medicine / clinical genomics",
+    "size": "Series B, 84 engineers + 41 bioinformaticians, 280 patient samples processed nightly"
+  },
+  "glossary": {
+    "FSx for Lustre": "AWS's managed Lustre file system. Designed for HPC and machine learning workloads that need a POSIX shared file system with high throughput. Two deployment types in current use: SCRATCH_2 (temporary) and PERSISTENT_2 (durable, configurable performance).",
+    "Lustre architecture": "A Lustre file system has three roles: a metadata server (MDS) that handles directory operations and file open/close, object storage targets (OSTs) that hold file content, and clients that read and write through them. Metadata operations and data operations follow different paths.",
+    "Metadata IOPS (MDIOPS)": "The rate of metadata operations FSx for Lustre can sustain per second. Metadata operations include opening files, closing files, listing directories, and setting permissions. Distinct from throughput, which is about reading and writing file content. Configurable on PERSISTENT_2 from 1,500 to 192,000 in increments of 12,000.",
+    "AWS Batch": "A managed service that schedules containerized batch jobs onto EC2 (or Fargate) compute environments. Picks instance types from a list, runs the container with the inputs, terminates the instance when done. Common platform for HPC and bioinformatics workloads.",
+    "EC2 Spot": "Spare EC2 capacity at deep discount (up to 90%). Can be reclaimed by AWS with 2 minutes notice. Right for stateless or restartable batch jobs like genomic alignment.",
+    "FASTQ file": "A text file format storing raw sequencer reads with quality scores. A whole-genome sample is typically 30 to 100 GB compressed. Pipelines split FASTQ into shards to process in parallel.",
+    "Reference genome": "The canonical DNA sequence a sample is aligned to. The hg38 build of the human reference is 3.2 GB compressed plus dozens of supporting index files (BWT, suffix array, FAI, dict). Every alignment worker needs to open all of these files.",
+    "Variant calling": "The bioinformatics step that takes a sequenced sample plus a reference and produces a VCF file listing positions where the sample differs from reference. The CPU-heavy stage is alignment; the I/O-heavy stage is reference loading."
+  },
+  "system": {
+    "what_broke": "The reference genome and its 47 supporting index files all sit in a single directory on FSx for Lustre at /fsx/refs/hg38/. The pipeline launches 1,200 EC2 spot workers via AWS Batch, each running BWA-MEM alignment. Each worker opens all 47 reference files at startup, plus dozens of small per-sample auxiliary files in the same shared directory. With 1,200 workers all opening files in the same directory at the same time, the FSx for Lustre Metadata Server's IOPS quota (12,000 MDIOPS, the AUTOMATIC default for the file system's storage size) is saturated. New file open() syscalls block waiting for metadata operations. Workers sit at zero CPU because they cannot get past the open. Throughput utilization is low because no one is reading data; everyone is waiting on metadata.",
+    "data_flow": "Helixprime ingests FASTQ files from the sequencer to S3 bucket helixprime-ingest. AWS Batch job definition helixprime-align launches 1,200 spot EC2 c6i.4xlarge workers per pipeline run. Each worker mounts the FSx for Lustre file system at /fsx, reads its assigned FASTQ shard from S3 (data-repository association mirrors S3 to /fsx/samples/), opens the reference genome and indexes from /fsx/refs/hg38/, and runs BWA-MEM. Output BAM files are written to /fsx/output/, then exported back to S3 via the data-repository association.",
+    "components": [
+      {
+        "name": "helixprime-fsx-prod (FSx for Lustre file system)",
+        "role": "Shared scratch file system for the alignment pipeline. PERSISTENT_2 deployment type, 9.6 TiB SSD storage, throughput tier 1000 MB/s/TiB.",
+        "connections": ["Mounted by every Batch worker at /fsx", "Linked to S3 bucket helixprime-fsx-data via DRA", "Stores reference genome at /fsx/refs/hg38/"],
+        "failure_impact": "When metadata IOPS saturate, all clients block on file open. Throughput is fine; metadata is the bottleneck."
+      },
+      {
+        "name": "helixprime-align (AWS Batch job definition)",
+        "role": "Containerized BWA-MEM alignment job. Scheduled across a SPOT_CAPACITY_OPTIMIZED compute environment with 1,200 vCPUs target.",
+        "connections": ["Submits to compute environment helixprime-align-spot", "Runs Docker image helixprime/bwa-align:v3.2 from ECR"],
+        "failure_impact": "When the file system stalls, all 1,200 workers idle. Spot reclamation does not help because the underlying file system bottleneck remains."
+      },
+      {
+        "name": "helixprime-align-spot (Batch compute environment)",
+        "role": "EC2 Spot Fleet with c6i.4xlarge, c6a.4xlarge, c5.4xlarge as instance types. Allocation strategy SPOT_CAPACITY_OPTIMIZED. Min 0, max 1,500 vCPUs.",
+        "connections": ["Provisioned by Batch on demand", "Each instance mounts helixprime-fsx-prod"],
+        "failure_impact": "Healthy at the EC2 layer; nothing in the Spot Fleet metrics will reveal the file system stall."
+      },
+      {
+        "name": "/fsx/refs/hg38/ (reference directory)",
+        "role": "Holds the reference genome and 47 supporting indexes. All 1,200 workers open all files in this directory at startup.",
+        "connections": ["Read by every helixprime-align worker", "Files: hg38.fa, hg38.fa.fai, hg38.dict, plus BWA index components (.amb, .ann, .bwt, .pac, .sa) plus 39 chromosome-level files"],
+        "failure_impact": "Concentration of opens in one directory makes the metadata server's lock-on-directory contention the bottleneck. Spreading the references across many directories distributes the load."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "fsx-lustre",
+      "artifacts": [
+        "artifacts/fsx-filesystem.json",
+        "artifacts/fsx-metadata-config.json"
+      ],
+      "capabilities": [
+        "describe_file_systems",
+        "describe_data_repository_associations",
+        "describe_storage_virtual_machines"
+      ]
+    },
+    {
+      "service": "batch",
+      "artifacts": [
+        "artifacts/batch-compute-environment.json",
+        "artifacts/batch-job-status.json"
+      ],
+      "capabilities": [
+        "describe_compute_environments",
+        "describe_jobs",
+        "list_jobs",
+        "describe_job_definitions"
+      ]
+    },
+    {
+      "service": "ec2",
+      "artifacts": [
+        "artifacts/ec2-instance-metrics.csv"
+      ],
+      "capabilities": [
+        "describe_instances",
+        "describe_spot_fleet_requests"
+      ]
+    },
+    {
+      "service": "s3",
+      "artifacts": [
+        "artifacts/s3-data-repo.json"
+      ],
+      "capabilities": [
+        "list_buckets",
+        "get_bucket_policy"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-fsx-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "All 1,200 workers stall at the same time. What are they all waiting on?",
+    "Spot fleet looks healthy and CPU is at zero. What does it mean for a worker to be alive but doing nothing?",
+    "FSx for Lustre has separate paths for data and metadata. Compare DataReadBytes against FileOpenCount or MetadataOperations.",
+    "FSx Lustre PERSISTENT_2 has a metadata IOPS quota that scales with storage. What is yours, and what is your current rate?",
+    "All workers open files in the same directory at startup. Spreading the references across many directories distributes the metadata load."
+  ],
+  "resolution": {
+    "root_cause": "The FSx for Lustre file system has 12,000 metadata IOPS provisioned (AUTOMATIC mode based on 9.6 TiB storage). The pipeline launches 1,200 alignment workers concurrently; each worker opens all 47 files in /fsx/refs/hg38/ at startup. The concurrent open() syscalls saturate the Metadata Server. Workers block at file open, sitting at zero CPU. Throughput utilization is 8% because no one is actually reading file content yet.",
+    "fix_criteria": [
+      {
+        "id": "identify_metadata_vs_throughput",
+        "description": "Player notices that FSx data throughput is low (8%) while workers are stalled, indicating the bottleneck is not data path",
+        "required": true
+      },
+      {
+        "id": "identify_metadata_saturation",
+        "description": "Player examines FSx metadata metrics and finds MetadataOperations near the configured 12,000 IOPS ceiling",
+        "required": true
+      },
+      {
+        "id": "identify_concentrated_directory",
+        "description": "Player traces the metadata pressure to the /fsx/refs/hg38/ directory where 1,200 workers all open the same set of files",
+        "required": false
+      },
+      {
+        "id": "propose_metadata_iops_increase",
+        "description": "Player proposes raising metadata IOPS via USER_PROVISIONED mode (e.g., to 96,000 or 192,000)",
+        "required": true
+      },
+      {
+        "id": "propose_directory_sharding",
+        "description": "Player additionally proposes spreading reference files across many directories or pre-copying to instance NVMe",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "FSx for Lustre architecture: metadata server (MDS) vs object storage targets (OSTs) and the two distinct performance dimensions",
+      "How to read FSx metadata metrics in CloudWatch (MetadataOperations) vs throughput metrics (DataReadBytes, DataWriteBytes)",
+      "How AWS Batch + EC2 Spot + FSx Lustre fits together for HPC genomics workloads",
+      "Why concentrating opens in a single directory creates metadata pressure and how to mitigate via sharding or local caching",
+      "When to use AUTOMATIC vs USER_PROVISIONED metadata mode and how to scale metadata IOPS without disrupting clients"
+    ],
+    "sop_steps": [
+      "Confirm the workers are stalled at I/O, not crashed. SSH to one worker (or use SSM Session Manager). Run `ps aux | grep bwa` and verify the process exists. Check `cat /proc/$pid/wchan` for the kernel function it is sleeping on; if it is something like `inode_dio_wait` or you see the process state as D (uninterruptible sleep), it is blocked on file system I/O.",
+      "Check the FSx file system metadata vs throughput. Pull the CloudWatch namespace `AWS/FSx`. The metric `MetadataOperations` reflects how many metadata ops per second the file system is sustaining; compare to your configured limit. The metrics `DataReadBytes` and `DataWriteBytes` reflect actual file content bytes per second; compare to provisioned throughput.",
+      "Look at the metadata configuration. `aws fsx describe-file-systems` returns LustreConfiguration.MetadataConfiguration with Mode (AUTOMATIC or USER_PROVISIONED) and Iops (1500 to 192000). If MetadataOperations is at or near the Iops setting, the metadata server is the bottleneck.",
+      "Increase metadata IOPS. Switch the file system to USER_PROVISIONED and set Iops to a higher value: `aws fsx update-file-system --file-system-id fs-... --lustre-configuration MetadataConfiguration={Mode=USER_PROVISIONED,Iops=96000}`. The change is non-disruptive but cannot be reduced; pick a value that gives headroom. Cost scales with metadata IOPS so do not over-provision.",
+      "Reduce concentration in a single directory. Refactor the reference layout so files are spread across many subdirectories (say 16 buckets keyed on a hash of the filename). Update the alignment script to find files in their new location. This reduces lock contention on any one directory's metadata.",
+      "Pre-copy hot small files to instance NVMe. The reference genome and indexes are static and shared across workers, but each worker only needs them locally. On worker startup, pull from S3 (cheap parallel reads from S3) to /tmp on the instance NVMe before running the aligner. This eliminates FSx metadata pressure for reference reads entirely.",
+      "Add CloudWatch alarms. Alarm on `MetadataOperations / Iops > 0.7` so you have time to react before saturation. Alarm on `MetadataOperationLatency` p99 > 100 ms as a leading indicator of contention.",
+      "Re-run the pipeline. Confirm workers move past file open into actual alignment work. CPU utilization should climb to 80-95% on each instance; throughput utilization should rise to expected levels."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Lustre stripe count is too low for parallel reads",
+          "how_it_differs": "Workers can read but throughput is capped because each file is striped across only one OST. Throughput dashboard shows OSTs unevenly utilized; the file system is not actually saturated, but client perspective is.",
+          "prevention": "Set lfs setstripe with a higher stripe count for files larger than a few hundred MB. For very large files like aligned BAMs, stripe across all OSTs."
+      },
+      {
+        "scenario": "Spot reclamation interrupts long alignment jobs",
+          "how_it_differs": "A subset of workers vanish after 2-minute interruption notices. Look like crashes, but Batch retries them. Different from metadata stall; presents as variable completion times instead of all workers stalled.",
+          "prevention": "Use SPOT_CAPACITY_OPTIMIZED allocation strategy, diversify instance types, checkpoint partial output to FSx so retries do not start from scratch."
+      },
+      {
+        "scenario": "Data Repository Association lag from S3 to FSx",
+          "how_it_differs": "Workers cannot find files in FSx because the DRA has not yet imported them. Symptom is stat returning ENOENT, not blocking on open.",
+          "prevention": "Use FSx data-repository tasks (DRT) to pre-import S3 objects before launching the workers. Or run workers in a Step Function that waits on the DRT to complete."
+      },
+      {
+        "scenario": "Many small writes to the same directory cause similar contention on output",
+          "how_it_differs": "Same metadata pressure phenomenon, but on the output side. Workers write per-sample BAM files into a single output directory; create() syscalls block. Different cause (writes vs reads), same fix (shard).",
+          "prevention": "Shard the output directory the same way as inputs: spread files across many directories keyed on a hash. Or use S3 directly as the output destination with multipart uploads."
+      }
+    ],
+    "sop_practices": [
+      "Treat FSx for Lustre metadata IOPS as a load-bearing capacity dimension separate from throughput. Provision based on the worst-case open() rate from your fleet, not just storage size. The AUTOMATIC default is correct only for typical workloads.",
+      "Avoid concentrating opens in any single directory at HPC scale. If 1,000 workers all read the same set of files, replicate the files across many directories or pre-copy to instance-local storage. The same applies to writes: shard output paths.",
+      "Pre-stage hot small files to instance NVMe. References, dictionaries, and config files that every worker needs are read-only and shared; copy them once at worker startup from S3 (parallel fan-out is cheap) and then read from local. Reserves FSx for the actual sample data path.",
+      "Alarm on metadata utilization, not just throughput. CloudWatch metric MetadataOperations divided by configured Iops gives a utilization percentage. 70% should warn, 90% should page. Throughput dashboards alone hide metadata bottlenecks completely."
+    ]
+  }
+}

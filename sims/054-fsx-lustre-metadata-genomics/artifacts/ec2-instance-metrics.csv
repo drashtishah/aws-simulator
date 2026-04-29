@@ -1,0 +1,27 @@
+timestamp,instance_id,metric,value,unit
+2026-04-29T06:00:00Z,i-08a1b2c3d4-helixprime-001,CPUUtilization,18.4,Percent
+2026-04-29T06:01:00Z,i-08a1b2c3d4-helixprime-001,CPUUtilization,4.2,Percent
+2026-04-29T06:02:00Z,i-08a1b2c3d4-helixprime-001,CPUUtilization,0.4,Percent
+2026-04-29T06:14:00Z,i-08a1b2c3d4-helixprime-001,CPUUtilization,0.4,Percent
+2026-04-29T06:48:00Z,i-08a1b2c3d4-helixprime-001,CPUUtilization,0.4,Percent
+2026-04-29T06:00:00Z,i-08a1b2c3d4-helixprime-002,CPUUtilization,21.1,Percent
+2026-04-29T06:02:00Z,i-08a1b2c3d4-helixprime-002,CPUUtilization,0.5,Percent
+2026-04-29T06:48:00Z,i-08a1b2c3d4-helixprime-002,CPUUtilization,0.4,Percent
+2026-04-29T06:00:00Z,i-08a1b2c3d4-helixprime-003,CPUUtilization,19.8,Percent
+2026-04-29T06:02:00Z,i-08a1b2c3d4-helixprime-003,CPUUtilization,0.4,Percent
+2026-04-29T06:48:00Z,i-08a1b2c3d4-helixprime-003,CPUUtilization,0.4,Percent
+2026-04-29T06:00:00Z,i-08a1b2c3d4-helixprime-AGG,FleetAverageCPU,19.4,Percent
+2026-04-29T06:02:00Z,i-08a1b2c3d4-helixprime-AGG,FleetAverageCPU,0.4,Percent
+2026-04-29T06:14:00Z,i-08a1b2c3d4-helixprime-AGG,FleetAverageCPU,0.4,Percent
+2026-04-29T06:48:00Z,i-08a1b2c3d4-helixprime-AGG,FleetAverageCPU,0.4,Percent
+2026-04-29T06:00:00Z,i-08a1b2c3d4-helixprime-AGG,FleetNetworkIn,84.2,MB/sec
+2026-04-29T06:02:00Z,i-08a1b2c3d4-helixprime-AGG,FleetNetworkIn,1.2,MB/sec
+2026-04-29T06:48:00Z,i-08a1b2c3d4-helixprime-AGG,FleetNetworkIn,1.2,MB/sec
+
+# Read this:
+#   - At 06:00, instances ramp up CPU briefly (~20%) doing setup
+#   - At 06:02, CPU drops to 0.4% across the entire fleet
+#   - At 06:14 and 06:48, CPU is still at 0.4%
+#   - Network in (which is mostly FSx data reads) similarly drops to 1.2 MB/sec
+#     across the fleet, indicating no actual data is being read from FSx
+#   - The fleet is alive, healthy from EC2's perspective, and doing nothing

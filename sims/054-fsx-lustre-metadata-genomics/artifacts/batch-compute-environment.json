@@ -1,0 +1,38 @@
+{
+  "computeEnvironments": [
+    {
+      "computeEnvironmentName": "helixprime-align-spot",
+      "computeEnvironmentArn": "arn:aws:batch:us-east-1:284701825038:compute-environment/helixprime-align-spot",
+      "type": "MANAGED",
+      "state": "ENABLED",
+      "status": "VALID",
+      "computeResources": {
+        "type": "SPOT",
+        "allocationStrategy": "SPOT_CAPACITY_OPTIMIZED",
+        "minvCpus": 0,
+        "maxvCpus": 10000,
+        "desiredvCpus": 9600,
+        "instanceTypes": [
+          "c6i.4xlarge",
+          "c6a.4xlarge",
+          "c5.4xlarge"
+        ],
+        "subnets": ["subnet-private-az1", "subnet-private-az2"],
+        "securityGroupIds": ["sg-helixprime-align"],
+        "spotIamFleetRole": "arn:aws:iam::284701825038:role/aws-ec2-spot-fleet-role",
+        "instanceRole": "arn:aws:iam::284701825038:instance-profile/helixprime-align-instance",
+        "tags": {
+          "Project": "helixprime-pipeline",
+          "Environment": "production"
+        },
+        "launchTemplate": {
+          "launchTemplateId": "lt-helixprime-align-fsx-mount",
+          "version": "$Latest"
+        }
+      }
+    }
+  ],
+  "_meta": {
+    "note": "1,200 c6i.4xlarge instances InService at 02:48. Spot Fleet metrics show no interruptions, no allocation failures. The compute environment is healthy. The bottleneck is downstream at FSx."
+  }
+}

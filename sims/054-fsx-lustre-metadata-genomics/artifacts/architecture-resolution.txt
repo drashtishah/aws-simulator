@@ -1,0 +1,82 @@
+                  +-------------------------+
+                  | AWS Batch               |
+                  | helixprime-align        |
+                  | [1,200 jobs RUNNING,    |
+                  |  0 errors, 0 retries]   |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | Compute environment     |
+                  | helixprime-align-spot   |
+                  | [1,200 spot c6i.4xlarge |
+                  |  InService, healthy,    |
+                  |  CPU avg 0.4%]          |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | FSx for Lustre          |
+                  | helixprime-fsx-prod     |
+                  | [PROBLEM:               |
+                  |  MetadataConfig=AUTO,   |
+                  |  Iops=12,000            |
+                  |  MetadataOperations     |
+                  |  pegged at ceiling;     |
+                  |  open() syscalls queued |
+                  |  for minutes]           |
+                  | [Throughput utilization |
+                  |  8% -- the queue        |
+                  |  prevents reads from    |
+                  |  starting]              |
+                  +-----+----------+--------+
+                        |          |
+                        v          v
+                +---------+   +-----------------+
+                |/fsx/    |   |/fsx/refs/hg38/  |
+                |samples/ |   | [PROBLEM:       |
+                |(per     |   |  47 files in    |
+                | sample) |   |  ONE directory; |
+                +---------+   |  1,200 workers  |
+                              |  x 47 files =   |
+                              |  56,400 opens   |
+                              |  in startup     |
+                              |  window;        |
+                              |  exceeds 12,000 |
+                              |  metadata IOPS] |
+                              +-----------------+
+
+  Failure chain:
+    1. Reference directory grew last week from 24 to 47 files
+       to support 60 new specimen types
+    2. Pipeline launches 1,200 alignment workers concurrently
+    3. Each worker opens all 47 reference files at startup
+    4. 56,400 metadata operations queue against 12,000 IOPS ceiling
+    5. Workers block at file open(); CPU sits at 0.4%
+    6. FSx data path stays at 8% utilization because no one is
+       actually reading bytes yet
+    7. Pipeline stalls; 280 patient samples behind schedule
+
+  Two-step fix:
+    Step A (immediate):
+      aws fsx update-file-system \
+        --file-system-id fs-... \
+        --lustre-configuration MetadataConfiguration={Mode=USER_PROVISIONED,Iops=96000}
+      Metadata throughput climbs from 12k to 96k IOPS within minutes.
+      Queued opens drain in ~90 seconds. Workers move past file open
+      into actual alignment work. CPU climbs to 90%+.
+
+    Step B (structural, for next pipeline run):
+      Pre-stage reference files to instance NVMe at worker startup
+      (parallel S3 pull, ~25 seconds per worker). The reference is
+      static and shared, so a per-instance copy eliminates FSx
+      metadata pressure for reference reads entirely.
+
+      Optionally: shard the reference directory into 16 subdirectories
+      keyed on a hash of the filename. Reduces lock contention on any
+      one directory's metadata.
+
+  Monitoring:
+    -> Alarm: MetadataOperations / Iops > 0.7  (warn)
+    -> Alarm: MetadataOperationLatency p99 > 100 ms (warn)
+    -> Alarm: > 50 Batch workers at <5% CPU for >5 min (page)

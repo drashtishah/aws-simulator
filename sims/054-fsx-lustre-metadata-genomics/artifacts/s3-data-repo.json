@@ -1,0 +1,44 @@
+{
+  "Bucket": "helixprime-fsx-data",
+  "Region": "us-east-1",
+  "DataRepositoryAssociation": {
+    "AssociationId": "dra-08a72b1c4d9e2f3b",
+    "FileSystemId": "fs-08a72b1c4d9e2f3a",
+    "FileSystemPath": "/",
+    "DataRepositoryPath": "s3://helixprime-fsx-data/",
+    "ImportedFileChunkSize": 1024,
+    "Lifecycle": "AVAILABLE",
+    "S3": {
+      "AutoImportPolicy": {
+        "Events": ["NEW", "CHANGED", "DELETED"]
+      }
+    }
+  },
+  "Layout": {
+    "samples/": "Per-sample FASTQ shards, ~30 GB per sample, mirrored from S3",
+    "refs/hg38/": {
+      "_files": [
+        "hg38.fa",
+        "hg38.fa.fai",
+        "hg38.dict",
+        "hg38.fa.amb",
+        "hg38.fa.ann",
+        "hg38.fa.bwt",
+        "hg38.fa.pac",
+        "hg38.fa.sa",
+        "chr1.fa",
+        "chr1.fa.fai",
+        "chr2.fa",
+        "chr2.fa.fai",
+        "...39 chromosome subfiles in same dir...",
+        "interval_lists/",
+        "vcf_known_sites/"
+      ],
+      "_count": "47 files in /fsx/refs/hg38/ as of last week"
+    },
+    "output/": "Aligned BAM files, written by workers, exported to S3"
+  },
+  "_meta": {
+    "note": "The reference directory expanded from 24 to 47 files last week to support 60 new specimens. All workers open all 47 reference files at startup. Concentrating these files in one directory is the structural cause of the metadata pressure; sharding across many directories or pre-staging to instance NVMe would mitigate it permanently."
+  }
+}

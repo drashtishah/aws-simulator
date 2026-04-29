@@ -1,0 +1,33 @@
+timestamp,namespace,metric_name,file_system_id,value,unit
+2026-04-29T05:55:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,4218309,Bytes
+2026-04-29T06:00:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,8412384020,Bytes
+2026-04-29T06:01:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,182841092,Bytes
+2026-04-29T06:02:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,8412847,Bytes
+2026-04-29T06:14:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,8284194,Bytes
+2026-04-29T06:48:00Z,AWS/FSx,DataReadBytes,fs-08a72b1c4d9e2f3a,8412847,Bytes
+2026-04-29T05:55:00Z,AWS/FSx,DataDiskIOPS,fs-08a72b1c4d9e2f3a,128,Count
+2026-04-29T06:00:00Z,AWS/FSx,DataDiskIOPS,fs-08a72b1c4d9e2f3a,12842,Count
+2026-04-29T06:02:00Z,AWS/FSx,DataDiskIOPS,fs-08a72b1c4d9e2f3a,84,Count
+2026-04-29T06:48:00Z,AWS/FSx,DataDiskIOPS,fs-08a72b1c4d9e2f3a,82,Count
+2026-04-29T05:55:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,148,Count
+2026-04-29T06:00:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,11942,Count
+2026-04-29T06:01:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,12000,Count
+2026-04-29T06:02:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,12000,Count
+2026-04-29T06:14:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,12000,Count
+2026-04-29T06:30:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,12000,Count
+2026-04-29T06:48:00Z,AWS/FSx,MetadataOperations,fs-08a72b1c4d9e2f3a,12000,Count
+2026-04-29T05:55:00Z,AWS/FSx,MetadataOperationLatency,fs-08a72b1c4d9e2f3a,2,Milliseconds
+2026-04-29T06:00:00Z,AWS/FSx,MetadataOperationLatency,fs-08a72b1c4d9e2f3a,18,Milliseconds
+2026-04-29T06:02:00Z,AWS/FSx,MetadataOperationLatency,fs-08a72b1c4d9e2f3a,8421,Milliseconds
+2026-04-29T06:14:00Z,AWS/FSx,MetadataOperationLatency,fs-08a72b1c4d9e2f3a,12842,Milliseconds
+2026-04-29T06:48:00Z,AWS/FSx,MetadataOperationLatency,fs-08a72b1c4d9e2f3a,18204,Milliseconds
+
+# Read this:
+#   - DataReadBytes: peaks briefly at 06:00 then collapses to ~8 MB/min
+#     (essentially nothing) because no one is actually reading file content
+#   - DataDiskIOPS: same pattern; throughput-side activity is near-zero
+#   - MetadataOperations: pegged at 12,000 (the AUTOMATIC mode IOPS ceiling)
+#     for the entire stall window
+#   - MetadataOperationLatency: climbs from 2 ms baseline to 18 seconds!
+#     Each metadata operation is queued behind thousands of others
+#   - This is the canonical signature: metadata saturated, throughput idle
