@@ -1,0 +1,27 @@
+{
+  "EventSourceMappings": [
+    {
+      "UUID": "8a4f12c6-3b27-4e8e-9d12-lumenfold-catalog-mapping",
+      "EventSourceArn": "arn:aws:dynamodb:us-east-1:728193049281:table/lumenfold-inventory/stream/2024-08-12T19:14:08.840",
+      "FunctionArn": "arn:aws:lambda:us-east-1:728193049281:function:lumenfold-catalog-indexer",
+      "State": "Enabled",
+      "BatchSize": 100,
+      "MaximumBatchingWindowInSeconds": 0,
+      "ParallelizationFactor": 1,
+      "StartingPosition": "LATEST",
+      "MaximumRetryAttempts": 3,
+      "MaximumRecordAgeInSeconds": -1,
+      "BisectBatchOnFunctionError": false,
+      "TumblingWindowInSeconds": 0,
+      "FunctionResponseTypes": [],
+      "DestinationConfig": {
+        "OnFailure": {}
+      },
+      "LastProcessingResult": "OK",
+      "LastModified": "2024-08-12T19:30:42.000Z"
+    }
+  ],
+  "_meta": {
+    "note": "BatchSize 100 with ParallelizationFactor 1 means each shard yields up to 100 records per Lambda invocation, processed sequentially per shard. With reservedConcurrentExecutions = 5 on the function, only 5 shards can be processed concurrently at peak; the table currently has 12 active shards."
+  }
+}

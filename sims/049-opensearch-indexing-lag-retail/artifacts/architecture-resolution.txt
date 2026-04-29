@@ -1,0 +1,71 @@
+                  +----------------------+
+                  | Catalog ingest job   |
+                  | [380k SKUs in 18 min]|
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+
+                  | DynamoDB Table       |
+                  | lumenfold-inventory  |
+                  | (CURRENT, healthy)   |
+                  +----------+-----------+
+                             |
+                             | DynamoDB Stream
+                             v
+                  +----------------------+
+                  | Event source mapping |
+                  | [BACKED UP: 14.5M ms |
+                  |  IteratorAge]        |
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+
+                  | Lambda function      |
+                  | lumenfold-catalog-   |
+                  |       indexer        |
+                  | [PROBLEM: reserved   |
+                  |  concurrency = 5;    |
+                  |  cannot drain 380k   |
+                  |  records in time]    |
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+
+                  | OpenSearch domain    |
+                  | lumenfold-search     |
+                  | [STALE: documents    |
+                  |  are 4 hours old]    |
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+        +-----------------------+
+                  | Storefront search-api|        | Checkout Lambda       |
+                  | [returns sold-out    |        | [reads DynamoDB       |
+                  |  items as available] |        |  directly; sees       |
+                  +----------+-----------+        |  inventory > 0 until  |
+                             |                    |  fulfillment           |
+                             v                    |  decrement, accepts    |
+                  +----------------------+        |  order, customer paid] |
+                  | Shopper buys sold-   |        +-----------+-----------+
+                  | out item, payment    |                    |
+                  | succeeds, refund     |                    | GetItem
+                  | email 40 min later   |                    v
+                  +----------------------+        +-----------------------+
+                                                  | DynamoDB Table        |
+                                                  | (CURRENT)             |
+                                                  +-----------------------+
+
+  Failure chain:
+    1. Catalog ingest writes 380k records to DynamoDB in 18 min
+    2. DynamoDB Stream fills with 380k pending records
+    3. Lambda capped at 5 concurrent executions, drains at ~16 records/sec
+    4. IteratorAge climbs to 14.5M ms (4 h 12 min)
+    5. OpenSearch documents reflect pre-launch state
+    6. Storefront search returns sold-out items as available
+    7. Shopper places order, checkout confirms inventory in DynamoDB (still > 0
+       because no fulfillment has decremented yet), payment succeeds
+    8. Warehouse cannot fulfill, refund issued
+
+  Fix: remove reservedConcurrentExecutions on lumenfold-catalog-indexer.
+  Function scales to 60 concurrent executions, drains backlog in ~12 min,
+  IteratorAge falls below 5,000 ms.

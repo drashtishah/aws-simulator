@@ -691,6 +691,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-29"
+    },
+    {
+      "id": "049-opensearch-indexing-lag-retail",
+      "title": "Yesterday's Inventory, Today's Cart",
+      "summary": "An online retailer's search returns items that sold out four hours ago. Customers buy them, the warehouse cannot fulfill, and refunds pile up. The catalog team swears nothing changed.",
+      "difficulty": 3,
+      "category": "data",
+      "services": [
+        "dynamodb",
+        "opensearch",
+        "lambda",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-29"
     }
   ]
 }

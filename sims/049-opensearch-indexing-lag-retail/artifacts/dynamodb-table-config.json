@@ -1,0 +1,28 @@
+{
+  "Table": {
+    "TableName": "lumenfold-inventory",
+    "TableArn": "arn:aws:dynamodb:us-east-1:728193049281:table/lumenfold-inventory",
+    "TableStatus": "ACTIVE",
+    "CreationDateTime": "2024-08-12T19:14:08.412Z",
+    "AttributeDefinitions": [
+      { "AttributeName": "sku", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "sku", "KeyType": "HASH" }
+    ],
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST"
+    },
+    "ItemCount": 380124,
+    "TableSizeBytes": 412739204,
+    "ProvisionedThroughput": {
+      "NumberOfDecreasesToday": 0
+    },
+    "StreamSpecification": {
+      "StreamEnabled": true,
+      "StreamViewType": "NEW_AND_OLD_IMAGES"
+    },
+    "LatestStreamLabel": "2024-08-12T19:14:08.840",
+    "LatestStreamArn": "arn:aws:dynamodb:us-east-1:728193049281:table/lumenfold-inventory/stream/2024-08-12T19:14:08.840"
+  }
+}

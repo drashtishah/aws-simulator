@@ -1,0 +1,193 @@
+{
+  "id": "049-opensearch-indexing-lag-retail",
+  "title": "Yesterday's Inventory, Today's Cart",
+  "summary": "An online retailer's search returns items that sold out four hours ago. Customers buy them, the warehouse cannot fulfill, and refunds pile up. The catalog team swears nothing changed.",
+  "difficulty": 3,
+  "category": "data",
+  "services": ["dynamodb", "opensearch", "lambda", "cloudwatch"],
+  "tags": ["dynamodb-streams", "opensearch", "iterator-age", "reserved-concurrency", "ecommerce-search"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "DVA-C02:Domain4:Optimization",
+    "SAP-C02:Domain2:NewSolutions"
+  ],
+  "company": {
+    "name": "Lumenfold",
+    "industry": "Online apparel retail",
+    "size": "Series C, 220 engineers, 2.4M monthly active shoppers"
+  },
+  "glossary": {
+    "DynamoDB Streams": "A change log of every write that happens on a DynamoDB table. Records stay in the stream for up to 24 hours and are read in order. Lambda can subscribe to a stream as an event source.",
+    "Lambda event source mapping": "The connection between an event source (like a DynamoDB Stream) and a Lambda function. The mapping polls the source on your behalf and invokes Lambda with batches of records.",
+    "IteratorAge": "A CloudWatch metric Lambda emits when reading from a stream. It is the age in milliseconds of the oldest record in the last batch the function processed. Climbing IteratorAge means the function cannot keep up.",
+    "Reserved concurrency": "A cap on how many concurrent executions a Lambda function can have. Setting it limits the function's parallelism. Set too low, the function becomes a bottleneck and stream records pile up.",
+    "Shard": "A partition of a DynamoDB Stream. A stream has one shard per active table partition. Lambda processes records in order within a shard, but shards are processed in parallel.",
+    "OpenSearch index": "A collection of documents in OpenSearch, similar to a table in a relational database. Each document has fields you can search by. Updates to the index propagate to nodes after a refresh interval.",
+    "Refresh interval": "How often OpenSearch makes newly indexed documents available for search. Default is 1 second. Index writes are not searchable until a refresh happens.",
+    "Eventual consistency": "A consistency model where reads may temporarily see older data while writes propagate. The system catches up given enough time. Acceptable when the lag is short. Dangerous when the lag becomes hours."
+  },
+  "system": {
+    "what_broke": "The catalog-indexer Lambda has reservedConcurrentExecutions set to 5. Last quarter that was enough to keep up. This morning the catalog-refresh batch wrote 380,000 inventory updates in 18 minutes, the stream piled up records faster than 5 concurrent executions could drain them, and IteratorAge climbed to 4 hours and 12 minutes. Search results in OpenSearch show inventory state from before the morning refresh. Customers see items as available; checkout passes inventory checks against DynamoDB (which is current), so orders go through. Fulfillment fails because the inventory the search showed was already sold.",
+    "data_flow": "Catalog ingest writes inventory updates to DynamoDB table lumenfold-inventory. DynamoDB Streams emits change records. Lambda function lumenfold-catalog-indexer reads the stream and indexes documents into OpenSearch domain lumenfold-search. The storefront's search frontend queries OpenSearch. Checkout queries DynamoDB directly via GetItem to confirm inventory before charging the customer.",
+    "components": [
+      {
+        "name": "lumenfold-inventory (DynamoDB table)",
+        "role": "Source of truth for product inventory. Updated by the warehouse system, the catalog ingest job, and the order-placement service.",
+        "connections": ["Stream feeds lumenfold-catalog-indexer Lambda", "Read directly by checkout for inventory confirmation"],
+        "failure_impact": "If updates lag downstream consumers, search results diverge from reality but checkout still has the correct inventory."
+      },
+      {
+        "name": "lumenfold-catalog-indexer (Lambda function)",
+        "role": "Reads change records from the inventory stream, transforms them, and indexes to OpenSearch. Triggered automatically when records appear in the stream.",
+        "connections": ["Event source: DynamoDB stream of lumenfold-inventory", "Writes to OpenSearch domain lumenfold-search via index API"],
+        "failure_impact": "If the function falls behind, search results lag DynamoDB by however long the queue is. With reserved concurrency capping parallelism, large bursts cannot be absorbed and lag grows unbounded up to the 24-hour stream retention."
+      },
+      {
+        "name": "lumenfold-search (OpenSearch domain)",
+        "role": "Search index for the storefront. Documents include SKU, name, price, in_stock flag, and category facets.",
+        "connections": ["Indexed by lumenfold-catalog-indexer Lambda", "Queried by storefront search-api on every shopper search"],
+        "failure_impact": "Stale documents return out-of-stock items as available. Customers add them to cart, checkout passes (inventory check is against DynamoDB), warehouse cannot fulfill."
+      },
+      {
+        "name": "lumenfold-checkout (Lambda function)",
+        "role": "Validates the order, checks inventory by reading lumenfold-inventory directly from DynamoDB, charges payment, and writes the order.",
+        "connections": ["Reads lumenfold-inventory via GetItem", "Writes to lumenfold-orders DynamoDB table"],
+        "failure_impact": "If checkout used OpenSearch as the inventory source, the divergence would be caught at checkout. Because checkout reads DynamoDB directly, an out-of-stock item still passes validation if another customer has not yet bought it."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/dynamodb-table-config.json",
+        "artifacts/dynamodb-stream-records.json"
+      ],
+      "capabilities": [
+        "describe_table",
+        "describe_stream",
+        "describe_continuous_backups",
+        "list_streams"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-config.json",
+        "artifacts/lambda-event-source-mapping.json"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "list_event_source_mappings",
+        "get_event_source_mapping"
+      ]
+    },
+    {
+      "service": "opensearch",
+      "artifacts": [
+        "artifacts/opensearch-domain.json",
+        "artifacts/opensearch-document-sample.json"
+      ],
+      "capabilities": [
+        "describe_domain",
+        "search_index",
+        "get_index_settings"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "get_metric_data",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Customers see items in stock that the warehouse cannot find. Where does the storefront get inventory data from?",
+    "There are two sources of truth here: DynamoDB and OpenSearch. Which one is current?",
+    "Lambda emits a metric called IteratorAge when reading from streams. What does it look like for the indexer function right now?",
+    "Reserved concurrency caps how many copies of a Lambda can run at once. What is it set to on the indexer?",
+    "The morning catalog refresh writes hundreds of thousands of records in minutes. Five concurrent executions cannot drain that fast."
+  ],
+  "resolution": {
+    "root_cause": "The lumenfold-catalog-indexer Lambda has reservedConcurrentExecutions set to 5, capping parallelism. The morning catalog refresh wrote 380,000 inventory updates in 18 minutes, exceeding the function's drain rate. IteratorAge climbed to 4 hours, so OpenSearch shows yesterday-afternoon inventory while DynamoDB is current.",
+    "fix_criteria": [
+      {
+        "id": "identify_search_dynamodb_divergence",
+        "description": "Player identifies that search results disagree with DynamoDB's actual inventory state",
+        "required": true
+      },
+      {
+        "id": "identify_iterator_age",
+        "description": "Player examines CloudWatch metrics for the catalog-indexer Lambda and finds IteratorAge climbing to over 14M milliseconds",
+        "required": true
+      },
+      {
+        "id": "identify_reserved_concurrency",
+        "description": "Player notices reservedConcurrentExecutions = 5 on the catalog-indexer Lambda",
+        "required": true
+      },
+      {
+        "id": "propose_raise_concurrency",
+        "description": "Player proposes raising reserved concurrency, removing it entirely, or moving to a higher-throughput pipeline like OpenSearch Ingestion zero-ETL",
+        "required": true
+      },
+      {
+        "id": "explain_why_checkout_passes",
+        "description": "Player articulates that checkout reads DynamoDB directly, so out-of-stock items pass validation despite being shown as available in search",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How DynamoDB Streams + Lambda triggers feed downstream search indexes and what the lag boundary is",
+      "What IteratorAge means and how to read it as a backpressure signal",
+      "How reserved concurrency creates a hard ceiling on a function's drain rate",
+      "Why search-fronted commerce needs alarms on indexing lag, not just on table-level metrics",
+      "How the same data can be consistent in one system (DynamoDB) and stale in another (OpenSearch)"
+    ],
+    "sop_steps": [
+      "Confirm the divergence. Pick a SKU that customers report as missing at fulfillment. Look it up in DynamoDB (the source of truth) and in OpenSearch (what the storefront search returns). They will not agree. The DynamoDB record is current; the OpenSearch document is hours old.",
+      "Find the indexing pipeline. The storefront search runs against OpenSearch, and OpenSearch is fed by something. Look for an event source mapping connecting the DynamoDB stream to a Lambda function. That Lambda is the indexer.",
+      "Check the indexer's lag. CloudWatch publishes a metric called IteratorAge for any Lambda fed by a stream. The value is the age in milliseconds of the oldest record processed in the most recent batch. Pull the metric for the indexer function. If it is above a few seconds during normal operation, the function is falling behind. Hours of lag means the search is showing yesterday's data.",
+      "Find the bottleneck. Lambda has a setting called reserved concurrency that caps how many concurrent executions a function can have. Read the function's configuration. If reserved concurrency is set low (single-digits or tens), the indexer cannot scale up to drain a write burst even if there are stream shards available.",
+      "Choose a fix. The simplest is to raise or remove the reserved concurrency cap. The function will scale up to absorb the burst and IteratorAge will fall as the backlog drains. For a longer-term fix, evaluate OpenSearch Ingestion (zero-ETL): it replaces the Lambda with a managed pipeline sized in OpenSearch Compute Units, and one OCU handles roughly 1,000 write request units per second.",
+      "Drain the backlog before flipping the storefront. While IteratorAge is still high, every search query returns stale data. Either show shoppers a banner that inventory is being updated, or temporarily fall back to a DynamoDB-backed lookup for high-traffic SKUs.",
+      "Add monitoring so this is caught earlier next time. CloudWatch alarm on IteratorAge for the indexer Lambda with a threshold of 60,000 ms (one minute). Alarm sooner if your business needs near-real-time search."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "DynamoDB Stream retention is exceeded and records are dropped",
+        "how_it_differs": "Streams retain records for 24 hours. If the indexer is down for longer than that, records age out and are gone. The indexer cannot catch up by replaying the stream; you have to do a full reindex from a DynamoDB scan. This is permanent data loss for the indexing pipeline.",
+        "prevention": "Alarm on IteratorAge well before 24 hours. A common threshold is 10 minutes for production indexing pipelines. Treat the alarm as a paging incident."
+      },
+      {
+        "scenario": "The Lambda errors on poison records and retries forever",
+        "how_it_differs": "A single record in the stream causes the function to throw, Lambda retries on the same shard, and progress halts on that shard. IteratorAge for the affected shard climbs while other shards drain normally. Looks similar but the cause is data, not throughput.",
+        "prevention": "Configure a destination on the event source mapping so failed batches go to an SQS dead-letter queue or another Lambda after a bounded number of retries. Use ReportBatchItemFailures to skip individual bad records without blocking the shard."
+      },
+      {
+        "scenario": "OpenSearch refresh interval is too long for near-real-time search needs",
+        "how_it_differs": "The indexer is fast; documents are written to OpenSearch in seconds. But the index has refresh_interval set to 30s, so newly written documents are not searchable for up to 30 seconds. This is a per-index OpenSearch tuning, not a Lambda problem.",
+        "prevention": "Set refresh_interval to 1s for indexes that need near-real-time search. Trade off: shorter refresh costs more cluster CPU. Tune per-index based on freshness requirements."
+      },
+      {
+        "scenario": "More than two Lambdas subscribed to the same DynamoDB stream cause read throttling",
+        "how_it_differs": "DynamoDB Streams allows two consumers per stream before read throttling kicks in. If you wire a third Lambda to the same stream, all consumers slow down. Looks like an indexer slowdown but the cause is contention on the stream itself.",
+        "prevention": "Use Kinesis Data Streams or DynamoDB to Kinesis if you need many fanout consumers. Or have one Lambda fan out to SQS / EventBridge for all downstream consumers."
+      }
+    ],
+    "sop_practices": [
+      "Alarm on IteratorAge for any Lambda reading from a stream. The default is to leave this metric un-alarmed, which means lag failures are first noticed when downstream systems serve stale data. A 60-second threshold is appropriate for most production indexing pipelines; tighter for near-real-time needs.",
+      "Keep reserved concurrency settings explicit and reviewed. Reserved concurrency is sometimes used to protect downstream systems and sometimes left over from a tuning experiment. A reserved concurrency that was correct last quarter is the wrong number after a 10x catalog growth. Re-evaluate annually.",
+      "Make the system of record explicit and consistent across read paths. Search reads OpenSearch, checkout reads DynamoDB, and these can diverge. Either show the customer the same view at every step, or surface freshness explicitly so the customer knows search may be stale.",
+      "Consider OpenSearch Ingestion (zero-ETL) for high-volume DynamoDB-to-OpenSearch pipelines. It replaces the Lambda with a managed pipeline that scales in OpenSearch Compute Units. One OCU handles about 1,000 write request units per second. Predictable cost, no concurrency tuning."
+    ]
+  }
+}

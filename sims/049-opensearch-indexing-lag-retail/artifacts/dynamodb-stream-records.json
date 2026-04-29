@@ -1,0 +1,92 @@
+{
+  "Records": [
+    {
+      "eventID": "1a2b3c4d5e6f7g8h",
+      "eventName": "MODIFY",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1714052408,
+        "Keys": {
+          "sku": { "S": "LMF-SP26-DR-0042-NAVY-M" }
+        },
+        "NewImage": {
+          "sku": { "S": "LMF-SP26-DR-0042-NAVY-M" },
+          "name": { "S": "Spring Premium Linen Wrap Dress, Navy, Medium" },
+          "price_cents": { "N": "12800" },
+          "in_stock": { "BOOL": false },
+          "stock_count": { "N": "0" },
+          "category": { "S": "dresses" },
+          "collection": { "S": "spring-premium-2026" },
+          "updated_at": { "S": "2026-04-29T06:08:14Z" }
+        },
+        "OldImage": {
+          "sku": { "S": "LMF-SP26-DR-0042-NAVY-M" },
+          "in_stock": { "BOOL": true },
+          "stock_count": { "N": "47" }
+        },
+        "SequenceNumber": "00000000000000832019412",
+        "SizeBytes": 384,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      }
+    },
+    {
+      "eventID": "2b3c4d5e6f7g8h9i",
+      "eventName": "MODIFY",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1714052418,
+        "Keys": {
+          "sku": { "S": "LMF-SP26-DR-0042-NAVY-S" }
+        },
+        "NewImage": {
+          "sku": { "S": "LMF-SP26-DR-0042-NAVY-S" },
+          "in_stock": { "BOOL": false },
+          "stock_count": { "N": "0" },
+          "updated_at": { "S": "2026-04-29T06:08:24Z" }
+        },
+        "OldImage": {
+          "in_stock": { "BOOL": true },
+          "stock_count": { "N": "12" }
+        },
+        "SequenceNumber": "00000000000000832019421",
+        "SizeBytes": 256,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      }
+    },
+    {
+      "eventID": "3c4d5e6f7g8h9i0j",
+      "eventName": "MODIFY",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-east-1",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1714052431,
+        "Keys": {
+          "sku": { "S": "LMF-SP26-TP-0117-CREAM-L" }
+        },
+        "NewImage": {
+          "sku": { "S": "LMF-SP26-TP-0117-CREAM-L" },
+          "name": { "S": "Spring Premium Cotton Tee, Cream, Large" },
+          "price_cents": { "N": "5800" },
+          "in_stock": { "BOOL": false },
+          "stock_count": { "N": "0" },
+          "updated_at": { "S": "2026-04-29T06:08:37Z" }
+        },
+        "OldImage": {
+          "in_stock": { "BOOL": true },
+          "stock_count": { "N": "284" }
+        },
+        "SequenceNumber": "00000000000000832019434",
+        "SizeBytes": 304,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      }
+    }
+  ],
+  "_meta": {
+    "note": "Three sample records from the morning's catalog refresh stream. The stream contains 380,124 records like these. The OldImage shows the stock_count before the refresh, NewImage shows it after. All three SKUs have stock_count = 0 after the refresh. The stream's ApproximateCreationDateTime values are from 06:08 ET. The most recent records processed by lumenfold-catalog-indexer have ApproximateCreationDateTime values from around 07:30 ET, hence the IteratorAge of about 4 hours 12 minutes at 11:42 ET."
+  }
+}

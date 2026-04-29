@@ -1,0 +1,21 @@
+{
+  "_index": "products",
+  "_id": "LMF-SP26-DR-0042-NAVY-M",
+  "_version": 47,
+  "_seq_no": 718432,
+  "_primary_term": 4,
+  "found": true,
+  "_source": {
+    "sku": "LMF-SP26-DR-0042-NAVY-M",
+    "name": "Spring Premium Linen Wrap Dress, Navy, Medium",
+    "price_cents": 12800,
+    "in_stock": true,
+    "stock_count": 47,
+    "category": "dresses",
+    "collection": "spring-premium-2026",
+    "updated_at": "2026-04-28T16:42:08Z"
+  },
+  "_meta": {
+    "note": "This is what the storefront search returns for SKU LMF-SP26-DR-0042-NAVY-M. The document shows in_stock: true and stock_count: 47, last updated 2026-04-28T16:42:08Z. The DynamoDB record for this SKU shows in_stock: false and stock_count: 0, updated_at 2026-04-29T06:08:14Z. The OpenSearch document is 19 hours behind the database, and contains pre-launch inventory state."
+  }
+}

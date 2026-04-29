@@ -1,0 +1,59 @@
+                  +----------------------+
+                  | Catalog ingest job   |
+                  | (cron, 06:00 daily)  |
+                  +----------+-----------+
+                             |
+                             | PutItem / UpdateItem
+                             v
+                  +----------------------+
+                  | DynamoDB Table       |
+                  | lumenfold-inventory  |
+                  | (PK: sku)            |
+                  | StreamSpec: NEW_AND_OLD_IMAGES
+                  +----------+-----------+
+                             |
+                             | DynamoDB Stream
+                             v
+                  +----------------------+
+                  | Event source mapping |
+                  | (DynamoDB -> Lambda) |
+                  | BatchSize: 100       |
+                  | ParallelizationFactor: 1
+                  +----------+-----------+
+                             |
+                             v
+                  +----------------------+
+                  | Lambda function      |
+                  | lumenfold-catalog-   |
+                  |       indexer        |
+                  | reservedConcurrent-  |
+                  |   Executions: 5      |
+                  +----------+-----------+
+                             |
+                             | _bulk index
+                             v
+                  +----------------------+
+                  | OpenSearch domain    |
+                  | lumenfold-search     |
+                  | index: products      |
+                  +----------+-----------+
+                             |
+                             | search queries
+                             v
+                  +----------------------+        +-----------------------+
+                  | Storefront search-api|        | Checkout Lambda       |
+                  +----------+-----------+        | (lumenfold-checkout)  |
+                             |                    +-----------+-----------+
+                             | shopper hits                   |
+                             v                                | GetItem
+                  +----------------------+                    v
+                  |     Shopper          |        +-----------------------+
+                  |    (browser)         |        | DynamoDB Table        |
+                  +----------------------+        | lumenfold-inventory   |
+                                                  +-----------------------+
+
+  Telemetry:
+    -> Lambda IteratorAge metric (CloudWatch namespace AWS/Lambda)
+    -> OpenSearch index document count and refresh metrics
+    -> DynamoDB ConsumedWriteCapacity, ThrottledRequests
+    -> Custom metric: search-vs-database-divergence count (not currently emitted)

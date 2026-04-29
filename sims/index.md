@@ -56,3 +56,4 @@ tags:
 | 046 | [[046-nlb-health-check-flap/story\|The Failover That Failed Itself]] | 3 - Professional | Networking | elb, ec2, auto-scaling, cloudwatch | 35 min |
 | 047 | [[047-hidden-us-east-1-dependency/story\|The Region You Did Not Know You Lived In]] | 3 - Professional | Reliability | iam, sts, cloudfront, route53, s3 | 40 min |
 | 048 | [[048-cloudfront-origin-shield-collapse/story\|The Premiere That Bent the Cache]] | 3 - Professional | Performance | cloudfront, s3, lambda, cloudwatch | 35 min |
+| 049 | [[049-opensearch-indexing-lag-retail/story\|Yesterday's Inventory, Today's Cart]] | 3 - Professional | Data | dynamodb, opensearch, lambda, cloudwatch | 35 min |

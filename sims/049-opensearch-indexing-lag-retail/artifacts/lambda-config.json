@@ -1,0 +1,32 @@
+{
+  "Configuration": {
+    "FunctionName": "lumenfold-catalog-indexer",
+    "FunctionArn": "arn:aws:lambda:us-east-1:728193049281:function:lumenfold-catalog-indexer",
+    "Runtime": "nodejs20.x",
+    "Role": "arn:aws:iam::728193049281:role/lumenfold-catalog-indexer-role",
+    "Handler": "index.handler",
+    "CodeSize": 4198302,
+    "Description": "Index DynamoDB inventory changes into OpenSearch products index",
+    "Timeout": 60,
+    "MemorySize": 512,
+    "LastModified": "2025-09-14T12:48:08.412Z",
+    "ReservedConcurrentExecutions": 5,
+    "Environment": {
+      "Variables": {
+        "OPENSEARCH_ENDPOINT": "https://search-lumenfold-search-x7c8d9e.us-east-1.es.amazonaws.com",
+        "OPENSEARCH_INDEX": "products",
+        "BATCH_BULK_SIZE": "50"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "State": "Active",
+    "LastUpdateStatus": "Successful",
+    "PackageType": "Zip",
+    "Architectures": ["arm64"]
+  },
+  "_meta": {
+    "note": "Reserved concurrency = 5 was set on 2024-09-22 in change ticket LFP-2104 'tune indexer cost'. The catalog had 40k SKUs and ~20k daily writes at that time. The setting has not been revisited since."
+  }
+}

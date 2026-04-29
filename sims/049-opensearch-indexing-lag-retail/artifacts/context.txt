@@ -1,0 +1,6 @@
+Company: Lumenfold (Series C, 220 engineers)
+Industry: Online apparel retail
+Users: 2.4 million monthly shoppers, peak 6,800 concurrent, average $84 order
+AWS Services: Amazon DynamoDB, Amazon OpenSearch Service, AWS Lambda, Amazon CloudWatch
+Your role: On-call platform engineer, Tuesday 11:42 ET
+Situation: Customers buying items that the warehouse cannot fulfill; 412 fulfillment-impossible tickets in 90 minutes

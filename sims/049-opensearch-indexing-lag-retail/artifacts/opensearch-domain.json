@@ -1,0 +1,43 @@
+{
+  "DomainStatus": {
+    "DomainName": "lumenfold-search",
+    "ARN": "arn:aws:es:us-east-1:728193049281:domain/lumenfold-search",
+    "Created": true,
+    "Endpoint": "search-lumenfold-search-x7c8d9e.us-east-1.es.amazonaws.com",
+    "Processing": false,
+    "EngineVersion": "OpenSearch_2.13",
+    "ClusterConfig": {
+      "InstanceType": "r6g.xlarge.search",
+      "InstanceCount": 4,
+      "DedicatedMasterEnabled": true,
+      "DedicatedMasterType": "r6g.large.search",
+      "DedicatedMasterCount": 3,
+      "ZoneAwarenessEnabled": true,
+      "ZoneAwarenessConfig": {
+        "AvailabilityZoneCount": 2
+      }
+    },
+    "ClusterHealth": "green",
+    "_indices": {
+      "products": {
+        "uuid": "Tx8j2K9LSheqEXAMPLE",
+        "primary_shards": 4,
+        "replica_shards": 1,
+        "doc_count": 380124,
+        "store_size_bytes": 1042893218,
+        "settings": {
+          "index": {
+            "refresh_interval": "1s",
+            "number_of_shards": "4",
+            "number_of_replicas": "1"
+          }
+        },
+        "_oldest_document_updated_at": "2026-04-28T22:14:19Z",
+        "_newest_document_updated_at": "2026-04-29T07:31:04Z"
+      }
+    }
+  },
+  "_meta": {
+    "note": "Cluster is healthy. Note _newest_document_updated_at on the products index is 07:31 ET. Current time is 11:42 ET. The most recent indexed document is 4 hours and 11 minutes old."
+  }
+}
