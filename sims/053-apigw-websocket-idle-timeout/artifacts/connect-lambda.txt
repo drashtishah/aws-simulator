@@ -1,0 +1,28 @@
+# Function: vaultlinen-connect
+# ARN: arn:aws:lambda:us-east-1:914275832041:function:vaultlinen-connect
+# Runtime: nodejs20.x
+# Memory: 256 MB, Timeout: 5 sec
+
+const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
+const ddb = new DynamoDBClient({});
+const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE;
+
+exports.handler = async (event) => {
+  const connectionId = event.requestContext.connectionId;
+  const userId = event.requestContext.authorizer.userId;
+  const workspaceId = event.requestContext.authorizer.workspaceId;
+  const ttl = Math.floor(Date.now() / 1000) + 7200;
+
+  await ddb.send(new PutItemCommand({
+    TableName: CONNECTIONS_TABLE,
+    Item: {
+      connectionId: { S: connectionId },
+      userId: { S: userId },
+      workspaceId: { S: workspaceId },
+      connectedAt: { N: Date.now().toString() },
+      ttl: { N: ttl.toString() }
+    }
+  }));
+
+  return { statusCode: 200 };
+};

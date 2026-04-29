@@ -1,0 +1,67 @@
+{
+  "Api": {
+    "ApiId": "j8d4k2c9p3",
+    "Name": "vaultlinen-chat",
+    "ProtocolType": "WEBSOCKET",
+    "RouteSelectionExpression": "$request.body.action",
+    "ApiKeySelectionExpression": "$request.header.x-api-key",
+    "DisableSchemaValidation": false,
+    "CreatedDate": "2024-04-12T18:42:08.000Z"
+  },
+  "Routes": [
+    {
+      "RouteKey": "$connect",
+      "RouteId": "rt-connect",
+      "AuthorizationType": "CUSTOM",
+      "AuthorizerId": "auth-jwt-vaultlinen",
+      "Target": "integrations/int-connect"
+    },
+    {
+      "RouteKey": "$disconnect",
+      "RouteId": "rt-disconnect",
+      "AuthorizationType": "NONE",
+      "Target": "integrations/int-disconnect"
+    },
+    {
+      "RouteKey": "$default",
+      "RouteId": "rt-default",
+      "AuthorizationType": "NONE",
+      "Target": "integrations/int-default"
+    },
+    {
+      "RouteKey": "sendMessage",
+      "RouteId": "rt-sendmessage",
+      "AuthorizationType": "NONE",
+      "Target": "integrations/int-sendmessage"
+    },
+    {
+      "RouteKey": "typing",
+      "RouteId": "rt-typing",
+      "AuthorizationType": "NONE",
+      "Target": "integrations/int-typing"
+    },
+    {
+      "RouteKey": "markRead",
+      "RouteId": "rt-markread",
+      "AuthorizationType": "NONE",
+      "Target": "integrations/int-markread"
+    }
+  ],
+  "Stage": {
+    "StageName": "prod",
+    "DeploymentId": "abc123",
+    "DefaultRouteSettings": {
+      "ThrottlingBurstLimit": 5000,
+      "ThrottlingRateLimit": 10000
+    }
+  },
+  "_quotas": {
+    "IdleConnectionTimeout": "10 minutes (fixed, cannot be raised)",
+    "MaximumConnectionDuration": "2 hours (fixed, cannot be raised)",
+    "NewConnectionsPerSecond": 500,
+    "MessageSizeLimit": "32 KB"
+  },
+  "_meta": {
+    "note": "Notice there is no 'ping' route. The clients send no application-layer heartbeat. The route selection expression is $request.body.action, so adding a ping route is one config + one Lambda away."
+  }
+}

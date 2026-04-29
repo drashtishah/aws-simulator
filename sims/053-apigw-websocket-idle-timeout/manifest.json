@@ -1,0 +1,189 @@
+{
+  "id": "053-apigw-websocket-idle-timeout",
+  "title": "Ten Minutes of Silence",
+  "summary": "A team messaging app drops user WebSocket connections after exactly ten minutes of silence, but only for users who go quiet. Active typers stay connected. Customer support is flooded.",
+  "difficulty": 2,
+  "category": "networking",
+  "services": ["api-gateway", "lambda", "dynamodb", "cloudwatch"],
+  "tags": ["websocket", "idle-timeout", "messaging", "appsync", "alb-websocket"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:NewSolutions",
+    "DVA-C02:Domain1:DevelopmentWithAwsServices",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Vaultlinen",
+    "industry": "B2B team messaging",
+    "size": "Series A, 38 engineers, 142,000 daily active users across 3,200 workspaces"
+  },
+  "glossary": {
+    "WebSocket": "A protocol that lets a client and server exchange messages over a single TCP connection that stays open for the lifetime of the conversation. Different from HTTP, where each request opens a new short-lived connection.",
+    "API Gateway WebSocket API": "An API Gateway product flavor that terminates WebSocket connections and routes incoming messages to Lambda integrations based on route selection expressions. Supports three built-in routes ($connect, $disconnect, $default) plus custom routes.",
+    "$connect route": "The route invoked when a client opens a WebSocket connection. Use it to authenticate the client, store their connection ID in a database, and decide whether to accept or reject the connection.",
+    "$disconnect route": "The route invoked when a connection ends, whether because the client closed it, the server closed it, or it was reaped by a timeout. Use it to clean up the connection record.",
+    "Idle timeout": "How long a WebSocket connection can sit without any messages being sent before API Gateway closes it. The default and maximum for API Gateway WebSocket is 10 minutes; this cannot be raised.",
+    "Heartbeat (ping)": "A small message a client sends periodically to keep an idle WebSocket alive. Either application-level (a JSON message with a known type) or protocol-level (WebSocket ping/pong frames). Required when the natural conversation pace can be longer than the idle timeout.",
+    "AppSync subscriptions": "An AWS AppSync feature that maintains long-lived WebSocket subscriptions for GraphQL clients. Useful for chat-style apps. AppSync handles connection lifecycle and ping internally.",
+    "ALB WebSocket support": "Application Load Balancer can terminate WebSocket connections and forward them to ECS, EC2, or Lambda targets. Idle timeout is configurable up to 4,000 seconds (66 minutes) and the upper bound is much higher than API Gateway WebSocket."
+  },
+  "system": {
+    "what_broke": "Vaultlinen runs all chat connections through an API Gateway WebSocket API. The API has the default idle timeout of 10 minutes and there is no application-layer heartbeat. Users who are actively typing send messages every few seconds, which keeps the connection alive. Users who are reading without typing send nothing for 10 minutes; API Gateway closes the connection with status 1001 (client inactivity or connection lifetime exceeded). The client UI receives the close, attempts to reconnect, but the user has navigated away from the input field, so the reconnect is silent and the user sees stale messages until they manually refresh.",
+    "data_flow": "Vaultlinen client (web, iOS, Android) opens a WebSocket to wss://chat.vaultlinen.example. API Gateway custom domain routes to WebSocket API vaultlinen-chat. $connect Lambda authenticates the JWT, writes the connectionId to DynamoDB table vaultlinen-connections with a TTL of 2 hours. $default Lambda handles incoming messages: SendMessage, Typing, MarkRead. When other users post in a workspace, a fan-out Lambda reads the relevant connectionIds from DynamoDB and calls API Gateway PostToConnection to deliver the message. $disconnect Lambda removes the connectionId from DynamoDB.",
+    "components": [
+      {
+        "name": "vaultlinen-chat (API Gateway WebSocket API)",
+        "role": "Public WebSocket entry point. Idle timeout 10 minutes. Maximum connection duration 2 hours.",
+        "connections": ["Receives WebSocket connections at wss://chat.vaultlinen.example", "Routes to $connect, $disconnect, $default Lambdas", "Backend pushes messages via PostToConnection"],
+        "failure_impact": "Idle connections are closed at exactly 10 minutes. There is no way to extend the idle timeout for this product."
+      },
+      {
+        "name": "vaultlinen-connections (DynamoDB table)",
+        "role": "Stores active connection records keyed on connectionId. Each record has user_id, workspace_id, connected_at, ttl.",
+        "connections": ["Written by $connect Lambda", "Read by fan-out Lambda to find connectionIds for a workspace", "Deleted by $disconnect Lambda"],
+        "failure_impact": "When idle disconnect happens, $disconnect cleanly removes the record. The data is consistent; it is the user experience that suffers."
+      },
+      {
+        "name": "fan-out (Lambda function)",
+        "role": "Triggered by SQS when a new message is posted. Looks up active connectionIds for the target workspace and calls PostToConnection for each.",
+        "connections": ["Triggered by SQS vaultlinen-messages queue", "Reads vaultlinen-connections", "Calls API Gateway management API PostToConnection"],
+        "failure_impact": "Cannot deliver to a closed connection. PostToConnection returns GoneException for closed connections, which the Lambda treats as a normal cleanup. The message is delivered to all other recipients, just not the disconnected one."
+      },
+      {
+        "name": "Vaultlinen client (web/iOS/Android)",
+        "role": "Maintains the WebSocket connection. Currently has no application-layer heartbeat; relies entirely on incoming messages or user activity to keep the connection alive.",
+        "connections": ["Opens WebSocket via wss://chat.vaultlinen.example", "Sends user messages via $default route", "Receives backend pushes"],
+        "failure_impact": "Without a heartbeat, idle users get disconnected at 10 minutes. The reconnect logic exists but is silent; users see no indicator that they were briefly offline and missed messages."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/websocket-api-config.json",
+        "artifacts/websocket-execution-logs.txt"
+      ],
+      "capabilities": [
+        "get_api",
+        "get_route",
+        "get_integration",
+        "get_stage"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/connect-lambda.txt",
+        "artifacts/default-lambda.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration"
+      ]
+    },
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/connections-table.json"
+      ],
+      "capabilities": [
+        "describe_table",
+        "scan",
+        "get_item"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Disconnects happen at exactly ten minutes. What is special about that interval?",
+    "Active typers do not get disconnected; only quiet readers. What does API Gateway do with idle WebSockets?",
+    "API Gateway WebSocket has a fixed idle timeout. Look up the limits.",
+    "The fix is either an application-layer heartbeat (ping every 5 minutes) or migrating to a connection-friendly platform.",
+    "AppSync subscriptions and ALB-fronted WebSockets handle long-lived idle connections better than API Gateway."
+  ],
+  "resolution": {
+    "root_cause": "API Gateway WebSocket has a 10-minute idle timeout that cannot be raised. The Vaultlinen client has no application-layer heartbeat. Users who are reading without typing produce no traffic; API Gateway closes the connection at the 10-minute mark with status 1001; the silent reconnect leaves users seeing stale state until manual refresh.",
+    "fix_criteria": [
+      {
+        "id": "identify_10_minute_pattern",
+        "description": "Player observes that disconnects happen at exactly 10 minutes of silence, only for non-typing users",
+        "required": true
+      },
+      {
+        "id": "identify_apigw_websocket_idle_timeout",
+        "description": "Player articulates that API Gateway WebSocket has a fixed 10-minute idle timeout that cannot be configured up",
+        "required": true
+      },
+      {
+        "id": "identify_no_heartbeat",
+        "description": "Player notices the client code has no ping/heartbeat logic",
+        "required": false
+      },
+      {
+        "id": "propose_heartbeat_or_migration",
+        "description": "Player proposes either adding a 5-minute application-layer heartbeat or migrating to AppSync subscriptions or ALB-fronted WebSockets",
+        "required": true
+      },
+      {
+        "id": "improve_reconnect_ux",
+        "description": "Player improves the client reconnect UX so users see when they are offline and missed messages get refetched after reconnect",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "API Gateway WebSocket connection lifecycle ($connect, $disconnect, $default)",
+      "The 10-minute idle timeout limit and how it interacts with chat-style traffic patterns",
+      "Heartbeat patterns: client-driven ping vs server-driven ping vs no-op messages",
+      "When API Gateway WebSocket is the right choice and when to migrate to AppSync subscriptions or ALB+ECS WebSockets",
+      "How to build a robust client reconnect that detects gaps and refetches missed messages"
+    ],
+    "sop_steps": [
+      "Confirm the timing pattern. Pull a sample of disconnect events from CloudWatch Logs (the API Gateway $disconnect Lambda logs). Compare each connection's connected_at to its disconnected_at; if the diff is consistently around 600 seconds (10 minutes), you are hitting the API Gateway WebSocket idle timeout.",
+      "Distinguish active vs idle users. Look at message counts per connection. Connections that received any incoming or outgoing messages in the last 10 minutes are not affected. Connections with zero messages for 10 minutes are exactly the affected set.",
+      "Look up the limit. API Gateway WebSocket has a 10-minute idle timeout (no incoming or outgoing data on the connection). This limit is fixed by the service and cannot be raised by configuration or quota request.",
+      "Choose a fix. Three options. (1) Application-layer heartbeat: client sends a ping message every 5 minutes; server $default Lambda treats it as a no-op. Simplest fix; works on the existing API Gateway product. (2) AppSync subscriptions: managed long-lived WebSockets for GraphQL clients; AppSync handles connection lifecycle and idle ping internally. (3) ALB + ECS or EC2 WebSocket termination: idle timeout configurable up to 4,000 seconds; you own the WebSocket server.",
+      "Implement the heartbeat. On the client, set a JS timer or platform equivalent: every 5 minutes (300_000 ms), send a JSON message like `{\"action\":\"ping\"}`. On the server, add a ping route in the WebSocket API that returns immediately or no-ops. Confirm via load test that idle users no longer disconnect at 10 minutes.",
+      "Improve the reconnect UX. The fix above prevents idle disconnects, but unrelated network blips can still close the connection. Add a small banner that says 'reconnecting...' when the WebSocket is in CLOSING or CLOSED state and 'connected' when OPEN. On reconnect, fetch any messages with timestamp greater than the last seen message so the user does not miss anything.",
+      "Add monitoring. CloudWatch alarms on $disconnect rate and on the count of CONNECT_DURATION near 600 seconds. Idle disconnects should drop to near zero after the heartbeat ships."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Connections hit the 2-hour maximum connection duration",
+        "how_it_differs": "Even with a heartbeat, API Gateway WebSocket terminates connections after 2 hours regardless of activity. Customers in a 4-hour Zoom-style chat see disconnects at the 2-hour mark.",
+        "prevention": "Have the client gracefully reconnect at the 2-hour mark (or proactively at 1h55m). The reconnect handshake should include a resume token so the conversation continues seamlessly."
+      },
+      {
+        "scenario": "PostToConnection on a closed connection returns GoneException and the Lambda crashes",
+        "how_it_differs": "The fan-out Lambda treats GoneException as an unhandled error and the SQS message goes to DLQ. Other recipients also do not get the message. Different from the original cause but a common follow-on bug.",
+        "prevention": "Catch GoneException explicitly and treat it as a normal cleanup signal. Delete the connectionId from DynamoDB and continue with the other recipients."
+      },
+      {
+        "scenario": "$connect Lambda timeout drops the handshake",
+        "how_it_differs": "The $connect Lambda has a 5-second timeout and does heavy auth work that occasionally exceeds it. Some users cannot connect at all. Different from the idle disconnect; presents as failed handshake instead of dropped session.",
+        "prevention": "Keep $connect lean. Validate the JWT with a public-key check (no DB lookup), write the connectionId to DynamoDB, return. Defer richer profile loads to a follow-up message after connect."
+      },
+      {
+        "scenario": "DynamoDB writes in $connect throttle and connections are accepted but not tracked",
+        "how_it_differs": "API Gateway accepts the connection because $connect returned 200, but the DynamoDB write failed or was throttled. The connection exists but cannot receive fan-out messages. Looks like a delivery problem, not a disconnect problem.",
+        "prevention": "Treat DynamoDB write failure in $connect as a hard error; reject the connection so the client retries. Or use DAX-fronted DynamoDB to absorb bursts."
+      }
+    ],
+    "sop_practices": [
+      "For chat-style WebSocket workloads where users may be idle for extended periods, build a heartbeat into the client from day one. A 5-minute ping is sufficient for API Gateway's 10-minute idle timeout; pick something shorter than half the timeout to allow for jitter and missed pings.",
+      "Pick the right WebSocket platform for the workload. API Gateway WebSocket is the simplest and works well for short-lived turn-taking traffic; AppSync subscriptions are best for GraphQL chat with built-in lifecycle; ALB+ECS gives the most control and the longest idle timeouts. Match the platform to the conversation length.",
+      "Build robust client reconnect from day one. Detect closed states, surface them visually, refetch missed messages after reconnect. Even with heartbeats, network blips happen, and a silent reconnect that loses messages is a bug.",
+      "Treat GoneException in PostToConnection as a normal cleanup signal, not an error. Delete the connectionId from your store and continue. Errors here cascade because the SQS message gets retried and you re-attempt all recipients."
+    ]
+  }
+}

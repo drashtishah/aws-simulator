@@ -1,0 +1,58 @@
+                  +-------------------------+
+                  | Vaultlinen client       |
+                  | [PROBLEM: NO HEARTBEAT  |
+                  |  No periodic ping; no   |
+                  |  no-op activity to keep |
+                  |  idle WebSocket alive]  |
+                  +-----------+-------------+
+                              |
+                              | WebSocket open + messages only
+                              v
+                  +-------------------------+
+                  | API Gateway WebSocket   |
+                  | vaultlinen-chat         |
+                  | [LIMIT:                 |
+                  |  Idle timeout = 10 min  |
+                  |  (cannot be raised);    |
+                  |  Max duration = 2h]     |
+                  +-----+---------+---------+
+                        |         |
+              $connect  |         | $default     $disconnect
+                        v         v                  v
+                 +----------+  +----------+   +-----------+
+                 | $connect |  | $default |   | $disconnect|
+                 | Lambda   |  | Lambda   |   | Lambda    |
+                 +----+-----+  +----+-----+   +----+------+
+                                                   |
+                                                   v
+                                              [Connection ended;
+                                               status 1001
+                                               "client inactivity"
+                                               = idle 10 min]
+
+  Failure chain:
+    1. User opens Vaultlinen, joins a workspace, watches threads silently
+    2. No client-side heartbeat means no traffic on the WebSocket
+    3. After 10 minutes of no incoming/outgoing data, API Gateway closes
+       the WebSocket with status 1001
+    4. Client's reconnect logic re-establishes the WebSocket silently
+    5. Messages that arrived during the gap are not refetched
+    6. User sees stale UI; later notices "missing messages"
+
+  Two-part fix:
+    Part A (server-aware client heartbeat):
+      Client sends every 5 minutes:
+        ws.send(JSON.stringify({action: "ping"}))
+      Server has a "ping" route in the WebSocket API that no-ops or
+      returns "pong". This counts as activity and resets the idle timer.
+
+    Part B (reconnect UX):
+      On WebSocket close, show a "Reconnecting..." banner
+      On reconnect, fetch all messages with timestamp > last_received_at
+      Clear the banner only after the catch-up fetch completes
+
+  Long-term considerations:
+    - 2-hour max connection duration still applies; client should
+      proactively reconnect at 1h55m for long sessions
+    - For workloads with multi-hour idle, consider AppSync subscriptions
+      or ALB+ECS WebSocket termination (idle timeout up to 4,000 sec)

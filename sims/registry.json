@@ -751,6 +751,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-29"
+    },
+    {
+      "id": "053-apigw-websocket-idle-timeout",
+      "title": "Ten Minutes of Silence",
+      "summary": "A team messaging app drops user WebSocket connections after exactly ten minutes of silence, but only for users who go quiet. Active typers stay connected. Customer support is flooded.",
+      "difficulty": 2,
+      "category": "networking",
+      "services": [
+        "api-gateway",
+        "lambda",
+        "dynamodb",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-29"
     }
   ]
 }

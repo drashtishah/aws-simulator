@@ -1,0 +1,69 @@
+                  +-------------------------+
+                  | Vaultlinen client       |
+                  | (web React, iOS,        |
+                  |  Android)               |
+                  +-----------+-------------+
+                              |
+                              | WebSocket open + messages
+                              | (no client heartbeat)
+                              v
+                  +-------------------------+
+                  | API Gateway WebSocket   |
+                  | vaultlinen-chat         |
+                  | wss://chat.vaultlinen.example
+                  | Idle timeout: 10 min    |
+                  | Max duration: 2 hours   |
+                  +-----+---------+---------+
+                        |         |
+              $connect  |         | $default     $disconnect
+                        v         v                  v
+                 +----------+  +----------+   +----------+
+                 | $connect |  | $default |   |$disconnect|
+                 | Lambda   |  | Lambda   |   | Lambda    |
+                 +----+-----+  +----+-----+   +----+-----+
+                      |             |              |
+                      | PutItem     | actions:     | DeleteItem
+                      | connectionId| sendMessage, | connectionId
+                      |             | typing,      |
+                      v             | markRead     v
+                 +-------------+    |         +-----------+
+                 | DynamoDB    |    |         |           |
+                 | vaultlinen- |    |         |           |
+                 | connections |    |         |           |
+                 | (TTL 2h)    |    |         |           |
+                 +-------------+    |         |           |
+                                    v         |           |
+                                 +-------+    |           |
+                                 |Workspaces| |           |
+                                 |/messages | |           |
+                                 |DynamoDB  | |           |
+                                 +-------+--+ |           |
+                                         |    |           |
+                                         |    |           |
+                                         v    v           |
+                              +--------------------+      |
+                              | SQS                |      |
+                              | vaultlinen-msgs    |      |
+                              +--------+-----------+      |
+                                       |                  |
+                                       v                  |
+                              +--------------------+      |
+                              | fan-out Lambda     |      |
+                              | (PostToConnection  |      |
+                              |  for each conn)    |      |
+                              +--------+-----------+      |
+                                       |                  |
+                                       v                  |
+                              +--------------------+      |
+                              | API GW WebSocket   |      |
+                              | management API     |      |
+                              | (back to clients)  |      |
+                              +--------------------+      |
+
+  Telemetry:
+    -> AWS/ApiGateway/WebSocket: ConnectCount, MessageCount, IntegrationError
+    -> Lambda Invocations and Errors per route
+    -> DynamoDB ConsumedRead/WriteCapacityUnits
+    -> Custom: connection_lifetime computed in $disconnect Lambda
+
+  Notable absent: any client-side heartbeat / ping logic.

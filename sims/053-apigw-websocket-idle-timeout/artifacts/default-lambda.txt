@@ -1,0 +1,47 @@
+# Function: vaultlinen-default
+# ARN: arn:aws:lambda:us-east-1:914275832041:function:vaultlinen-default
+# Runtime: nodejs20.x
+# Routes handled: $default, sendMessage, typing, markRead
+
+exports.handler = async (event) => {
+  const { connectionId, routeKey } = event.requestContext;
+  const body = event.body ? JSON.parse(event.body) : {};
+
+  switch (routeKey) {
+    case 'sendMessage':
+      return handleSendMessage(connectionId, body);
+    case 'typing':
+      return handleTyping(connectionId, body);
+    case 'markRead':
+      return handleMarkRead(connectionId, body);
+    case '$default':
+      console.warn('unrecognized action', { connectionId, body });
+      return { statusCode: 400, body: 'unrecognized action' };
+  }
+};
+
+# Notes:
+#   1. There is no `ping` action. Adding one is one more case statement
+#      that returns { statusCode: 200 } and one more route in the WebSocket
+#      API config.
+#   2. Each route's handler updates DynamoDB or fans out via SQS, which
+#      counts as activity. So active typers stay connected.
+#   3. If a client sends nothing for 10 minutes, the connection is closed
+#      from API Gateway's side; this Lambda never sees it. The $disconnect
+#      Lambda runs.
+
+# Suggested fix (the ping route):
+#
+#   case 'ping':
+#     return { statusCode: 200, body: JSON.stringify({ action: 'pong', t: Date.now() }) };
+#
+# Plus add the route in WebSocket API config:
+#
+#   aws apigatewayv2 create-route \
+#     --api-id j8d4k2c9p3 \
+#     --route-key ping \
+#     --target integrations/int-default
+#
+# Plus client-side:
+#
+#   setInterval(() => ws.send(JSON.stringify({ action: 'ping' })), 5 * 60 * 1000);

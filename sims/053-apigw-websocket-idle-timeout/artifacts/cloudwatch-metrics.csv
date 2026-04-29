@@ -1,0 +1,25 @@
+timestamp,namespace,metric_name,api_id,stage,value,unit
+2026-01-29T10:00:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,4682,Seconds
+2026-02-01T10:00:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,3201,Seconds
+2026-03-01T10:00:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,2104,Seconds
+2026-04-01T10:00:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,884,Seconds
+2026-04-29T10:00:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,602,Seconds
+2026-04-29T16:22:00Z,Custom/Vaultlinen,MeanConnectionLifetimeSeconds,j8d4k2c9p3,prod,588,Seconds
+2026-04-29T16:00:00Z,AWS/ApiGateway,ConnectCount,j8d4k2c9p3,prod,12842,Count
+2026-04-29T16:00:00Z,AWS/ApiGateway,MessageCount,j8d4k2c9p3,prod,184193,Count
+2026-04-29T16:22:00Z,AWS/ApiGateway,ConnectCount,j8d4k2c9p3,prod,11894,Count
+2026-04-29T16:22:00Z,AWS/ApiGateway,MessageCount,j8d4k2c9p3,prod,178412,Count
+2026-04-29T16:22:00Z,AWS/ApiGateway,IntegrationError,j8d4k2c9p3,prod,8,Count
+2026-04-29T16:22:00Z,AWS/ApiGateway,ClientError,j8d4k2c9p3,prod,12,Count
+2026-04-29T16:22:00Z,Custom/Vaultlinen,DisconnectsAt10MinExact,j8d4k2c9p3,prod,4218,Count
+2026-04-29T16:00:00Z,Custom/Vaultlinen,DisconnectsAt10MinExact,j8d4k2c9p3,prod,4108,Count
+2026-04-29T15:00:00Z,Custom/Vaultlinen,DisconnectsAt10MinExact,j8d4k2c9p3,prod,3982,Count
+
+# Read the trend:
+#   - MeanConnectionLifetimeSeconds was 4,682s (78 min) three months ago
+#   - Today it is 588s (~10 min)
+#   - The cause: clients disconnecting at the 10-minute idle timeout
+#   - DisconnectsAt10MinExact is a custom metric counting disconnects with
+#     duration in [580, 620] seconds; over 4,000 per hour
+#   - ConnectCount and MessageCount stayed stable because reconnects
+#     replace closed connections

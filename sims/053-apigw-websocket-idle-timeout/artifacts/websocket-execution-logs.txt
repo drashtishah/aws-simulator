@@ -1,0 +1,55 @@
+# Sample of API Gateway WebSocket execution logs
+# CloudWatch Logs group: API-Gateway-Execution-Logs_j8d4k2c9p3/prod
+
+(c-conn-aaa-001) Extended request id: aaa-001
+(c-conn-aaa-001) ConnectionId: aaa-001
+(c-conn-aaa-001) Verifying Usage Plan for connection
+(c-conn-aaa-001) WebSocket connection accepted: connectionId=aaa-001 routeKey=$connect
+2026-04-29T16:11:08.412Z (c-conn-aaa-001) Method completed with status: 200
+
+(c-conn-aaa-001) ConnectionId: aaa-001 routeKey=sendMessage
+2026-04-29T16:13:42.108Z (c-conn-aaa-001) Method completed with status: 200
+
+(c-conn-aaa-001) ConnectionId: aaa-001 routeKey=$disconnect
+2026-04-29T16:21:09.218Z (c-conn-aaa-001) Connection closed (1001): Client inactivity or connection lifetime exceeded
+
+# Read this:
+#   16:11:08  client connects
+#   16:13:42  client sends one message ("sendMessage")
+#   16:21:09  10 minutes after the last message, API Gateway closes with 1001
+#   Total connection lifetime: 10 minutes 1 second after last activity
+
+(c-conn-bbb-002) ConnectionId: bbb-002
+(c-conn-bbb-002) WebSocket connection accepted: connectionId=bbb-002 routeKey=$connect
+2026-04-29T16:14:18.412Z (c-conn-bbb-002) Method completed with status: 200
+
+(c-conn-bbb-002) ConnectionId: bbb-002 routeKey=$disconnect
+2026-04-29T16:24:18.819Z (c-conn-bbb-002) Connection closed (1001): Client inactivity or connection lifetime exceeded
+
+# Read this:
+#   16:14:18  client connects (no $default messages ever)
+#   16:24:18  exactly 10 minutes later, closed with 1001
+#   This is an idle reader who never typed; classic case
+
+(c-conn-ccc-003) ConnectionId: ccc-003 routeKey=$connect
+2026-04-29T16:08:01.412Z (c-conn-ccc-003) Method completed with status: 200
+
+(c-conn-ccc-003) ConnectionId: ccc-003 routeKey=typing
+2026-04-29T16:09:18.108Z
+
+(c-conn-ccc-003) ConnectionId: ccc-003 routeKey=sendMessage
+2026-04-29T16:09:42.382Z
+
+(c-conn-ccc-003) ConnectionId: ccc-003 routeKey=typing
+2026-04-29T16:14:08.418Z
+
+(c-conn-ccc-003) ConnectionId: ccc-003 routeKey=sendMessage
+2026-04-29T16:14:32.119Z
+
+# (still going at 16:30; this is an active typer)
+
+# Pattern across many connections:
+#   - Idle readers: 1001 close at exactly 10 minutes after last activity
+#   - Active typers: stay connected as long as they keep typing
+#   - The 1001 status code is the canonical signature of API Gateway
+#     WebSocket idle timeout firing

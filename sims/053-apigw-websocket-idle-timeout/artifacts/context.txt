@@ -1,0 +1,6 @@
+Company: Vaultlinen (Series A, 38 engineers)
+Industry: B2B team messaging
+Users: 142,000 daily active users across 3,200 workspaces, peak 38,000 concurrent connections
+AWS Services: Amazon API Gateway WebSocket API, AWS Lambda, Amazon DynamoDB, Amazon CloudWatch
+Your role: On-call backend engineer, Thursday 16:22 ET
+Situation: 318 customer tickets today reporting "missed messages" and "disconnects every 10 minutes" but only when reading without typing

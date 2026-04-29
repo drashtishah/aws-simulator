@@ -1,0 +1,45 @@
+{
+  "Table": {
+    "TableName": "vaultlinen-connections",
+    "KeySchema": [
+      { "AttributeName": "connectionId", "KeyType": "HASH" }
+    ],
+    "AttributeDefinitions": [
+      { "AttributeName": "connectionId", "AttributeType": "S" },
+      { "AttributeName": "workspaceId", "AttributeType": "S" }
+    ],
+    "GlobalSecondaryIndexes": [
+      {
+        "IndexName": "byWorkspace",
+        "KeySchema": [
+          { "AttributeName": "workspaceId", "KeyType": "HASH" }
+        ],
+        "Projection": { "ProjectionType": "ALL" }
+      }
+    ],
+    "BillingModeSummary": { "BillingMode": "PAY_PER_REQUEST" },
+    "TimeToLiveDescription": {
+      "AttributeName": "ttl",
+      "TimeToLiveStatus": "ENABLED"
+    }
+  },
+  "_sample_items": [
+    {
+      "connectionId": "aaa-001",
+      "userId": "u-184",
+      "workspaceId": "w-canvas-team",
+      "connectedAt": 1714411868412,
+      "ttl": 1714419068
+    },
+    {
+      "connectionId": "ccc-003",
+      "userId": "u-294",
+      "workspaceId": "w-canvas-team",
+      "connectedAt": 1714411681412,
+      "ttl": 1714418881
+    }
+  ],
+  "_meta": {
+    "note": "TTL set to 2 hours after connect. The TTL is a safety net in case $disconnect does not run; in practice $disconnect runs reliably and removes records cleanly. The byWorkspace GSI is used by the fan-out Lambda to find all connections in a workspace when a new message is posted."
+  }
+}
