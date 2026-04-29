@@ -59,3 +59,4 @@ tags:
 | 049 | [[049-opensearch-indexing-lag-retail/story\|Yesterday's Inventory, Today's Cart]] | 3 - Professional | Data | dynamodb, opensearch, lambda, cloudwatch | 35 min |
 | 050 | [[050-cache-database-cart-drift/story\|The Cart That Forgot Itself]] | 2 - Associate | Reliability | elasticache, dynamodb, lambda, cloudwatch | 30 min |
 | 051 | [[051-api-gateway-streaming-buffer/story\|The Answer That Arrived All at Once]] | 2 - Associate | Operations | api-gateway, lambda, bedrock, cloudwatch | 30 min |
+| 052 | [[052-bedrock-account-tpm-multitenant/story\|The Tenant Who Drank the Pool]] | 3 - Professional | Reliability | bedrock, api-gateway, dynamodb, cloudwatch | 35 min |

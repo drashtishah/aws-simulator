@@ -1,0 +1,49 @@
+{
+  "UsagePlans": [
+    {
+      "id": "up-northwind",
+      "name": "northwind-pro",
+      "description": "Northwind Logistics, Pro tier",
+      "throttle": {
+        "rateLimit": 200.0,
+        "burstLimit": 400
+      },
+      "quota": {
+        "limit": 5000000,
+        "period": "MONTH"
+      },
+      "apiStages": [{ "apiId": "ja8d9c2k3p", "stage": "prod" }]
+    },
+    {
+      "id": "up-canvasware",
+      "name": "canvasware-pro",
+      "description": "Canvasware Inc, Pro tier",
+      "throttle": {
+        "rateLimit": 200.0,
+        "burstLimit": 400
+      },
+      "quota": {
+        "limit": 1000000,
+        "period": "MONTH"
+      },
+      "apiStages": [{ "apiId": "ja8d9c2k3p", "stage": "prod" }]
+    },
+    {
+      "id": "up-tidepoint",
+      "name": "tidepoint-pro",
+      "description": "Tidepoint Holdings, Pro tier",
+      "throttle": {
+        "rateLimit": 200.0,
+        "burstLimit": 400
+      },
+      "quota": {
+        "limit": 1000000,
+        "period": "MONTH"
+      },
+      "apiStages": [{ "apiId": "ja8d9c2k3p", "stage": "prod" }]
+    }
+  ],
+  "_meta": {
+    "note": "Three of the 87 usage plans shown. All Pro-tier tenants have the same per-key throttle (200 rps rate, 400 burst). Throttle is enforced per API key, not in aggregate. This means 87 tenants can each make 200 rps for a theoretical 17,400 rps without any single one being throttled at the gateway. Bedrock RPM/TPM is the actual ceiling and it is account-wide."
+  }
+}

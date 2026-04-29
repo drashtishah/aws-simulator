@@ -1,0 +1,27 @@
+timestamp,namespace,metric_name,api_id,stage,key_id,value,unit
+2026-04-29T09:00:00Z,AWS/ApiGateway,Count,ja8d9c2k3p,prod,up-northwind,28042,Count
+2026-04-29T09:30:00Z,AWS/ApiGateway,Count,ja8d9c2k3p,prod,up-northwind,72148,Count
+2026-04-29T09:45:00Z,AWS/ApiGateway,Count,ja8d9c2k3p,prod,up-northwind,71042,Count
+2026-04-29T09:00:00Z,AWS/ApiGateway,ThrottleEvents,ja8d9c2k3p,prod,up-northwind,0,Count
+2026-04-29T09:30:00Z,AWS/ApiGateway,ThrottleEvents,ja8d9c2k3p,prod,up-northwind,0,Count
+2026-04-29T09:45:00Z,AWS/ApiGateway,ThrottleEvents,ja8d9c2k3p,prod,up-northwind,0,Count
+2026-04-29T09:00:00Z,AWS/ApiGateway,Count,ja8d9c2k3p,prod,up-canvasware,1842,Count
+2026-04-29T09:45:00Z,AWS/ApiGateway,Count,ja8d9c2k3p,prod,up-canvasware,1791,Count
+2026-04-29T09:00:00Z,AWS/ApiGateway,ThrottleEvents,ja8d9c2k3p,prod,up-canvasware,0,Count
+2026-04-29T09:45:00Z,AWS/ApiGateway,ThrottleEvents,ja8d9c2k3p,prod,up-canvasware,0,Count
+2026-04-29T09:00:00Z,AWS/ApiGateway,5XXError,ja8d9c2k3p,prod,-,0.04,Percent
+2026-04-29T09:30:00Z,AWS/ApiGateway,5XXError,ja8d9c2k3p,prod,-,4.20,Percent
+2026-04-29T09:45:00Z,AWS/ApiGateway,5XXError,ja8d9c2k3p,prod,-,14.18,Percent
+2026-04-29T09:48:00Z,AWS/ApiGateway,5XXError,ja8d9c2k3p,prod,-,14.21,Percent
+2026-04-29T09:00:00Z,AWS/ApiGateway,4XXError,ja8d9c2k3p,prod,-,0.18,Percent
+2026-04-29T09:48:00Z,AWS/ApiGateway,4XXError,ja8d9c2k3p,prod,-,0.21,Percent
+
+# Read this:
+#   - Northwind's request count tripled at 09:30 when the backfill ramped
+#   - Northwind's ThrottleEvents stayed at 0 (under their per-key cap)
+#   - Other tenants like canvasware are at normal traffic
+#   - Other tenants ThrottleEvents also at 0 (each tenant under their cap)
+#   - 5XX rate climbed from 0.04% to 14.2% across the API
+#   - 4XX rate stayed at baseline (so the gateway is not issuing the 429s)
+#   - The 429s in customer reports must be coming from invoke-model Lambda
+#     when it surfaces Bedrock's ThrottlingException

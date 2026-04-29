@@ -1,0 +1,62 @@
+                  +-------------------------+
+                  | 87 tenant clients       |
+                  | (each with own API key) |
+                  +-----------+-------------+
+                              |
+                              | POST /v1/answer
+                              v
+                  +-------------------------+
+                  | API Gateway REST API    |
+                  | quirescript-api         |
+                  | + 87 usage plans        |
+                  | (per-key rate=200 rps,  |
+                  |  burst=400)             |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | Authorizer Lambda       |
+                  | validates JWT, emits    |
+                  | tenant_id in context    |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | invoke-model Lambda     |
+                  | (single IAM role for    |
+                  |  all tenants)           |
+                  +-----+-------+-----------+
+                        |       |
+                        |       | DynamoDB GetItem
+                        |       v
+                        |   +-----------------+
+                        |   | quirescript-    |
+                        |   | tenants         |
+                        |   | (per-tenant     |
+                        |   |  config)        |
+                        |   +-----------------+
+                        |
+                        | InvokeModelWithResponseStream
+                        v
+                  +-------------------------+
+                  | Amazon Bedrock          |
+                  | claude-sonnet-4-6       |
+                  | us-east-1               |
+                  | account-wide quotas:    |
+                  |   on-demand RPM = 1,000 |
+                  |   on-demand TPM = 4M    |
+                  +-------------------------+
+
+  Telemetry:
+    -> AWS/Bedrock: InvocationThrottles, InvocationLatency,
+       InputTokenCount, OutputTokenCount, EstimatedTPMQuotaUsage
+       (per ModelId)
+    -> AWS/ApiGateway: 5XXError, 4XXError, ThrottleEvents (per usage plan)
+    -> Bedrock model invocation logs (CloudWatch Logs) include input/output
+       token count and IAM principal per call
+    -> API Gateway access logs include tenant_id from request context
+
+  Cross-cutting:
+    -> All tenants share one AWS account
+    -> All tenants hit one model in one region
+    -> No application-layer per-tenant token limiter

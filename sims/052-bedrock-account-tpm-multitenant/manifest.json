@@ -1,0 +1,191 @@
+{
+  "id": "052-bedrock-account-tpm-multitenant",
+  "title": "The Tenant Who Drank the Pool",
+  "summary": "A multi-tenant AI platform's per-customer rate limits all show well under quota, but every customer is suddenly getting 429 ThrottlingException. The big customer running a backfill is fine.",
+  "difficulty": 3,
+  "category": "reliability",
+  "services": ["bedrock", "api-gateway", "dynamodb", "cloudwatch"],
+  "tags": ["bedrock", "tpm-quota", "multi-tenant", "rate-limiting", "fairness"],
+  "estimated_minutes": 35,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAP-C02:Domain2:NewSolutions",
+    "SCS-C02:Domain4:IdentityAccessManagement",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Quirescript",
+    "industry": "B2B AI knowledge platform",
+    "size": "Series B, 64 engineers, 87 enterprise tenants"
+  },
+  "glossary": {
+    "Tokens per minute (TPM)": "A Bedrock service quota measuring tokens consumed by your account in a one-minute window. Includes input tokens, output tokens, and tokens reserved by the max_tokens parameter. The quota is account-wide for a given model and region.",
+    "Requests per minute (RPM)": "A Bedrock service quota measuring how many model invocations your account can make per minute. Like TPM, this is account-wide.",
+    "ThrottlingException": "The error Bedrock returns when a request would exceed your account's TPM or RPM quota for the model. The AWS SDK retries with exponential backoff before giving up.",
+    "API Gateway usage plan": "A throttle and quota policy attached to one or more API keys. Enforces per-key request rate (rps) and burst limits. Independent of any service quota at the model layer.",
+    "Cross-region inference profile": "A Bedrock inference profile that lets a single API call route to one of several AWS Regions. Effective TPM is the sum of per-region quotas (or higher for Global profiles). Used to expand capacity beyond a single region's quota.",
+    "Provisioned Throughput": "A Bedrock pricing and capacity model where you reserve dedicated tokens-per-minute capacity for a model. Higher cost but isolated from on-demand TPM contention.",
+    "Token-aware rate limiter": "A rate limiter that tracks tokens consumed (not just requests made) over a sliding window. Required for fair multi-tenant LLM platforms because token cost varies wildly between requests.",
+    "Account-wide quota": "A service quota that applies to the whole AWS account, regardless of which IAM user, role, or API key initiated the request. Bedrock TPM is account-wide; this is the source of multi-tenant fairness problems."
+  },
+  "system": {
+    "what_broke": "All 87 Quirescript tenants share a single AWS account whose Bedrock TPM quota for claude-sonnet-4-6 in us-east-1 is 4,000,000 TPM. At 09:14 UTC, tenant Northwind Logistics started a planned backfill that processed 2.6M support tickets through the model. The backfill drove account TPM utilization to 98% within 18 minutes. Per-tenant rate limits at API Gateway are configured per-key (rate 200 rps, burst 400) and showed no throttling, but Bedrock began returning ThrottlingException to all tenants because the account-wide TPM was exhausted. Northwind's API key continued to work because their average per-call token cost is small (300 input + 200 output) while the throttle applies based on cumulative TPM, not per-key. Other tenants whose calls happened to land when the rolling TPM was at the cap got 429s.",
+    "data_flow": "Tenant client sends POST /v1/answer to api.quirescript.example. API Gateway REST API enforces per-key throttle via usage plans. authorizer Lambda validates the JWT and emits the tenant_id in the request context. invoke-model Lambda reads tenant_id, looks up tenant config in DynamoDB, calls Bedrock InvokeModelWithResponseStream against claude-sonnet-4-6 in us-east-1. Response is streamed back to the client.",
+    "components": [
+      {
+        "name": "quirescript-api (API Gateway REST API)",
+        "role": "Public entry point for all tenants. Custom domain with one endpoint per tenant API key. Usage plans enforce per-key throttle and quota.",
+        "connections": ["Receives POST /v1/answer from tenant clients", "Throttles via usage plan per API key", "Forwards to invoke-model Lambda"],
+        "failure_impact": "Per-key throttling protects each tenant's request rate but does not see Bedrock-level token consumption. Multi-tenant fairness must be enforced at a layer that knows about token cost, not request count."
+      },
+      {
+        "name": "invoke-model (Lambda function)",
+        "role": "Per-request handler. Looks up tenant config in DynamoDB, builds the prompt, calls Bedrock with streaming, returns chunks to client.",
+        "connections": ["Calls Bedrock claude-sonnet-4-6 in us-east-1", "Reads quirescript-tenants DynamoDB table for tenant config"],
+        "failure_impact": "When Bedrock throttles, the Lambda receives ThrottlingException and surfaces it to the tenant client. No retry queueing, no fairness, no per-tenant token accounting."
+      },
+      {
+        "name": "claude-sonnet-4-6 (Bedrock model, us-east-1)",
+        "role": "Foundation model serving all tenants. Account-wide quota of 4,000,000 TPM and 1,000 RPM in us-east-1.",
+        "connections": ["Receives invocations from invoke-model Lambda", "Emits CloudWatch metrics: InvocationThrottles, InputTokenCount, OutputTokenCount, EstimatedTPMQuotaUsage"],
+        "failure_impact": "When account TPM is exceeded, Bedrock returns ThrottlingException to all callers. Per-key context is invisible to Bedrock; the throttle is account-level."
+      },
+      {
+        "name": "Northwind backfill (one tenant's batch job)",
+        "role": "Processes 2.6 million historical support tickets through the model to generate auto-summaries. Started at 09:14 UTC.",
+        "connections": ["Calls the same /v1/answer endpoint with Northwind's API key, at 1,200 rps sustained", "Each call averages 300 input tokens + 200 output tokens"],
+        "failure_impact": "Burns ~600,000 TPM continuously, occupying ~15% of the account quota for itself. Combined with normal traffic from other tenants, pushes the account over 100% utilization."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/bedrock-quotas.json",
+        "artifacts/bedrock-invocation-logs.txt"
+      ],
+      "capabilities": [
+        "list_foundation_models",
+        "get_inference_profile",
+        "get_provisioned_model_throughput"
+      ]
+    },
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/api-gateway-usage-plans.json",
+        "artifacts/api-gateway-throttle-metrics.csv"
+      ],
+      "capabilities": [
+        "get_usage_plan",
+        "get_usage_plan_keys",
+        "get_usage"
+      ]
+    },
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/dynamodb-tenant-config.json"
+      ],
+      "capabilities": [
+        "get_item",
+        "query",
+        "describe_table"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "get_metric_data",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Multiple tenants are getting 429s. Where in the stack is the throttling actually happening?",
+    "API Gateway throttles by API key. What service quotas does Bedrock enforce, and at what scope?",
+    "Bedrock has CloudWatch metrics like InvocationThrottles and EstimatedTPMQuotaUsage. What do they look like for your account?",
+    "Bedrock TPM is account-wide for a model in a region. One heavy tenant can starve all others if there is no application-layer fairness.",
+    "The fix is at the application layer: token-aware per-tenant rate limiting plus cross-region inference for headroom."
+  ],
+  "resolution": {
+    "root_cause": "Bedrock's TPM quota for claude-sonnet-4-6 in us-east-1 is account-wide (4,000,000 TPM). API Gateway usage plans enforce per-key request throttling but have no visibility into Bedrock token consumption. Northwind's backfill at 1,200 rps with ~500 tokens per call drives account TPM utilization to 98%; remaining headroom is consumed by normal traffic from other tenants; bursts push over the line and Bedrock returns ThrottlingException to whichever tenant happened to land in that millisecond.",
+    "fix_criteria": [
+      {
+        "id": "identify_throttling_at_bedrock_not_apigw",
+        "description": "Player notices that API Gateway throttle counters are zero while Bedrock InvocationThrottles is non-zero, locating the throttle at the model layer not the gateway",
+        "required": true
+      },
+      {
+        "id": "identify_account_wide_quota",
+        "description": "Player articulates that Bedrock TPM is account-wide, so per-tenant API Gateway throttling cannot prevent multi-tenant TPM exhaustion",
+        "required": true
+      },
+      {
+        "id": "identify_heavy_tenant",
+        "description": "Player finds the high-volume tenant (Northwind) by sampling Bedrock invocation logs or token counts per API key over the last hour",
+        "required": true
+      },
+      {
+        "id": "propose_token_aware_rate_limiter",
+        "description": "Player proposes per-tenant token-aware rate limiting in the application layer (sliding window of tokens consumed, throttle per tenant rather than per request)",
+        "required": true
+      },
+      {
+        "id": "propose_cross_region_or_provisioned",
+        "description": "Player proposes cross-region inference profiles for additional capacity, or moving the heavy tenant to provisioned throughput",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How Bedrock service quotas are scoped (account-wide for on-demand TPM/RPM per model per region)",
+      "Why per-key API Gateway throttling is insufficient for fair LLM multi-tenancy",
+      "How to read Bedrock CloudWatch metrics: InvocationThrottles, EstimatedTPMQuotaUsage, InputTokenCount, OutputTokenCount",
+      "How token-aware rate limiting works (sliding window of cumulative tokens) and why it differs from RPS rate limiting",
+      "When to use cross-region inference profiles vs Provisioned Throughput vs application-layer fairness"
+    ],
+    "sop_steps": [
+      "Locate the throttle. Tenants are reporting 429 errors. The first question is which layer returned the 429. Check API Gateway throttle counters per API key (CloudWatch metric `Throttle` and `Count` on the usage plan). If the gateway shows zero throttle events, the 429 is coming from a downstream service.",
+      "Look at Bedrock metrics. Pull `AWS/Bedrock` `InvocationThrottles` for claude-sonnet-4-6 in us-east-1. If it is non-zero, Bedrock is rejecting calls. Pull `EstimatedTPMQuotaUsage` for the same model; if it is over 90%, the account is at or near its TPM ceiling.",
+      "Find the heavy spender. Bedrock model invocation logs (if enabled) record the input token count, output token count, and IAM principal that made each call. Group by IAM principal and rank by total tokens in the affected window. The top contributor is usually the cause.",
+      "Match the IAM principal to a tenant. Each tenant routes through the invoke-model Lambda, which assumes a single IAM role; the tenant identity is in the request context, not in the IAM principal. So the right query is on Bedrock invocation logs joined to API Gateway access logs by request ID. The tenant_id field in the gateway access log identifies who made the call.",
+      "Stop the bleeding for other tenants. Two options. First, ask the heavy tenant (Northwind) to pause their backfill. Second, deploy a per-tenant token bucket in the invoke-model Lambda that caps each tenant at, say, 400,000 TPM. Northwind hits the cap, Bedrock TPM drops, other tenants stop getting throttled.",
+      "Add structural fairness. Implement a token-aware rate limiter at the Lambda layer. Track tokens consumed per tenant in a sliding 60-second window (DynamoDB or DAX). Reject the call locally if the tenant's running total would exceed the per-tenant cap. This is fairness via local enforcement; it does not require Bedrock to know about tenants.",
+      "Expand the headroom. Move from single-region us-east-1 inference to a cross-region inference profile (Geographic for compliance, Global for max throughput). Effective TPM grows by the sum of all destination regions plus a Global premium. No code change beyond passing the inference profile ARN instead of the model ID.",
+      "Move heavy tenants to Provisioned Throughput. For tenants whose steady-state load is large enough to risk exhausting on-demand quota, buy them dedicated capacity. Their invocations route to provisioned model units and do not contend with on-demand TPM."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "One tenant's prompt is enormous and burns the per-call token budget",
+        "how_it_differs": "Throttle is at the model not the gateway, but the cause is one tenant making a small number of very expensive calls (200K-token prompts) rather than many normal calls. Same TPM impact, different traffic shape.",
+        "prevention": "Cap max prompt size per tenant in the invoke-model Lambda. For tenants that genuinely need long context, route them to a provisioned-throughput model instance so they do not contend with on-demand TPM."
+      },
+      {
+        "scenario": "Bedrock tokens are reserved by max_tokens, not just consumed",
+        "how_it_differs": "A tenant sets max_tokens to a very high value (4096) for short answers. Bedrock reserves the full max_tokens against your TPM quota at request start, even if the actual output is much shorter. TPM utilization climbs faster than actual token spend.",
+        "prevention": "Cap max_tokens in the invoke-model Lambda based on the use case. Default to a tight value (256-512) and let tenants opt up only with explicit configuration. Monitor reserved-vs-actual token ratios."
+      },
+      {
+        "scenario": "SDK retry storm under throttle",
+        "how_it_differs": "When throttles begin, every Lambda invocation retries with exponential backoff. The retries themselves consume RPM quota and add to the throttle, prolonging the incident. Different from the original cause but a common amplifier.",
+        "prevention": "Configure SDK retry mode to `adaptive` so retry rate adjusts based on observed throttling. Cap max_attempts to a small number (3) and surface the failure to the tenant rather than retrying forever."
+      },
+      {
+        "scenario": "A new region rollout did not include a quota request",
+        "how_it_differs": "You launched in us-west-2 last week. Default new-region Bedrock TPM is much lower than us-east-1. Traffic that lands in us-west-2 throttles even though the model and code are identical. Looks regional rather than tenant-driven.",
+        "prevention": "Treat Bedrock quota requests as a launch-checklist item for any new region. Default quotas vary by region; us-east-1 typically has the highest. File quota increase requests early because they take days to process."
+      }
+    ],
+    "sop_practices": [
+      "Treat Bedrock TPM as a shared resource and enforce per-tenant fairness in your application layer. Sliding-window token-aware rate limiters in the invoke path are the standard primitive. Per-key API Gateway throttling is necessary but not sufficient.",
+      "Alarm on EstimatedTPMQuotaUsage at 70% so you have time to react before throttling begins. Pair with InvocationThrottles > 0 as a paging alarm. Without these alarms, the failure is first noticed as customer complaints, hours after capacity ran out.",
+      "Use cross-region inference profiles for capacity headroom. Geographic profiles for data-residency-bound workloads, Global profiles for the highest throughput. The cost is the same as single-region (Global is actually about 10% cheaper) and the change is one parameter.",
+      "Move large or business-critical tenants to Provisioned Throughput. Buy dedicated model units that are isolated from on-demand contention. Cost is higher but performance is predictable, which matters when SLAs are involved."
+    ]
+  }
+}

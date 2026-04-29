@@ -1,0 +1,6 @@
+Company: Quirescript (Series B, 64 engineers)
+Industry: B2B AI knowledge platform with white-labeled AI assistants
+Users: 87 enterprise tenants, top 10 average 50k requests/day, total 4.2M requests/day
+AWS Services: Amazon Bedrock, Amazon API Gateway, Amazon DynamoDB, Amazon CloudWatch
+Your role: On-call platform engineer, Tuesday 09:48 UTC
+Situation: 41 tenants reporting 429 errors simultaneously; per-key API Gateway throttle counters all zero

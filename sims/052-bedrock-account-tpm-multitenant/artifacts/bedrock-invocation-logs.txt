@@ -1,0 +1,32 @@
+# Bedrock model invocation log sample (us-east-1, claude-sonnet-4-6)
+# CloudWatch Logs group: /aws/bedrock/modelinvocations
+# Records sampled from 2026-04-29T09:30:00Z to 09:38:00Z
+
+{"timestamp":"2026-04-29T09:30:18.412Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":312},"output":{"outputTokenCount":204},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-nw-0001-northwind","status":"Success"}
+{"timestamp":"2026-04-29T09:30:19.108Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":284},"output":{"outputTokenCount":192},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-nw-0002-northwind","status":"Success"}
+{"timestamp":"2026-04-29T09:30:20.224Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":1842},"output":{"outputTokenCount":612},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-mb-0042-mintbridge","status":"Success"}
+{"timestamp":"2026-04-29T09:32:02.418Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":708},"output":{"outputTokenCount":0},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-cv-0014-canvasware","status":"ThrottlingException","errorMessage":"Too many tokens, please wait before trying again."}
+{"timestamp":"2026-04-29T09:32:03.103Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":341},"output":{"outputTokenCount":248},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-nw-0114-northwind","status":"Success"}
+{"timestamp":"2026-04-29T09:32:04.218Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":4204},"output":{"outputTokenCount":0},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-tp-0089-tidepoint","status":"ThrottlingException","errorMessage":"Too many tokens, please wait before trying again."}
+{"timestamp":"2026-04-29T09:32:05.042Z","modelId":"anthropic.claude-sonnet-4-6-20251020","input":{"inputTokenCount":318},"output":{"outputTokenCount":219},"identity":{"arn":"arn:aws:sts::418302947183:assumed-role/quirescript-invoke-model-role/quirescript-invoke-model"},"requestId":"r-nw-0115-northwind","status":"Success"}
+
+# Note: identity.arn is the same for every record because all 87 tenants
+# share one IAM role on invoke-model Lambda. To attribute tokens to tenants
+# you must join requestId against API Gateway access logs which include the
+# tenant_id from the JWT.
+#
+# A CloudWatch Logs Insights query that does the math:
+#
+#   fields @timestamp, requestId, input.inputTokenCount, output.outputTokenCount
+#   | filter modelId = "anthropic.claude-sonnet-4-6-20251020"
+#   | parse requestId /r-(?<tenant_short>[a-z]{2})-/
+#   | stats sum(input.inputTokenCount + output.outputTokenCount) as total_tokens
+#       by tenant_short
+#   | sort total_tokens desc
+#
+# Result for the 8-minute window above:
+#   tenant_short  total_tokens
+#   nw            4,832,148   (Northwind, the backfill)
+#   mb              218,402
+#   tp              184,290
+#   ... 84 other tenants smaller

@@ -1,0 +1,82 @@
+                  +-------------------------+
+                  | 87 tenant clients       |
+                  | (1 tenant: Northwind    |
+                  |  backfill at 1,200 rps  |
+                  |  ~500 tokens/call)      |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | API Gateway REST API    |
+                  | quirescript-api         |
+                  | + 87 usage plans        |
+                  | [PER-KEY THROTTLE       |
+                  |  COUNTERS ALL ZERO;     |
+                  |  Northwind under their  |
+                  |  per-key cap]           |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | Authorizer Lambda       |
+                  +-----------+-------------+
+                              |
+                              v
+                  +-------------------------+
+                  | invoke-model Lambda     |
+                  | [PROBLEM: no per-tenant |
+                  |  token-aware limiter;   |
+                  |  every tenant call goes |
+                  |  to Bedrock if API GW   |
+                  |  did not throttle]      |
+                  +-----+-------+-----------+
+                        |       |
+                        |       v
+                        |   +-----------------+
+                        |   | quirescript-    |
+                        |   | tenants         |
+                        |   +-----------------+
+                        |
+                        v
+                  +-------------------------+
+                  | Amazon Bedrock          |
+                  | claude-sonnet-4-6       |
+                  | us-east-1               |
+                  | [PROBLEM: account TPM   |
+                  |  quota = 4,000,000;     |
+                  |  EstimatedTPMQuotaUsage |
+                  |  = 98%; InvocationThrott|
+                  |  les non-zero;          |
+                  |  ThrottlingException to |
+                  |  whichever tenant lands |
+                  |  in the over-cap moment]|
+                  +-------------------------+
+
+  Failure chain:
+    1. Northwind backfill drives ~600,000 TPM (15% of account quota)
+    2. 86 other tenants doing normal traffic add ~3.2M TPM
+    3. Account TPM utilization climbs to 98%
+    4. Bursts above 4M TPM/min get ThrottlingException
+    5. Northwind rarely throttles (steady stream); other tenants take the hit
+       on the bursts when their requests happen to land at peak
+    6. Tenant clients see 429 from invoke-model Lambda; gateway throttle
+       counters all zero; cause is one layer below the gateway
+
+  Two-stage fix:
+    Stage 1 (immediate):
+      - Pause Northwind backfill via control channel
+      - Account TPM falls to 65%; throttling stops
+      - Tenant 5xx rates return to baseline within 5 minutes
+
+    Stage 2 (structural):
+      a. Token-aware per-tenant rate limiter in invoke-model Lambda:
+         sliding 60-second window of tokens consumed per tenant_id,
+         stored in DAX-fronted DynamoDB; reject locally above per-tenant
+         cap (e.g., 400,000 TPM)
+      b. Cross-region inference profile (us-east-1 + us-west-2 + us-east-2)
+         to triple effective capacity without code change
+      c. Northwind moved to Provisioned Throughput (15 model units,
+         dedicated 750k TPM) so future backfills do not contend with
+         on-demand at all
+      d. CloudWatch alarms on EstimatedTPMQuotaUsage > 70% (warn) and
+         > 90% (page); InvocationThrottles > 0 (page)

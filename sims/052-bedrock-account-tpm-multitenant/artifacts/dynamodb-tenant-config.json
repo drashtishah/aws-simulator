@@ -1,0 +1,47 @@
+{
+  "Items": [
+    {
+      "tenant_id": { "S": "northwind-logistics" },
+      "tier": { "S": "pro" },
+      "monthly_quota": { "N": "5000000" },
+      "branding": {
+        "M": {
+          "company_name": { "S": "Northwind Logistics" },
+          "primary_color": { "S": "#1f3a5f" }
+        }
+      },
+      "model_config": {
+        "M": {
+          "model_id": { "S": "anthropic.claude-sonnet-4-6-20251020" },
+          "max_tokens": { "N": "1024" },
+          "temperature": { "N": "0.7" }
+        }
+      },
+      "_meta": { "S": "Backfill in progress; processed 1.42M / 2.6M tickets as of 09:48 UTC" }
+    },
+    {
+      "tenant_id": { "S": "canvasware" },
+      "tier": { "S": "pro" },
+      "monthly_quota": { "N": "1000000" },
+      "model_config": {
+        "M": {
+          "model_id": { "S": "anthropic.claude-sonnet-4-6-20251020" },
+          "max_tokens": { "N": "1024" }
+        }
+      }
+    },
+    {
+      "tenant_id": { "S": "tidepoint" },
+      "tier": { "S": "enterprise" },
+      "monthly_quota": { "N": "10000000" },
+      "model_config": {
+        "M": {
+          "model_id": { "S": "anthropic.claude-sonnet-4-6-20251020" },
+          "max_tokens": { "N": "2048" }
+        }
+      },
+      "_meta": { "S": "SLA: 99.95% on /v1/answer" }
+    }
+  ],
+  "_note": "Three of 87 tenant rows shown. Each tenant has its own model config and monthly quota. There is no per-tenant token-per-minute field; the platform has not yet implemented a token-aware rate limiter. The monthly_quota is enforced by API Gateway usage plans (which count requests, not tokens) and by a billing-side reconciliation job that runs nightly."
+}

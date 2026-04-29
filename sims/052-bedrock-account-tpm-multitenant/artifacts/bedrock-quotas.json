@@ -1,0 +1,35 @@
+{
+  "AccountId": "418302947183",
+  "Region": "us-east-1",
+  "Quotas": [
+    {
+      "QuotaName": "On-demand model inference requests per minute for Anthropic Claude Sonnet 4.6",
+      "QuotaCode": "L-A8C8E2D8",
+      "ServiceCode": "bedrock",
+      "AppliedQuotaValue": 1000,
+      "Adjustable": true,
+      "GlobalQuota": false,
+      "Period": {
+        "PeriodValue": 1,
+        "PeriodUnit": "MINUTE"
+      }
+    },
+    {
+      "QuotaName": "On-demand model inference tokens per minute for Anthropic Claude Sonnet 4.6",
+      "QuotaCode": "L-D9F7B3E5",
+      "ServiceCode": "bedrock",
+      "AppliedQuotaValue": 4000000,
+      "Adjustable": true,
+      "GlobalQuota": false,
+      "Period": {
+        "PeriodValue": 1,
+        "PeriodUnit": "MINUTE"
+      }
+    }
+  ],
+  "InferenceProfiles": [],
+  "ProvisionedThroughputModels": [],
+  "_meta": {
+    "note": "Account-wide quotas. RPM = 1,000 and TPM = 4,000,000 for claude-sonnet-4-6 in us-east-1. No cross-region inference profiles are configured. No provisioned throughput is purchased. The platform routes all 87 tenants through this single quota."
+  }
+}

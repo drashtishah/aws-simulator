@@ -736,6 +736,21 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-04-29"
+    },
+    {
+      "id": "052-bedrock-account-tpm-multitenant",
+      "title": "The Tenant Who Drank the Pool",
+      "summary": "A multi-tenant AI platform's per-customer rate limits all show well under quota, but every customer is suddenly getting 429 ThrottlingException. The big customer running a backfill is fine.",
+      "difficulty": 3,
+      "category": "reliability",
+      "services": [
+        "bedrock",
+        "api-gateway",
+        "dynamodb",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 35,
+      "created": "2026-04-29"
     }
   ]
 }
