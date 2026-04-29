@@ -1,0 +1,33 @@
+2026-04-29T13:42:08.412Z (req-abc-001) Starting execution for request: stage=prod, resource=/v1/messages, method=POST
+2026-04-29T13:42:08.421Z (req-abc-001) HTTP Method: POST, Resource Path: /v1/messages
+2026-04-29T13:42:08.428Z (req-abc-001) Method request body before transformations: {"conversation_id":"c8a72e","content":"Write me a 1500 word essay about the history of typewriters."}
+2026-04-29T13:42:08.430Z (req-abc-001) Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:912483710284:function:chat-completions/invocations
+2026-04-29T13:42:37.430Z (req-abc-001) Endpoint response timeout: 29000ms
+2026-04-29T13:42:37.432Z (req-abc-001) Execution failed due to configuration error: Endpoint Request Timed Out
+2026-04-29T13:42:37.434Z (req-abc-001) Method completed with status: 504
+
+2026-04-29T13:42:48.118Z (req-abc-002) Starting execution for request: stage=prod, resource=/v1/messages, method=POST
+2026-04-29T13:42:48.124Z (req-abc-002) HTTP Method: POST, Resource Path: /v1/messages
+2026-04-29T13:42:48.128Z (req-abc-002) Method request body before transformations: {"conversation_id":"c91d3f","content":"Hello!"}
+2026-04-29T13:42:48.130Z (req-abc-002) Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:912483710284:function:chat-completions/invocations
+2026-04-29T13:42:51.842Z (req-abc-002) Endpoint response body after transformations: {"role":"assistant","content":"Hello! How can I help you today?"}
+2026-04-29T13:42:51.842Z (req-abc-002) Method completed with status: 200
+
+2026-04-29T13:43:05.402Z (req-abc-003) Starting execution for request: stage=prod, resource=/v1/messages, method=POST
+2026-04-29T13:43:05.407Z (req-abc-003) HTTP Method: POST, Resource Path: /v1/messages
+2026-04-29T13:43:05.412Z (req-abc-003) Method request body before transformations: {"conversation_id":"c34a89","content":"Explain monads in plain English with three examples in TypeScript."}
+2026-04-29T13:43:05.414Z (req-abc-003) Sending request to https://lambda.us-east-1.amazonaws.com/2015-03-31/functions/arn:aws:lambda:us-east-1:912483710284:function:chat-completions/invocations
+2026-04-29T13:43:25.804Z (req-abc-003) Endpoint response body after transformations: {"role":"assistant","content":"A monad is..."}
+2026-04-29T13:43:25.804Z (req-abc-003) Method completed with status: 200
+
+# Pattern:
+#   - req-abc-001: 1500-word essay request, took >29 seconds, gateway returned 504
+#     to client even though Lambda kept running.
+#   - req-abc-002: short hello, completed in 3.7 seconds, 200 OK.
+#     But arrived as one block, not streamed.
+#   - req-abc-003: medium response (monads explanation), 20 seconds,
+#     succeeded but again as one block.
+#
+# All three requests show "Endpoint response body after transformations" as
+# a complete JSON object, confirming the gateway received the full response
+# from Lambda before forwarding (or before timing out).

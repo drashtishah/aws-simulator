@@ -721,6 +721,21 @@
       ],
       "estimated_minutes": 30,
       "created": "2026-04-29"
+    },
+    {
+      "id": "051-api-gateway-streaming-buffer",
+      "title": "The Answer That Arrived All at Once",
+      "summary": "An AI chat product migrates its endpoint to API Gateway for managed auth. Token-by-token streaming responses now arrive as one giant blob after thirty seconds, then a 504. It worked yesterday.",
+      "difficulty": 2,
+      "category": "operations",
+      "services": [
+        "api-gateway",
+        "lambda",
+        "bedrock",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-29"
     }
   ]
 }

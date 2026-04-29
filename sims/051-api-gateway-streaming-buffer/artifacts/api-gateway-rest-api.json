@@ -1,0 +1,43 @@
+{
+  "RestApi": {
+    "id": "j8d4k2c9p3",
+    "name": "latticelens-chat-api",
+    "createdDate": "2026-04-28T22:00:18.412Z",
+    "endpointConfiguration": {
+      "types": ["REGIONAL"]
+    },
+    "apiKeySource": "HEADER",
+    "minimumCompressionSize": 0
+  },
+  "Resources": [
+    { "id": "/", "path": "/" },
+    { "id": "abc123", "path": "/v1" },
+    { "id": "def456", "path": "/v1/messages" },
+    { "id": "ghi789", "path": "/v1/conversations" }
+  ],
+  "Methods": {
+    "/v1/messages POST": {
+      "authorizationType": "CUSTOM",
+      "authorizerId": "auth-jwt-1",
+      "apiKeyRequired": false,
+      "methodIntegration": {
+        "type": "AWS_PROXY",
+        "httpMethod": "POST",
+        "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:912483710284:function:chat-completions/invocations",
+        "credentials": "arn:aws:iam::912483710284:role/latticelens-chat-api-invoke",
+        "responseTransferMode": "BUFFERED",
+        "timeoutInMillis": 29000,
+        "passthroughBehavior": "WHEN_NO_MATCH"
+      }
+    }
+  },
+  "Stage": {
+    "stageName": "prod",
+    "deploymentId": "abc123",
+    "createdDate": "2026-04-28T22:00:32.108Z",
+    "lastUpdatedDate": "2026-04-28T22:00:32.108Z"
+  },
+  "_meta": {
+    "note": "API was created at 2026-04-28T22:00:18Z, the same minute that customer reports of broken streaming began. The integration's responseTransferMode is BUFFERED, which is the default for new REST API integrations. The previous architecture used an ALB that streams responses natively without configuration."
+  }
+}

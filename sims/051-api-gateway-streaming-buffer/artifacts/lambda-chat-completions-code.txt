@@ -1,0 +1,115 @@
+# Function: chat-completions
+# ARN: arn:aws:lambda:us-east-1:912483710284:function:chat-completions
+# Runtime: nodejs20.x
+# Last modified: 2026-04-28T22:00:08Z (migration deploy)
+
+const { BedrockRuntimeClient, InvokeModelWithResponseStreamCommand } =
+  require('@aws-sdk/client-bedrock-runtime');
+const { DynamoDBClient, GetItemCommand } = require('@aws-sdk/client-dynamodb');
+
+const bedrock = new BedrockRuntimeClient({ region: 'us-east-1' });
+const ddb = new DynamoDBClient({});
+
+const MODEL_ID = 'anthropic.claude-sonnet-4-6-20251020';
+const CHATS_TABLE = 'latticelens-chats';
+
+exports.handler = async (event) => {
+  const { conversation_id, content } = JSON.parse(event.body);
+
+  // Load chat history
+  const history = await loadHistory(conversation_id);
+
+  // Call Bedrock with streaming response
+  const command = new InvokeModelWithResponseStreamCommand({
+    modelId: MODEL_ID,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      anthropic_version: 'bedrock-2023-05-31',
+      max_tokens: 4096,
+      messages: [...history, { role: 'user', content }]
+    })
+  });
+
+  const response = await bedrock.send(command);
+
+  // Drain the stream into a single string.
+  // We have to do this because API Gateway buffers responses anyway.
+  let fullText = '';
+  for await (const event of response.body) {
+    if (event.chunk?.bytes) {
+      const chunk = JSON.parse(Buffer.from(event.chunk.bytes).toString('utf-8'));
+      if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
+        fullText += chunk.delta.text;
+      }
+    }
+  }
+
+  // Persist to DynamoDB
+  await persistMessage(conversation_id, content, fullText);
+
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      role: 'assistant',
+      content: fullText
+    })
+  };
+};
+
+# Notes:
+#   1. Lambda calls Bedrock with the streaming command (correct).
+#   2. Lambda then drains the stream into `fullText` and returns it as a
+#      single JSON body (incorrect for streaming workload).
+#   3. A comment says "We have to do this because API Gateway buffers
+#      responses anyway." That comment was true under the previous
+#      configuration but the migration to API Gateway REST API created the
+#      buffering, not the previous ALB.
+#   4. To stream end-to-end, this function should be wrapped with
+#      awslambda.streamifyResponse and write Bedrock chunks directly to the
+#      responseStream.
+
+# Streaming version (the fix):
+
+exports.handler = awslambda.streamifyResponse(
+  async (event, responseStream, context) => {
+    const { conversation_id, content } = JSON.parse(event.body);
+    const history = await loadHistory(conversation_id);
+
+    // Set headers via the streaming metadata
+    const httpResponseMetadata = {
+      statusCode: 200,
+      headers: { 'Content-Type': 'text/event-stream' }
+    };
+    responseStream = awslambda.HttpResponseStream.from(responseStream, httpResponseMetadata);
+
+    const command = new InvokeModelWithResponseStreamCommand({
+      modelId: MODEL_ID,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        anthropic_version: 'bedrock-2023-05-31',
+        max_tokens: 4096,
+        messages: [...history, { role: 'user', content }]
+      })
+    });
+
+    const response = await bedrock.send(command);
+    let fullText = '';
+
+    for await (const event of response.body) {
+      if (event.chunk?.bytes) {
+        const chunk = JSON.parse(Buffer.from(event.chunk.bytes).toString('utf-8'));
+        if (chunk.type === 'content_block_delta' && chunk.delta?.text) {
+          // Pipe straight to the response stream as it arrives
+          responseStream.write(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`);
+          fullText += chunk.delta.text;
+        }
+      }
+    }
+
+    responseStream.end();
+
+    // Persist after streaming completes
+    await persistMessage(conversation_id, content, fullText);
+  }
+);

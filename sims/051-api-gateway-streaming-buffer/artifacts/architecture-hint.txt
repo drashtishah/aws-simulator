@@ -1,0 +1,60 @@
+              +-----------------------+
+              |  Latticelens client   |
+              |  (web, iOS, Android)  |
+              +----------+------------+
+                         |
+                         | POST /v1/messages (Bearer JWT)
+                         v
+              +-----------------------+
+              | Custom domain         |
+              | chat.latticelens.example
+              | (Route 53 alias)      |
+              +----------+------------+
+                         |
+                         | (yesterday: ALB; today: API Gateway)
+                         v
+              +-----------------------+
+              | API Gateway REST API  |
+              | latticelens-chat-api  |
+              | Stage: prod           |
+              +-----+-------+--------+
+                    |       |
+                    | (custom authorizer)
+                    |       |
+                    v       v
+              +---------+ +-------------------+
+              | auth-fn | | chat-completions  |
+              | Lambda  | | Lambda            |
+              +---------+ | Runtime: nodejs20 |
+                          | Timeout: 120s     |
+                          | Memory: 1024 MB   |
+                          +--------+----------+
+                                   |
+                                   | InvokeModelWithResponseStream
+                                   v
+                          +-------------------+
+                          | Amazon Bedrock    |
+                          | claude-sonnet-4-6 |
+                          | us-east-1         |
+                          +-------------------+
+                                   |
+                                   | (chat history)
+                                   v
+                          +-------------------+
+                          | DynamoDB          |
+                          | latticelens-chats |
+                          +-------------------+
+
+  Integration:
+    -> Resource: /v1/messages
+    -> Method: POST
+    -> Type: AWS_PROXY (Lambda proxy)
+    -> Target: chat-completions Lambda
+    -> responseTransferMode: BUFFERED   <-- check this field
+    -> timeoutInMillis: 29000
+
+  Telemetry:
+    -> CloudWatch metrics: 5xxError on API Gateway, Duration on Lambda,
+       InvocationLatency on Bedrock
+    -> API Gateway access logs (CLF format) and execution logs
+    -> Lambda CloudWatch logs

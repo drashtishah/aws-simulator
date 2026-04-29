@@ -1,0 +1,70 @@
+              +-----------------------+
+              |  Latticelens client   |
+              |  (web, iOS, Android)  |
+              +----------+------------+
+                         |
+                         | POST /v1/messages
+                         v
+              +-----------------------+
+              | Custom domain         |
+              | chat.latticelens.example
+              | [SWITCHED YESTERDAY   |
+              |  AT 22:00 UTC]        |
+              +----------+------------+
+                         |
+                         v
+              +-----------------------+
+              | API Gateway REST API  |
+              | latticelens-chat-api  |
+              | [PROBLEM:             |
+              |  responseTransferMode |
+              |  = BUFFERED;          |
+              |  29s integration      |
+              |  timeout]             |
+              +-----+-------+--------+
+                    |       |
+                    v       v
+              +---------+ +-------------------+
+              | auth-fn | | chat-completions  |
+              | Lambda  | | Lambda            |
+              +---------+ | [drains Bedrock   |
+                          |  stream into a    |
+                          |  single string,   |
+                          |  returns it; this |
+                          |  pattern is       |
+                          |  correct for      |
+                          |  BUFFERED but     |
+                          |  produces "wall   |
+                          |  of text" UX and  |
+                          |  504 for long     |
+                          |  responses]       |
+                          +--------+----------+
+                                   |
+                                   v
+                          +-------------------+
+                          | Amazon Bedrock    |
+                          | claude-sonnet-4-6 |
+                          | (streaming        |
+                          |  correctly)       |
+                          +-------------------+
+
+  Failure chain:
+    1. ALB-to-API-Gateway migration switched the public entry point to a
+       buffering layer
+    2. Integration on POST /v1/messages defaulted to responseTransferMode =
+       BUFFERED
+    3. Lambda was already drain-and-return because that is what worked on
+       BUFFERED gateways
+    4. Short responses (<29 s): client gets a wall of text after a long pause
+    5. Long responses (>29 s): API Gateway integration timeout fires;
+       client gets 504; Lambda still completes successfully but its output
+       is discarded
+
+  Fix:
+    1. responseTransferMode = STREAM on the integration
+    2. Lambda code switches to awslambda.streamifyResponse, pipes Bedrock
+       chunks straight to responseStream
+    3. Redeploy the API stage
+    4. Optional: evaluate Lambda Function URL with RESPONSE_STREAM invoke
+       mode for less gateway overhead, or keep ALB for streaming paths
+       and use API Gateway only for non-streaming endpoints

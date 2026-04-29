@@ -1,0 +1,6 @@
+Company: Latticelens (Series A, 22 engineers)
+Industry: AI productivity tools, AI workspace assistant
+Users: 84,000 paid users on Pro tiers, peak 1,800 concurrent chat sessions
+AWS Services: Amazon API Gateway, AWS Lambda, Amazon Bedrock, Amazon CloudWatch
+Your role: On-call backend engineer, Wednesday 09:42 ET
+Situation: Streaming responses arrive all at once after a long pause; some return 504; migration from ALB to API Gateway was 11 hours ago

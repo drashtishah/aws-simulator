@@ -1,0 +1,37 @@
+# Sample Bedrock invocation trace from CloudWatch X-Ray for request req-abc-001
+# (the 1500-word essay request that returned 504 to the client)
+
+Trace: 1-66304220-abc123def456789
+  Service: API Gateway
+    Segment: POST /v1/messages [504]  ............... 29.018s
+      Subsegment: integration:lambda:chat-completions [TIMEOUT] ... 29.000s
+        (gateway timed out waiting for Lambda response)
+  Service: Lambda
+    Segment: chat-completions [success] .............. 41.842s
+      Subsegment: ddb GetItem latticelens-chats ......  0.012s
+      Subsegment: bedrock InvokeModelWithResponseStream
+        anthropic.claude-sonnet-4-6 ................. 41.604s
+        (2,184 tokens generated, ~52 tokens/sec)
+      Subsegment: ddb PutItem latticelens-chats ......  0.018s
+
+# Read the timeline:
+#   00:00.000 — request arrives at API Gateway
+#   00:00.012 — Lambda invoked
+#   00:00.024 — Lambda begins Bedrock call
+#   00:29.000 — API Gateway integration timeout fires; gateway returns 504
+#               to the client; Lambda is still executing
+#   00:41.628 — Bedrock finishes, Lambda persists, Lambda returns
+#   00:41.842 — Lambda success metric incremented (no error)
+#   the gateway has long since told the client there was a 504
+#
+# Result: Lambda success rate looks fine; client got 504. The mismatch
+# is the key signal.
+
+# CloudWatch metrics for chat-completions Lambda:
+#   AWS/Lambda/Errors  = 0
+#   AWS/Lambda/Duration p50 = 16,402 ms (was 4,200 ms before migration)
+#   AWS/Lambda/Duration p99 = 42,108 ms (was 11,800 ms before migration)
+#
+# CloudWatch metrics for API Gateway latticelens-chat-api stage prod:
+#   AWS/ApiGateway/5XXError = 1.6% (baseline 0.02%)
+#   AWS/ApiGateway/IntegrationLatency p99 = 29,000 ms (capped at integration timeout)

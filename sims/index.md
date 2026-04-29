@@ -58,3 +58,4 @@ tags:
 | 048 | [[048-cloudfront-origin-shield-collapse/story\|The Premiere That Bent the Cache]] | 3 - Professional | Performance | cloudfront, s3, lambda, cloudwatch | 35 min |
 | 049 | [[049-opensearch-indexing-lag-retail/story\|Yesterday's Inventory, Today's Cart]] | 3 - Professional | Data | dynamodb, opensearch, lambda, cloudwatch | 35 min |
 | 050 | [[050-cache-database-cart-drift/story\|The Cart That Forgot Itself]] | 2 - Associate | Reliability | elasticache, dynamodb, lambda, cloudwatch | 30 min |
+| 051 | [[051-api-gateway-streaming-buffer/story\|The Answer That Arrived All at Once]] | 2 - Associate | Operations | api-gateway, lambda, bedrock, cloudwatch | 30 min |

@@ -1,0 +1,28 @@
+{
+  "Configuration": {
+    "FunctionName": "chat-completions",
+    "FunctionArn": "arn:aws:lambda:us-east-1:912483710284:function:chat-completions",
+    "Runtime": "nodejs20.x",
+    "Role": "arn:aws:iam::912483710284:role/latticelens-chat-completions-role",
+    "Handler": "index.handler",
+    "Description": "Latticelens chat completions backend, calls Bedrock and persists to DynamoDB",
+    "Timeout": 120,
+    "MemorySize": 1024,
+    "LastModified": "2026-04-28T22:00:08.412Z",
+    "Environment": {
+      "Variables": {
+        "MODEL_ID": "anthropic.claude-sonnet-4-6-20251020",
+        "CHATS_TABLE": "latticelens-chats",
+        "AWS_REGION": "us-east-1"
+      }
+    },
+    "TracingConfig": {
+      "Mode": "Active"
+    },
+    "PackageType": "Zip"
+  },
+  "FunctionUrlConfig": null,
+  "_meta": {
+    "note": "No Function URL is configured. Lambda is invoked exclusively via API Gateway. Function timeout is 120 seconds, comfortably above the longest expected Bedrock response. The Lambda completes successfully even when API Gateway returns 504 to the client; the function-level success rate stays high while user-visible success rate drops."
+  }
+}

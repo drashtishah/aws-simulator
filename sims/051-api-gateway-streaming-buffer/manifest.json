@@ -1,0 +1,192 @@
+{
+  "id": "051-api-gateway-streaming-buffer",
+  "title": "The Answer That Arrived All at Once",
+  "summary": "An AI chat product migrates its endpoint to API Gateway for managed auth. Token-by-token streaming responses now arrive as one giant blob after thirty seconds, then a 504. It worked yesterday.",
+  "difficulty": 2,
+  "category": "operations",
+  "services": ["api-gateway", "lambda", "bedrock", "cloudwatch"],
+  "tags": ["streaming", "response-transfer-mode", "rest-api", "sse", "llm-product"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "DVA-C02:Domain1:DevelopmentWithAwsServices",
+    "SAP-C02:Domain2:NewSolutions",
+    "SAA-C03:Domain3:HighPerformingArchitectures"
+  ],
+  "company": {
+    "name": "Latticelens",
+    "industry": "AI productivity tools",
+    "size": "Series A, 22 engineers, 84,000 paid users"
+  },
+  "glossary": {
+    "Server-Sent Events (SSE)": "A protocol for the server to push a stream of events to the browser over a single HTTP connection. Each event is a small chunk of text, terminated by a blank line. Browsers expose SSE through the EventSource API. The protocol relies on HTTP chunked transfer encoding to stream chunks as they are produced.",
+    "Chunked transfer encoding": "An HTTP feature where the server sends the response body in chunks instead of one fixed-size payload. The headers say Transfer-Encoding: chunked and the body is a sequence of length-prefixed pieces. Required for streaming responses where the total size is not known up-front.",
+    "Response transfer mode": "An API Gateway integration setting. BUFFERED (default) means API Gateway waits for the full integration response before sending anything to the client. STREAM means API Gateway forwards bytes from the integration to the client as they arrive.",
+    "Integration timeout": "The maximum time API Gateway will wait for an integration to respond before returning a 504. For REST API the default is 29,000 milliseconds (29 seconds) and the maximum is also 29,000 ms in BUFFERED mode. With response streaming enabled, integrations can last up to 15 minutes.",
+    "Lambda response streaming": "A Lambda invocation mode where the function returns the response in chunks via a writable stream rather than as a single payload. Enabled by wrapping the handler with awslambda.streamifyResponse() in Node.js. Invoked through the InvokeWithResponseStream API or through a streaming-enabled Function URL or API Gateway integration.",
+    "InvokeWithResponseStream": "The Lambda API action used to invoke a function in streaming mode. Returns a stream of PayloadChunk events terminated by an InvokeComplete event. Different ARN and IAM action than the regular Invoke.",
+    "Lambda Function URL": "A dedicated HTTPS endpoint attached directly to a Lambda function. Configurable invoke mode: BUFFERED (default, 6 MB max payload) or RESPONSE_STREAM (200 MB max). Bypasses API Gateway entirely for the simplest streaming setup.",
+    "Application Load Balancer (ALB)": "A Layer 7 load balancer that supports HTTP/2 and chunked transfer encoding natively. ALB does not buffer responses, so streaming integrations work without configuration."
+  },
+  "system": {
+    "what_broke": "The API Gateway REST API has the chat-completions integration with responseTransferMode = BUFFERED (the default). With this setting, API Gateway waits for the Lambda integration to return its full response before forwarding any bytes to the client. The chat Lambda was rewritten to await the full Bedrock streaming response and serialize the concatenated text in the return value, because the BUFFERED gateway dropped the streaming chunks anyway. The full response takes 18 to 45 seconds depending on prompt length. For prompts that take more than 29 seconds, API Gateway hits the integration timeout and returns 504, even though the Lambda eventually completes successfully.",
+    "data_flow": "Client (web app, iOS, Android) sends POST /v1/messages to chat.latticelens.example/v1/messages. Custom domain on API Gateway REST API. API Gateway custom authorizer validates the JWT and forwards to chat-completions Lambda. Lambda calls Bedrock InvokeModelWithResponseStream against Claude Sonnet 4.6, drains the response stream into a single string, and returns that string to API Gateway. API Gateway then sends it to the client.",
+    "components": [
+      {
+        "name": "chat-api (API Gateway REST API)",
+        "role": "Public HTTPS entry point for chat requests. Handles auth via custom authorizer, throttling per usage plan, and CORS.",
+        "connections": ["Receives POST /v1/messages from clients", "Calls chat-completions Lambda via AWS_PROXY integration", "Calls auth Lambda for token validation"],
+        "failure_impact": "If responseTransferMode is BUFFERED, API Gateway waits for the full Lambda response. Long responses hit the 29-second integration timeout and return 504 to the client."
+      },
+      {
+        "name": "chat-completions (Lambda function)",
+        "role": "Calls Bedrock InvokeModelWithResponseStream, drains the stream, returns the concatenated response. Was previously written to forward chunks via SSE when behind ALB.",
+        "connections": ["Invoked by API Gateway integration", "Calls Bedrock model claude-sonnet-4-6 in us-east-1", "Reads conversation history from DynamoDB"],
+        "failure_impact": "When invoked in BUFFERED mode, the function must complete fully before the client receives anything. A 25-second answer feels slow. A 35-second answer 504s."
+      },
+      {
+        "name": "Bedrock claude-sonnet-4-6",
+        "role": "Foundation model that generates the chat response token by token via streaming.",
+        "connections": ["Invoked via InvokeModelWithResponseStream"],
+        "failure_impact": "Bedrock streams correctly; the bottleneck is downstream of Bedrock. The model returns tokens at roughly 80 to 120 tokens per second; long answers take tens of seconds."
+      },
+      {
+        "name": "Application Load Balancer (the previous architecture)",
+        "role": "Was the public entry point before yesterday's migration. Native HTTP/2 and chunked transfer encoding support. Did not buffer responses.",
+        "connections": ["Was forwarding directly to chat-completions Lambda via Lambda target", "Route 53 alias was switched yesterday at 22:00 UTC"],
+        "failure_impact": "Worked correctly because ALB streams bytes between client and target without buffering. The migration to API Gateway introduced the buffering layer."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "api-gateway",
+      "artifacts": [
+        "artifacts/api-gateway-rest-api.json",
+        "artifacts/api-gateway-integration.json",
+        "artifacts/api-gateway-execution-logs.txt"
+      ],
+      "capabilities": [
+        "get_rest_api",
+        "get_resource",
+        "get_method",
+        "get_integration",
+        "get_stage"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-chat-completions-code.txt",
+        "artifacts/lambda-config.json"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "get_function_url_config",
+        "list_aliases"
+      ]
+    },
+    {
+      "service": "bedrock",
+      "artifacts": [
+        "artifacts/bedrock-invocation-trace.txt"
+      ],
+      "capabilities": [
+        "get_foundation_model",
+        "list_foundation_models"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "What changed yesterday before the streaming broke? Look at recent deploys and DNS changes.",
+    "API Gateway has different behaviors for buffered vs streaming responses. What is your integration's response transfer mode?",
+    "The 504 errors come at exactly 29 seconds. What is special about that number?",
+    "API Gateway REST API has a 29-second integration timeout. Streaming responses enabled with STREAM mode can extend it to 15 minutes.",
+    "Lambda needs to use awslambda.streamifyResponse and the integration needs responseTransferMode = STREAM."
+  ],
+  "resolution": {
+    "root_cause": "The chat-completions integration on the API Gateway REST API has responseTransferMode = BUFFERED (the default), so API Gateway waits for the full Lambda response before sending anything to the client. The integration timeout is 29 seconds. Long Bedrock responses take longer than 29 seconds to fully generate, hitting the timeout and returning 504. Short responses succeed but arrive all at once.",
+    "fix_criteria": [
+      {
+        "id": "identify_buffering",
+        "description": "Player notices that responses arrive as one block after a long wait, not incrementally",
+        "required": true
+      },
+      {
+        "id": "identify_29_second_pattern",
+        "description": "Player observes that 504 errors land at exactly 29 seconds, the API Gateway REST API integration timeout",
+        "required": true
+      },
+      {
+        "id": "identify_response_transfer_mode",
+        "description": "Player examines the integration configuration and finds responseTransferMode = BUFFERED",
+        "required": true
+      },
+      {
+        "id": "propose_stream_mode_or_alt",
+        "description": "Player proposes setting responseTransferMode = STREAM and updating the Lambda to use streamifyResponse, OR migrating to a Lambda Function URL with RESPONSE_STREAM invoke mode, OR moving back to the ALB",
+        "required": true
+      },
+      {
+        "id": "explain_alb_vs_apigw_streaming",
+        "description": "Player articulates why ALB worked without configuration but API Gateway REST API requires explicit STREAM mode",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "How API Gateway REST API buffers integration responses by default and how STREAM mode changes that",
+      "How Lambda response streaming works (awslambda.streamifyResponse, InvokeWithResponseStream) and how to plumb it through API Gateway",
+      "Why the same Lambda code worked behind an ALB and broke behind API Gateway",
+      "When to pick API Gateway REST, API Gateway HTTP, ALB, or Lambda Function URL for streaming workloads",
+      "How to read the 29-second integration timeout as a buffering signal rather than a Lambda problem"
+    ],
+    "sop_steps": [
+      "Trace one failing request end to end. Use API Gateway execution logs and CloudWatch X-Ray. Find a request that returned 504 to the client. Check the Lambda's CloudWatch logs for the same request ID. The Lambda likely succeeded (no error, response generated, even if slow), but API Gateway returned 504 to the client. That gap is the signal.",
+      "Look at the integration configuration. Pull the integration on the failing method (`aws apigateway get-integration --rest-api-id <id> --resource-id <id> --http-method POST`). Check the responseTransferMode field. If it is BUFFERED (or unset, which defaults to BUFFERED), API Gateway is waiting for the entire Lambda response before forwarding it.",
+      "Confirm the timeout. The default REST API integration timeout is 29,000 milliseconds. If your Lambda regularly takes longer than 29 seconds, the gateway times out before the Lambda finishes.",
+      "Switch to STREAM mode. Update the integration: `aws apigateway update-integration --rest-api-id <id> --resource-id <id> --http-method POST --patch-operations op=replace,path=/responseTransferMode,value=STREAM`. Redeploy the API stage. STREAM mode supports integration durations up to 15 minutes.",
+      "Update the Lambda to actually stream. STREAM mode requires the Lambda to return chunks via awslambda.streamifyResponse (Node.js) or to write a properly delimited metadata-then-payload format. The Lambda must declare Transfer-Encoding: chunked or a Content-length in its metadata.",
+      "Confirm that streaming works. POST a long prompt. Bytes should begin arriving within a few hundred milliseconds and continue trickling in over the response duration. Check the response headers; you should see Transfer-Encoding: chunked.",
+      "Consider whether REST API is the right product. STREAM mode makes REST API workable, but Lambda Function URLs with RESPONSE_STREAM invoke mode have less ceremony. ALB also streams natively. For new streaming workloads, evaluate Function URL first, then HTTP API, then REST API."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "CloudFront in front of API Gateway buffers responses",
+        "how_it_differs": "API Gateway is configured for STREAM mode, but a CloudFront distribution sits in front and buffers everything. Looks like the gateway is buffering, but the actual culprit is CloudFront. Common when CloudFront was added for caching static assets and inadvertently catches the chat path.",
+        "prevention": "Use a separate CloudFront cache behavior for the streaming path with origin shield disabled and origin response timeout matched to the streaming duration. Or bypass CloudFront for streaming endpoints. CloudFront does not have a streaming-passthrough mode for arbitrary chunked responses."
+      },
+      {
+        "scenario": "WAF rule that requires the full request body buffers the response",
+        "how_it_differs": "The streaming response works for some users and fails for others. Investigation reveals AWS WAF is inspecting full bodies on a subset of requests via a managed rule. Inspection happens after the response is generated, which forces buffering.",
+        "prevention": "Configure WAF body inspection to bound by size (default 8 KB; larger requires explicit body-size constraint). For streaming endpoints, exempt the path from WAF body inspection or use AWS WAF in a streaming-aware mode."
+      },
+      {
+        "scenario": "Lambda timeout shorter than the answer length",
+        "how_it_differs": "The Lambda hits its own timeout (set in function config) before generating the full response. Symptom is the function dying mid-stream. Different from gateway buffering: here the gateway never receives a complete response.",
+        "prevention": "Set the Lambda timeout to at least 60 seconds for chat workloads (up to the maximum 15 minutes). Match it to the integration timeout."
+      },
+      {
+        "scenario": "Client uses a request library that reads the full body before exposing it",
+        "how_it_differs": "API Gateway is streaming correctly (Transfer-Encoding: chunked in the response headers), but the iOS client uses NSURLSession in a default mode that buffers responses. Same symptom on the client side; root cause is client-side.",
+        "prevention": "On iOS, use URLSessionDataDelegate to receive bytes as they arrive. On the web, use the Fetch API's ReadableStream. Test the client end of the pipeline as deliberately as the server end."
+      }
+    ],
+    "sop_practices": [
+      "When choosing the public entry point for a streaming workload, walk the option matrix: Lambda Function URL with RESPONSE_STREAM is the simplest; API Gateway HTTP API has limited streaming support; API Gateway REST API requires explicit STREAM mode; ALB streams natively. Pick the simplest option that meets auth and throttling needs.",
+      "Treat responseTransferMode as a load-bearing config. The default BUFFERED is wrong for any streaming workload, and the signal it produces (504 at exactly 29 seconds) is easy to misread as a Lambda timeout.",
+      "Match the integration timeout to the workload. For LLM streaming, set the integration timeout to at least 60 seconds (REST API supports up to 29 seconds in BUFFERED mode and up to 15 minutes in STREAM mode). Always pair this with a matching Lambda timeout.",
+      "Test streaming end to end including the client library. Browser EventSource, Fetch ReadableStream, iOS URLSession, Android OkHttp all have buffering modes that can hide a working server-side stream behind a client-side blob."
+    ]
+  }
+}
