@@ -1,0 +1,59 @@
+                        +----------------------+
+                        |       Shopper        |
+                        +----------+-----------+
+                                   |
+                                   v
+                        +----------------------+
+                        |    API Gateway       |
+                        +----------+-----------+
+                                   |
+            +----------------------+----------------------+
+            |                      |                      |
+            v                      v                      v
+     +------+--------+      +------+--------+      +------+--------+
+     | cart-update   |      | cart-read     |      | checkout      |
+     | [PROBLEM:     |      | (cache-aside) |      | (DDB direct)  |
+     |  Promise.     |      |               |      |               |
+     |  allSettled   |      |               |      |               |
+     |  swallows DDB |      |               |      |               |
+     |  failure;     |      |               |      |               |
+     |  returns 200  |      |               |      |               |
+     |  on cache-only|      |               |      |               |
+     |  success]     |      |               |      |               |
+     +-+-----------+-+      +-+-----------+-+      +------+--------+
+       |           |          |           |               |
+       | SET cache | PutItem  | GET cache | GetItem       | GetItem
+       v           v          v           v               v
+  +----+-----+  +--+------+  +----+-+   +-+-----+   +-----+-------+
+  | Redis    |  | DDB     |  | Redis|   | DDB   |   | DDB         |
+  | (NEWER:  |  | [PROBLEM|  | (TTL |   | (OLDER|   | (OLDER:     |
+  |  cache   |  |  THROTT-|  | 90s) |   |  state|   |  checkout   |
+  |  has new |  |  LING:  |  +------+   |  due  |   |  reads      |
+  |  cart)   |  |  4,600  |             |  to   |   |  inconsistent|
+  +----------+  |  WCU,   |             |  failed|  |  cart)      |
+                |  base   |             |  writes)| +-------------+
+                |  2,000) |             +-------+
+                +---------+
+
+  Failure chain:
+    1. Spring Sale traffic pushes cinderlane-carts table writes to 4,600 WCU/sec
+    2. Table baseline auto-scaling capacity is 2,000 WCU; bursts exceed it
+    3. DynamoDB returns ProvisionedThroughputExceededException
+    4. SDK retries 3 times with exponential backoff, then throws
+    5. cart-update Lambda's Promise.allSettled does NOT reject; the
+       cache-write half succeeded
+    6. Lambda logs WARN, returns 200 to client
+    7. Cache holds new cart; DynamoDB still holds old cart
+    8. After cache TTL (90s), cart-read misses cache, falls through to DDB,
+       repopulates cache with stale state; the added item disappears
+    9. Sometimes checkout reads DDB while storefront still has cached version;
+       the customer sees two cart states and wonders if checkout works at all
+
+  Fix:
+    1. cart-update writes DynamoDB first; on success, DEL cache key.
+       Errors propagated to client.
+    2. Raise auto-scaling baseline to 10,000 WCU during sale windows.
+    3. Reconcile in-flight divergence with a backfill from cache to DDB
+       conditional on updated_at.
+    4. Optional: migrate to DAX for write-through semantics with no
+       application code changes.

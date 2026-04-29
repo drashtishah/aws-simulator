@@ -1,0 +1,20 @@
+2026-04-29T14:01:08.412Z INFO  [cart-update] cart updated user_id=8a72b1e4-f290-4d3a-9a72-cinderlane-shopper items=1 latency_ms=23
+2026-04-29T14:01:24.819Z WARN  [cart-update] ddb write retry exhausted, cache write succeeded {"user_id":"8a72b1e4-f290-4d3a-9a72-cinderlane-shopper","error":"ProvisionedThroughputExceededException","message":"The level of configured provisioned throughput for the table was exceeded. Consider increasing your provisioning level with the UpdateTable API."}
+2026-04-29T14:01:25.103Z INFO  [cart-update] cart updated user_id=ce91f4a2-1834-4c5e-92b8-cinderlane-shopper items=3 latency_ms=18
+2026-04-29T14:01:31.482Z WARN  [cart-update] ddb write retry exhausted, cache write succeeded {"user_id":"f72c8e15-2417-4b91-83a4-cinderlane-shopper","error":"ProvisionedThroughputExceededException"}
+2026-04-29T14:01:38.124Z WARN  [cart-update] ddb write retry exhausted, cache write succeeded {"user_id":"d2a89e73-5c41-4b04-a8e3-cinderlane-shopper","error":"ProvisionedThroughputExceededException"}
+2026-04-29T14:01:42.918Z WARN  [cart-update] ddb write retry exhausted, cache write succeeded {"user_id":"3e7b91c8-4d72-49ad-b1f7-cinderlane-shopper","error":"ProvisionedThroughputExceededException"}
+2026-04-29T14:01:48.412Z INFO  [cart-update] cart updated user_id=92418a3f-7c25-4d6e-b8a7-cinderlane-shopper items=2 latency_ms=21
+2026-04-29T14:02:03.108Z WARN  [cart-update] ddb write retry exhausted, cache write succeeded {"user_id":"6b3c8f29-1a47-4e85-9c12-cinderlane-shopper","error":"ProvisionedThroughputExceededException"}
+
+# Pattern: every few seconds during the sale, a WARN line appears for a
+# different user_id. The Lambda's Errors metric is zero because the function
+# returns 200 cleanly. The WARN log line is the only signal.
+#
+# CloudWatch Logs Insights query to count these:
+#   filter @message like /ddb write retry exhausted/
+#   stats count(*) by bin(1m)
+#
+# The query reveals 2,847 occurrences in the last 2 hours. Each is a cart
+# write that succeeded in cache but failed in DynamoDB. Each is a customer
+# whose cart will diverge.

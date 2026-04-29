@@ -1,0 +1,194 @@
+{
+  "id": "050-cache-database-cart-drift",
+  "title": "The Cart That Forgot Itself",
+  "summary": "An online retailer's customers add items to their cart, refresh, and the items vanish. Add them again and they stick. At checkout, sometimes both copies appear and sometimes neither does.",
+  "difficulty": 2,
+  "category": "reliability",
+  "services": ["elasticache", "dynamodb", "lambda", "cloudwatch"],
+  "tags": ["dual-write", "cache-aside", "race-condition", "dynamodb-throttling", "ecommerce"],
+  "estimated_minutes": 30,
+  "prerequisites": [],
+  "exam_topics": [
+    "SAA-C03:Domain3:HighPerformingArchitectures",
+    "DVA-C02:Domain1:DevelopmentWithAwsServices",
+    "DVA-C02:Domain4:Optimization"
+  ],
+  "company": {
+    "name": "Cinderlane",
+    "industry": "Online home goods retail",
+    "size": "Series B, 95 engineers, 1.1M monthly orders"
+  },
+  "glossary": {
+    "ElastiCache": "AWS's managed cache service. Two engines: Redis OSS (now called Valkey-compatible) and Memcached. Used as a fast read cache or session store with response times under 1 millisecond.",
+    "Cache-aside": "A pattern where the application reads from cache first, falls back to the database on a miss, and populates the cache on read. Writes go to the database; the cache is invalidated or updated as a side effect. The database is the system of record.",
+    "Dual-write": "An anti-pattern where the application writes to two stores in parallel and treats them as equally authoritative. If one write fails or lags, the stores diverge and there is no clean way to reconcile.",
+    "ProvisionedThroughputExceededException": "The error DynamoDB returns when a request would exceed the table's per-partition write or read capacity. The AWS SDK retries this error a few times with exponential backoff before giving up.",
+    "Write-through cache": "A pattern where every write goes to the cache first and the cache writes to the database synchronously. The cache and database are kept in sync by the cache layer itself, not by the application.",
+    "Promise.allSettled": "A JavaScript primitive that waits for all promises to finish, regardless of whether each one resolved or rejected. Useful for fanning out to multiple stores. Dangerous when one store's failure should not be silently swallowed.",
+    "TTL (time to live)": "The expiration timer on a cache entry. After the TTL elapses, the entry is evicted and the next read is a cache miss. A common pattern is short TTLs (minutes) on dynamic data and long TTLs (hours) on static data.",
+    "DynamoDB Accelerator (DAX)": "A fully-managed in-memory cache for DynamoDB tables. Reads and writes go through DAX; the cache is kept consistent with the underlying table by the service. An alternative to running your own cache-aside layer."
+  },
+  "system": {
+    "what_broke": "The cart-update Lambda writes to both ElastiCache Redis and DynamoDB using Promise.allSettled. When DynamoDB throttles during the Saturday sale, the SDK retries three times then throws ProvisionedThroughputExceededException. Cache write has already succeeded. The Lambda logs a warning and returns 200 to the user because allSettled does not reject. Cache holds the new cart state; DynamoDB does not. When the cache TTL of 90 seconds expires, the next read hits the cart-read Lambda, which falls through to DynamoDB on cache miss, gets the stale state, and repopulates the cache with stale data. The added item disappears. Sometimes the customer is in the brief window where cache and DynamoDB are both queried for a checkout, returning two different cart states; the order processor merges incorrectly and either both copies of an item appear or neither does.",
+    "data_flow": "Storefront sends cart updates to API Gateway. cart-update Lambda runs with the user's session ID. It writes the cart to Redis (cinderlane-carts cluster, key carts:user:{user_id}, TTL 90s) and to DynamoDB (cinderlane-carts table, partition key user_id) in parallel via Promise.allSettled. cart-read Lambda is cache-aside: read Redis, fall back to DynamoDB on miss, repopulate Redis. Checkout Lambda reads from DynamoDB only.",
+    "components": [
+      {
+        "name": "cinderlane-carts (DynamoDB table)",
+        "role": "Durable cart storage. PartitionKey: user_id. Each item is a cart line: sku, quantity, added_at.",
+        "connections": ["Written by cart-update Lambda", "Read by cart-read Lambda on cache miss", "Read by checkout Lambda directly"],
+        "failure_impact": "If DynamoDB writes fail or lag, cart state diverges from cache. Customer-visible carts come from cache and look correct; checkout reads DynamoDB and sees the older state."
+      },
+      {
+        "name": "cinderlane-carts (ElastiCache Redis cluster)",
+        "role": "Fast read cache for active carts. TTL 90s on each cart key. Cluster mode disabled, single primary with two replicas.",
+        "connections": ["Written by cart-update Lambda", "Read by cart-read Lambda first", "Repopulated on cache miss by cart-read"],
+        "failure_impact": "If cache writes succeed while database writes fail, the customer sees fresh cart state until TTL expiry; then cache miss restores stale state from DynamoDB."
+      },
+      {
+        "name": "cart-update (Lambda function)",
+        "role": "Validates cart change, writes to cache and database in parallel via Promise.allSettled, returns the updated cart.",
+        "connections": ["Receives PUT /cart from API Gateway", "Writes to Redis cinderlane-carts cluster", "Writes to DynamoDB cinderlane-carts table"],
+        "failure_impact": "Promise.allSettled never rejects, so a failed DynamoDB write returns 200 to the client. The diverged state is silent until the next cache miss surfaces it."
+      },
+      {
+        "name": "cart-read (Lambda function)",
+        "role": "Reads the cart for a user. Cache-aside pattern: Redis first, DynamoDB on miss, repopulate Redis.",
+        "connections": ["Receives GET /cart from API Gateway", "Reads Redis cinderlane-carts", "Falls through to DynamoDB cinderlane-carts on cache miss", "Writes back to Redis with TTL 90s"],
+        "failure_impact": "Cache repopulation from DynamoDB after a divergence event overwrites the freshest copy with stale data."
+      }
+    ]
+  },
+  "consoles": [
+    {
+      "service": "elasticache",
+      "artifacts": [
+        "artifacts/elasticache-cluster.json",
+        "artifacts/elasticache-keys-sample.txt"
+      ],
+      "capabilities": [
+        "describe_cache_clusters",
+        "describe_replication_groups",
+        "redis_get_command",
+        "redis_ttl_command",
+        "redis_info_command"
+      ]
+    },
+    {
+      "service": "dynamodb",
+      "artifacts": [
+        "artifacts/dynamodb-table.json",
+        "artifacts/dynamodb-cart-records.json"
+      ],
+      "capabilities": [
+        "describe_table",
+        "get_item",
+        "query",
+        "describe_continuous_backups"
+      ]
+    },
+    {
+      "service": "lambda",
+      "artifacts": [
+        "artifacts/lambda-cart-update-code.txt",
+        "artifacts/lambda-logs.txt"
+      ],
+      "capabilities": [
+        "get_function",
+        "get_function_configuration",
+        "invoke"
+      ]
+    },
+    {
+      "service": "cloudwatch",
+      "artifacts": [
+        "artifacts/cloudwatch-metrics.csv"
+      ],
+      "capabilities": [
+        "get_metric_statistics",
+        "describe_alarms"
+      ]
+    }
+  ],
+  "progressive_clues": [
+    "Customers describe items disappearing after refresh. What writes the cart and what reads it?",
+    "There are two stores here: Redis and DynamoDB. Are they always agreeing?",
+    "Look at the cart-update Lambda code. How does it handle errors from each store?",
+    "DynamoDB has a metric called ThrottledRequests. What does it look like during the sale?",
+    "Promise.allSettled never rejects. What happens if the database write throws and the cache write succeeds?"
+  ],
+  "resolution": {
+    "root_cause": "The cart-update Lambda uses Promise.allSettled to write to ElastiCache and DynamoDB in parallel. When DynamoDB throttles during the Saturday sale, the SDK exhausts retries and throws ProvisionedThroughputExceededException. Promise.allSettled swallows the rejection; the Lambda returns 200 to the client; cache holds the new state and DynamoDB does not. Cache misses repopulate cache from stale DynamoDB.",
+    "fix_criteria": [
+      {
+        "id": "identify_dual_write",
+        "description": "Player identifies the cart-update Lambda writes to both ElastiCache and DynamoDB in parallel",
+        "required": true
+      },
+      {
+        "id": "identify_promise_allsettled_swallows_failure",
+        "description": "Player notices Promise.allSettled means the Lambda returns success even when one store fails",
+        "required": true
+      },
+      {
+        "id": "identify_dynamodb_throttling",
+        "description": "Player finds ProvisionedThroughputExceededException in cart-update logs and ThrottledRequests on cinderlane-carts table",
+        "required": true
+      },
+      {
+        "id": "propose_single_source_of_truth",
+        "description": "Player proposes making DynamoDB the single source of truth and using cache-aside (read from cache, fall back to DB; writes go to DB only and invalidate cache)",
+        "required": true
+      },
+      {
+        "id": "propose_dax_or_writethrough",
+        "description": "Player suggests DynamoDB Accelerator (DAX) or write-through cache as alternatives that keep cache and DB in sync",
+        "required": false
+      }
+    ],
+    "learning_objectives": [
+      "Why dual-write to cache and database is an anti-pattern that produces silent divergence",
+      "How cache-aside differs from write-through and dual-write, and which to pick for ecommerce carts",
+      "How DynamoDB throttling and SDK retries combine to produce intermittent failure under load",
+      "Why Promise.allSettled is dangerous when one of the writes is load-bearing for correctness",
+      "How to choose a single system of record and make divergence impossible by design"
+    ],
+    "sop_steps": [
+      "Confirm the divergence. Pick a user_id from a customer report. Read the user's cart from Redis (the cache key is carts:user:<id>). Read the same cart from DynamoDB (the partition key is user_id). Compare. They will disagree, with cache holding the newer state.",
+      "Find the write path. Look at the cart-update Lambda. How does it write to the two stores? If the writes are in parallel and the function uses Promise.allSettled (or any other primitive that does not propagate one store's failure), that is the divergence source.",
+      "Look at why the database write failed. DynamoDB has a CloudWatch metric called ThrottledRequests. Pull it for cinderlane-carts during the period when customers reported issues. If it is non-zero, your writes are being throttled. The SDK retries a few times, then throws.",
+      "Decide on the system of record. Pick one store as authoritative. For ecommerce carts, the right choice is the database (DynamoDB), because the database is durable and the cache is ephemeral. Reads can use a cache-aside pattern: try the cache, fall back to the database, repopulate the cache.",
+      "Rewrite the write path. Cart-update writes to DynamoDB only. After the write returns, the function invalidates the cache key (DEL carts:user:<id>). Next read repopulates the cache from the now-current database. Failures from DynamoDB are propagated as errors to the client.",
+      "Or move to write-through. If you do not want to handle cache invalidation, switch to DynamoDB Accelerator (DAX). DAX is a write-through cache for DynamoDB; reads and writes both go through DAX and the cache is kept consistent with the table.",
+      "Address the throttling. PAY_PER_REQUEST will absorb bursts smoothly but is more expensive at steady state. PROVISIONED with auto-scaling can be tuned for sales but lags burst by minutes. Pick based on your write traffic shape.",
+      "Reconcile the divergence already in flight. Run a backfill that reads every active cart from Redis, compares to DynamoDB, and writes the cache value to the database when newer (using a conditional write keyed on updated_at). Announce a 'cart refresh' to affected users."
+    ],
+    "related_failure_modes": [
+      {
+        "scenario": "Cache TTL is too long, so divergence persists for hours",
+        "how_it_differs": "Same dual-write code, but cache TTL is one hour. After a divergence event, the customer sees the cache version for an hour before any cache miss surfaces the database version. Smaller failure window with short TTL, longer with long TTL.",
+        "prevention": "Use the shortest TTL that still gives an acceptable cache hit ratio. For ecommerce carts, 60 to 300 seconds is typical. Even better, invalidate the cache key on every write rather than relying on TTL."
+      },
+      {
+        "scenario": "Cache write succeeds, then EC2/Lambda crashes before the database write begins",
+        "how_it_differs": "Even with sequential writes (cache then DB), a crash between them produces divergence. The cache holds the new state and the database is unaware. This is the durability gap of any non-transactional dual-write.",
+        "prevention": "Write to the durable store first, then update or invalidate the cache. Or use a transactional store that includes both, like DynamoDB Streams to invalidate cache reactively. Or use DAX to remove the dual-write entirely."
+      },
+      {
+        "scenario": "Cache and database use different ID keys for the same cart, so writes never collide cleanly",
+        "how_it_differs": "Cache keyed by session ID, database keyed by user ID. Anonymous shoppers hit the cache; signed-in shoppers hit the database. Carts diverge whenever a shopper signs in mid-session.",
+        "prevention": "Pick one canonical key for cart state across all stores and queries. Map session-to-user at sign-in and copy the cart explicitly."
+      },
+      {
+        "scenario": "Cache cluster failover causes a brief read-write split",
+        "how_it_differs": "ElastiCache Redis cluster fails over to a replica. For a few seconds during failover, writes can land on the old primary (now read-only) while reads come from the new primary. Briefly the cache returns stale data even though the database is current.",
+        "prevention": "Use the cluster's primary endpoint for writes and the reader endpoint for reads; configure the SDK to retry on connection failures during failover. Test failover under load periodically."
+      }
+    ],
+    "sop_practices": [
+      "Pick a single system of record per data class. Cart state, user profile, order history each have one authoritative store. Caches are for performance only and are always allowed to be invalidated. This makes divergence impossible by design.",
+      "Use cache-aside when you control the application code, write-through (DAX) when you want the cache layer to handle consistency, and avoid dual-write entirely. Promise.allSettled and parallel writes to two stores is an anti-pattern in any production system.",
+      "Alarm on ThrottledRequests for any DynamoDB table. Throttling is silent to the client (the SDK retries) until the retry budget runs out. By the time errors are user-visible, the divergence has been accumulating for minutes.",
+      "Test write paths under simulated DynamoDB throttling. Inject ProvisionedThroughputExceededException using the SDK's middleware in a load test. Confirm the application returns errors to the client rather than swallowing them and writing only to cache."
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+Company: Cinderlane (Series B, 95 engineers)
+Industry: Online home goods retail
+Users: 1.1 million monthly orders, $148 average order, peak 14,000 concurrent shoppers
+AWS Services: Amazon ElastiCache for Redis, Amazon DynamoDB, AWS Lambda, Amazon CloudWatch
+Your role: On-call backend engineer, Saturday 14:08 ET, mid Spring Sale
+Situation: 3,412 customer reports in 2 hours about cart items disappearing or appearing twice; cart and checkout dashboards all green

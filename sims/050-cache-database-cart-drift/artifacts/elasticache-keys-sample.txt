@@ -1,0 +1,28 @@
+# Sample of Redis state for an affected user_id
+# user_id: 8a72b1e4-f290-4d3a-9a72-cinderlane-shopper
+
+> GET carts:user:8a72b1e4-f290-4d3a-9a72-cinderlane-shopper
+"{\"user_id\":\"8a72b1e4-f290-4d3a-9a72-cinderlane-shopper\",\"items\":[{\"sku\":\"CL-LAMP-0042-BRASS\",\"quantity\":1,\"added_at\":\"2026-04-29T14:01:08Z\"},{\"sku\":\"CL-RUG-0117-IVORY-8X10\",\"quantity\":1,\"added_at\":\"2026-04-29T14:01:24Z\"}],\"updated_at\":\"2026-04-29T14:01:24Z\"}"
+
+> TTL carts:user:8a72b1e4-f290-4d3a-9a72-cinderlane-shopper
+(integer) 47
+
+> INFO replication
+# Replication
+role:master
+connected_slaves:2
+master_replid:c8a7d2e9f3b6a4...
+master_repl_offset:1827419302
+slave0:ip=10.0.18.22,port=6379,state=online,offset=1827419302,lag=0
+slave1:ip=10.0.18.34,port=6379,state=online,offset=1827419302,lag=0
+
+> INFO stats
+total_connections_received:14829412
+total_commands_processed:8201492832
+keyspace_hits:7438201892
+keyspace_misses:763291040
+evicted_keys:0
+expired_keys:124820194
+
+# The cache holds: lamp + rug, updated 14:01:24 ET, TTL 47 seconds.
+# Compare against DynamoDB record for the same user_id. They will not agree.

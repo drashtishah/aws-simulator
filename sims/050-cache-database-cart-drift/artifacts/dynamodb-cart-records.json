@@ -1,0 +1,21 @@
+{
+  "Item": {
+    "user_id": { "S": "8a72b1e4-f290-4d3a-9a72-cinderlane-shopper" },
+    "items": {
+      "L": [
+        {
+          "M": {
+            "sku": { "S": "CL-LAMP-0042-BRASS" },
+            "quantity": { "N": "1" },
+            "added_at": { "S": "2026-04-29T14:01:08Z" }
+          }
+        }
+      ]
+    },
+    "updated_at": { "S": "2026-04-29T14:01:08Z" },
+    "version": { "N": "47" }
+  },
+  "_meta": {
+    "note": "DynamoDB record for the same user_id as the Redis sample. Note this record contains ONLY the lamp; the rug from the Redis cache is missing. updated_at is 14:01:08 ET (16 seconds before the rug was added). The rug was added at 14:01:24 ET; that write hit DynamoDB throttling and the SDK retries failed; the cart-update Lambda's Promise.allSettled accepted the cache-only success and returned 200 to the client."
+  }
+}

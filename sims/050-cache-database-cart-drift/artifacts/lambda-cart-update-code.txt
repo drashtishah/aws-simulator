@@ -1,0 +1,71 @@
+# Function: cart-update
+# ARN: arn:aws:lambda:us-east-1:412384910237:function:cart-update
+# Runtime: nodejs20.x
+# Last modified: 2025-12-18T11:42:08Z (refactor: parallel cache+db writes)
+
+const Redis = require('ioredis');
+const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
+const { marshall } = require('@aws-sdk/util-dynamodb');
+
+const redis = new Redis.Cluster([{
+  host: process.env.REDIS_PRIMARY_ENDPOINT,
+  port: 6379
+}], { tls: {} });
+
+const ddb = new DynamoDBClient({});
+
+const CART_TABLE = process.env.CART_TABLE_NAME; // cinderlane-carts
+const CACHE_TTL_SECONDS = 90;
+
+exports.handler = async (event) => {
+  const { user_id, items } = JSON.parse(event.body);
+  const cart = {
+    user_id,
+    items,
+    updated_at: new Date().toISOString(),
+    version: Date.now()
+  };
+
+  // Write to cache and database in parallel.
+  // Refactored 2025-12-18 from sequential to parallel for latency.
+  const results = await Promise.allSettled([
+    redis.set(
+      `carts:user:${user_id}`,
+      JSON.stringify(cart),
+      'EX',
+      CACHE_TTL_SECONDS
+    ),
+    ddb.send(new PutItemCommand({
+      TableName: CART_TABLE,
+      Item: marshall(cart)
+    }))
+  ]);
+
+  const [cacheResult, dbResult] = results;
+  if (cacheResult.status === 'rejected') {
+    console.error('cache write failed', cacheResult.reason);
+  }
+  if (dbResult.status === 'rejected') {
+    console.warn('ddb write retry exhausted, cache write succeeded', {
+      user_id,
+      error: dbResult.reason.name,
+      message: dbResult.reason.message
+    });
+  }
+
+  // Return success if at least cache succeeded so the customer sees their
+  // change immediately. Database catches up on next user action via cache-aside.
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ cart })
+  };
+};
+
+# Notes:
+#   1. Promise.allSettled never rejects; both promises run to completion
+#   2. dbResult.status === 'rejected' is logged as WARN, not ERROR
+#   3. The function returns 200 even if the database write fails
+#   4. The comment "Database catches up on next user action via cache-aside"
+#      is incorrect: cache-aside repopulates cache from DB on miss, not the
+#      other way around. There is nothing that catches DB up after a write
+#      failure.

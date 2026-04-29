@@ -706,6 +706,21 @@
       ],
       "estimated_minutes": 35,
       "created": "2026-04-29"
+    },
+    {
+      "id": "050-cache-database-cart-drift",
+      "title": "The Cart That Forgot Itself",
+      "summary": "An online retailer's customers add items to their cart, refresh, and the items vanish. Add them again and they stick. At checkout, sometimes both copies appear and sometimes neither does.",
+      "difficulty": 2,
+      "category": "reliability",
+      "services": [
+        "elasticache",
+        "dynamodb",
+        "lambda",
+        "cloudwatch"
+      ],
+      "estimated_minutes": 30,
+      "created": "2026-04-29"
     }
   ]
 }

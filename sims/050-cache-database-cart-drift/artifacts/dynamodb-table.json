@@ -1,0 +1,37 @@
+{
+  "Table": {
+    "TableName": "cinderlane-carts",
+    "TableArn": "arn:aws:dynamodb:us-east-1:412384910237:table/cinderlane-carts",
+    "TableStatus": "ACTIVE",
+    "CreationDateTime": "2024-11-04T18:22:08.412Z",
+    "AttributeDefinitions": [
+      { "AttributeName": "user_id", "AttributeType": "S" }
+    ],
+    "KeySchema": [
+      { "AttributeName": "user_id", "KeyType": "HASH" }
+    ],
+    "BillingModeSummary": {
+      "BillingMode": "PROVISIONED"
+    },
+    "ProvisionedThroughput": {
+      "NumberOfDecreasesToday": 0,
+      "ReadCapacityUnits": 5000,
+      "WriteCapacityUnits": 2000
+    },
+    "AutoScaling": {
+      "WriteCapacity": {
+        "MinCapacity": 2000,
+        "MaxCapacity": 10000,
+        "TargetUtilization": 70,
+        "ScaleOutCooldownSeconds": 60,
+        "ScaleInCooldownSeconds": 600
+      },
+      "ReadCapacity": {
+        "MinCapacity": 5000,
+        "MaxCapacity": 25000,
+        "TargetUtilization": 70
+      }
+    },
+    "ItemCount": 1842091
+  }
+}

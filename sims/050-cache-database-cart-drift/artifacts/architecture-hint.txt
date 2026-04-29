@@ -1,0 +1,40 @@
+                        +----------------------+
+                        |       Shopper        |
+                        +----------+-----------+
+                                   |
+                                   | PUT /cart, GET /cart, POST /checkout
+                                   v
+                        +----------------------+
+                        |    API Gateway       |
+                        |  cinderlane-api      |
+                        +----------+-----------+
+                                   |
+            +----------------------+----------------------+
+            |                      |                      |
+            v                      v                      v
+     +------+--------+      +------+--------+      +------+--------+
+     | cart-update   |      | cart-read     |      | checkout      |
+     | (Lambda)      |      | (Lambda)      |      | (Lambda)      |
+     | nodejs20.x    |      |               |      |               |
+     | dual-write    |      | cache-aside   |      | DDB only      |
+     +-+-----------+-+      +-+-----------+-+      +------+--------+
+       |           |          |           |               |
+       | SET cache | PutItem  | GET cache | GetItem       | GetItem
+       v           v          v           v               v
+  +----+-----+  +--+------+  +----+-+   +-+-----+   +-----+-------+
+  | Redis    |  | DDB     |  | Redis|   | DDB   |   | DDB         |
+  | cluster  |  | table   |  | (TTL |   | table |   | table       |
+  | cinder-  |  | cinder- |  | 90s) |   |       |   |             |
+  | lane-    |  | lane-   |  +------+   +-------+   +-------------+
+  | carts    |  | carts   |
+  +----------+  +---------+
+
+  Telemetry:
+    -> Lambda Errors metric (cart-update emits zero errors at this time)
+    -> DynamoDB ThrottledRequests, ConsumedWriteCapacityUnits
+    -> Redis CacheHitRate, BytesUsedForCache
+    -> No custom metrics for write divergence
+
+  Code path of interest:
+    cart-update Lambda uses Promise.allSettled to write to both Redis and
+    DynamoDB in parallel. See artifacts/lambda-cart-update-code.txt.

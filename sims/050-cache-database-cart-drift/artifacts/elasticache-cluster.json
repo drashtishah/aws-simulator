@@ -1,0 +1,31 @@
+{
+  "ReplicationGroup": {
+    "ReplicationGroupId": "cinderlane-carts",
+    "Description": "Cart cache for cinderlane storefront",
+    "Status": "available",
+    "Engine": "redis",
+    "EngineVersion": "7.1",
+    "PrimaryEndpoint": {
+      "Address": "cinderlane-carts.abc1de.ng.0001.use1.cache.amazonaws.com",
+      "Port": 6379
+    },
+    "ReaderEndpoint": {
+      "Address": "cinderlane-carts-ro.abc1de.ng.0001.use1.cache.amazonaws.com",
+      "Port": 6379
+    },
+    "MemberClusters": [
+      "cinderlane-carts-001",
+      "cinderlane-carts-002",
+      "cinderlane-carts-003"
+    ],
+    "AutomaticFailover": "enabled",
+    "MultiAZ": "enabled",
+    "CacheNodeType": "cache.r7g.large",
+    "TransitEncryptionEnabled": true,
+    "AtRestEncryptionEnabled": true,
+    "DataTiering": "disabled"
+  },
+  "_meta": {
+    "note": "ElastiCache cluster is healthy. Three nodes (one primary, two replicas). Redis 7.1. Cluster mode disabled. Cache hit rate at 14:08 ET is 91%, slightly above baseline."
+  }
+}
